@@ -34,9 +34,10 @@ struct QualityTool: AnalysisTool {
             ],
             "baseline": [
                 "type": "string",
-                "description": "Snapshot to compare against — a source directory or a .json artifact,"
-                    + " resolved like acai_diff's pathOld. Evaluates the rules' 'movements' and adds the"
-                    + " structural drift since it. Required when the rules declare any movement."
+                "description": .string(
+                    "Snapshot to compare against — a source directory or a .json artifact, resolved like"
+                    + " acai_diff's pathOld. Evaluates the rules' 'movements' and adds the structural drift"
+                    + " since it. Required when the rules declare any movement.")
             ]
         ])
     }
