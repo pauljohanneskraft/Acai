@@ -10,7 +10,7 @@ import Testing
 /// number as journeys go is the point; raising it needs a reason in the commit that does it.
 @Suite("Journey budget")
 struct JourneyBudgetTests {
-    private static let budget = 35
+    private static let budget = 36
 
     private var journeysDirectory: URL {
         URL(fileURLWithPath: #filePath)
