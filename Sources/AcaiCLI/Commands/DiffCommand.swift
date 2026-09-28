@@ -39,6 +39,8 @@ extension AcaiCommand {
         ))
         var language: [LanguageOption] = []
 
+        @OptionGroup var generatedScope: GeneratedScopeOption
+
         @Option(name: .long, help: "Report format: human or json.")
         var format: ReportFormatOption = .human
 
@@ -101,8 +103,8 @@ extension AcaiCommand {
         }
 
         mutating func run() async throws {
-            let oldArtifact = try await ArtifactSource.resolve(from: old, source: sourceOld, language: language)
-            let newArtifact = try await ArtifactSource.resolve(from: new, source: sourceNew, language: language)
+            let oldArtifact = try await resolvedArtifact(ref: old, source: sourceOld)
+            let newArtifact = try await resolvedArtifact(ref: new, source: sourceNew)
 
             let rendered: String
             if let diagram {
@@ -114,6 +116,13 @@ extension AcaiCommand {
                 rendered = try report(for: diff, health: health)
             }
             try rendered.writeOutput(to: output, label: "diff")
+        }
+
+        /// Both sides go through the same generated-scope filter, so a generated type is never
+        /// reported as added or removed by the filtering itself.
+        private func resolvedArtifact(ref: String?, source: String?) async throws -> CodeArtifact {
+            let artifact = try await ArtifactSource.resolve(from: ref, source: source, language: language)
+            return generatedScope.applied(to: artifact)
         }
 
         private func report(for diff: ArtifactDiff, health: HealthCheck.Summary) throws -> String {

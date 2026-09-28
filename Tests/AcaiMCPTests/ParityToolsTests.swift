@@ -43,6 +43,55 @@ struct ParityToolsTests {
         }
     }
 
+    /// Dart is the fixture language because its `LanguageConfiguration` carries a
+    /// `generatedCodeFilter` (`.g.dart` and friends); Swift's does not.
+    private func writeDartSide(in directory: URL, generatedTypes: [String]) throws {
+        try "class Model {}\n".write(
+            to: directory.appendingPathComponent("model.dart"), atomically: true, encoding: .utf8)
+        try generatedTypes.map { "class \($0) {}" }.joined(separator: "\n").write(
+            to: directory.appendingPathComponent("model.g.dart"), atomically: true, encoding: .utf8)
+    }
+
+    private func diffedTypeIDs(includeGenerated: Bool?) async throws -> (added: [String], removed: [String]) {
+        try await MCPTestSupport.withTempDirectory { old in
+            try await MCPTestSupport.withTempDirectory { new in
+                try writeDartSide(in: old, generatedTypes: ["ModelAdapter"])
+                try writeDartSide(in: new, generatedTypes: ["ModelAdapter", "ExtraAdapter"])
+                var arguments: [String: Value] = [
+                    "pathOld": .string(old.path), "pathNew": .string(new.path)
+                ]
+                if let includeGenerated {
+                    arguments["includeGenerated"] = .bool(includeGenerated)
+                }
+                let result = try await MCPTestSupport.testRegistry.call(name: "acai_diff", arguments: arguments)
+                let diff = try #require(result.structuredContent?.objectValue?["diff"]?.objectValue)
+                func ids(_ key: String) -> [String] {
+                    (diff[key]?.arrayValue ?? [])
+                        .compactMap { $0.objectValue?["id"]?.stringValue ?? $0.stringValue }
+                }
+                return (ids("addedTypes"), ids("removedTypes"))
+            }
+        }
+    }
+
+    @Test func diffExcludesGeneratedTypesByDefault() async throws {
+        let (added, removed) = try await diffedTypeIDs(includeGenerated: nil)
+        #expect(!added.contains { $0.contains("ExtraAdapter") })
+        #expect(!added.contains { $0.contains("ModelAdapter") })
+        #expect(!removed.contains { $0.contains("ModelAdapter") })
+    }
+
+    @Test func diffIncludesGeneratedTypesWhenOptedIn() async throws {
+        let (added, _) = try await diffedTypeIDs(includeGenerated: true)
+        #expect(added.contains { $0.contains("ExtraAdapter") })
+    }
+
+    @Test func diffSchemaDeclaresIncludeGenerated() throws {
+        let tool = try #require(ToolRegistry.standard.tools.first { $0.name == "acai_diff" })
+        let properties = try #require(tool.inputSchema.objectValue?["properties"]?.objectValue)
+        #expect(properties["includeGenerated"]?.objectValue?["type"]?.stringValue == "boolean")
+    }
+
     @Test func callGraphCyclesModeReturnsAnArray() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)

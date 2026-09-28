@@ -12,26 +12,28 @@ struct DiffTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        [
+        var properties: [String: Value] = [
+            "pathOld": [
+                "type": "string",
+                "description": "Old side: a source directory to analyze, or a .json artifact baseline."
+            ],
+            "pathNew": [
+                "type": "string",
+                "description": "New side: a source directory to analyze, or a .json artifact baseline."
+            ],
+            "languages": [
+                "type": "array", "items": ["type": "string"],
+                "description": "Optional language filter for directory sides. Empty means all."
+            ],
+            "refresh": [
+                "type": "boolean",
+                "description": "Re-analyze instead of reusing a cached snapshot for either side."
+            ]
+        ]
+        properties.merge(generatedScopeProperty) { $1 }
+        return [
             "type": "object",
-            "properties": .object([
-                "pathOld": [
-                    "type": "string",
-                    "description": "Old side: a source directory to analyze, or a .json artifact baseline."
-                ],
-                "pathNew": [
-                    "type": "string",
-                    "description": "New side: a source directory to analyze, or a .json artifact baseline."
-                ],
-                "languages": [
-                    "type": "array", "items": ["type": "string"],
-                    "description": "Optional language filter for directory sides. Empty means all."
-                ],
-                "refresh": [
-                    "type": "boolean",
-                    "description": "Re-analyze instead of reusing a cached snapshot for either side."
-                ]
-            ]),
+            "properties": .object(properties),
             "required": ["pathOld", "pathNew"]
         ]
     }
@@ -39,10 +41,10 @@ struct DiffTool: AnalysisTool {
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let languages = arguments.stringArray("languages")
         let refresh = try arguments.bool("refresh") ?? false
-        let old = try await cache.artifact(
-            path: try arguments.requiredString("pathOld"), languageNames: languages, refresh: refresh)
-        let new = try await cache.artifact(
-            path: try arguments.requiredString("pathNew"), languageNames: languages, refresh: refresh)
+        let old = try generatedScoped(try await cache.artifact(
+            path: try arguments.requiredString("pathOld"), languageNames: languages, refresh: refresh), arguments)
+        let new = try generatedScoped(try await cache.artifact(
+            path: try arguments.requiredString("pathNew"), languageNames: languages, refresh: refresh), arguments)
         let diff = ArtifactDiffer().diff(old: old, new: new)
         let health = HealthCheck(artifact: old).summary.combined(with: HealthCheck(artifact: new).summary)
         return .json(try Value(Payload(diff: diff, health: health)))
