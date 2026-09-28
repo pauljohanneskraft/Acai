@@ -594,6 +594,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 32,
             "filePath" : "shop.cpp",
             "line" : 32
           },
@@ -959,6 +960,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 51,
             "filePath" : "shop.cpp",
             "line" : 51
           },
