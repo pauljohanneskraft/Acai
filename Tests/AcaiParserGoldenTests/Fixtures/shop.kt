@@ -32,6 +32,7 @@ class Product(name: String, private val base: Double) : Item(name) {
 
     override fun price(): Double {
         audit.log("pricing")
+        audit.sink.write("pricing")
         return base - discount
     }
 
@@ -54,7 +55,12 @@ class Product(name: String, private val base: Double) : Item(name) {
 }
 
 class Logger {
+    val sink: Sink = Sink()
     fun log(message: String) {}
+}
+
+class Sink {
+    fun write(message: String) {}
 }
 
 fun topLevelDiscount(product: Product): Double = product.price()

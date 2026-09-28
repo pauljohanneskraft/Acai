@@ -8,8 +8,13 @@ struct PythonCallSiteSyntax: CallSiteSyntax {
     /// From the pre-pass: constructing one of these is what makes a local's type provable.
     let declaredTypeNames: Set<String>
 
+    private static let memberCallGrammar = MemberCallGrammar(
+        selfIdentifier: "self", memberAccessType: "attribute", memberField: "attribute"
+    )
+
     /// Matches Python `call { function: attribute { object, attribute } }`: `self.method(...)`,
-    /// `self.prop.method(...)`, `receiver.method(...)`, and `TypeName.method(...)` (static call).
+    /// `self.prop.method(...)`, `receiver.method(...)`, `TypeName.method(...)` (static call), and
+    /// `head.hop.method(...)` — a deferred `.propertyChain` where the head resolves.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "call", let funcNode = node.child(byFieldName: "function") else { return nil }
 
@@ -25,27 +30,11 @@ struct PythonCallSiteSyntax: CallSiteSyntax {
               let attr = funcNode.child(byFieldName: "attribute"),
               let object = funcNode.child(byFieldName: "object") else { return nil }
 
-        let methodName = attr.text(in: context)
-
-        if object.nodeType == "identifier", object.text(in: context) == "self" {
-            return CallSite(
-                receiver: .selfDispatch, methodName: methodName, location: node.location(in: context)
-            )
-        }
-
-        var receiverName: String?
-        if object.nodeType == "identifier" {
-            receiverName = object.text(in: context)
-        } else if object.nodeType == "attribute",
-                  let innerObject = object.child(byFieldName: "object"),
-                  innerObject.nodeType == "identifier", innerObject.text(in: context) == "self",
-                  let innerAttr = object.child(byFieldName: "attribute") {
-            receiverName = innerAttr.text(in: context)
-        }
-
-        guard let name = receiverName else { return nil }
-        return scope.resolvedCallSite(
-            receiverName: name, methodName: methodName, location: node.location(in: context)
+        return MemberCallResolver(context: context, grammar: Self.memberCallGrammar).callSite(
+            receiver: object,
+            methodName: attr.text(in: context),
+            scope: scope,
+            location: node.location(in: context)
         )
     }
 
