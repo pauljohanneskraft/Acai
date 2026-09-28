@@ -15,6 +15,9 @@ struct SeededFixture {
         /// The same artifact, but already indexed at launch: no Reindex tap, and a fixed "Last indexed"
         /// date. For a journey that needs an indexed codebase rather than the act of indexing one.
         case preindexed
+        /// Already indexed with `artifacts/seeded-with-added.json`, with `artifacts/comparison-HEAD.json`
+        /// staged as `HEAD` — the compare journeys' starting point without their reindex.
+        case preindexedComparedWithHEAD
         /// `artifacts/seeded-with-added.json`, compared against `artifacts/comparison-HEAD.json` as `HEAD`.
         case cannedComparedWithHEAD
     }
@@ -45,6 +48,12 @@ extension UIJourneyTestCase {
                 case .preindexed:
                     app.launchEnvironment["ACAI_UITEST_PREINDEXED_ARTIFACT"] =
                         artifacts.appendingPathComponent("seeded.json").path
+                case .preindexedComparedWithHEAD:
+                    app.launchEnvironment["ACAI_UITEST_PREINDEXED_ARTIFACT"] =
+                        artifacts.appendingPathComponent("seeded-with-added.json").path
+                    app.launchEnvironment["ACAI_UITEST_COMPARISON_ARTIFACTS"] = app.environmentRecords([
+                        [codebaseID, "HEAD", artifacts.appendingPathComponent("comparison-HEAD.json").path]
+                    ])
                 case .cannedComparedWithHEAD:
                     app.launchEnvironment["ACAI_UITEST_CODEBASE_ARTIFACTS"] = app.environmentRecords([
                         [codebaseID, artifacts.appendingPathComponent("seeded-with-added.json").path]
@@ -112,11 +121,11 @@ extension UIJourneyTestCase {
     /// ``openIndexedSeededCodebase()`` without the Reindex tap and its wait.
     @discardableResult
     func openPreindexedSeededCodebase(
-        dynamicTypeSize: String? = nil,
+        analysis: SeededFixture.Analysis = .preindexed, dynamicTypeSize: String? = nil,
         file: StaticString = #filePath, line: UInt = #line, function: StaticString = #function
     ) -> CodebaseDetailScreen {
         let detail = openSeededProject(
-            analysis: .preindexed, dynamicTypeSize: dynamicTypeSize, file: file, line: line, function: function)
+            analysis: analysis, dynamicTypeSize: dynamicTypeSize, file: file, line: line, function: function)
         let codebaseDetail = CodebaseDetailScreen(app: app)
         detail.codebaseRow(id: seeded.codebaseID).tap(
             "the seeded codebase's row", until: codebaseDetail.queryButton, file: file, line: line)
