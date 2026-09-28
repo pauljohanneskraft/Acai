@@ -54,6 +54,13 @@ extension AcaiCommand {
         mutating func validate() throws {
             try artifactSource.validate()
             try shape.validate()
+            // Shared with `diagram`, which has one more mode than the image renderer does; without this
+            // the flag would parse and quietly render a class diagram instead.
+            if shape.moduleCoupling {
+                throw ValidationError(
+                    "--module-coupling has no image renderer. Render it as text with"
+                    + " 'acai diagram --module-coupling', or use --package for a module image.")
+            }
         }
 
         private func resolveOldArtifact() async throws -> CodeArtifact? {
