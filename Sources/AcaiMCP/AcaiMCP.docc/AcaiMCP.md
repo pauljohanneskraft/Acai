@@ -250,6 +250,7 @@ Structural delta between two revisions — added/removed types, changed relation
 | `pathNew` * | string | Same. |
 | `languages` | string[] | Applies to both sides. |
 | `refresh` | boolean | Applies to both sides. |
+| `includeGenerated` | boolean | Applies to both sides before diffing, so a generated type is never reported as added or removed by the filtering itself. Default `false`. |
 
 Note there's no `path` here. **Both sides must be real filesystem paths** — unlike the CLI, a bare stored-analysis name is not resolved. Produce baselines with `acai store` on the CLI and pass the resulting `.json` path. A baseline whose `schemaVersion` is newer than this build understands is rejected with the found and expected version numbers, rather than being misread.
 
