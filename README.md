@@ -69,7 +69,7 @@ Açaí ships a Claude Code plugin that wires up the MCP server and a code-audit 
 /plugin install code-quality@acai
 ```
 
-Your agent gets nine read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
+Your agent gets ten read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
 
 No config file required for any of the three.
 
@@ -149,7 +149,7 @@ Generated diagrams are the fast path; the app is where you go when you want to *
 
 ### ⌨️ The `acai` CLI
 
-Twelve commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
+Thirteen commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
 
 ```sh
 # Look around

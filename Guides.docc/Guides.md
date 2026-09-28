@@ -86,7 +86,7 @@ just its API.
 
 - **[AcaiCLI](/documentation/acaicli/)** — the `acai` command-line tool: every command and flag,
   plus recipes for CI gating, drift checks and dead-code sweeps.
-- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server: all nine
+- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server: all ten
   tools with their input schemas, the snapshot-cache contract, and how to wire it into a client.
 - **[AcaiApp](/documentation/acaiapp/)** — the SwiftUI application shared by the macOS and iOS apps:
   what it does, and how the pieces fit.
