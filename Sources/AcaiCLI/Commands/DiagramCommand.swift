@@ -20,7 +20,7 @@ extension AcaiCommand {
         @Option(name: .long, help: "Output format: dot (default), mermaid.")
         var format: FormatOption?
 
-        @Option(name: .long, help: "Color theme: default, dark.")
+        @Option(name: .long, help: "Color theme: light, dark.")
         var theme: ThemeOption?
 
         @OptionGroup var classFlags: ClassDiagramFlags
