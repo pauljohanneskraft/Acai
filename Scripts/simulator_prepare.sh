@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Boots the given iOS Simulator and puts it into the state the UI tests assume, so nothing about a
-# fresh runner's simulator (first-launch costs, one-time system overlays) leaks into the first test.
+# Resolves, boots and warms the iOS Simulator the UI tests run on, and prints its UDID.
+#
+# A runner image carries the same device name on more than one runtime, so a `name=` destination is
+# ambiguous: this script's pick and xcodebuild's pick were different devices, leaving every
+# xcodebuild run to cold-boot an unwarmed simulator — 7 to 15 silent minutes before the first test.
+# The runtime is therefore pinned to the simulator SDK, and every xcodebuild destination from here
+# on names the resolved UDID (exported as SIM_UDID under GitHub Actions) rather than the device.
 #
 # The status bar needs no pinning: the app hides it whenever it runs under a UI-test fixture.
 #
@@ -15,21 +20,20 @@ DEVICE="${1:?usage: Scripts/simulator_prepare.sh <DEVICE> [APP_PATH]}"
 APP_PATH="${2:-}"
 BUNDLE_ID="de.kraftsoftware.Acai"
 
-# Device names can contain parens (e.g. "iPad (A16)"), so match everything before the fixed
-# ` (UDID) (STATE)` suffix. `DEVICE_ENV` is exported rather than interpolated so parens stay literal.
-export DEVICE_ENV="$DEVICE"
-UDID=$(xcrun simctl list devices available | perl -ne '
-    if (/^\s*(.+) \(([0-9A-Fa-f-]{36})\) \([A-Za-z]+\)\s*$/) {
-        print "$2\n" if $1 eq $ENV{DEVICE_ENV};
-    }
-' | head -1)
+SDK_VERSION=$(xcrun --sdk iphonesimulator --show-sdk-version)
+RUNTIME="com.apple.CoreSimulator.SimRuntime.iOS-${SDK_VERSION//./-}"
+
+UDID=$(xcrun simctl list devices available -j | jq -r \
+    --arg runtime "$RUNTIME" --arg name "$DEVICE" \
+    '.devices[$runtime] // [] | map(select(.name == $name)) | .[0].udid // empty')
 
 if [ -z "$UDID" ]; then
-    echo "✗ No available simulator named '$DEVICE' found" >&2
+    echo "✗ No available simulator named '$DEVICE' on $RUNTIME" >&2
+    xcrun simctl list devices available >&2
     exit 1
 fi
 
-echo "▸ Booting $DEVICE ($UDID) if needed"
+echo "▸ Booting $DEVICE on iOS $SDK_VERSION ($UDID) if needed"
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 
@@ -44,6 +48,10 @@ if [ -n "$APP_PATH" ]; then
     xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null
     sleep 10
     xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+fi
+
+if [ -n "${GITHUB_ENV:-}" ]; then
+    echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
 fi
 
 echo "✓ $DEVICE ($UDID) prepared"

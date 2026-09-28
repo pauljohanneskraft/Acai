@@ -11,7 +11,10 @@ concurrency:
 
 env:
   # Each iOS journey device runs as this many parallel jobs; each takes every Nth enumerated test.
-  UI_TEST_SHARDS: 4
+  # A shard pays several minutes of checkout, artifact download and simulator boot before its first
+  # test, and the macOS runner allowance is shared with every other open pull request — so past the
+  # point where the jobs stop starting together, splitting further adds more overhead than it removes.
+  UI_TEST_SHARDS: 2
 
 jobs:
   changes:
@@ -106,20 +109,23 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
-      # Enumerated once here, not per shard: enumeration launches the test runner, and a runner launch
-      # on a cold simulator intermittently never gets its accessibility-loaded notification — doing it
-      # in all 8 shard jobs made every one of them carry that risk. The test set is a property of the
-      # bundle, so it is identical for both devices. Warm the simulator first for the same reason.
+      # Unconditional: the SPM unit tests below run on this simulator too, and every xcodebuild in
+      # this job names it by the UDID this step exports. The app is warmed only when it was built.
+      - name: Prepare Simulator
+        run: |
+          APP=$(find App/DerivedData/Build/Products -maxdepth 2 -path '*-iphonesimulator/Acai.app' 2>/dev/null | head -1)
+          Scripts/simulator_prepare.sh "iPhone 17" "$APP"
+
+      # Enumerated once here, not per shard: enumeration launches the test runner, which costs a full
+      # install of the app and the runner onto the simulator. The test set is a property of the bundle,
+      # so it is identical for both devices.
       - name: Enumerate UI tests
         if: needs.changes.outputs.journeys == 'true'
         run: |
-          APP=$(find App/DerivedData/Build/Products -maxdepth 2 -path '*-iphonesimulator/Acai.app' | head -1)
-          [ -n "$APP" ] || { echo "✗ No built Acai.app under App/DerivedData/Build/Products" >&2; exit 1; }
-          Scripts/simulator_prepare.sh "iPhone 17" "$APP"
           XCTESTRUN=$(find App/DerivedData -name 'Acai-iOSUITests_*.xctestrun' | head -1)
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
-            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -destination "id=$SIM_UDID" \
             -enumerate-tests \
             -test-enumeration-style flat \
             -test-enumeration-format json \
@@ -146,7 +152,7 @@ jobs:
           xcodebuild test \
             -project Acai.xcodeproj \
             -scheme AcaiPackageTests-iOS \
-            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -destination "id=$SIM_UDID" \
             -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath .spm-cache \
             -disablePackageRepositoryCache \
@@ -309,7 +315,7 @@ jobs:
           XCTESTRUN=$(find DerivedData -name 'Acai-iOSUITests_*.xctestrun' | head -1)
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
-            -destination "platform=iOS Simulator,name=${{ matrix.device }}" \
+            -destination "id=$SIM_UDID" \
             "${ONLY_TESTING[@]}" \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
