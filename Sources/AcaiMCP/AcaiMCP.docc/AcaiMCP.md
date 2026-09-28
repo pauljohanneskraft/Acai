@@ -159,6 +159,7 @@ Check against a declarative rules file: forbidden dependencies, cycles, layering
 | `rules` | string | Path to the YAML rules file. Omit for the built-in smell budgets. |
 | `explore` | boolean | Rank findings and additionally list dependency cycles, with no pass/fail gate. |
 | `scope` | `modules` \| `types` \| `all` | Cycle scope in explore mode. Default `all`. |
+| `baseline` | string | Snapshot to compare against: a `.json` artifact or a source directory, resolved exactly like `acai_diff`'s `pathOld`. A directory is analyzed as it is *now*, so it must be a different checkout (an old worktree, say); for the same tree, pass a `.json` written before the edit. `baseline` equal to `path` is rejected with `invalidParams`. |
 
 Cycle findings are appended only when `explore` is set *and* the rules file doesn't already own the cycle check. The rules-file schema is documented under [AcaiCLI](/documentation/acaicli/).
 
@@ -166,8 +167,25 @@ Cycle findings are appended only when `explore` is set *and* the rules file does
 
 Note it has no `includeGenerated` — generated-type filtering goes through the rules' own `includeGeneratedTypes` key instead.
 
-Result shape: `{ "quality": <QualityReport>, "health": <HealthCheck.Summary> }`. `QualityReport` carries
-its own top-level `schemaVersion`, starting at `1`.
+#### Proving a movement with `baseline`
+
+A rules file's `movements` section states how a metric was expected to move — `{ target: { typeGlob: "Foo" }, metric: fanOut, minImprovement: 2 }` means *`Foo`'s `fanOut` must have decreased by at least 2*. Omitting `minImprovement` means "must not get worse". Declaring a movement also guards its target against a hidden regression: every other metric of the same scope on that target must not have worsened either, so an improvement bought by a cost elsewhere doesn't pass.
+
+Movements are evaluated **only** when `baseline` is given. A rules file that declares one without a `baseline` is rejected with `invalidParams` rather than passing on a check that never ran — the same refusal `acai quality` makes for `--baseline`.
+
+A movement in the wrong direction lands in `quality.violations` as an ordinary violation with `ruleKind: "movement"`, whose `detail` carries `metric`, `before` and `after` — so `structuredContent` alone is enough to branch on, with no text parsing:
+
+```json
+{ "ruleKind": "movement", "subject": "Foo", "message": "Foo: fanOut regressed from 3 to 5.",
+  "detail": { "metric": "fanOut", "before": "3", "after": "5" } }
+```
+
+This closes the audit loop — snapshot with `acai analyze --source <dir> --include-generated --output <file>.json` (outside the analyzed tree), fix, re-run with that `.json` as `baseline`, and read the verdict. The project directory itself can't serve as the previous snapshot: a directory baseline is analyzed as it is now, so it has to be a `.json` written before the edit or a different checkout.
+
+Result shape: `{ "quality": <QualityReport>, "drift": <ArtifactDiff>?, "health": <HealthCheck.Summary> }`.
+`drift` is the same structural delta `acai_diff` returns, present only when `baseline` was given — so the
+key's absence tells a caller this was a plain gate run. `QualityReport` carries its own top-level
+`schemaVersion`, starting at `1`.
 
 ### `acai_callgraph`
 
@@ -194,14 +212,16 @@ Enumerate types and members matching a selector, each with a `file:line` jump ta
 | --- | --- |
 | `path` *, `languages`, `refresh`, `includeGenerated` | |
 | `module`, `type` | string — glob (`*`, `?`) |
-| `kind`, `minAccess`, `stereotype`, `annotation` | string |
+| `kind` | `class` \| `actor` \| `struct` \| `enum` \| `protocol` \| `interface` \| `trait` \| `typeAlias` \| `object` \| `extension` \| `annotation` \| `module` \| `record` \| `mixin` |
+| `minAccess` | `public` \| `open` \| `internal` \| `protected` \| `private` \| `filePrivate` \| `packagePrivate` |
+| `stereotype`, `annotation` | string |
 | `minMembers`, `minNesting` | integer |
-| `memberKind` | string |
+| `memberKind` | `property` \| `method` \| `initializer` \| `deinitializer` \| `subscript` |
 | `minParameters` | integer |
 | `publicVars`, `overrides` | boolean |
 | `enums` | boolean — inventory enum cases with raw and associated values instead |
 
-Legal values for `kind`, `minAccess` and `memberKind` are the same lists the CLI enumerates (see [AcaiCLI](/documentation/acaicli/)). They're declared as plain strings here, so an unrecognised value is **silently ignored** rather than rejected. Likewise `publicVars: false` means "no constraint", not "exclude".
+Legal values for `kind`, `minAccess` and `memberKind` are the same lists the CLI enumerates (see [AcaiCLI](/documentation/acaicli/)), and each argument's `enum` in the schema is that list. An unrecognised value is an `invalidParams` error naming the argument, the value received and the accepted values — the filter is never dropped, which would silently widen the call to every type. `publicVars: false` still means "no constraint", not "exclude".
 
 Result shape: `{ "types": [<TypeQuery.TypeRow>], "health": <HealthCheck.Summary> }`, or with `enums: true`: `{ "enums": [<EnumInventory.Entry>], "health": <HealthCheck.Summary> }`.
 
@@ -232,6 +252,7 @@ Structural delta between two revisions — added/removed types, changed relation
 | `pathNew` * | string | Same. |
 | `languages` | string[] | Applies to both sides. |
 | `refresh` | boolean | Applies to both sides. |
+| `includeGenerated` | boolean | Applies to both sides before diffing, so a generated type is never reported as added or removed by the filtering itself. Default `false`. |
 
 Note there's no `path` here. **Both sides must be real filesystem paths** — unlike the CLI, a bare stored-analysis name is not resolved. Produce baselines with `acai store` on the CLI and pass the resulting `.json` path. A baseline whose `schemaVersion` is newer than this build understands is rejected with the found and expected version numbers, rather than being misread.
 
@@ -289,8 +310,9 @@ Identical to `acai_diagram`, minus `format`, plus:
 
 | Property | Type | Notes |
 | --- | --- | --- |
+| `kind` | `class` \| `package` \| `sequence` \| `state` \| `callgraph` | Default `class`. No `moduleCoupling` — it has no image renderer, as `acai image` also rejects `--module-coupling`. Render it as text with `acai_diagram`. |
 | `scale` | number | Resolution factor, default `2`. |
-| `theme` | `light` \| `dark` | Default light. `default` is still accepted as a deprecated spelling of `light`. |
+| `theme` | `light` \| `dark` | Default light. `default` is still parsed as a deprecated spelling of `light`, but the schema no longer advertises it. |
 
 Returns base64 PNG image content.
 
@@ -313,12 +335,11 @@ One parse per project path, shared by every tool in the process. This is what ma
 
 ## Language filtering
 
-`languages` accepts, case-insensitively: `swift`, `kotlin`, `java`, `typescript`, `javascript`, `dart`, `python`, `c`, `cpp`.
+`languages` accepts, case-insensitively: `swift`, `kotlin`, `java`, `typescript`, `javascript`, `dart`, `python`, `c`, `cpp`. The schema advertises that list as the array's `items.enum`.
 
-Two behaviours worth knowing:
-
-- **Unknown names are dropped silently** — no error. (The CLI's `--language` rejects them at parse time.)
-- **If every name is unknown**, the filter is empty, which the engine reads as *no restriction* — so `["c++", "golang"]` analyses the whole codebase rather than nothing. Spell them as listed above.
+- **An unknown name is an `invalidParams` error** naming `languages`, the value received and the accepted names, raised before anything is parsed — as the CLI's `--language` rejects it. A typo never falls back to analysing every language.
+- **A value that isn't an array of strings** is rejected the same way.
+- **An empty array** (or omitting the argument) means *no restriction*.
 
 ---
 
@@ -332,7 +353,7 @@ The loop is *measurement narrows → reading confirms → editing fixes → re-r
 2. `acai_analyze` once to index; every other call reuses that snapshot.
 3. `acai_metrics` to rank outliers, `acai_quality` for verdicts.
 4. `acai_inspect` / `acai_callgraph` / `acai_dependents` to localise — and the diagram tools to cross-check the numbers against visual gestalt.
-5. Open the *specific* flagged files, make a bounded fix, re-run, and assert the metric actually moved and no new cycle appeared.
+5. Open the *specific* flagged files, make a bounded fix, re-run, and assert the metric actually moved and no new cycle appeared — `acai_quality` with `baseline` set to a pre-fix `.json` snapshot makes that assertion for you.
 
 The skill is explicit that the tool measures and you judge: a data-model core legitimately has high fan-in, and a metric is a question, not a defect.
 
@@ -347,7 +368,7 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 | Tool | Divergence |
 | --- | --- |
 | `acai_analyze` | Returns a compact summary, not the full model. `health: true` does mirror `acai analyze --health`. |
-| `acai_quality` | Never exits non-zero — it can't gate CI. No `--baseline`. |
+| `acai_quality` | Never exits non-zero — it can't gate CI. `baseline: <dir>` analyzes that directory's *current* contents, so it must be a different checkout or a `.json` written before the edit; `--baseline <dir>` instead reads that directory's *stored* analysis, and also accepts a stored analysis name. |
 | `acai_metrics` | No `--sort` / `--top`; rank client-side. JSON only. |
 | `acai_callgraph` | No `--top`, no `--no-fail`. JSON only. |
 | `acai_diff` | Both sides must be filesystem paths. No delta-diagram rendering. |

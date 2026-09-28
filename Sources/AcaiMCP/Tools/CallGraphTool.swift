@@ -16,37 +16,32 @@ struct CallGraphTool: AnalysisTool {
 
     var inputSchema: Value {
         var properties: [String: Value] = [
-            "mode": [
-                "type": "string",
-                "enum": ["metrics", "cycles", "deadcode"],
-                "description": "What to report: metrics (default), cycles, or deadcode."
-            ],
             "scope": [
                 "type": "string",
                 "description": "Scope (metrics/cycles): 'type:Name' or 'module:Name'. Whole codebase if omitted."
             ]
         ]
+        properties.merge(EnumArgument<CallGraphMode>.mode.property) { $1 }
         properties.merge(generatedScopeProperty) { $1 }
         return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
+        let mode = try EnumArgument<CallGraphMode>.mode.value(in: arguments, or: .metrics)
         let artifact = try await analysisArtifact(arguments, cache)
         let health = HealthCheck(artifact: artifact).summary
-        switch arguments.string("mode") ?? "metrics" {
-        case "metrics":
+        switch mode {
+        case .metrics:
             let scope = try resolvedCallGraphScope(arguments.string("scope"))
             let report = CallGraphMetrics(artifact: artifact, scope: scope).report
             return .json(try Value(MetricsPayload(callGraph: report, health: health)))
-        case "cycles":
+        case .cycles:
             let scope = try resolvedCallGraphScope(arguments.string("scope"))
             let clusters = MethodCycles(artifact: artifact, scope: scope).clusters
             return .json(try Value(CyclesPayload(cycles: clusters, health: health)))
-        case "deadcode":
+        case .deadcode:
             let report = DeadCodeScan(artifact: artifact, languages: artifact.standardLanguageResolver).report
             return .json(try Value(DeadCodePayload(deadCode: report, health: health)))
-        case let other:
-            throw MCPError.invalidParams("mode must be metrics, cycles, or deadcode (got '\(other)').")
         }
     }
 

@@ -15,17 +15,7 @@ struct DiagramTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        objectSchema(extraProperties: [
-            "kind": [
-                "type": "string",
-                "enum": ["class", "package", "moduleCoupling", "sequence", "state", "callgraph"],
-                "description": "Diagram kind (default class)."
-            ],
-            "format": [
-                "type": "string",
-                "enum": ["dot", "mermaid"],
-                "description": "Output format (default mermaid)."
-            ],
+        var properties: [String: Value] = [
             "focus": ["type": "string", "description": "Class diagram: focus on this type's neighbourhood."],
             "focusDepth": ["type": "integer", "description": "Class diagram: max focus traversal depth."],
             "scope": ["type": "string", "description": "Call graph: 'type:Name' or 'module:Name'."],
@@ -42,14 +32,18 @@ struct DiagramTool: AnalysisTool {
                 "type": "array", "items": ["type": "string"],
                 "description": "Sequence: 'Protocol=Concrete' receiver mappings."
             ]
-        ])
+        ]
+        properties.merge(EnumArgument<DiagramKind>.kind.property) { $1 }
+        properties.merge(EnumArgument<DiagramFormat>.format.property) { $1 }
+        return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
+        let kind = try EnumArgument<DiagramKind>.kind.value(in: arguments, or: .class)
+        let format = try EnumArgument<DiagramFormat>.format.value(in: arguments, or: .mermaid)
         let artifact = try await resolveArtifact(arguments, cache)
-        let format = try diagramFormat(arguments.string("format"))
         do {
-            let export = try export(for: arguments, artifact: artifact)
+            let export = try export(kind, for: arguments, artifact: artifact)
             var content: [Tool.Content] = []
             if let notice = HealthCheck(artifact: artifact).summary.lowTrustNotice {
                 content.append(.text(text: notice, annotations: nil, _meta: nil))
@@ -61,48 +55,36 @@ struct DiagramTool: AnalysisTool {
         }
     }
 
-    private func diagramFormat(_ raw: String?) throws -> DiagramFormat {
-        switch raw ?? "mermaid" {
-        case "dot":
-            return .dot
-        case "mermaid":
-            return .mermaid
-        default:
-            throw MCPError.invalidParams("format must be 'dot' or 'mermaid'.")
-        }
-    }
-
-    private func export(for arguments: ToolArguments, artifact: CodeArtifact) throws -> DiagramExport {
+    private func export(
+        _ kind: DiagramKind, for arguments: ToolArguments, artifact: CodeArtifact
+    ) throws -> DiagramExport {
         let languages = artifact.standardLanguageResolver
-        switch arguments.string("kind") ?? "class" {
-        case "class":
+        switch kind {
+        case .class:
             let options = try classOptions(arguments, languages: languages)
             return try ClassDiagramTextExporter(options: options).export(from: artifact)
-        case "package":
+        case .package:
             let maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
             return try PackageDiagramTextExporter(languages: languages, theme: nil, maxNodes: maxNodes)
                 .export(from: artifact)
-        case "moduleCoupling":
+        case .moduleCoupling:
             let maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
             return try ModuleCouplingTextExporter(languages: languages, theme: nil, maxNodes: maxNodes)
                 .export(from: artifact)
-        case "sequence":
+        case .sequence:
             let request = SequenceDiagramRequest(
                 entryPoint: try arguments.requiredString("sequenceFrom"),
                 maxDepth: try arguments.int("maxDepth") ?? 5,
-                map: arguments.stringArray("map"))
+                map: try arguments.stringArray("map"))
             return try SequenceDiagramTextExporter(request: request, theme: nil).export(from: artifact)
-        case "state":
+        case .state:
             let request = StateDiagramRequest(
                 variable: try arguments.requiredString("stateFrom"),
                 maxStates: try arguments.int("maxStates") ?? 20)
             return try StateDiagramTextExporter(request: request, theme: nil).export(from: artifact)
-        case "callgraph":
+        case .callgraph:
             let request = CallGraphRequest(scope: CallGraphScopeOption(raw: arguments.string("scope")))
             return try CallGraphTextExporter(request: request, theme: nil).export(from: artifact)
-        default:
-            throw MCPError.invalidParams(
-                "kind must be class, package, moduleCoupling, sequence, state, or callgraph.")
         }
     }
 
