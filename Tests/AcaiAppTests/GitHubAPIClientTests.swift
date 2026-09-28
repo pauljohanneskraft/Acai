@@ -34,7 +34,7 @@ final class MockURLProtocol: URLProtocol {
 // an extension of this same suite type) installs a handler on `MockURLProtocol`'s shared static
 // state — Swift Testing parallelizes across suites/tests by default, which would let one test's
 // handler leak into another's in-flight request. One serialized suite is the fix.
-@Suite("GitHub networking (API client + repository clone)", .serialized)
+@Suite("GitHub networking (API client + repository clone)", .serialized, .timeLimit(.minutes(1)))
 struct GitHubNetworkingTests {
 
     private func makeClient(credential: GitHubCredential) -> GitHubAPIClient {

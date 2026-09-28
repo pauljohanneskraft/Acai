@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("ProjectStore GitHub-backed codebase count")
+@Suite("ProjectStore GitHub-backed codebase count", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectStoreGitHubCodebaseCountTests {
     private func makeStore() throws -> ProjectStore {

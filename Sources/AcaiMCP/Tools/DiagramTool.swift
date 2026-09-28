@@ -1,22 +1,24 @@
 import MCP
 import AcaiLibrary
 
-/// `acai_diagram` — one tool over every diagram kind (class/package/sequence/state/callgraph) rendered
-/// as DOT or Mermaid text (which the agent can read or embed). Mirrors `acai diagram`. Dispatches to
-/// the shared `AcaiDiagram` text exporters, so it stays in lockstep with the CLI.
+/// `acai_diagram` — one tool over every diagram kind (class/package/moduleCoupling/sequence/state/
+/// callgraph) rendered as DOT or Mermaid text (which the agent can read or embed). Mirrors
+/// `acai diagram`. Dispatches to the shared `AcaiDiagram` text exporters, so it stays in lockstep
+/// with the CLI.
 struct DiagramTool: AnalysisTool {
     let name = "acai_diagram"
     let description = """
         Render a diagram of a codebase as DOT or Mermaid text: a class diagram (optionally focused on \
-        one type), a package/module dependency graph, a sequence trace, a value-flow state machine, or \
-        a call graph. Use to see structure you can embed in a reply. Pick with 'kind'.
+        one type), a package/module dependency graph, the module coupling view (Ca/Ce/I/A/D per module \
+        with its main-sequence zone), a sequence trace, a value-flow state machine, or a call graph. \
+        Use to see structure you can embed in a reply. Pick with 'kind'.
         """
 
     var inputSchema: Value {
         objectSchema(extraProperties: [
             "kind": [
                 "type": "string",
-                "enum": ["class", "package", "sequence", "state", "callgraph"],
+                "enum": ["class", "package", "moduleCoupling", "sequence", "state", "callgraph"],
                 "description": "Diagram kind (default class)."
             ],
             "format": [
@@ -33,7 +35,8 @@ struct DiagramTool: AnalysisTool {
             "maxStates": ["type": "integer", "description": "State: max distinct states (default 20)."],
             "maxNodes": [
                 "type": "integer",
-                "description": "Class/package: max node count before generation fails (default 2000)."
+                "description":
+                    "Class/package/moduleCoupling: max node count before generation fails (default 2000)."
             ],
             "map": [
                 "type": "array", "items": ["type": "string"],
@@ -79,6 +82,10 @@ struct DiagramTool: AnalysisTool {
             let maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
             return try PackageDiagramTextExporter(languages: languages, theme: nil, maxNodes: maxNodes)
                 .export(from: artifact)
+        case "moduleCoupling":
+            let maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
+            return try ModuleCouplingTextExporter(languages: languages, theme: nil, maxNodes: maxNodes)
+                .export(from: artifact)
         case "sequence":
             let request = SequenceDiagramRequest(
                 entryPoint: try arguments.requiredString("sequenceFrom"),
@@ -94,7 +101,8 @@ struct DiagramTool: AnalysisTool {
             let request = CallGraphRequest(scope: CallGraphScopeOption(raw: arguments.string("scope")))
             return try CallGraphTextExporter(request: request, theme: nil).export(from: artifact)
         default:
-            throw MCPError.invalidParams("kind must be class, package, sequence, state, or callgraph.")
+            throw MCPError.invalidParams(
+                "kind must be class, package, moduleCoupling, sequence, state, or callgraph.")
         }
     }
 

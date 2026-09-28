@@ -105,7 +105,9 @@ enum CFamilyDialect: Sendable {
             "vector", "array", "list", "forward_list", "deque", "set", "multiset",
             "map", "multimap", "unordered_set", "unordered_multiset",
             "unordered_map", "unordered_multimap", "stack", "queue", "priority_queue",
-            "pair", "tuple", "optional", "variant", "span", "initializer_list",
+            // `optional` is absent on purpose: `CFamilyTypeReferenceResolver` unwraps
+            // `std::optional<T>` to `T?`, so it never reaches collection classification.
+            "pair", "tuple", "variant", "span", "initializer_list",
             "unique_ptr", "shared_ptr", "weak_ptr"
         ]
         return Set(bare).union(bare.map { "std::\($0)" })

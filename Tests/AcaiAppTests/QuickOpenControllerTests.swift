@@ -3,7 +3,7 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-@Suite("QuickOpenController")
+@Suite("QuickOpenController", .timeLimit(.minutes(1)))
 @MainActor
 struct QuickOpenControllerTests {
     private func makeModel() throws -> (model: ProjectBrowserViewModel, projectID: UUID, codebaseID: UUID) {
@@ -96,5 +96,19 @@ struct QuickOpenControllerTests {
         #expect(controller.filtered(entries, matching: "").isEmpty)
         #expect(controller.filtered(entries, matching: "foo").map(\.name) == ["Foo"])
         #expect(controller.filtered(entries, matching: "FOO").map(\.name) == ["Foo"])
+    }
+
+    /// The field takes focus as the sheet appears, so a query can be typed while the index is still
+    /// building. Results are derived from whatever is indexed *now* rather than captured when the
+    /// query was entered, so the entries arriving later still produce matches.
+    @Test func aQueryTypedBeforeTheIndexArrivesMatchesOnceItDoes() throws {
+        let (_, projectID, _) = try makeModel()
+        let entry = makeEntry(kind: .module, projectID: projectID)
+
+        var search = QuickOpenSearch(entries: [], query: "foo")
+        #expect(search.results.isEmpty)
+
+        search.entries = [entry]
+        #expect(search.results.map(\.name) == ["Foo"])
     }
 }

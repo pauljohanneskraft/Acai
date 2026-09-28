@@ -123,6 +123,28 @@ struct CppTests {
         #expect(aggregation != nil)
     }
 
+    /// `std::optional<T>` holds nothing or one `T`, so it is the language's optional rather than a
+    /// container: reported as `T?`, and related with single (not `*`) multiplicity.
+    @Test func optionalFieldIsNullableNotACollection() {
+        let source = """
+        #include <optional>
+        class Roster {
+        public:
+            std::optional<Player> captain;
+        };
+        class Player {};
+        """
+        let artifact = parser.parse(source: source, fileName: "roster.cpp")
+        let captain = artifact.types.first { $0.name == "Roster" }?
+            .members.first { $0.name == "captain" }
+        #expect(captain?.type?.name == "Player")
+        #expect(captain?.type?.isOptional == true)
+        #expect(captain?.type?.isArray == false)
+        let enriched = artifact.enriched(configuration: parser.configuration)
+        let edge = enriched.relationships.first { $0.label == "captain" }
+        #expect(edge?.targetLabel != "*", "an optional is not a to-many relationship")
+    }
+
     @Test func staticNamespaceFunctionHasFilePrivateAccessButStaticMethodDoesNot() {
         let source = """
         namespace detail {
@@ -143,5 +165,32 @@ struct CppTests {
         let next = counter?.members.first { $0.name == "next" }
         #expect(next?.accessLevel == .public)
         #expect(next?.modifiers.contains(.static) == true)
+    }
+
+    /// A constructor *declared* in the class body is the ordinary header shape, and tree-sitter-cpp
+    /// aliases it to `declaration` rather than `field_declaration` — so it needs its own case.
+    @Test func constructorDeclaredInClassBody() {
+        let source = """
+        class Genre {};
+
+        class Song {
+        public:
+            Song(const std::string &title, Genre genre);
+            explicit Song(int id);
+        private:
+            int id_;
+        };
+        """
+        let artifact = parser.parse(source: source, fileName: "song.cpp")
+        let song = artifact.types.first { $0.name == "Song" }
+        let initializers = song?.members.filter { $0.kind == .initializer } ?? []
+        #expect(initializers.count == 2, "both declared constructors should appear")
+        #expect(initializers.first?.accessLevel == .public)
+        #expect(initializers.first?.type == nil, "a constructor has no return type")
+        #expect(initializers.first?.parameters.map(\.internalName) == ["title", "genre"])
+        let enriched = artifact.enriched(configuration: parser.configuration)
+        #expect(
+            enriched.relationships.contains { $0.kind == .dependency && $0.target == "Genre" },
+            "a constructor parameter's declared type is a dependency")
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Dropping folders onto a project")
+@Suite("Dropping folders onto a project", .timeLimit(.minutes(1)))
 @MainActor
 struct FolderDropTests {
     private let root = FileManager.default.temporaryDirectory

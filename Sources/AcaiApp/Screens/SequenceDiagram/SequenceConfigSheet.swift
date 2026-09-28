@@ -2,35 +2,20 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 
-/// Two-phase configuration popup for a sequence diagram.
+/// Two-phase configuration popup for a sequence diagram — `SequenceConfigModel` owns the steps and
+/// the option lists; this renders them.
 ///
 /// 1. **Entry point** — pick the starting type and method, and a maximum call depth.
 /// 2. **Interface resolution** — a first-pass trace runs, then a concrete-type dropdown is
 ///    offered for each protocol/interface actually encountered (and that has a conformer), so
 ///    the diagram can follow real implementations instead of stopping at an abstraction.
 struct SequenceConfigSheet: View {
-    let artifact: CodeArtifact
-    /// Pre-fills the form when editing an existing diagram's configuration.
-    let initial: SequenceDiagramConfiguration?
     let onCancel: () -> Void
     let onCreate: (SequenceDiagramConfiguration) -> Void
 
-    @State private var entryTypeName: String
-    @State private var entryMethodName: String
-    @State private var maxDepth: Int
-    @State private var phase: Phase = .entryPoint
-    @State private var mappingRows: [MappingRow] = []
+    @State private var model: SequenceConfigModel
     @State private var typeQuery = ""
     @State private var methodQuery = ""
-
-    private enum Phase { case entryPoint, resolveInterfaces }
-
-    private struct MappingRow: Identifiable {
-        let id: String
-        var protocolName: String { id }
-        let candidates: [String]
-        var selection: String?  // chosen concrete type, or nil = leave abstract
-    }
 
     init(
         artifact: CodeArtifact,
@@ -38,21 +23,15 @@ struct SequenceConfigSheet: View {
         onCancel: @escaping () -> Void,
         onCreate: @escaping (SequenceDiagramConfiguration) -> Void
     ) {
-        self.artifact = artifact
-        self.initial = initial
         self.onCancel = onCancel
         self.onCreate = onCreate
-        // An empty entry-type name is the top-level (no class) scope — it round-trips directly, so
-        // re-editing a free-function entry restores the right picker state with no translation.
-        _entryTypeName = State(initialValue: initial?.entryTypeName ?? "")
-        _entryMethodName = State(initialValue: initial?.entryMethodName ?? "")
-        _maxDepth = State(initialValue: initial?.maxDepth ?? 5)
+        _model = State(initialValue: SequenceConfigModel(artifact: artifact, initial: initial))
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                switch phase {
+                switch model.step {
                 case .entryPoint:
                     entryPointForm
                 case .resolveInterfaces:
@@ -62,25 +41,25 @@ struct SequenceConfigSheet: View {
             #if os(macOS)
             .frame(maxWidth: 460)
             #endif
-            .navigationTitle(phase == .entryPoint ? "New Sequence Diagram" : "Resolve Interfaces")
+            .navigationTitle(model.step == .entryPoint ? "New Sequence Diagram" : "Resolve Interfaces")
             .toolbar {
-                if phase == .resolveInterfaces {
+                if model.step == .resolveInterfaces {
                     ToolbarItem(placement: .navigation) {
-                        Button(.app("View.SequenceConfigSheet.Back")) { phase = .entryPoint }
+                        Button(.app("View.SequenceConfigSheet.Back")) { model.back() }
                     }
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button(.app("View.SequenceConfigSheet.Cancel"), role: .cancel, action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    switch phase {
+                    switch model.step {
                     case .entryPoint:
                         Button(.app("View.SequenceConfigSheet.Next"), action: advance)
                             .keyboardShortcut(.confirmDialog)
-                            .disabled(entryMethodName.isEmpty)
+                            .disabled(!model.canAdvance)
                             .accessibilityIdentifier("sequenceConfig.nextButton")
                     case .resolveInterfaces:
-                        Button(.app("View.SequenceConfigSheet.Create"), action: create)
+                        Button(.app("View.SequenceConfigSheet.Create")) { onCreate(model.configuration) }
                             .keyboardShortcut(.confirmDialog)
                             .accessibilityIdentifier("sequenceConfig.createButton")
                     }
@@ -103,50 +82,51 @@ struct SequenceConfigSheet: View {
                 LabeledContent {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $typeQuery)
-                        Picker(.app("View.SequenceConfigSheet.Type"), selection: $entryTypeName) {
-                            Text(localized: freeFunctionNames.isEmpty
+                        Picker(.app("View.SequenceConfigSheet.Type"), selection: entryTypeName) {
+                            Text(localized: model.freeFunctionNames.isEmpty
                                 ? .app("View.SequenceConfigSheet.SelectEllipsis")
                                 : .app("View.SequenceConfigSheet.NoneTopLevelFunctions")).tag("")
-                            ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) {
+                            ForEach(model.callableTypeNames.filtered(by: typeQuery), id: \.self) {
                                 Text(verbatim: $0).tag($0)
                             }
                         }
                         .labelsHidden()
                         .accessibilityIdentifier("sequenceConfig.typePicker")
-                        .onChange(of: entryTypeName) { _, _ in
-                            if !methodNames.contains(entryMethodName) {
-                                entryMethodName = methodNames.first ?? ""
-                            }
-                        }
                     }
                 } label: {
                     Text(.app("View.SequenceConfigSheet.Type"))
                 }
 
-                LabeledContent(entryTypeName.isEmpty ? "Function" : "Method") {
+                LabeledContent(model.entryTypeName.isEmpty ? "Function" : "Method") {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $methodQuery)
-                        Picker(.app("View.SequenceConfigSheet.Method"), selection: $entryMethodName) {
+                        Picker(.app("View.SequenceConfigSheet.Method"), selection: $model.entryMethodName) {
                             Text(.app("View.SequenceConfigSheet.Select")).tag("")
-                            ForEach(methodNames.filtered(by: methodQuery), id: \.self) {
+                            ForEach(model.methodNames.filtered(by: methodQuery), id: \.self) {
                                 Text(verbatim: $0).tag($0)
                             }
                         }
                         .labelsHidden()
-                        .disabled(methodNames.isEmpty)
+                        .disabled(model.methodNames.isEmpty)
                         .accessibilityIdentifier("sequenceConfig.methodPicker")
                     }
                 }
 
                 LabeledContent {
-                    Stepper(value: $maxDepth, in: 1...20) {
-                        Text(maxDepth, format: .number)
+                    Stepper(value: $model.maxDepth, in: 1...20) {
+                        Text(model.maxDepth, format: .number)
                     }
                 } label: {
                     Text(.app("View.SequenceConfigSheet.MaxDepth"))
                 }
             }
         }
+    }
+
+    /// The entry-type picker goes through `selectEntryType` rather than the stored property, so a
+    /// scope change takes the method selection with it.
+    private var entryTypeName: Binding<String> {
+        Binding(get: { model.entryTypeName }, set: { model.selectEntryType($0) })
     }
 
     // MARK: - Phase 2: interface resolution
@@ -161,11 +141,11 @@ struct SequenceConfigSheet: View {
             }
 
             Section {
-                ForEach($mappingRows) { $row in
-                    LabeledContent(row.protocolName) {
-                        Picker(row.protocolName, selection: $row.selection) {
+                ForEach(model.mappings) { mapping in
+                    LabeledContent(mapping.protocolName) {
+                        Picker(mapping.protocolName, selection: selection(for: mapping.id)) {
                             Text(.app("View.SequenceConfigSheet.LeaveAbstract")).tag(String?.none)
-                            ForEach(row.candidates, id: \.self) { Text(verbatim: $0).tag(String?.some($0)) }
+                            ForEach(mapping.candidates, id: \.self) { Text(verbatim: $0).tag(String?.some($0)) }
                         }
                         .labelsHidden()
                     }
@@ -174,74 +154,18 @@ struct SequenceConfigSheet: View {
         }
     }
 
+    private func selection(for protocolName: String) -> Binding<String?> {
+        Binding(
+            get: { model.mappings.first { $0.id == protocolName }?.selection },
+            set: { model.select($0, forAbstractionNamed: protocolName) }
+        )
+    }
+
     // MARK: - Actions
 
     private func advance() {
-        let preview = SequenceDiagramBuilder(
-            entryPoint: (entryTypeName, entryMethodName),
-            maxDepth: maxDepth
-        ).build(from: artifact)
-        var rows: [MappingRow] = []
-        var seen: Set<String> = []
-        for participant in preview.participants where !seen.contains(participant.name) {
-            seen.insert(participant.name)
-            // Resolves existential spellings (`any P`) too; the mapping key stays the raw
-            // participant name because the generator substitutes receiver strings verbatim.
-            let candidates = artifact.conformerNames(ofAbstractionNamed: participant.name)
-            guard !candidates.isEmpty else { continue }
-            rows.append(MappingRow(
-                id: participant.name,
-                candidates: candidates,
-                selection: initial?.typeMapping[participant.name]
-            ))
-        }
-
-        if rows.isEmpty {
-            create()
-        } else {
-            mappingRows = rows
-            phase = .resolveInterfaces
+        if case .finished(let configuration) = model.advance() {
+            onCreate(configuration)
         }
     }
-
-    private func create() {
-        var mapping: [String: String] = [:]
-        for row in mappingRows {
-            if let concrete = row.selection { mapping[row.protocolName] = concrete }
-        }
-        onCreate(SequenceDiagramConfiguration(
-            entryTypeName: entryTypeName,
-            entryMethodName: entryMethodName,
-            maxDepth: maxDepth,
-            typeMapping: mapping
-        ))
-    }
-
-    // MARK: - Lookups
-
-    /// The codebase's top-level (free) functions — the entry points available when no class is
-    /// selected (an empty entry-type name, which `sequenceDiagram(entryPoint:)` resolves against
-    /// `freestandingFunctions`).
-    private var freeFunctionNames: [String] {
-        artifact.freestandingFunctions.map(\.name).uniqued().sorted()
-    }
-
-    private var callableTypeNames: [String] {
-        artifact.types
-            .filter { $0.members.contains { $0.kind == .method } }
-            .map(\.name)
-            .uniqued()
-            .sorted()
-    }
-
-    private var methodNames: [String] {
-        guard !entryTypeName.isEmpty else { return freeFunctionNames }
-        guard let type = artifact.types.first(where: { $0.name == entryTypeName }) else { return [] }
-        return type.members
-            .filter { $0.kind == .method }
-            .map(\.name)
-            .uniqued()
-            .sorted()
-    }
-
 }

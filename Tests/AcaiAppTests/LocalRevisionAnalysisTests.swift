@@ -5,7 +5,7 @@ import Testing
 @testable import AcaiApp
 
 /// #181: a local folder analysed at another revision, with the user's checkout left exactly as it was.
-@Suite("Local folder at another revision")
+@Suite("Local folder at another revision", .timeLimit(.minutes(1)))
 @MainActor
 struct LocalRevisionAnalysisTests {
     private func makeTempDirectory() throws -> URL {

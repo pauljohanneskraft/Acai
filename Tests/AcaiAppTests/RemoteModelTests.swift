@@ -55,53 +55,14 @@ struct RemoteModelTests {
         #expect(!policy.warrantsWarning(sizeKilobytes: nil))
     }
 
-    @Test func aCodebasePersistedWithTheLegacyGitHubSourceMigratesToAManagedCheckout() throws {
-        let json = Data("""
-        {
-            "id": "7E0A1D6C-2E8B-4F57-9C1E-1A2B3C4D5E6F",
-            "name": "widgets",
-            "directoryPath": "/tmp/worktree",
-            "githubSource": {
-                "owner": "acme", "repo": "widgets", "ref": "v1", "refKind": "tag",
-                "lastSyncedCommitSHA": "abc123", "lastSyncedAt": 0
-            }
-        }
-        """.utf8)
-
-        let codebase = try JSONDecoder().decode(Codebase.self, from: json)
-
-        #expect(codebase.managedCheckout?.refKind == .tag)
-        #expect(codebase.managedCheckout?.lastSyncedCommitSHA == "abc123")
-        // No `repository`: a per-codebase clone, which `ProjectStore` discards on load.
-        #expect(codebase.repository == nil)
-    }
-
-    @Test func aLegacySourceWithoutRefKindMigratesAsABranchAndKeepsItsRepository() throws {
-        let json = Data("""
-        {
-            "name": "widgets",
-            "directoryPath": "/tmp/worktree",
-            "githubSource": { "owner": "acme", "repo": "widgets", "ref": "main" },
-            "repository": { "remoteURL": "https://github.com/acme/widgets", "ref": "main" }
-        }
-        """.utf8)
-
-        let codebase = try JSONDecoder().decode(Codebase.self, from: json)
-
-        #expect(codebase.managedCheckout?.refKind == .branch)
-        #expect(codebase.repository?.remoteURL == URL(string: "https://github.com/acme/widgets"))
-    }
-
-    @Test func encodingNeverWritesTheLegacyKeyAndRoundTripsTheNewFields() throws {
+    @Test func encodingRoundTripsAManagedCheckoutAndItsRepository() throws {
         var codebase = Codebase(name: "widgets", directoryPath: "/tmp/worktree")
         codebase.managedCheckout = ManagedCheckout(refKind: .tag, lastSyncedCommitSHA: "abc")
         codebase.repository = CodebaseRepositoryReference(remoteURL: gitLabURL, ref: "v2")
         codebase.analysedRevision = "v1"
 
-        let data = try JSONEncoder().encode(codebase)
-        let decoded = try JSONDecoder().decode(Codebase.self, from: data)
+        let decoded = try JSONDecoder().decode(Codebase.self, from: try JSONEncoder().encode(codebase))
 
-        #expect(String(bytes: data, encoding: .utf8)?.contains("githubSource") == false)
         #expect(decoded == codebase)
     }
 

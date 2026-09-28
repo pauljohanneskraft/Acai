@@ -1,0 +1,12 @@
+{
+  "types": [
+    {
+      "name": "Song",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "<init>", "role": "initializer", "access": "+", "parameters": ["id: #primitive"] }
+      ]
+    }
+  ]
+}

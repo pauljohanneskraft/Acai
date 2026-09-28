@@ -14,7 +14,7 @@ import XCTest
 @MainActor
 final class CompareOtherDiagramTypesTests: UIJourneyTestCase {
     func testSequenceDiagramComparisonLoads() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .cannedComparedWithHEAD)
+        let codebaseDetail = openPreindexedSeededCodebase(analysis: .preindexedComparedWithHEAD)
         let sequence = codebaseDetail.openDiagramConfiguration(
             type: "sequence", as: SequenceDiagramScreen.self, until: { $0.typePicker }
         )
@@ -29,7 +29,7 @@ final class CompareOtherDiagramTypesTests: UIJourneyTestCase {
     }
 
     func testStateDiagramComparisonLoads() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .cannedComparedWithHEAD)
+        let codebaseDetail = openPreindexedSeededCodebase(analysis: .preindexedComparedWithHEAD)
         let state = codebaseDetail.openDiagramConfiguration(
             type: "state", as: StateDiagramScreen.self, until: { $0.scopePicker }
         )
@@ -44,7 +44,7 @@ final class CompareOtherDiagramTypesTests: UIJourneyTestCase {
     }
 
     func testPackageDiagramComparisonLoads() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .cannedComparedWithHEAD)
+        let codebaseDetail = openPreindexedSeededCodebase(analysis: .preindexedComparedWithHEAD)
         let package = codebaseDetail.createDiagram(type: "package", as: PackageDiagramScreen.self)
 
         package.containerNode(named: "SampleSwiftPackage").waitOrFail("the SampleSwiftPackage module", timeout: .uiWork)
@@ -53,7 +53,7 @@ final class CompareOtherDiagramTypesTests: UIJourneyTestCase {
     }
 
     func testCallGraphComparisonLoads() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .cannedComparedWithHEAD)
+        let codebaseDetail = openPreindexedSeededCodebase(analysis: .preindexedComparedWithHEAD)
         let callGraph = codebaseDetail.openDiagramConfiguration(
             type: "callGraph", as: CallGraphScreen.self, until: { $0.createButton }
         )

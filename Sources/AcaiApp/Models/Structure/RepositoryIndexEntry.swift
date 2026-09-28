@@ -1,4 +1,3 @@
-import AcaiGit
 import Foundation
 
 /// One shared `AcaiGit.GitRepository`'s reverse index: every codebase, across every project, whose
@@ -18,13 +17,18 @@ struct RepositoryIndex {
     let projects: [Project]
 
     func entries() -> [RepositoryIndexEntry] {
-        var entriesByIdentity: [String: RepositoryIndexEntry] = [:]
+        var entriesByIdentity: [RemoteIdentity: RepositoryIndexEntry] = [:]
         for codebase in projects.flatMap(\.codebases) {
             guard let remoteURL = codebase.repository?.remoteURL else { continue }
-            let identity = GitRepository(remoteURL: remoteURL, storeDirectory: URL(fileURLWithPath: "/")).identity
-            entriesByIdentity[identity, default: RepositoryIndexEntry(remoteURL: remoteURL, codebases: [])]
-                .codebases.append(codebase)
+            entriesByIdentity[
+                RemoteIdentity(remoteURL: remoteURL), default: RepositoryIndexEntry(remoteURL: remoteURL, codebases: [])
+            ].codebases.append(codebase)
         }
         return entriesByIdentity.values.sorted { $0.remoteURL.absoluteString < $1.remoteURL.absoluteString }
+    }
+
+    func codebases(referencing remoteURL: URL) -> [Codebase] {
+        let identity = RemoteIdentity(remoteURL: remoteURL)
+        return entries().first { RemoteIdentity(remoteURL: $0.remoteURL) == identity }?.codebases ?? []
     }
 }

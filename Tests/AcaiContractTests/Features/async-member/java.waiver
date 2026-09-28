@@ -1,0 +1,1 @@
+Java has no async marker; asynchrony is expressed by returning a CompletableFuture, which is a return type rather than something the declaration marks.

@@ -1,0 +1,1 @@
+C has no inheritance; a struct can only embed another struct, which the engine models as composition, not an inheritance edge.

@@ -103,6 +103,11 @@ struct QuickOpenView: View {
             freeformDiagrams: model.store.freeformDiagrams
         )
         allEntries = await Task.detached(priority: .userInitiated) { builder.entries() }.value
+        // The field takes focus on appear, so a query typed while this was building filtered an empty
+        // index. Nothing re-runs that filter on its own, and the debounce below only fires on a
+        // keystroke — so the results would stay empty until the user typed again.
+        guard !query.isEmpty else { return }
+        filteredEntries = QuickOpenSearch(entries: allEntries, query: query).results
     }
 
     /// Debounces to the trailing edge of a short pause rather than filtering on every keystroke —
@@ -116,7 +121,7 @@ struct QuickOpenView: View {
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard !Task.isCancelled else { return }
-            let matches = controller.filtered(allEntries, matching: text)
+            let matches = QuickOpenSearch(entries: allEntries, query: text).results
             guard !Task.isCancelled else { return }
             filteredEntries = matches
         }
