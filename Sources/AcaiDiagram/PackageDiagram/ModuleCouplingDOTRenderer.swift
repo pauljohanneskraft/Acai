@@ -45,13 +45,14 @@ public struct ModuleCouplingDOTRenderer: DOTRenderer {
 
         let breaches = diagram.stableDependencyBreaches
         for edge in diagram.edges {
+            let isBreach = breaches.contains(edge)
             var parts: [String] = []
             if let color = edgeColor?(edge.from, edge.to) ?? theme?.edgeColor {
                 parts.append("color=\"\(color)\"")
             }
             parts.append("penwidth=\(penWidth(forWeight: edge.weight))")
-            parts.append("label=\"\(edgeLabel(edge, isBreach: breaches.contains(edge)).dotEscaped)\"")
-            if breaches.contains(edge) { parts.append("style=dashed") }
+            parts.append("label=\"\(edgeLabel(edge, isBreach: isBreach).dotEscaped)\"")
+            if isBreach { parts.append("style=dashed") }
             out += "  \(edge.from.dotNodeID) -> \(edge.to.dotNodeID) [\(parts.joined(separator: " "))];\n"
         }
 
