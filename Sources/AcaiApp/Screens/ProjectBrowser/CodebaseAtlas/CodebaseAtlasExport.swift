@@ -44,8 +44,8 @@ extension AtlasDiagramRenderOutcome {
             .rendered(data)
         case .unsupported:
             .unsupported
-        case .failed:
-            .failed
+        case .failed(let error):
+            .init(failure: error)
         }
     }
 }

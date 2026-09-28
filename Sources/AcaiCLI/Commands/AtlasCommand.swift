@@ -66,12 +66,22 @@ extension AcaiCommand {
                 scale: scale, palette: theme == .dark ? .dark : .light,
                 languages: languages, maxNodes: maxNodes
             ).pages(for: artifact)
+            warnAboutUnrenderedDiagrams(in: diagrams)
 
             let document = AtlasDocument(
                 codebaseName: codebaseName, diagrams: diagrams,
                 metrics: analysis.metrics, findings: analysis.findings)
             try document.pdfData().write(to: URL(fileURLWithPath: output), options: .atomic)
             print("Wrote atlas to \(output)")
+        }
+
+        /// A diagram that could not be rendered still gets its page, so say on stderr why — the PDF
+        /// is otherwise the only place that reason appears.
+        private func warnAboutUnrenderedDiagrams(in pages: [AtlasDiagramPage]) {
+            for page in pages {
+                guard let reason = page.image.failureReason else { continue }
+                "Warning: the \(page.name) page could not be rendered: \(reason)".writeLineToStandardError()
+            }
         }
 
         private var codebaseName: String {

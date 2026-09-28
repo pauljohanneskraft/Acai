@@ -15,6 +15,9 @@ struct AtlasTool: AnalysisTool {
         rather than one answer. Writes the file to 'output' and returns its path. macOS only.
         """
 
+    /// The one tool that writes: it produces a PDF at `output`.
+    let isReadOnly = false
+
     var inputSchema: Value {
         objectSchema(
             extraProperties: rulesProperty.merging([
@@ -58,7 +61,10 @@ struct AtlasTool: AnalysisTool {
         }
         return .json(try Value(Payload(
             path: output, formatVersion: AtlasDocument.formatVersion,
-            diagramCount: diagrams.count, findingCount: analysis.findings.count, byteCount: data.count)))
+            diagramCount: diagrams.count, findingCount: analysis.findings.count, byteCount: data.count,
+            unrenderedDiagrams: diagrams.compactMap { page in
+                page.image.failureReason.map { "\(page.name): \($0)" }
+            })))
     }
 
     private struct Payload: Codable {
@@ -67,6 +73,9 @@ struct AtlasTool: AnalysisTool {
         var diagramCount: Int
         var findingCount: Int
         var byteCount: Int
+        /// Diagrams whose page says it could not be rendered, and why — the PDF is otherwise the
+        /// only place that reason appears.
+        var unrenderedDiagrams: [String]
     }
 
     private func codebaseName(_ arguments: ToolArguments) throws -> String {

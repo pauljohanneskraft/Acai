@@ -41,7 +41,7 @@ struct ToolRegistry: Sendable {
                 name: tool.name,
                 description: tool.description,
                 inputSchema: tool.inputSchema,
-                annotations: .init(readOnlyHint: true))
+                annotations: .init(readOnlyHint: tool.isReadOnly))
         }
     }
 

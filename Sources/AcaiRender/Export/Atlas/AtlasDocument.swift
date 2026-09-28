@@ -35,9 +35,10 @@ public struct AtlasDiagramPage: Sendable {
         /// This diagram kind has no PNG-export path (the chart-style kinds — module coupling,
         /// hotspots — are not canvas diagrams with a layout model).
         case unsupported
-        /// Rendering was attempted and failed; the page says so rather than silently disappearing,
-        /// so the Atlas's page count never depends on whether rendering happened to succeed.
-        case failed
+        /// Rendering was attempted and failed; the page says so, and why where the error says,
+        /// rather than silently disappearing — the Atlas's page count never depends on whether
+        /// rendering happened to succeed.
+        case failed(reason: String)
     }
 
     public let name: String
@@ -50,6 +51,21 @@ public struct AtlasDiagramPage: Sendable {
         self.name = name
         self.subtitle = subtitle
         self.image = image
+    }
+}
+
+extension AtlasDiagramPage.Image {
+    /// A failure page whose reason names the error as precisely as the error itself allows: its
+    /// own message where it carries one (`DiagramRequestError` does, e.g. a node limit), the error
+    /// itself otherwise (`DiagramImageRenderError.renderingFailed`, say).
+    public init(failure error: any Error) {
+        self = .failed(reason: (error as? any LocalizedError)?.errorDescription ?? String(describing: error))
+    }
+
+    /// The failure's reason, or `nil` for a page that is not a failure.
+    public var failureReason: String? {
+        guard case .failed(let reason) = self else { return nil }
+        return reason
     }
 }
 
@@ -173,8 +189,11 @@ public struct AtlasDocument: Sendable {
             }
         case .unsupported:
             canvas.drawLine("This diagram type isn't included in image exports yet.", fontSize: 12)
-        case .failed:
-            canvas.drawLine("This diagram could not be rendered in this environment.", fontSize: 12)
+        case .failed(let reason):
+            canvas.drawLine(
+                "This diagram could not be rendered in this environment.", fontSize: 12,
+                spacing: AtlasPageCanvas.lineSpacing)
+            canvas.drawLine(reason, fontSize: 11)
         }
     }
 

@@ -55,7 +55,7 @@ public struct AtlasDiagramSet: Sendable {
         do {
             return AtlasDiagramPage(name: name, subtitle: subtitle, image: .rendered(try await render()))
         } catch {
-            return AtlasDiagramPage(name: name, subtitle: subtitle, image: .failed)
+            return AtlasDiagramPage(name: name, subtitle: subtitle, image: .init(failure: error))
         }
     }
 }

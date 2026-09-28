@@ -16,16 +16,18 @@ struct ToolRegistryTests {
         ]
         #if os(macOS)
         names.append("acai_image")
+        names.append("acai_atlas")
         #endif
         return names.sorted()
     }
 
-    @Test func advertisesTheReadOnlyToolSet() {
+    @Test func advertisesTheToolSet() {
         let descriptors = ToolRegistry.standard.descriptors
         #expect(descriptors.map(\.name).sorted() == expectedNames)
-        // Every tool is read-only, and its description is the autonomous-trigger surface — never empty.
+        // Every tool but the Atlas export only reads, and its description is the autonomous-trigger
+        // surface — never empty.
         for descriptor in descriptors {
-            #expect(descriptor.annotations.readOnlyHint == true)
+            #expect(descriptor.annotations.readOnlyHint == (descriptor.name != "acai_atlas"))
             #expect(!(descriptor.description ?? "").isEmpty)
         }
     }

@@ -1,6 +1,7 @@
 import Foundation
 import PDFKit
 import Testing
+import AcaiDiagram
 @testable import AcaiCore
 @testable import AcaiRender
 
@@ -85,6 +86,23 @@ struct AtlasDocumentTests {
         #expect(titlePageText.contains(codebaseName))
         #expect(titlePageText.contains("Codebase Atlas"))
         #expect(titlePageText.contains("Format \(AtlasDocument.formatVersion)"))
+    }
+
+    @Test func aDiagramThatFailedToRenderSaysWhyOnItsPage() throws {
+        let reason = "2500 nodes exceeds the 2000-node limit."
+        let page = AtlasDiagramPage(
+            name: "Package Diagram", subtitle: "Module dependencies",
+            image: .init(failure: DiagramRequestError(reason)))
+        #expect(page.image.failureReason == reason)
+
+        let data = try document(diagrams: [page], findings: []).pdfData()
+        let pdf = try #require(PDFDocument(data: data))
+        let pageText = try #require(pdf.page(at: 1)?.string)
+        #expect(pageText.contains(reason))
+    }
+
+    @Test func aDiagramKindWithNoExportPathIsNotAFailure() {
+        #expect(AtlasDiagramPage.Image.unsupported.failureReason == nil)
     }
 
     /// The generation date is injected, so the same inputs produce the same bytes twice.

@@ -98,7 +98,7 @@ On macOS the app can generate this for you: **Settings → Connect via MCP** loc
 
 ## The tools
 
-Nine tools on macOS, **eight on Linux** — `acai_image` links the SwiftUI renderer and is compiled out elsewhere.
+Ten tools on macOS, **eight on Linux** — `acai_image` and `acai_atlas` link the SwiftUI renderer and are compiled out elsewhere.
 
 Every tool takes `path` (required), and most also accept:
 
@@ -273,6 +273,21 @@ Identical to `acai_diagram`, minus `format`, plus:
 
 Returns base64 PNG image content.
 
+### `acai_atlas` — macOS only
+
+The whole picture as one PDF, for when someone wants a document rather than an answer: a page per diagram (class, package, call graph), the statistics, and every quality violation, dead-code candidate and parse diagnostic. The same document `acai atlas` and the app's "Export Codebase Atlas" action produce.
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `output` | string | **Required.** Path to write the PDF to. |
+| `name` | string | Title-page name. Defaults to the analyzed directory's name. |
+| `rules` | string | YAML rules file the findings section is judged by. Omit for the built-in smell budgets. |
+| `scale` | number | Diagram resolution factor, default `2`. |
+| `theme` | `light` \| `dark` | Default light. |
+| `maxNodes` | integer | Node ceiling per graph diagram before its page reports it could not render. |
+
+Returns `{ path, formatVersion, diagramCount, findingCount, byteCount }` — the only tool that writes a file rather than answering in the response.
+
 ---
 
 ## The snapshot cache
@@ -332,6 +347,7 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 | `acai_diff` | Both sides must be filesystem paths. No delta-diagram rendering. |
 | `acai_diagram` | Defaults to `mermaid` where the CLI defaults to `dot`. Exposes none of the class-diagram flags, no theme, no config file, no focus direction/relationship control. |
 | `acai_image` | No `--grouping`, `--hide-members`, `--min-access`, or delta-image inputs. |
+| `acai_atlas` | At parity with `acai atlas`. |
 
 `acai_inspect` and `acai_dependents` are at full parity.
 

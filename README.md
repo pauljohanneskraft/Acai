@@ -69,7 +69,7 @@ Açaí ships a Claude Code plugin that wires up the MCP server and a code-audit 
 /plugin install code-quality@acai
 ```
 
-Your agent gets nine read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
+Your agent gets nine read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets, plus `acai_atlas` to export the whole picture as a PDF. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
 
 No config file required for any of the three.
 
@@ -173,7 +173,7 @@ The interesting one is `acai quality`: a declarative `quality.yml` turns your ar
 
 ### 🤖 The `acai-mcp` server
 
-An [MCP](https://modelcontextprotocol.io) server exposing the read-only engine as nine tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_dependents`, `acai_diff`, `acai_diagram`, and `acai_image` (macOS only). One parse is cached per project path and reused across every call.
+An [MCP](https://modelcontextprotocol.io) server exposing the engine as ten tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_dependents`, `acai_diff`, `acai_diagram`, `acai_image` and `acai_atlas` (the last two macOS only). One parse is cached per project path and reused across every call.
 
 ```json
 {

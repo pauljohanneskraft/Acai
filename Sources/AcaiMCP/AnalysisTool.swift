@@ -14,11 +14,16 @@ protocol AnalysisTool: Sendable {
     /// ever discovers the current name.
     var isDeprecatedAlias: Bool { get }
 
+    /// Whether the tool only reads. All but the Atlas export do, which is what `tools/list`
+    /// advertises through `readOnlyHint`.
+    var isReadOnly: Bool { get }
+
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput
 }
 
 extension AnalysisTool {
     var isDeprecatedAlias: Bool { false }
+    var isReadOnly: Bool { true }
 
     func resolveArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
