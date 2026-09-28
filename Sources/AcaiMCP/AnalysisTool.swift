@@ -21,9 +21,10 @@ extension AnalysisTool {
     func resolveArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
     ) async throws -> CodeArtifact {
-        try await cache.artifact(
+        let languageNames = try LanguageListArgument.languages.values(in: arguments)
+        return try await cache.artifact(
             path: arguments.requiredString("path"),
-            languageNames: arguments.stringArray("languages"),
+            languageNames: languageNames,
             refresh: try arguments.bool("refresh") ?? false)
     }
 
@@ -48,21 +49,16 @@ extension AnalysisTool {
     }
 
     var baseProperties: [String: Value] {
-        [
+        LanguageListArgument.languages.property.merging([
             "path": [
                 "type": "string",
                 "description": "Path to the project root to analyze (absolute or relative)."
-            ],
-            "languages": [
-                "type": "array",
-                "items": ["type": "string"],
-                "description": "Optional language filter (e.g. swift, kotlin, python). Empty means all."
             ],
             "refresh": [
                 "type": "boolean",
                 "description": "Re-analyze instead of reusing the cached snapshot for this path."
             ]
-        ]
+        ]) { $1 }
     }
 
     var selectorProperties: [String: Value] {
@@ -101,9 +97,7 @@ extension AnalysisTool {
         }
     }
 
-    /// Absent facets stay `nil`, so a call with no selector arguments matches every type. An
-    /// unrecognised `kind` or `minAccess` is rejected rather than dropped, which would widen the
-    /// selector to everything.
+    /// Absent facets stay `nil`, so a call with no selector arguments matches every type.
     func selector(from arguments: ToolArguments) throws -> Selector {
         Selector(
             module: arguments.string("module"),

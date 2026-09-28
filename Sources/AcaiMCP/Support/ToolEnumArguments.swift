@@ -38,8 +38,7 @@ enum CycleScope: String, ArgumentOption {
 enum ThemeOption: String, ArgumentOption {
     case light
     case dark
-    /// Deprecated spelling of `light`, kept parseable and left out of the schema so no existing call
-    /// breaks. Remove in the next major release, as the CLI's `--theme` does.
+    /// Deprecated spelling of `light`; remove in the next major release, as the CLI's `--theme` does.
     case `default`
 
     static var advertisedCases: [ThemeOption] { [.light, .dark] }

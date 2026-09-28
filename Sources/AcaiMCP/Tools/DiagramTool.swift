@@ -68,7 +68,7 @@ struct DiagramTool: AnalysisTool {
             let request = SequenceDiagramRequest(
                 entryPoint: try arguments.requiredString("sequenceFrom"),
                 maxDepth: try arguments.int("maxDepth") ?? 5,
-                map: arguments.stringArray("map"))
+                map: try arguments.stringArray("map"))
             return try SequenceDiagramTextExporter(request: request, theme: nil).export(from: artifact)
         case .state:
             let request = StateDiagramRequest(

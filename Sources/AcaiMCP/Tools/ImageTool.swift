@@ -73,7 +73,7 @@ struct ImageTool: AnalysisTool {
                 scale: scale, palette: palette,
                 entryPoint: try arguments.requiredString("sequenceFrom"),
                 maxDepth: try arguments.int("maxDepth") ?? 5,
-                map: arguments.stringArray("map")).render(artifact: artifact)
+                map: try arguments.stringArray("map")).render(artifact: artifact)
         case .state:
             return try await StateImageExporter(
                 scale: scale, palette: palette,

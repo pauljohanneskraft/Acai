@@ -294,12 +294,11 @@ One parse per project path, shared by every tool in the process. This is what ma
 
 ## Language filtering
 
-`languages` accepts, case-insensitively: `swift`, `kotlin`, `java`, `typescript`, `javascript`, `dart`, `python`, `c`, `cpp`.
+`languages` accepts, case-insensitively: `swift`, `kotlin`, `java`, `typescript`, `javascript`, `dart`, `python`, `c`, `cpp`. The schema advertises that list as the array's `items.enum`.
 
-Two behaviours worth knowing:
-
-- **Unknown names are dropped silently** — no error. (The CLI's `--language` rejects them at parse time.)
-- **If every name is unknown**, the filter is empty, which the engine reads as *no restriction* — so `["c++", "golang"]` analyses the whole codebase rather than nothing. Spell them as listed above.
+- **An unknown name is an `invalidParams` error** naming `languages`, the value received and the accepted names, raised before anything is parsed — as the CLI's `--language` rejects it. A typo never falls back to analysing every language.
+- **A value that isn't an array of strings** is rejected the same way.
+- **An empty array** (or omitting the argument) means *no restriction*.
 
 ---
 
