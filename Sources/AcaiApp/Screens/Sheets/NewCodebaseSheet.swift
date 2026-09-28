@@ -101,23 +101,26 @@ struct NewCodebaseSheetContent: View {
                 sheet.account = accountStore.account
                 await sheet.loadRepositories()
             }
-            .confirmationDialog(
-                largeCloneTitle, isPresented: Binding(
-                    get: { sheet.pendingLargeClone != nil }, set: { if !$0 { sheet.pendingLargeClone = nil } }),
-                titleVisibility: .visible, presenting: sheet.pendingLargeClone
-            ) { pending in
-                Button(.app("View.NewCodebaseSheet.CloneLatestSnapshot")) {
-                    clone(pending, depth: .latestSnapshot)
-                }
-                .accessibilityIdentifier("newCodebase.largeClone.latestSnapshotButton")
-                Button(.app("View.NewCodebaseSheet.CloneFullHistory")) {
-                    clone(pending, depth: .full)
-                }
-                .accessibilityIdentifier("newCodebase.largeClone.fullHistoryButton")
-                Button(.app("View.NewCodebaseSheet.Cancel"), role: .cancel) {}
-            } message: { _ in
-                Text(.app("View.NewCodebaseSheet.LargeCloneMessage"))
+        }
+        // On the stack rather than on the `Form`: the Form hosts the repository and ref menus, and a
+        // dialog asked for while one of them is still dismissing is dropped — leaving the binding
+        // true, so no later tap can present it either and Clone stays dead for good.
+        .confirmationDialog(
+            largeCloneTitle, isPresented: Binding(
+                get: { sheet.pendingLargeClone != nil }, set: { if !$0 { sheet.pendingLargeClone = nil } }),
+            titleVisibility: .visible, presenting: sheet.pendingLargeClone
+        ) { pending in
+            Button(.app("View.NewCodebaseSheet.CloneLatestSnapshot")) {
+                clone(pending, depth: .latestSnapshot)
             }
+            .accessibilityIdentifier("newCodebase.largeClone.latestSnapshotButton")
+            Button(.app("View.NewCodebaseSheet.CloneFullHistory")) {
+                clone(pending, depth: .full)
+            }
+            .accessibilityIdentifier("newCodebase.largeClone.fullHistoryButton")
+            Button(.app("View.NewCodebaseSheet.Cancel"), role: .cancel) {}
+        } message: { _ in
+            Text(.app("View.NewCodebaseSheet.LargeCloneMessage"))
         }
     }
 
