@@ -1,21 +1,18 @@
 import XCTest
 
-/// `acai://` links open what they name, and a link to something that no longer exists says so.
+/// A link to something that no longer exists says so.
+///
+/// Only the failing half is here: `openLink` relaunches the app on iOS, and four launches put this
+/// over its execution allowance on a cold iPad. What the other launches proved is covered without
+/// them — which address maps to which destination by `AppAddressTests`, and that a live link really
+/// opens its destination by `ScreenCatalogTests`, which reaches the seeded freeform diagram through
+/// `acai://diagram/…` rather than by tapping.
 @MainActor
 final class AppAddressJourneyTests: UIJourneyTestCase {
-    private let freeformDiagramID = "33333333-3333-3333-3333-333333333333"
 
-    /// One launch: opening a link never leaves state behind that the next one has to start clean of,
-    /// and the deleted-diagram alert is dismissed before the run ends.
-    func testALinkOpensWhatItNamesAndSaysSoWhenItIsGone() {
+    func testALinkToADeletedDiagramSaysSo() {
         let browser = launchSeeded()
         browser.newProjectButton.waitOrFail("the project browser")
-
-        browser.openLink("acai://codebase/\(seeded.codebaseID)")
-        CodebaseDetailScreen(app: app).reindexButton.waitOrFail("the linked codebase's screen")
-
-        browser.openLink("acai://diagram/\(freeformDiagramID)")
-        FreeformDiagramScreen(app: app).openedIndicator.waitOrFail("the linked freeform diagram")
 
         browser.openLink("acai://diagram/44444444-4444-4444-4444-444444444444")
 
