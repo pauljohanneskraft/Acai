@@ -52,11 +52,11 @@ struct HotspotViewModelTests {
         await vm.load(codebase: codebase, gitRepositoriesDir: try makeTempDirectory("hub"))
 
         #expect(!vm.hasGitHistory)
-        #expect(vm.chartData == nil)
+        #expect(vm.hotspots == nil)
         #expect(vm.loadError == nil)
     }
 
-    @Test func realGitFolderPopulatesChartData() async throws {
+    @Test func realGitFolderPopulatesHotspots() async throws {
         let dir = try makeTempDirectory("repo")
         defer { try? FileManager.default.removeItem(at: dir) }
         try git(["init", "-q", "--initial-branch=main"], in: dir)
@@ -75,8 +75,8 @@ struct HotspotViewModelTests {
 
         #expect(vm.hasGitHistory)
         #expect(vm.loadError == nil)
-        let data = try #require(vm.chartData)
-        #expect(!data.points.isEmpty)
+        let hotspots = try #require(vm.hotspots)
+        #expect(!hotspots.files.isEmpty)
     }
 
     @Test func aShallowCloneSaysHistoryIsNotFetchedInsteadOfChartingOneCommit() async throws {
@@ -97,7 +97,7 @@ struct HotspotViewModelTests {
         await vm.load(codebase: codebase, gitRepositoriesDir: hubStore)
 
         #expect(vm.isHistoryNotFetched)
-        #expect(vm.chartData == nil)
+        #expect(vm.hotspots == nil)
         #expect(vm.loadError == nil)
     }
 }

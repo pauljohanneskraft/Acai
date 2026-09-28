@@ -1,6 +1,7 @@
 import Charts
 import SwiftUI
 import AcaiCore
+import AcaiQuality
 
 /// Read-only analysis view: churn (commits touching a file) × complexity
 /// (`CodeMetrics.TypeMetric.maxCyclomaticComplexity`, maxed per file) scatter — the top-right
@@ -99,8 +100,8 @@ struct HotspotChartView: View {
                 systemImage: "questionmark.folder",
                 text: .app("View.HotspotChartView.NoGitHistory")
             )
-        } else if let data = viewModel.chartData, !data.points.isEmpty {
-            chart(data)
+        } else if let hotspots = viewModel.hotspots, !hotspots.files.isEmpty {
+            chart(hotspots)
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityIdentifier("hotspot.chart")
@@ -160,16 +161,16 @@ struct HotspotChartView: View {
         .accessibilityIdentifier(identifier)
     }
 
-    private func chart(_ data: HotspotChartData) -> some View {
+    private func chart(_ hotspots: Hotspots) -> some View {
         Chart {
-            RuleMark(x: .value("Median churn", data.churnThreshold))
+            RuleMark(x: .value("Median churn", hotspots.churnThreshold))
                 .foregroundStyle(.secondary.opacity(0.5))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-            RuleMark(y: .value("Median complexity", data.complexityThreshold))
+            RuleMark(y: .value("Median complexity", hotspots.complexityThreshold))
                 .foregroundStyle(.secondary.opacity(0.5))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-            ForEach(data.points) { point in
-                filePointMark(point)
+            ForEach(hotspots.files) { file in
+                filePointMark(file)
             }
         }
         .chartXAxisLabel { Text(.app("View.HotspotChartView.ChurnAxis")) }
@@ -181,18 +182,18 @@ struct HotspotChartView: View {
 
     /// Split out of `chart`'s `ForEach` body to keep the chained-modifier expression small enough
     /// for the type checker (see `ModuleCouplingChartView.modulePointMark`'s identical rationale).
-    private func filePointMark(_ point: HotspotChartData.Point) -> some ChartContent {
-        let category = point.isHotspot ? "Hotspot" : "Normal"
-        let accessibilityText = "\(point.fileName): churn \(point.churn), complexity \(point.complexity)"
-            + (point.isHotspot ? ", hotspot." : ".")
+    private func filePointMark(_ file: Hotspots.File) -> some ChartContent {
+        let category = file.isHotspot ? "Hotspot" : "Normal"
+        let accessibilityText = "\(file.fileName): churn \(file.churn), complexity \(file.complexity)"
+            + (file.isHotspot ? ", hotspot." : ".")
         return PointMark(
-            x: .value("Churn", point.churn),
-            y: .value("Complexity", point.complexity)
+            x: .value("Churn", file.churn),
+            y: .value("Complexity", file.complexity)
         )
         .symbol(by: .value("Status", category))
         .foregroundStyle(by: .value("Status", category))
-        .symbolSize(point.isHotspot ? 130 : 60)
-        .accessibilityLabel(point.fileName)
+        .symbolSize(file.isHotspot ? 130 : 60)
+        .accessibilityLabel(file.fileName)
         .accessibilityValue(accessibilityText)
     }
 
@@ -200,19 +201,19 @@ struct HotspotChartView: View {
 
     private var legendContent: some View {
         Group {
-            if let data = viewModel.chartData {
-                if data.hotspots.isEmpty {
+            if let hotspots = viewModel.hotspots {
+                if hotspots.ranked.isEmpty {
                     Text(.app("View.HotspotChartView.NoFilesFallHotspot"))
                         .foregroundStyle(.secondary)
                         .padding()
                 } else {
-                    List(data.hotspots) { point in
+                    List(hotspots.ranked) { file in
                         VStack(alignment: .leading, spacing: .spacingXS) {
                             HStack {
                                 Image(systemName: "flame.fill")
-                                Text(verbatim: point.fileName).font(.callout.bold())
+                                Text(verbatim: file.fileName).font(.callout.bold())
                             }
-                            Text(.app("View.HotspotChartView.ChurnComplexity \(point.churn) \(point.complexity)"))
+                            Text(.app("View.HotspotChartView.ChurnComplexity \(file.churn) \(file.complexity)"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

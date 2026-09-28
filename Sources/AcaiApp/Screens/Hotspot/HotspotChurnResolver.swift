@@ -10,14 +10,14 @@ import Foundation
 /// Tries two sources, in order:
 /// 1. `codebase.repository`'s shared `GitRepository` hub clone, when it's actually been cloned —
 ///    this is the common case for a GitHub-sourced codebase.
-/// 2. The codebase's own local folder directly, via `GitRepositoryRoot.find()` — the common case
+/// 2. The codebase's own local folder directly, via `AcaiGit`'s `DirectoryChurn` — the common case
 ///    for a transparently-detected local git folder, which is deliberately never cloned into the
 ///    shared hub, so checking only the hub would silently show "no git history" for the most
 ///    ordinary local-repo case.
 ///
 /// Either source's raw, repository-root-relative paths are then offset back down to the paths
 /// `SourceLocation.filePath` actually uses (codebase-root-relative), so the churn map's keys line up
-/// with `HotspotChartData`'s complexity map.
+/// with the complexity map `Hotspots` joins them against.
 struct HotspotChurnResolver {
     let codebase: Codebase
     let gitRepositoriesDir: URL
@@ -38,36 +38,13 @@ struct HotspotChurnResolver {
         let hub = GitRepository(remoteURL: reference.remoteURL, storeDirectory: gitRepositoriesDir)
         guard hub.isCloned else { return nil }
         let raw = try hub.churnByFile(ref: reference.ref, limit: limit)
-        return offsetting(raw, byRepositoryRelativePrefix: reference.subpath ?? "")
+        return RepositorySubpath(prefix: reference.subpath ?? "").offsetting(raw)
     }
 
     private func localChurnByFile(limit: Int) throws -> [String: Int]? {
         try ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
             .withResolvedURL { url -> [String: Int]? in
-                guard let root = GitRepositoryRoot(directory: url).find() else { return nil }
-                let raw = try GitChurn(directory: root).byFile(ref: codebase.pinnedRevision ?? "HEAD", limit: limit)
-                return offsetting(raw, byRepositoryRelativePrefix: relativePrefix(from: root, to: url))
+                try DirectoryChurn(directory: url).byFile(ref: codebase.pinnedRevision ?? "HEAD", limit: limit)
             }
-    }
-
-    /// The codebase-directory's path relative to the repository `root` it was found under (e.g.
-    /// `"Sub/Package"` for a monorepo subdirectory codebase), or `""` when the codebase directory
-    /// *is* the repository root.
-    private func relativePrefix(from root: URL, to codebaseDirectory: URL) -> String {
-        let rootPath = root.standardizedFileURL.path
-        let codebasePath = codebaseDirectory.standardizedFileURL.path
-        guard codebasePath != rootPath, codebasePath.hasPrefix(rootPath + "/") else { return "" }
-        return String(codebasePath.dropFirst(rootPath.count + 1))
-    }
-
-    /// Strips `prefix` (when non-empty) off every key, dropping entries outside it — turning
-    /// repository-root-relative paths into codebase-root-relative ones.
-    private func offsetting(_ raw: [String: Int], byRepositoryRelativePrefix prefix: String) -> [String: Int] {
-        guard !prefix.isEmpty else { return raw }
-        let normalized = prefix.hasSuffix("/") ? prefix : prefix + "/"
-        return Dictionary(uniqueKeysWithValues: raw.compactMap { key, value -> (String, Int)? in
-            guard key.hasPrefix(normalized) else { return nil }
-            return (String(key.dropFirst(normalized.count)), value)
-        })
     }
 }
