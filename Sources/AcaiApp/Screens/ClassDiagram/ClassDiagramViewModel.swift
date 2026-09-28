@@ -249,6 +249,19 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         return edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID))
     }
 
+    var nodeNamesByID: [String: String] {
+        Dictionary(nodes.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    func edgeAccessibility(for edge: GeneratedDiagramEdge, nodeNames: [String: String]) -> EdgeAccessibility {
+        DiagramElementDescription(
+            classEdge: edge,
+            sourceName: nodeNames[edge.sourceID] ?? edge.sourceID,
+            targetName: nodeNames[edge.targetID] ?? edge.targetID,
+            delta: deltaStatus(for: edge)
+        ).edgeAccessibility(identifier: "diagram.edge.\(edge.sourceID)->\(edge.targetID)")
+    }
+
     /// The delta fill for a type node (added green / removed red / changed amber), or `nil` when
     /// the type is unchanged or the diagram isn't in delta mode.
     func deltaColor(for node: GeneratedDiagramNode) -> Color? {

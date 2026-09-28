@@ -257,7 +257,7 @@ extension ClassDiagramView {
 
     @ViewBuilder private var edgeLayer: some View {
         let edges = viewModel.edges.removingDuplicates(by: \.id)
-        let names = Dictionary(viewModel.nodes.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let names = viewModel.nodeNamesByID
         ForEach(edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
                let targetRect = viewModel.nodeRect(for: edge.targetID) {
@@ -268,12 +268,7 @@ extension ClassDiagramView {
                     sourceLabel: edge.sourceLabel,
                     targetLabel: edge.targetLabel,
                     strokeColor: viewModel.deltaColor(for: edge),
-                    accessibilityDescription: DiagramElementDescription(
-                        classEdge: edge,
-                        sourceName: names[edge.sourceID] ?? edge.sourceID,
-                        targetName: names[edge.targetID] ?? edge.targetID,
-                        delta: viewModel.deltaStatus(for: edge)
-                    ).edgeAccessibility(identifier: "diagram.edge.\(edge.sourceID)->\(edge.targetID)")
+                    accessibilityDescription: viewModel.edgeAccessibility(for: edge, nodeNames: names)
                 )
             }
         }
