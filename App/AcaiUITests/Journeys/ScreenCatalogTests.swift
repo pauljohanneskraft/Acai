@@ -25,11 +25,13 @@ final class ScreenCatalogTests: UIJourneyTestCase {
         codebaseRow.tap("the seeded codebase's row", until: codebaseDetail.queryButton)
         validateScreenshot("CodebaseDetail", state: "indexed")
 
-        // Findings opens from the project screen, which compact width has pushed the codebase over.
+        // Findings lives on the project screen, so the detail slot has to hold it again: compact
+        // width pops the codebase off first, regular width just re-selects the project.
+        let projectRow = browser.projectRow(id: seeded.projectID)
         if SnapshotPlatform().usesCompactLayout {
-            browser.backButton.tap("the navigation back button", until: browser.projectRow(id: seeded.projectID))
-            browser.projectRow(id: seeded.projectID).tap("the seeded project's sidebar row", until: codebaseRow)
+            browser.backButton.tap("the navigation back button", until: projectRow)
         }
+        projectRow.tap("the seeded project's sidebar row", until: codebaseRow)
         detail.openFindings()
         let findings = FindingsScreen(app: app)
         findings.list.waitOrFail("the project's Findings list", timeout: .uiWork)
