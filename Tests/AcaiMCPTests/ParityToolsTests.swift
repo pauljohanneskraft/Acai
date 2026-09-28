@@ -5,7 +5,7 @@ import AcaiLibrary
 @testable import AcaiMCP
 
 /// Covers the tools that brought the MCP to parity with the CLI: diff, callgraph cycles mode, inspect
-/// enums mode, diagram, and (macOS) image.
+/// enums mode, diagram, (macOS) image, and `acai_quality`'s baseline / movement verification.
 @Suite("Parity Tools")
 struct ParityToolsTests {
 
@@ -95,6 +95,108 @@ struct ParityToolsTests {
             }
             #expect(diagram.contains("digraph"))
         }
+    }
+
+    /// A rules file declaring a movement is only meaningful against a baseline, so the tool refuses
+    /// the call rather than passing on a check it never ran — the CLI's `--baseline` refusal.
+    @Test func qualityRejectsMovementsWithoutABaseline() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let rules = try Self.movementRules(in: dir)
+            await #expect(throws: (any Error).self) {
+                _ = try await MCPTestSupport.call(
+                    "acai_quality", on: MCPTestSupport.testRegistry, path: dir, ["rules": .string(rules.path)])
+            }
+        }
+    }
+
+    /// Without a baseline there is no drift to report, and the key stays out of the payload entirely —
+    /// so a caller can tell a plain gate run from a drift run by its presence alone.
+    @Test func qualityWithoutABaselineOmitsDrift() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let value = try await MCPTestSupport.call(
+                "acai_quality", on: MCPTestSupport.testRegistry, path: dir)
+            let object = try #require(value.objectValue)
+            #expect(object["quality"] != nil)
+            #expect(object["drift"] == nil)
+        }
+    }
+
+    /// The verify half of the audit loop: the same tree plus one extra collaborator raises `Service`'s
+    /// `fanOut`, which the movement rule says must not get worse. The violation has to carry the
+    /// before/after numbers in `detail`, so an agent branches on structure rather than on prose.
+    @Test func qualityWithABaselineReportsAMovementInTheWrongDirection() async throws {
+        try await MCPTestSupport.withTempDirectory { baseline in
+            try await MCPTestSupport.withTempDirectory { head in
+                try MCPTestSupport.writeSampleSwiftSource(in: baseline)
+                try MCPTestSupport.writeSampleSwiftSource(in: head)
+                try Self.addCollaborator(to: head)
+                let rules = try Self.movementRules(in: head)
+                let value = try await MCPTestSupport.call(
+                    "acai_quality", on: MCPTestSupport.testRegistry, path: head,
+                    ["rules": .string(rules.path), "baseline": .string(baseline.path)])
+                let object = try #require(value.objectValue)
+                #expect(object["drift"]?.objectValue != nil)
+
+                let violations = try #require(object["quality"]?.objectValue?["violations"]?.arrayValue)
+                let movement = try #require(violations.first {
+                    $0.objectValue?["ruleKind"]?.stringValue == "movement"
+                        && $0.objectValue?["subject"]?.stringValue == "Service"
+                }?.objectValue)
+                let detail = try #require(movement["detail"]?.objectValue)
+                #expect(detail["metric"]?.stringValue == "fanOut")
+                let before = try #require(detail["before"]?.stringValue.flatMap(Double.init))
+                let after = try #require(detail["after"]?.stringValue.flatMap(Double.init))
+                #expect(after > before)
+            }
+        }
+    }
+
+    /// A baseline is resolved exactly like `acai_diff`'s `pathOld`, so a stored `.json` artifact works
+    /// in place of a directory.
+    @Test func qualityAcceptsAJSONArtifactAsTheBaseline() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let artifact = try await AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
+            let baseline = dir.appendingPathComponent("baseline.json")
+            try JSONEncoder().encode(artifact).write(to: baseline)
+            try Self.addCollaborator(to: dir)
+            let rules = try Self.movementRules(in: dir)
+            let value = try await MCPTestSupport.call(
+                "acai_quality", on: MCPTestSupport.testRegistry, path: dir,
+                ["rules": .string(rules.path), "baseline": .string(baseline.path)])
+            let object = try #require(value.objectValue)
+            #expect(object["drift"]?.objectValue != nil)
+            let violations = try #require(object["quality"]?.objectValue?["violations"]?.arrayValue)
+            #expect(violations.contains { $0.objectValue?["ruleKind"]?.stringValue == "movement" })
+        }
+    }
+
+    /// `minImprovement` omitted means "must not get worse", which is what the regression above trips.
+    private static func movementRules(in directory: URL) throws -> URL {
+        let url = directory.appendingPathComponent("quality.yml")
+        try """
+        movements:
+          - target: { typeGlob: "Service" }
+            metric: fanOut
+        """.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
+    /// Gives `Service` a second collaborator, raising its `fanOut` by one.
+    private static func addCollaborator(to directory: URL) throws {
+        try """
+        class Logger {
+            func log() {}
+        }
+
+        extension Service {
+            func trace(logger: Logger) {
+                logger.log()
+            }
+        }
+        """.write(to: directory.appendingPathComponent("Logger.swift"), atomically: true, encoding: .utf8)
     }
 
     #if os(macOS)

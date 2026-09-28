@@ -30,6 +30,9 @@ the default path for the interactive audit. Call **`acai_analyze <path>` with `h
   nesting, god classes) — each finding carries a `file:line` and a fix hint. Pass a `rules:` path to
   gate a `quality.yml` (forbidden deps, layering, cycles, budgets, stereotype contracts). Set
   `explore: true` (with `scope: modules|types|all`) to also list dependency cycles and never fail.
+  Pass `baseline:` (a source dir or a `.json` artifact, resolved like `acai_diff`'s `pathOld`) to
+  evaluate the rules' `movements` and add the structural `drift` since that snapshot — this is the
+  **verify** step of the loop below.
 - **`acai_inspect`** — enumerate types **and** members filtered by a type selector (`kind`, `module`,
   `minMembers`, `stereotype`, …) plus member facets (`memberKind`, `minParameters`, `publicVars`,
   `overrides`). The highest-leverage lookup: "which public classes have a 4+-parameter method?" Set
@@ -57,7 +60,8 @@ file-shaped:
 1. **Gate quality in CI** — `acai quality --source . --rules quality.yml` **fails the build**
    (non-zero exit); the MCP's `acai_quality` only returns a verdict. Omit `--rules` to gate on the
    built-in smell budgets. Gate module cycles as a hard invariant. Also `acai diff --format json` /
-   `acai quality --baseline <name>` in a CI step to fail on adverse drift.
+   `acai quality --baseline <name>` in a CI step to fail on adverse drift — `--baseline` additionally
+   resolves a stored analysis *name*, which `acai_quality`'s `baseline` does not.
 2. **Author rules** — `acai rules` generates a candidate `quality.yml` seeded from the current
    worst-case metrics (no MCP tool).
 3. **One-shot file audit** — `Scripts/audit.sh [SOURCE_DIR] [OUTPUT_DIR] [RULES_YAML]` analyzes once
@@ -72,6 +76,25 @@ file-shaped:
 Capture a baseline → read the *specific* files the tool flags → make a bounded fix → re-run the
 audit and assert the metric moved the right way (and no new cycles / budget breaches). Cross-check
 metric outliers against the diagrams before acting.
+
+**Verify deterministically, don't eyeball two reports.** Before editing, snapshot the tree the
+baseline side can be read from: `acai store` on the CLI, or copy the `.json` an `acai analyze
+--format json` run wrote. Then state the movement you intend in the rules file and let the tool
+judge it:
+
+```yaml
+movements:
+  - target: { typeGlob: "Service" }
+    metric: fanOut
+    minImprovement: 2
+```
+
+After the fix, call `acai_quality` with `rules:` and `baseline:` set to that snapshot. A movement
+that fell short — or an outright regression, including a *hidden* one on another metric of the same
+target — comes back in `quality.violations` with `ruleKind: "movement"` and a `detail` of
+`metric` / `before` / `after`, so you branch on structured fields rather than on prose. `drift`
+alongside it says what the change altered structurally. `acai_quality` declaring a movement with no
+`baseline` is an error, not a silent pass.
 
 ## Interpretation cautions
 

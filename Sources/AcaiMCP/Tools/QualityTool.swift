@@ -12,7 +12,9 @@ struct QualityTool: AnalysisTool {
         cycles, layering, metric budgets, stereotype contracts, and the curated code smells (long \
         parameter lists, data classes, low cohesion, feature envy, god classes). Returns each \
         violation's file:line and a fix hint — a code-quality fitness function. Omit 'rules' for the \
-        built-in smell budgets; set 'explore' to rank findings and list cycles without a pass/fail gate.
+        built-in smell budgets; set 'explore' to rank findings and list cycles without a pass/fail \
+        gate; pass 'baseline' to evaluate the rules' expected metric movements and report the drift \
+        since that snapshot — how a refactor is proven to have moved the measurements the right way.
         """
 
     var inputSchema: Value {
@@ -29,6 +31,12 @@ struct QualityTool: AnalysisTool {
                 "type": "string",
                 "enum": ["modules", "types", "all"],
                 "description": "Cycle scope listed in explore mode: modules, types, or all (default)."
+            ],
+            "baseline": [
+                "type": "string",
+                "description": "Snapshot to compare against — a source directory or a .json artifact,"
+                    + " resolved like acai_diff's pathOld. Evaluates the rules' 'movements' and adds the"
+                    + " structural drift since it. Required when the rules declare any movement."
             ]
         ])
     }
@@ -36,22 +44,48 @@ struct QualityTool: AnalysisTool {
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
         let ruleSet = try loadRules(arguments)
+        let baseline = try await baselineArtifact(arguments, cache, rules: ruleSet)
         var report = QualityEvaluator(
             rules: ruleSet,
             languageResolver: artifact.standardLanguageResolver
-        ).evaluate(artifact)
+        ).evaluate(artifact, baseline: baseline)
 
         let explore = try arguments.bool("explore") ?? false
         if explore, ruleSet.cycles == nil {
             report.violations += cycleFindings(artifact, scope: arguments.string("scope") ?? "all")
         }
-        let payload = Payload(quality: report, health: HealthCheck(artifact: artifact).summary)
+        let payload = Payload(
+            quality: report,
+            drift: baseline.map { ArtifactDiffer().diff(old: $0, new: artifact) },
+            health: HealthCheck(artifact: artifact).summary)
         return .json(try Value(payload))
     }
 
+    /// `drift` is omitted entirely from the JSON when no `baseline` was given, so a caller can tell a
+    /// gate run from a drift run by the key's presence — the shape `acai quality --format json` emits.
     private struct Payload: Codable {
         var quality: QualityReport
+        var drift: ArtifactDiff?
         var health: HealthCheck.Summary
+    }
+
+    /// Mirrors the CLI's refusal to silently skip declared movements: without a baseline there is
+    /// nothing to measure them against, so the rules file would pass on a check it never ran.
+    private func baselineArtifact(
+        _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache, rules: QualityRules
+    ) async throws -> CodeArtifact? {
+        guard let path = arguments.string("baseline") else {
+            guard rules.movements.isEmpty else {
+                throw MCPError.invalidParams(
+                    "The rules file declares \(rules.movements.count) movement rule(s), which require"
+                    + " 'baseline' to evaluate.")
+            }
+            return nil
+        }
+        return try await cache.artifact(
+            path: path,
+            languageNames: arguments.stringArray("languages"),
+            refresh: try arguments.bool("refresh") ?? false)
     }
 
     /// Decodes the YAML directly since the CLI's `.load` helper is AcaiCLI-internal.
