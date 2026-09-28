@@ -12,22 +12,24 @@ struct DiffTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        [
+        var properties = LanguageListArgument.diffLanguages.property.merging([
+            "pathOld": [
+                "type": "string",
+                "description": "Old side: a source directory to analyze, or a .json artifact baseline."
+            ],
+            "pathNew": [
+                "type": "string",
+                "description": "New side: a source directory to analyze, or a .json artifact baseline."
+            ],
+            "refresh": [
+                "type": "boolean",
+                "description": "Re-analyze instead of reusing a cached snapshot for either side."
+            ]
+        ]) { $1 }
+        properties.merge(generatedScopeProperty) { $1 }
+        return [
             "type": "object",
-            "properties": .object(LanguageListArgument.diffLanguages.property.merging([
-                "pathOld": [
-                    "type": "string",
-                    "description": "Old side: a source directory to analyze, or a .json artifact baseline."
-                ],
-                "pathNew": [
-                    "type": "string",
-                    "description": "New side: a source directory to analyze, or a .json artifact baseline."
-                ],
-                "refresh": [
-                    "type": "boolean",
-                    "description": "Re-analyze instead of reusing a cached snapshot for either side."
-                ]
-            ]) { $1 }),
+            "properties": .object(properties),
             "required": ["pathOld", "pathNew"]
         ]
     }
@@ -35,10 +37,12 @@ struct DiffTool: AnalysisTool {
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let languages = try LanguageListArgument.diffLanguages.values(in: arguments)
         let refresh = try arguments.bool("refresh") ?? false
-        let old = try await cache.artifact(
-            path: try arguments.requiredString("pathOld"), languageNames: languages, refresh: refresh)
-        let new = try await cache.artifact(
-            path: try arguments.requiredString("pathNew"), languageNames: languages, refresh: refresh)
+        let oldPath = try arguments.requiredString("pathOld")
+        let newPath = try arguments.requiredString("pathNew")
+        let old = try generatedScoped(
+            await cache.artifact(path: oldPath, languageNames: languages, refresh: refresh), arguments)
+        let new = try generatedScoped(
+            await cache.artifact(path: newPath, languageNames: languages, refresh: refresh), arguments)
         let diff = ArtifactDiffer().diff(old: old, new: new)
         let health = HealthCheck(artifact: old).summary.combined(with: HealthCheck(artifact: new).summary)
         return .json(try Value(Payload(diff: diff, health: health)))
