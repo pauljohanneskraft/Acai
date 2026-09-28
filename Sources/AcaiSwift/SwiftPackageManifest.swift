@@ -19,9 +19,12 @@ struct SwiftPackageManifest {
             /// declares no `path`.
             var defaultDirectories: [String] {
                 switch self {
-                case .regular: ["Sources", "Source", "src", "srcs"]
-                case .test: ["Tests", "Sources", "Source", "src", "srcs"]
-                case .plugin: ["Plugins"]
+                case .regular:
+                    ["Sources", "Source", "src", "srcs"]
+                case .test:
+                    ["Tests", "Sources", "Source", "src", "srcs"]
+                case .plugin:
+                    ["Plugins"]
                 }
             }
         }
@@ -92,10 +95,14 @@ struct SwiftPackageManifest {
 extension SwiftPackageManifest.Target.Kind {
     init?(targetFactory name: String) {
         switch name {
-        case "target", "executableTarget", "macro": self = .regular
-        case "testTarget": self = .test
-        case "plugin": self = .plugin
-        default: return nil
+        case "target", "executableTarget", "macro":
+            self = .regular
+        case "testTarget":
+            self = .test
+        case "plugin":
+            self = .plugin
+        default:
+            return nil
         }
     }
 }
