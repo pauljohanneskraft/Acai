@@ -135,6 +135,7 @@ struct DiffCommandTests {
             let contents = try await diffJSON(
                 ["--source-old", before.path, "--source-new", after.path, "--language", "dart"], in: dir)
             #expect(!contents.contains("ExtraAdapter"))
+            #expect(!contents.contains("ModelAdapter"))
         }
     }
 
@@ -145,17 +146,6 @@ struct DiffCommandTests {
                 ["--source-old", before.path, "--source-new", after.path,
                  "--language", "dart", "--include-generated"], in: dir)
             #expect(contents.contains("ExtraAdapter"))
-        }
-    }
-
-    /// The filter runs on both sides, so a type generated on *both* revisions is never reported as
-    /// removed (old side filtered, new side not) or added.
-    @Test func filteringNeverAddsOrRemovesATypeByItself() async throws {
-        try await CLITestSupport.withTempDirectory { dir in
-            let (before, after) = try writeDartSides(in: dir, generatedTypeAddedInNew: "ExtraAdapter")
-            let contents = try await diffJSON(
-                ["--source-old", before.path, "--source-new", after.path, "--language", "dart"], in: dir)
-            #expect(!contents.contains("ModelAdapter"))
         }
     }
 

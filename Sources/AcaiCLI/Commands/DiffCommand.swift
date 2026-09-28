@@ -118,8 +118,6 @@ extension AcaiCommand {
             try rendered.writeOutput(to: output, label: "diff")
         }
 
-        /// Both sides go through the same generated-scope filter, so a generated type is never
-        /// reported as added or removed by the filtering itself.
         private func resolvedArtifact(ref: String?, source: String?) async throws -> CodeArtifact {
             let artifact = try await ArtifactSource.resolve(from: ref, source: source, language: language)
             return generatedScope.applied(to: artifact)

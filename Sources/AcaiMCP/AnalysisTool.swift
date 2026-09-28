@@ -27,9 +27,7 @@ extension AnalysisTool {
             refresh: try arguments.bool("refresh") ?? false)
     }
 
-    /// Drops each language's generated types unless the call passes `includeGenerated: true`, matching
-    /// the CLI's `--include-generated`. (`QualityTool` filters via its rules' `includeGeneratedTypes`
-    /// instead, so it uses `resolveArtifact` directly rather than this.)
+    /// `QualityTool` filters via its rules' `includeGeneratedTypes`, so it uses `resolveArtifact` instead.
     func analysisArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
     ) async throws -> CodeArtifact {
@@ -37,8 +35,7 @@ extension AnalysisTool {
         return try generatedScoped(artifact, arguments)
     }
 
-    /// The `includeGenerated` semantic on an already-resolved artifact, so a tool loading more than
-    /// one side (`DiffTool`) filters each of them identically.
+    /// Drops generated types unless the call passes `includeGenerated: true`, like `--include-generated`.
     func generatedScoped(_ artifact: CodeArtifact, _ arguments: ToolArguments) throws -> CodeArtifact {
         let include = try arguments.bool("includeGenerated") ?? false
         return include ? artifact : artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)

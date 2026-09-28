@@ -479,7 +479,7 @@ Each side is a positional stored-analysis name or `.json` path, **or** a directo
 | `--format` | `human` (default), `json` |
 | `--diagram` | `dot` or `mermaid` — render a colour-coded delta diagram instead of a report. |
 | `--sequence-from`, `--state-from`, `--package`, `--call-graph`, `--call-graph-scope` | Pick the diagram family for `--diagram`. |
-| `--include-generated` | Applied to **both** sides before diffing, so a generated type is never reported as added or removed by the filtering itself. |
+| `--include-generated` | Include machine-generated types in the analysis (default: they are excluded). Applied to **both** sides before diffing, so a generated type is never reported as added or removed by the filtering itself. |
 
 ```sh
 acai diff main-baseline --source-new ./                    # drift since a baseline
