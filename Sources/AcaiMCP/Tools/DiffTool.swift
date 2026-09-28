@@ -12,7 +12,7 @@ struct DiffTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        var properties: [String: Value] = [
+        var properties = LanguageListArgument.diffLanguages.property.merging([
             "pathOld": [
                 "type": "string",
                 "description": "Old side: a source directory to analyze, or a .json artifact baseline."
@@ -21,15 +21,11 @@ struct DiffTool: AnalysisTool {
                 "type": "string",
                 "description": "New side: a source directory to analyze, or a .json artifact baseline."
             ],
-            "languages": [
-                "type": "array", "items": ["type": "string"],
-                "description": "Optional language filter for directory sides. Empty means all."
-            ],
             "refresh": [
                 "type": "boolean",
                 "description": "Re-analyze instead of reusing a cached snapshot for either side."
             ]
-        ]
+        ]) { $1 }
         properties.merge(generatedScopeProperty) { $1 }
         return [
             "type": "object",
@@ -39,7 +35,7 @@ struct DiffTool: AnalysisTool {
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let languages = arguments.stringArray("languages")
+        let languages = try LanguageListArgument.diffLanguages.values(in: arguments)
         let refresh = try arguments.bool("refresh") ?? false
         let oldPath = try arguments.requiredString("pathOld")
         let newPath = try arguments.requiredString("pathNew")
