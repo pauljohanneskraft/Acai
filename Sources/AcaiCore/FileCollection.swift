@@ -8,6 +8,11 @@ extension FileManager {
         excludingDirectories excludedDirectories: Set<String> = AcaiConstants.standard.defaultExcludedSourceDirectories
     ) -> [URL] {
         var result: [URL] = []
+        // A build manifest may name an individual file where a directory is expected (SwiftPM's
+        // `sources:`), and an enumerator over a regular file yields nothing.
+        if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
+            return extensions.contains(directory.pathExtension.lowercased()) ? [directory] : []
+        }
         guard let enumerator = enumerator(
             at: directory,
             includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey, .nameKey],
