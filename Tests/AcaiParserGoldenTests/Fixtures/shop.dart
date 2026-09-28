@@ -10,7 +10,12 @@ mixin Auditable {
   void audit(String message) {}
 }
 
+class Sink {
+  void write(String message) {}
+}
+
 class Logger {
+  final Sink sink = Sink();
   void log(String message) {}
 }
 
@@ -38,6 +43,8 @@ class Product extends Item with Auditable {
   @override
   double price() {
     _audit.log('pricing');
+    _audit.sink.write('pricing');
+    this._audit.log('via this');
     return base - discount;
   }
 

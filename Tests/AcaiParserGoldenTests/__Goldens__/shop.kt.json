@@ -13,7 +13,7 @@
           "location" : {
             "column" : 99,
             "filePath" : "shop.kt",
-            "line" : 60
+            "line" : 66
           },
           "methodName" : "price",
           "receiver" : {
@@ -35,7 +35,7 @@
       "location" : {
         "column" : 1,
         "filePath" : "shop.kt",
-        "line" : 60
+        "line" : 66
       },
       "modifiers" : [
 
@@ -99,7 +99,7 @@
       "location" : {
         "column" : 1,
         "filePath" : "shop.kt",
-        "line" : 62
+        "line" : 68
       },
       "modifiers" : [
         "readonly"
@@ -919,6 +919,22 @@
                   "_0" : "Logger"
                 }
               }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "filePath" : "shop.kt",
+                "line" : 35
+              },
+              "methodName" : "write",
+              "receiver" : {
+                "propertyChain" : {
+                  "headTypeName" : "Logger",
+                  "hops" : [
+                    "sink"
+                  ]
+                }
+              }
             }
           ],
           "cyclomaticComplexity" : 1,
@@ -933,9 +949,17 @@
             },
             {
               "location" : {
-                "column" : 31,
+                "column" : 17,
                 "filePath" : "shop.kt",
                 "line" : 35
+              },
+              "name" : "audit"
+            },
+            {
+              "location" : {
+                "column" : 31,
+                "filePath" : "shop.kt",
+                "line" : 36
               },
               "name" : "base"
             },
@@ -943,7 +967,7 @@
               "location" : {
                 "column" : 45,
                 "filePath" : "shop.kt",
-                "line" : 35
+                "line" : 36
               },
               "name" : "discount"
             }
@@ -969,7 +993,9 @@
             "audit",
             "base",
             "discount",
-            "log"
+            "log",
+            "sink",
+            "write"
           ],
           "type" : {
             "genericArguments" : [
@@ -993,7 +1019,7 @@
               "location" : {
                 "column" : 53,
                 "filePath" : "shop.kt",
-                "line" : 39
+                "line" : 40
               },
               "methodName" : "price",
               "receiver" : {
@@ -1015,7 +1041,7 @@
           "location" : {
             "column" : 9,
             "filePath" : "shop.kt",
-            "line" : 38
+            "line" : 39
           },
           "modifiers" : [
             "override"
@@ -1050,7 +1076,7 @@
               "location" : {
                 "column" : 25,
                 "filePath" : "shop.kt",
-                "line" : 50
+                "line" : 51
               },
               "op" : "compound",
               "targetName" : "discount",
@@ -1069,7 +1095,7 @@
               "location" : {
                 "column" : 25,
                 "filePath" : "shop.kt",
-                "line" : 50
+                "line" : 51
               },
               "name" : "discount"
             }
@@ -1082,7 +1108,7 @@
           "location" : {
             "column" : 9,
             "filePath" : "shop.kt",
-            "line" : 43
+            "line" : 44
           },
           "modifiers" : [
 
@@ -1370,9 +1396,56 @@
       "location" : {
         "column" : 1,
         "filePath" : "shop.kt",
-        "line" : 56
+        "line" : 57
       },
       "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Sink()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 58
+          },
+          "modifiers" : [
+            "readonly"
+          ],
+          "name" : "sink",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Sink"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Sink"
+          }
+        },
         {
           "accessLevel" : "public",
           "annotations" : [
@@ -1396,7 +1469,7 @@
           "location" : {
             "column" : 9,
             "filePath" : "shop.kt",
-            "line" : 57
+            "line" : 59
           },
           "modifiers" : [
 
@@ -1433,6 +1506,92 @@
 
       ],
       "qualifiedName" : "com.example.shop.Logger"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "com.example.shop.Sink",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.kt",
+        "line" : 62
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "filePath" : "shop.kt",
+            "line" : 63
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "write",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Sink",
+      "namespace" : "com.example.shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "com.example.shop.Sink"
     }
   ]
 }

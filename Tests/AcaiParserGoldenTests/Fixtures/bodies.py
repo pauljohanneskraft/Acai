@@ -3,7 +3,16 @@
 from typing import Optional
 
 
+class Sink:
+
+    def write(self, message: str) -> None:
+        pass
+
+
 class Logger:
+
+    def __init__(self):
+        self.sink = Sink()
 
     def log(self, message: str) -> None:
         pass
@@ -62,6 +71,9 @@ class Service:
 
     def uses_parameter(self, other: Logger) -> None:
         other.log("from parameter")
+
+    def uses_property_chain(self, other: Logger) -> None:
+        other.sink.write("chained")
 
     def uses_local_from_construction(self) -> None:
         local = Cache()
