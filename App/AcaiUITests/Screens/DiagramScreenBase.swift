@@ -145,8 +145,18 @@ class DiagramScreenBase {
         tapToolbarButton(identifier: "diagram.fitToViewButton", label: "Fit to View", file: file, line: line)
     }
 
+    /// The sidebar is open once either tab's content is in the tree, whichever it was last on.
+    private var anySidebarContent: XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["diagram.sidebarContent.settings", "diagram.sidebarContent.inspector"]
+        )).firstMatch
+    }
+
     func tapSidebarToggle(file: StaticString = #filePath, line: UInt = #line) {
-        tapToolbarButton(identifier: "diagram.sidebarToggleButton", label: "Sidebar", file: file, line: line)
+        tapToolbarButton(
+            identifier: "diagram.sidebarToggleButton", label: "Sidebar", until: anySidebarContent,
+            file: file, line: line
+        )
     }
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)
