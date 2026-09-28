@@ -28,9 +28,18 @@ struct OptionParsingTests {
     }
 
     @Test func themeOptionParsesAllCases() {
-        #expect(ThemeOption(argument: "default") != nil)
-        #expect(ThemeOption(argument: "dark") != nil)
+        #expect(ThemeOption(argument: "light") == .light)
+        #expect(ThemeOption(argument: "dark") == .dark)
         #expect(ThemeOption(argument: "solarized") == nil)
+    }
+
+    @Test func deprecatedDefaultThemeMapsToLightAndIsHiddenFromHelp() {
+        #expect(ThemeOption(argument: "default") == .default)
+        #expect(
+            ThemeOption.default.diagramTheme.backgroundColor
+                == ThemeOption.light.diagramTheme.backgroundColor)
+        #expect(ThemeOption.light.diagramTheme.backgroundColor != ThemeOption.dark.diagramTheme.backgroundColor)
+        #expect(ThemeOption.allValueStrings == ["light", "dark"])
     }
 
     @Test func groupByOptionParsesAndMaps() {

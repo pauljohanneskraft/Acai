@@ -33,10 +33,10 @@ extension ClassDiagramOptions {
         switch themeStr.lowercased() {
         case "dark":
             self.theme = .dark
-        case "default":
+        case "light", "default":
             self.theme = .default
         default:
-            "Warning: Unknown theme '\(themeStr)', using default.".writeLineToStandardError()
+            "Warning: Unknown theme '\(themeStr)', using light.".writeLineToStandardError()
         }
     }
 

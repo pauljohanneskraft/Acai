@@ -12,7 +12,7 @@ struct ToolRegistryTests {
     private var expectedNames: [String] {
         var names = [
             "acai_analyze", "acai_callgraph", "acai_diagram", "acai_diff",
-            "acai_impact", "acai_inspect", "acai_metrics", "acai_quality"
+            "acai_dependents", "acai_inspect", "acai_metrics", "acai_quality"
         ]
         #if os(macOS)
         names.append("acai_image")
@@ -51,12 +51,12 @@ struct ToolRegistryTests {
     }
 
     @Test func missingRequiredArgumentIsInvalidParams() async throws {
-        // `acai_impact` requires `type`; omitting it must be rejected before any analysis runs.
+        // `acai_dependents` requires `type`; omitting it must be rejected before any analysis runs.
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             await #expect(throws: MCPError.self) {
                 _ = try await MCPTestSupport.testRegistry.call(
-                    name: "acai_impact", arguments: ["path": .string(dir.path)])
+                    name: "acai_dependents", arguments: ["path": .string(dir.path)])
             }
         }
     }
@@ -102,6 +102,22 @@ struct ToolRegistryTests {
             } else {
                 Issue.record("expected text content")
             }
+        }
+    }
+
+    /// `acai_impact` is the superseded name: still dispatchable so an existing agent configuration
+    /// keeps working, but absent from `tools/list` so nothing discovers it afresh.
+    @Test func deprecatedAliasIsCallableButUnlisted() async throws {
+        #expect(!ToolRegistry.standard.descriptors.map(\.name).contains("acai_impact"))
+        #expect(ToolRegistry.standard.tools.map(\.name).contains("acai_impact"))
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let result = try await MCPTestSupport.testRegistry.call(
+                name: "acai_impact",
+                arguments: ["path": .string(dir.path), "type": .string("Repository")])
+            let structured = try #require(result.structuredContent?.objectValue)
+            #expect(structured["impact"] != nil)
+            #expect(structured["health"] != nil)
         }
     }
 }

@@ -22,6 +22,7 @@ struct ToolRegistry: Sendable {
             QualityTool(),
             CallGraphTool(),
             InspectTool(),
+            DependentsTool(),
             ImpactTool(),
             DiffTool(),
             DiagramTool()
@@ -32,8 +33,9 @@ struct ToolRegistry: Sendable {
         return ToolRegistry(tools: tools)
     }
 
+    /// Deprecated aliases stay dispatchable through `call` but never appear here.
     var descriptors: [Tool] {
-        tools.map { tool in
+        tools.filter { !$0.isDeprecatedAlias }.map { tool in
             Tool(
                 name: tool.name,
                 description: tool.description,

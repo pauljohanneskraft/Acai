@@ -3,7 +3,7 @@ import AcaiCore
 import AcaiLibrary
 
 extension AcaiCommand {
-    struct Impact: AsyncParsableCommand {
+    struct Dependents: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Show the transitive dependents (blast radius) of a type"
         )
@@ -34,12 +34,12 @@ extension AcaiCommand {
             let rendered: String
             switch format {
             case .json:
-                let payload = ImpactPayload(impact: report, health: HealthCheck(artifact: artifact).summary)
+                let payload = DependentsPayload(impact: report, health: HealthCheck(artifact: artifact).summary)
                 rendered = try JSONReport(payload).text
             case .human:
                 rendered = humanReport(report)
             }
-            try rendered.writeOutput(to: output, label: "impact")
+            try rendered.writeOutput(to: output, label: "dependents")
         }
 
         private func humanReport(_ report: ImpactAnalysis.Report) -> String {
@@ -51,11 +51,32 @@ extension AcaiCommand {
             return lines.joined(separator: "\n") + "\n"
         }
     }
+
+    /// Deprecated alias for `dependents`, hidden from `--help` so no existing script breaks. Remove in
+    /// the next major release.
+    struct Impact: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "impact",
+            abstract: "Deprecated alias for `dependents`.",
+            shouldDisplay: false
+        )
+
+        @OptionGroup var dependents: Dependents
+
+        mutating func validate() throws {
+            try dependents.validate()
+        }
+
+        mutating func run() async throws {
+            try await dependents.run()
+        }
+    }
 }
 
-/// `health` lets a consumer of `acai impact --format json` tell whether the blast radius rests on a
-/// trustworthy parse without a separate `acai analyze --health` round trip.
-private struct ImpactPayload: Encodable {
+/// `health` lets a consumer of `acai dependents --format json` tell whether the blast radius rests on a
+/// trustworthy parse without a separate `acai analyze --health` round trip. The `impact` key is the
+/// published output shape, so it outlives the command's old name.
+private struct DependentsPayload: Encodable {
     var impact: ImpactAnalysis.Report
     var health: HealthCheck.Summary
 }

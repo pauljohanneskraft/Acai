@@ -42,8 +42,8 @@ extension AcaiCommand {
         @Option(name: .long, help: "Output resolution scale factor.")
         var scale: Double = 2
 
-        @Option(name: .long, help: "Colour theme for the rendered image: default (light) or dark.")
-        var theme: ThemeOption = .default
+        @Option(name: .long, help: "Colour theme for the rendered image: light or dark.")
+        var theme: ThemeOption = .light
 
         private var palette: DiagramPalette {
             theme == .dark ? .dark : .light

@@ -13,7 +13,7 @@ struct AcaiCommand: AsyncParsableCommand {
     private static var subcommandList: [any ParsableCommand.Type] {
         var commands: [any ParsableCommand.Type] = [
             Analyze.self, Store.self, List.self, Diagram.self, Metrics.self, Diff.self,
-            Quality.self, Rules.self, Inspect.self, CallGraph.self, Impact.self
+            Quality.self, Rules.self, Inspect.self, CallGraph.self, Dependents.self, Impact.self
         ]
         // `image` renders via SwiftUI's ImageRenderer (AcaiRender), linked into the CLI on macOS only.
         #if os(macOS)
