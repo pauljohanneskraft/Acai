@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// ⌘K for Quick Open — matches Xcode/every other developer tool's convention.
+/// Quick Open's `KeyboardShortcutReference.quickOpen` — ⌘K on the Mac, ⇧⌘O on iPad.
 ///
 /// The Mac keeps the item in the Edit menu, acting on the key window's presenter. iPad puts it
 /// beside the Help items, on the one scene's presenter, mirroring `KeyboardShortcutCommands` —

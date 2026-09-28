@@ -77,9 +77,16 @@ extension KeyboardShortcutReference {
     static let cancelDialog = KeyboardShortcutReference(
         id: "cancelDialog", shortcut: .cancelAction,
         name: .app("KeyboardShortcutReference.CancelDialog"))
+    #if os(macOS)
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
         name: .app("KeyboardShortcutReference.QuickOpen"))
+    #else
+    // ⇧⌘O is Xcode's Open Quickly; ⌘K never reached the app from an iPad hardware keyboard.
+    static let quickOpen = KeyboardShortcutReference(
+        id: "quickOpen", shortcut: KeyboardShortcut("o", modifiers: [.command, .shift]),
+        name: .app("KeyboardShortcutReference.QuickOpen"))
+    #endif
     static let openInNewWindow = KeyboardShortcutReference(
         id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),
         name: .app("KeyboardShortcutReference.OpenInNewWindow"))

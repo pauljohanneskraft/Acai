@@ -39,7 +39,11 @@ struct KeyboardShortcutReferenceTests {
         #expect(KeyboardShortcutReference.cancelDialog.symbol == "⎋")
         #expect(KeyboardShortcutReference.confirmDialog.symbol == "↩")
         #expect(KeyboardShortcutReference.keyboardShortcuts.symbol == "⌘/")
+        #if os(macOS)
         #expect(KeyboardShortcutReference.quickOpen.symbol == "⌘K")
+        #else
+        #expect(KeyboardShortcutReference.quickOpen.symbol == "⇧⌘O")
+        #endif
     }
 
     /// A shortcut bound only in a menu command that is attached on macOS alone is silently missing from
