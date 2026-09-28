@@ -21167,6 +21167,28 @@
         }
       }
     },
+    "View.QuickOpenCommands.Navigation" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation"
+          }
+        }
+      }
+    },
     "View.QuickOpenCommands.QuickOpen" : {
       "localizations" : {
         "de" : {

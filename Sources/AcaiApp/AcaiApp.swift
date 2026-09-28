@@ -13,6 +13,10 @@ public struct AcaiRootScene: Scene {
     @StateObject private var settingsPresenter = SettingsPresenter()
     @StateObject private var keyboardShortcutsPresenter = KeyboardShortcutsPresenter()
     @StateObject private var browserWindows = BrowserWindows()
+    #if !os(macOS)
+    // The one scene's Quick Open — see `QuickOpenPresenter` for why macOS's is per window instead.
+    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
+    #endif
 
     public init() {}
 
@@ -31,12 +35,12 @@ public struct AcaiRootScene: Scene {
         }
         // A shortcut bound only in a macOS-only command is silently missing from an iPad's hardware
         // keyboard. `KeyboardShortcutReferenceTests` rejects that unless the shortcut's group is
-        // `isMacOSOnly` (`BrowserWindowCommands`) or a view binds it too (`QuickOpenCommands`).
+        // `isMacOSOnly`, which is why only `BrowserWindowCommands` is attached on macOS alone.
         .commands {
             DiagramThemeCommands()
             KeyboardShortcutCommands()
-            #if os(macOS)
             QuickOpenCommands()
+            #if os(macOS)
             BrowserWindowCommands()
             #endif
         }
@@ -49,6 +53,9 @@ public struct AcaiRootScene: Scene {
         .environmentObject(settingsPresenter)
         .environmentObject(keyboardShortcutsPresenter)
         .environmentObject(browserWindows)
+        #if !os(macOS)
+        .environmentObject(quickOpenPresenter)
+        #endif
         #if os(macOS)
         WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
             ProjectBrowserView(store: projectStore, windowAddress: $address)
