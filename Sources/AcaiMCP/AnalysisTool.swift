@@ -66,16 +66,17 @@ extension AnalysisTool {
     }
 
     var selectorProperties: [String: Value] {
-        [
+        var properties: [String: Value] = [
             "module": ["type": "string", "description": "Only types whose module matches this glob (*, ?)."],
             "type": ["type": "string", "description": "Only types whose id / qualified name matches this glob."],
-            "kind": ["type": "string", "description": "Only types of this kind (e.g. class, protocol, struct)."],
-            "minAccess": ["type": "string", "description": "Only types with at least this visibility (e.g. public)."],
             "stereotype": ["type": "string", "description": "Only types carrying this UML stereotype."],
             "annotation": ["type": "string", "description": "Only types carrying this annotation marker."],
             "minMembers": ["type": "integer", "description": "Only types with at least this many members (god types)."],
             "minNesting": ["type": "integer", "description": "Only types nested at least this deep."]
         ]
+        properties.merge(EnumArgument<TypeKind>.kind.property) { $1 }
+        properties.merge(EnumArgument<AccessLevel>.minimumAccess.property) { $1 }
+        return properties
     }
 
     func objectSchema(extraProperties: [String: Value] = [:], required: [String] = ["path"]) -> Value {
@@ -100,15 +101,17 @@ extension AnalysisTool {
         }
     }
 
-    /// Absent facets stay `nil`, so a call with no selector arguments matches every type.
+    /// Absent facets stay `nil`, so a call with no selector arguments matches every type. An
+    /// unrecognised `kind` or `minAccess` is rejected rather than dropped, which would widen the
+    /// selector to everything.
     func selector(from arguments: ToolArguments) throws -> Selector {
         Selector(
             module: arguments.string("module"),
             typeGlob: arguments.string("type"),
             stereotype: arguments.string("stereotype"),
             annotation: arguments.string("annotation"),
-            minimumAccess: arguments.string("minAccess").flatMap(AccessLevel.init(rawValue:)),
-            kind: arguments.string("kind").flatMap(TypeKind.init(rawValue:)),
+            minimumAccess: try EnumArgument<AccessLevel>.minimumAccess.value(in: arguments),
+            kind: try EnumArgument<TypeKind>.kind.value(in: arguments),
             minMembers: try arguments.int("minMembers"),
             minNesting: try arguments.int("minNesting"))
     }

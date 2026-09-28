@@ -16,7 +16,7 @@ struct QualityTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        objectSchema(extraProperties: [
+        var properties: [String: Value] = [
             "rules": [
                 "type": "string",
                 "description": "Path to the YAML rules file. Omit for the built-in curated smell budgets."
@@ -24,16 +24,14 @@ struct QualityTool: AnalysisTool {
             "explore": [
                 "type": "boolean",
                 "description": "Rank findings and additionally list dependency cycles at 'scope' (no gate)."
-            ],
-            "scope": [
-                "type": "string",
-                "enum": ["modules", "types", "all"],
-                "description": "Cycle scope listed in explore mode: modules, types, or all (default)."
             ]
-        ])
+        ]
+        properties.merge(EnumArgument<CycleScope>.scope.property) { $1 }
+        return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
+        let scope = try EnumArgument<CycleScope>.scope.value(in: arguments, or: .all)
         let artifact = try await resolveArtifact(arguments, cache)
         let ruleSet = try loadRules(arguments)
         var report = QualityEvaluator(
@@ -43,7 +41,7 @@ struct QualityTool: AnalysisTool {
 
         let explore = try arguments.bool("explore") ?? false
         if explore, ruleSet.cycles == nil {
-            report.violations += cycleFindings(artifact, scope: arguments.string("scope") ?? "all")
+            report.violations += cycleFindings(artifact, scope: scope)
         }
         let payload = Payload(quality: report, health: HealthCheck(artifact: artifact).summary)
         return .json(try Value(payload))
@@ -66,11 +64,9 @@ struct QualityTool: AnalysisTool {
         }
     }
 
-    private func cycleFindings(_ artifact: CodeArtifact, scope: String) -> [Violation] {
+    private func cycleFindings(_ artifact: CodeArtifact, scope: CycleScope) -> [Violation] {
         let finder = CycleFinder(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
-        let scopes: [CycleFinder.Scope] = scope == "types" ? [.types]
-            : scope == "modules" ? [.modules] : [.modules, .types]
-        return scopes.flatMap { cycleScope in
+        return scope.finderScopes.flatMap { cycleScope in
             finder.cycles(scope: cycleScope).map { cycle in
                 Violation(
                     ruleKind: "cycle",

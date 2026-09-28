@@ -14,7 +14,7 @@ struct InspectTool: AnalysisTool {
 
     var inputSchema: Value {
         var properties = selectorProperties
-        properties["memberKind"] = ["type": "string", "description": "Only members of this kind (method, property, …)."]
+        properties.merge(EnumArgument<MemberKind>.memberKind.property) { $1 }
         properties["minParameters"] = ["type": "integer", "description": "Only members with at least N parameters."]
         properties["publicVars"] = ["type": "boolean", "description": "Only publicly-settable stored properties."]
         properties["overrides"] = ["type": "boolean", "description": "Only members that override an inherited member."]
@@ -34,7 +34,7 @@ struct InspectTool: AnalysisTool {
             artifact: artifact,
             selector: try selector(from: arguments),
             members: MemberFilter(
-                kind: arguments.string("memberKind").flatMap(MemberKind.init(rawValue:)),
+                kind: try EnumArgument<MemberKind>.memberKind.value(in: arguments),
                 minParameters: try arguments.int("minParameters"),
                 isPublicVar: (try arguments.bool("publicVars") ?? false) ? true : nil,
                 isOverride: (try arguments.bool("overrides") ?? false) ? true : nil),
