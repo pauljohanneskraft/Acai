@@ -24,6 +24,7 @@ struct ParserConformanceChecker {
 
         checkTypeIdentity(artifact.types, into: &violations)
         checkCallSites(flat, declaredSimpleNames: declaredSimpleNames, into: &violations)
+        checkTypeReferenceNames(artifact.types, into: &violations)
         checkRelationshipDedup(artifact.relationships, into: &violations)
         checkIdempotence(artifact, into: &violations)
         checkResolvedEndpoints(artifact.relationships, declaredIDs: declaredIDs, into: &violations)
@@ -78,6 +79,41 @@ struct ParserConformanceChecker {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Invariant 4: TypeReference.name carries a simple name
+
+    /// `inheritedTypes` is deliberately excluded: enrichment (``CodeArtifact/enriched(using:)``)
+    /// rewrites its entries to the canonical (qualified) id of the resolved supertype, which is the
+    /// documented exception to the simple-name contract on ``TypeDeclaration/inheritedTypes``.
+    private func checkTypeReferenceNames(_ types: [TypeDeclaration], into violations: inout [Violation]) {
+        for type in types {
+            for reference in typeReferences(in: type) {
+                checkSimpleName(reference, ownerID: type.id, into: &violations)
+            }
+            checkTypeReferenceNames(type.nestedTypes, into: &violations)
+        }
+    }
+
+    private func typeReferences(in type: TypeDeclaration) -> [TypeReference] {
+        var references = (type.genericParameters + type.associatedTypes).flatMap { $0.constraints.map(\.type) }
+        for member in type.members {
+            references += member.type.map { [$0] } ?? []
+            references += member.parameters.compactMap(\.type)
+            references += member.genericParameters.flatMap { $0.constraints.map(\.type) }
+        }
+        return references
+    }
+
+    private func checkSimpleName(_ reference: TypeReference, ownerID: String, into violations: inout [Violation]) {
+        if reference.name.contains(".") {
+            violations.append(Violation(
+                invariant: 4,
+                detail: "type '\(ownerID)': TypeReference name '\(reference.name)' is not a simple name"))
+        }
+        for argument in reference.genericArguments {
+            checkSimpleName(argument, ownerID: ownerID, into: &violations)
         }
     }
 

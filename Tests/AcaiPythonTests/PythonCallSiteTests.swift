@@ -144,4 +144,46 @@ struct PythonCallSiteTests {
         let sites = callSites(source, method: "boot")
         #expect(sites.isEmpty)
     }
+
+    /// `head.hop.method()` — the head resolves (a typed parameter) but the hop is a property of
+    /// *that* type, unknowable in this file, so it defers to `.propertyChain` for the post-merge
+    /// pass instead of being dropped.
+    @Test func chainedCallOnKnownHeadDefersToPropertyChain() {
+        let source = """
+        class Sink:
+            def write(self, message):
+                pass
+
+        class Logger:
+            def __init__(self):
+                self.sink = Sink()
+
+        class Service:
+            def run(self, logger: Logger):
+                logger.sink.write("x")
+        """
+        let sites = callSites(source, method: "run")
+        #expect(sites.contains {
+            $0.methodName == "write" && $0.receiver == .propertyChain(headTypeName: "Logger", hops: ["sink"])
+        })
+    }
+
+    /// `self.prop.method()` keeps resolving straight to the property's type — a chain off `self` is
+    /// not deferred, since the enclosing type's own properties are in scope.
+    @Test func chainOffSelfResolvesToThePropertyType() {
+        let source = """
+        class Logger:
+            def log(self, message):
+                pass
+
+        class Service:
+            def __init__(self):
+                self.logger = Logger()
+
+            def run(self):
+                self.logger.log("x")
+        """
+        let sites = callSites(source, method: "run")
+        #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
+    }
 }

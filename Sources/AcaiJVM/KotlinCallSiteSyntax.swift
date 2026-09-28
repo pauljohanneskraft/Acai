@@ -11,7 +11,9 @@ struct KotlinCallSiteSyntax: CallSiteSyntax {
     /// Resolves statically-determinable Kotlin call patterns:
     /// - `receiver.method(args)` / `this.receiver.method(args)` where `receiver` is a known property,
     /// - `this.method(args)` — a call on the enclosing instance,
-    /// - `TypeName.method(args)` where `TypeName` is a known (companion/static) type.
+    /// - `TypeName.method(args)` where `TypeName` is a known (companion/static) type,
+    /// - `head.hop.method(args)` whose head resolves but whose hop doesn't — a deferred
+    ///   `.propertyChain` the post-merge pass finishes.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "call_expression" else { return nil }
 
@@ -25,31 +27,19 @@ struct KotlinCallSiteSyntax: CallSiteSyntax {
             )
         }
 
-        // Method name lives in the last navigation_suffix → simple_identifier
+        // The grammar nests each `.` as another `navigation_expression`, so the method name is this
+        // level's suffix and everything before it is the receiver.
         guard let navSuffix = navExpr.firstChild(withType: "navigation_suffix"),
-              let methodNode = navSuffix.firstChild(withType: "simple_identifier")
+              let methodNode = navSuffix.firstChild(withType: "simple_identifier"),
+              let receiver = navExpr.namedChildren().first
         else { return nil }
-        let methodName = methodNode.text(in: context)
 
-        // Pattern: this.method(args) — a direct call on the enclosing instance.
-        if navExpr.firstChild(withType: "this_expression") != nil {
-            return CallSite(receiver: .selfDispatch, methodName: methodName, location: node.location(in: context))
-        }
-
-        var receiverName: String?
-        if let firstId = navExpr.firstChild(withType: "simple_identifier") {
-            // Pattern: receiver.method(args)
-            receiverName = firstId.text(in: context)
-        } else if let innerNav = navExpr.firstChild(withType: "navigation_expression"),
-                  innerNav.firstChild(withType: "this_expression") != nil,
-                  let innerSuffix = innerNav.firstChild(withType: "navigation_suffix"),
-                  let propId = innerSuffix.firstChild(withType: "simple_identifier") {
-            // Pattern: this.receiver.method(args)
-            receiverName = propId.text(in: context)
-        }
-
-        guard let name = receiverName else { return nil }
-        return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: node.location(in: context))
+        return MemberCallResolver(syntax: KotlinMemberReceiverSyntax(context: context)).callSite(
+            receiver: receiver,
+            methodName: methodNode.text(in: context),
+            scope: scope,
+            location: node.location(in: context)
+        )
     }
 
     /// Provable local-variable types: an explicit annotation (`val x: Foo`), a `Foo()` construction of
@@ -77,6 +67,30 @@ struct KotlinCallSiteSyntax: CallSiteSyntax {
             if let returnType = scope.knownMethodReturnTypes[calleeText] {
                 return (name, returnType)
             }
+            return nil
+        }
+    }
+}
+
+/// Kotlin spells a member access as a nested `navigation_expression`, not as `object`/`field`
+/// fields, so it decomposes a receiver itself rather than through `MemberCallGrammar`.
+struct KotlinMemberReceiverSyntax: MemberReceiverSyntax {
+
+    let context: SourceFileContext
+
+    func receiver(_ node: Node) -> MemberReceiver? {
+        switch node.nodeType {
+        case "this_expression":
+            return .selfExpression
+        case "simple_identifier":
+            return .name(node.text(in: context))
+        case "navigation_expression":
+            guard let object = node.namedChildren().first,
+                  let suffix = node.firstChild(withType: "navigation_suffix"),
+                  let hop = suffix.firstChild(withType: "simple_identifier")
+            else { return nil }
+            return .memberAccess(object: object, hop: hop.text(in: context))
+        default:
             return nil
         }
     }
