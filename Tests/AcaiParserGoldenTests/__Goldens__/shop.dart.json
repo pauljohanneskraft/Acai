@@ -22,7 +22,7 @@
       "location" : {
         "column" : 1,
         "filePath" : "shop.dart",
-        "line" : 76
+        "line" : 83
       },
       "modifiers" : [
 
@@ -85,7 +85,7 @@
       "location" : {
         "column" : 27,
         "filePath" : "shop.dart",
-        "line" : 78
+        "line" : 85
       },
       "modifiers" : [
         "const",
@@ -381,7 +381,7 @@
       "genericParameters" : [
 
       ],
-      "id" : "shop.Logger",
+      "id" : "shop.Sink",
       "inheritedTypes" : [
 
       ],
@@ -416,6 +416,149 @@
             "column" : 5,
             "filePath" : "shop.dart",
             "line" : 14
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "write",
+          "parameters" : [
+            {
+              "internalName" : "message",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Sink",
+      "namespace" : "shop",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "shop.Sink"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "shop.Logger",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 1,
+        "filePath" : "shop.dart",
+        "line" : 17
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "Sink()"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 27,
+            "filePath" : "shop.dart",
+            "line" : 18
+          },
+          "modifiers" : [
+            "final"
+          ],
+          "name" : "sink",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "Sink",
+            "sink",
+            "sink = Sink()"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "Sink"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 5,
+            "filePath" : "shop.dart",
+            "line" : 19
           },
           "modifiers" : [
 
@@ -490,7 +633,7 @@
       "location" : {
         "column" : 1,
         "filePath" : "shop.dart",
-        "line" : 17
+        "line" : 22
       },
       "members" : [
         {
@@ -515,7 +658,7 @@
           "location" : {
             "column" : 31,
             "filePath" : "shop.dart",
-            "line" : 18
+            "line" : 23
           },
           "modifiers" : [
             "final"
@@ -558,7 +701,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 20
+            "line" : 25
           },
           "modifiers" : [
 
@@ -607,7 +750,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 23
+            "line" : 28
           },
           "modifiers" : [
             "override",
@@ -646,7 +789,7 @@
               "location" : {
                 "column" : 47,
                 "filePath" : "shop.dart",
-                "line" : 25
+                "line" : 30
               },
               "name" : "name"
             }
@@ -659,7 +802,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 25
+            "line" : 30
           },
           "modifiers" : [
 
@@ -728,7 +871,7 @@
       "location" : {
         "column" : 1,
         "filePath" : "shop.dart",
-        "line" : 28
+        "line" : 33
       },
       "members" : [
         {
@@ -757,7 +900,7 @@
           "location" : {
             "column" : 31,
             "filePath" : "shop.dart",
-            "line" : 29
+            "line" : 34
           },
           "modifiers" : [
             "final"
@@ -802,7 +945,7 @@
           "location" : {
             "column" : 19,
             "filePath" : "shop.dart",
-            "line" : 30
+            "line" : 35
           },
           "modifiers" : [
 
@@ -849,7 +992,7 @@
           "location" : {
             "column" : 19,
             "filePath" : "shop.dart",
-            "line" : 31
+            "line" : 36
           },
           "modifiers" : [
 
@@ -897,7 +1040,7 @@
           "location" : {
             "column" : 45,
             "filePath" : "shop.dart",
-            "line" : 32
+            "line" : 37
           },
           "modifiers" : [
             "static",
@@ -942,7 +1085,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 34
+            "line" : 39
           },
           "modifiers" : [
 
@@ -997,7 +1140,36 @@
               "location" : {
                 "column" : 9,
                 "filePath" : "shop.dart",
-                "line" : 40
+                "line" : 45
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 46
+              },
+              "methodName" : "write",
+              "receiver" : {
+                "propertyChain" : {
+                  "headTypeName" : "Logger",
+                  "hops" : [
+                    "sink"
+                  ]
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 47
               },
               "methodName" : "log",
               "receiver" : {
@@ -1013,7 +1185,23 @@
               "location" : {
                 "column" : 9,
                 "filePath" : "shop.dart",
-                "line" : 40
+                "line" : 45
+              },
+              "name" : "_audit"
+            },
+            {
+              "location" : {
+                "column" : 9,
+                "filePath" : "shop.dart",
+                "line" : 46
+              },
+              "name" : "_audit"
+            },
+            {
+              "location" : {
+                "column" : 19,
+                "filePath" : "shop.dart",
+                "line" : 47
               },
               "name" : "_audit"
             },
@@ -1021,7 +1209,7 @@
               "location" : {
                 "column" : 23,
                 "filePath" : "shop.dart",
-                "line" : 41
+                "line" : 48
               },
               "name" : "base"
             },
@@ -1029,7 +1217,7 @@
               "location" : {
                 "column" : 37,
                 "filePath" : "shop.dart",
-                "line" : 41
+                "line" : 48
               },
               "name" : "discount"
             }
@@ -1042,7 +1230,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 39
+            "line" : 44
           },
           "modifiers" : [
             "override"
@@ -1055,7 +1243,9 @@
             "_audit",
             "base",
             "discount",
-            "log"
+            "log",
+            "sink",
+            "write"
           ],
           "type" : {
             "genericArguments" : [
@@ -1079,7 +1269,7 @@
               "location" : {
                 "column" : 9,
                 "filePath" : "shop.dart",
-                "line" : 47
+                "line" : 54
               },
               "methodName" : "log",
               "receiver" : {
@@ -1101,7 +1291,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 45
+            "line" : 52
           },
           "modifiers" : [
             "override"
@@ -1135,7 +1325,7 @@
               "location" : {
                 "column" : 79,
                 "filePath" : "shop.dart",
-                "line" : 57
+                "line" : 64
               },
               "op" : "compound",
               "targetName" : "index",
@@ -1148,7 +1338,7 @@
               "location" : {
                 "column" : 13,
                 "filePath" : "shop.dart",
-                "line" : 58
+                "line" : 65
               },
               "op" : "compound",
               "targetName" : "discount",
@@ -1167,7 +1357,7 @@
               "location" : {
                 "column" : 13,
                 "filePath" : "shop.dart",
-                "line" : 58
+                "line" : 65
               },
               "name" : "discount"
             }
@@ -1180,7 +1370,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 51
+            "line" : 58
           },
           "modifiers" : [
 
@@ -1237,7 +1427,7 @@
               "location" : {
                 "column" : 43,
                 "filePath" : "shop.dart",
-                "line" : 63
+                "line" : 70
               },
               "name" : "base"
             }
@@ -1250,7 +1440,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 63
+            "line" : 70
           },
           "modifiers" : [
 
@@ -1281,7 +1471,7 @@
               "location" : {
                 "column" : 9,
                 "filePath" : "shop.dart",
-                "line" : 66
+                "line" : 73
               },
               "op" : "assign",
               "targetName" : "base",
@@ -1300,7 +1490,7 @@
               "location" : {
                 "column" : 9,
                 "filePath" : "shop.dart",
-                "line" : 66
+                "line" : 73
               },
               "name" : "base"
             }
@@ -1313,7 +1503,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 65
+            "line" : 72
           },
           "modifiers" : [
 
@@ -1363,7 +1553,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 69
+            "line" : 76
           },
           "modifiers" : [
 
@@ -1432,7 +1622,7 @@
       "location" : {
         "column" : 1,
         "filePath" : "shop.dart",
-        "line" : 72
+        "line" : 79
       },
       "members" : [
         {
@@ -1448,7 +1638,7 @@
               "location" : {
                 "column" : 45,
                 "filePath" : "shop.dart",
-                "line" : 73
+                "line" : 80
               },
               "methodName" : "describe",
               "receiver" : {
@@ -1470,7 +1660,7 @@
           "location" : {
             "column" : 5,
             "filePath" : "shop.dart",
-            "line" : 73
+            "line" : 80
           },
           "modifiers" : [
 

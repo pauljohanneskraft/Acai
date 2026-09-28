@@ -127,6 +127,40 @@ struct KotlinTypeResolutionTests {
         #expect(childProp?.type?.name == "Inner")
     }
 
+    @Test func qualifiedTypeReferenceInPropertyTypeIsSimple() {
+        let source = """
+        package com.example
+
+        data class Money(val amount: Double, val currency: String)
+
+        class Holder {
+            val value: com.example.Money = Money(0.0, "EUR")
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Holder.kt")
+        let holder = artifact.types.first { $0.name == "Holder" }!
+        let value = holder.members.first { $0.name == "value" }
+        #expect(value?.type?.name == "Money")
+    }
+
+    @Test func qualifiedNestedTypeReferenceIsSimple() {
+        let source = """
+        package com.example
+
+        class Outer {
+            class Inner(val name: String)
+        }
+
+        class Holder {
+            val child: Outer.Inner = Outer.Inner("test")
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Holder.kt")
+        let holder = artifact.types.first { $0.name == "Holder" }!
+        let child = holder.members.first { $0.name == "child" }
+        #expect(child?.type?.name == "Inner")
+    }
+
     // MARK: - Relationship Consistency with Package
 
     @Test func allRelationshipsUseQualifiedIdsWhenInSameFile() {

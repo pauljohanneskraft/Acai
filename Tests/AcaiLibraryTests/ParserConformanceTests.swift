@@ -184,7 +184,8 @@ struct ParserConformanceTests {
     }
 
     /// The checker must fail a deliberately non-conformant artifact — otherwise a green suite proves
-    /// nothing. Violates invariant #1 (id != qualifiedName) and #12 (nested id not prefixed).
+    /// nothing. Violates invariant #1 (id != qualifiedName), #4 (qualified `TypeReference.name`) and
+    /// #12 (nested id not prefixed).
     @Test func checkerCatchesContractViolations() {
         let bad = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Bad.swift"]),
@@ -192,6 +193,11 @@ struct ParserConformanceTests {
                 TypeDeclaration(
                     id: "WrongId", name: "Outer", qualifiedName: "Outer", kind: .class,
                     accessLevel: .public,
+                    members: [
+                        Member(
+                            name: "pet", kind: .property, accessLevel: .public,
+                            type: TypeReference(name: "com.example.Animal"))
+                    ],
                     nestedTypes: [
                         TypeDeclaration(
                             id: "Unrelated.Inner", name: "Inner", qualifiedName: "Unrelated.Inner",
@@ -200,6 +206,7 @@ struct ParserConformanceTests {
             ])
         let violations = ParserConformanceChecker().violations(in: bad)
         #expect(violations.contains { $0.invariant == 1 }, "should flag id != qualifiedName")
+        #expect(violations.contains { $0.invariant == 4 }, "should flag a qualified TypeReference.name")
         #expect(violations.contains { $0.invariant == 12 }, "should flag unprefixed nested id")
     }
 

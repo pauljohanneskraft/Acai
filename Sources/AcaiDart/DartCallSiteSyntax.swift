@@ -9,11 +9,14 @@ struct DartCallSiteSyntax: CallSiteSyntax {
     let declaredTypeNames: Set<String>
 
     /// Resolves statically-determinable Dart call patterns: `receiver.method(args)` where
-    /// `receiver` is a known property, `this.method(args)`, or `TypeName.method(args)` (static call).
+    /// `receiver` is a known property, `this.method(args)`, `TypeName.method(args)` (static call),
+    /// and one-hop chains — `this.prop.method(args)` and `head.hop.method(args)`, the latter a
+    /// deferred `.propertyChain` where the head resolves.
     ///
-    /// The Dart grammar flattens `receiver.method(args)` into siblings — `receiver`, a `selector`
-    /// carrying the method name, a trailing `selector` carrying `argument_part`. Only that
-    /// three-part shape is matched; chains like `a.b.c()` have an extra selector and are skipped.
+    /// The Dart grammar flattens a call into siblings — the receiver, one `selector` per `.` hop,
+    /// then a trailing `selector` carrying `argument_part` — rather than nesting it, so the receiver
+    /// is reassembled here before the shared decision tree sees it. A chain deeper than one hop has
+    /// more selectors still and is dropped, as it is in every other language.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         // `field = callee(args)` flattens as siblings [field-id, callee-id, selector(argument_part)]
         // inside `field_initializer` or `initialized_identifier`. The guard drops constructions
@@ -21,8 +24,7 @@ struct DartCallSiteSyntax: CallSiteSyntax {
         if node.nodeType == "field_initializer" || node.nodeType == "initialized_identifier" {
             let kids = node.namedChildren()
             guard kids.count >= 2,
-                  kids[kids.count - 1].nodeType == "selector",
-                  kids[kids.count - 1].firstChild(withType: "argument_part") != nil,
+                  isArgumentSelector(kids[kids.count - 1]),
                   kids[kids.count - 2].nodeType == "identifier"
             else { return nil }
             return scope.bareCall(
@@ -37,38 +39,44 @@ struct DartCallSiteSyntax: CallSiteSyntax {
         // guard drops constructor calls `Foo()`, which share this shape.
         if named.count == 2,
            named[0].nodeType == "identifier",
-           named[1].nodeType == "selector",
-           named[1].firstChild(withType: "argument_part") != nil {
+           isArgumentSelector(named[1]) {
             return scope.bareCall(
                 named: named[0].text(in: context), implicitSelf: true, location: node.location(in: context)
             )
         }
 
-        guard named.count == 3 else { return nil }
-
-        let receiverNode = named[0]
-        let methodSelector = named[1]
-        let argsSelector = named[2]
-
-        guard methodSelector.nodeType == "selector",
-              argsSelector.nodeType == "selector",
-              argsSelector.firstChild(withType: "argument_part") != nil,
-              let assignable = methodSelector.firstChild(withType: "unconditional_assignable_selector"),
-              let methodId = assignable.firstChild(withType: "identifier")
+        guard named.count == 3 || named.count == 4,
+              isArgumentSelector(named[named.count - 1]),
+              let methodName = selectorName(named[named.count - 2])
         else { return nil }
 
-        let methodName = methodId.text(in: context)
-
-        if receiverNode.nodeType == "this" {
-            return CallSite(receiver: .selfDispatch, methodName: methodName, location: node.location(in: context))
+        let resolver = MemberCallResolver(syntax: DartMemberReceiverSyntax(context: context))
+        let location = node.location(in: context)
+        guard named.count == 4 else {
+            return resolver.callSite(
+                receiver: named[0], methodName: methodName, scope: scope, location: location
+            )
         }
-
-        guard receiverNode.nodeType == "identifier" else { return nil }
-        return scope.resolvedCallSite(
-            receiverName: receiverNode.text(in: context),
-            methodName: methodName,
-            location: node.location(in: context)
+        guard let hop = selectorName(named[1]) else { return nil }
+        return resolver.callSite(
+            receiver: .memberAccess(object: named[0], hop: hop),
+            methodName: methodName, scope: scope, location: location
         )
+    }
+
+    /// The trailing `selector` that carries the call's arguments — what makes the shape a call at
+    /// all rather than a plain property access.
+    private func isArgumentSelector(_ node: Node) -> Bool {
+        node.nodeType == "selector" && node.firstChild(withType: "argument_part") != nil
+    }
+
+    /// The name a `.foo` hop selector carries.
+    private func selectorName(_ node: Node) -> String? {
+        guard node.nodeType == "selector",
+              let assignable = node.firstChild(withType: "unconditional_assignable_selector"),
+              let identifier = assignable.firstChild(withType: "identifier")
+        else { return nil }
+        return identifier.text(in: context)
     }
 
     /// Provable local-variable types: an explicit annotation (`Helper h = …`), an inferred
@@ -98,6 +106,25 @@ struct DartCallSiteSyntax: CallSiteSyntax {
             if let returnType = scope.knownMethodReturnTypes[valueText] {
                 return (name, returnType)
             }
+            return nil
+        }
+    }
+}
+
+/// Dart flattens a member access into sibling selectors rather than nesting it, so only the head of
+/// a chain is ever a node to decompose — `DartCallSiteSyntax` assembles the `.memberAccess` case
+/// itself.
+struct DartMemberReceiverSyntax: MemberReceiverSyntax {
+
+    let context: SourceFileContext
+
+    func receiver(_ node: Node) -> MemberReceiver? {
+        switch node.nodeType {
+        case "this":
+            return .selfExpression
+        case "identifier":
+            return .name(node.text(in: context))
+        default:
             return nil
         }
     }
