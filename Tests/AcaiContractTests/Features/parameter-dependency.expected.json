@@ -1,0 +1,16 @@
+{
+  "types": [
+    {
+      "name": "Player",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "play", "role": "method", "access": "+", "type": "#primitive", "parameters": ["song: Song"] }
+      ]
+    },
+    { "name": "Song", "kind": "class", "access": "+" }
+  ],
+  "relationships": [
+    { "kind": "dependency", "source": "Player", "target": "Song" }
+  ]
+}

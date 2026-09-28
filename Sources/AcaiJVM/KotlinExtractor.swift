@@ -104,9 +104,7 @@ extension KotlinExtractor {
                 declarations.types.append(typeDecl)
             }
         case .functionDeclaration:
-            declarations.freestandingFunctions.append(
-                extractFunctionDeclaration(node)
-            )
+            appendTopLevelFunction(node)
         case .propertyDeclaration:
             declarations.globalVariables.append(memberExtractor.propertyDeclaration(node))
         case .typeAlias:
@@ -114,6 +112,30 @@ extension KotlinExtractor {
                 declarations.types.append(typeDecl)
             }
         }
+    }
+
+    /// An extension function on a type declared in this artifact (`fun Box.extra()`) augments that
+    /// type, so it becomes an `.extension` declaration holding the member — the shape enrichment
+    /// merges into the extended type, as it does for a Swift `extension` or a Dart `extension … on`.
+    private mutating func appendTopLevelFunction(_ node: Node) {
+        let receiver = memberExtractor.receiverType(of: node)
+        let member = extractFunctionDeclaration(node)
+        guard let receiver, declarations.declaredTypeNames.contains(receiver.name) else {
+            declarations.freestandingFunctions.append(member)
+            return
+        }
+        let qualifiedName = declarations.qualifiedName(receiver.name)
+        declarations.types.append(TypeDeclaration(
+            id: "extension.\(qualifiedName).\(member.name)",
+            name: receiver.name,
+            qualifiedName: qualifiedName,
+            kind: .extension,
+            accessLevel: member.accessLevel,
+            members: [member],
+            extensionOf: receiver.name,
+            namespace: declarations.currentNamespace,
+            location: node.location(in: context)
+        ))
     }
 
     private mutating func handleClassDeclaration(_ child: Node) {

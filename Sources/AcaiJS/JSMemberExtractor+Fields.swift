@@ -75,7 +75,7 @@ extension JSMemberExtractor {
         return Member(
             name: name.isEmpty ? "_unknown" : name,
             kind: .property,
-            accessLevel: accessLevel ?? .internal,
+            accessLevel: accessLevel ?? .public,
             modifiers: fieldModifiers(node),
             type: propType,
             annotations: decorators(node),

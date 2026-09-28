@@ -1,0 +1,5 @@
+{
+  "freeFunctions": [
+    { "name": "compute", "role": "method", "access": "+", "type": "#primitive" }
+  ]
+}

@@ -1,0 +1,1 @@
+JavaScript has no override marker; a subclass method simply shadows the superclass one, and nothing in the declaration says so.

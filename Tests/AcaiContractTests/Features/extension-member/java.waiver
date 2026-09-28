@@ -1,0 +1,1 @@
+Java cannot add a member to an existing type; the idiom is an unrelated static utility class.

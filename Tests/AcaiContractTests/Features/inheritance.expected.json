@@ -1,0 +1,9 @@
+{
+  "types": [
+    { "name": "Animal", "kind": "class", "access": "+" },
+    { "name": "Dog", "kind": "class", "access": "+", "supertypes": ["Animal"] }
+  ],
+  "relationships": [
+    { "kind": "inheritance", "source": "Dog", "target": "Animal" }
+  ]
+}

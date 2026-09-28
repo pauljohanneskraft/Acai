@@ -1,0 +1,1 @@
+JavaScript has no enum declaration; the idiom is a frozen object literal, which the parser sees as a global variable rather than an enumeration.

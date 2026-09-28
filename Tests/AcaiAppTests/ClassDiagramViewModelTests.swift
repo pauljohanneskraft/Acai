@@ -114,8 +114,19 @@ struct ClassDiagramViewModelTests {
         #expect(vm.currentSearchNodeID == "Beta")
     }
 
+    /// Dismissing find is a search-state-only reset: it must not disturb the diagram the user was
+    /// looking at, including anything they had selected or dragged.
     @Test func dismissClearsQueryAndMatches() {
-        let vm = viewModel(types: [type("Base", .public)])
+        let vm = viewModel(types: [type("Base", .public), type("Derived", .public)])
+        vm.updateMeasuredSizes([
+            "Base": CGSize(width: 200, height: 100), "Derived": CGSize(width: 200, height: 100)
+        ])
+        vm.selectNode("Base", extending: false)
+        vm.moveNode("Derived", to: CGPoint(x: 321, y: 123))
+        let nodeIDs = vm.nodes.map(\.id)
+        let nodePositions = vm.nodePositions
+        let selectedNodeIDs = vm.selectedNodeIDs
+
         vm.searchQuery = "Base"
         #expect(!vm.searchMatchIDs.isEmpty)
 
@@ -123,6 +134,11 @@ struct ClassDiagramViewModelTests {
         #expect(vm.searchQuery.isEmpty)
         #expect(vm.searchMatchIDs.isEmpty)
         #expect(vm.currentSearchNodeID == nil)
+        #expect(vm.nodes.map(\.id) == nodeIDs)
+        #expect(vm.nodePositions == nodePositions)
+        #expect(vm.selectedNodeIDs == selectedNodeIDs)
+        #expect(vm.nodePositions["Derived"] == CGPoint(x: 321, y: 123))
+        #expect(vm.selectedNodeIDs == ["Base"])
     }
 
     @Test func steppingWithNoMatchesIsANoOp() {
@@ -194,5 +210,17 @@ struct ClassDiagramViewModelTests {
         let vm = ClassDiagramViewModel(codebase: Codebase(name: "c", directoryPath: "/tmp"), artifact: artifact)
         #expect(vm.dependents(for: "A").map(\.id) == ["B", "C"])
         #expect(vm.dependents(for: "C").isEmpty)
+    }
+
+    // MARK: - Image Export
+
+    @Test func exportsNonEmptyPNGData() throws {
+        let vm = viewModel(types: [type("A", .public), type("B", .public)])
+        // Nodes need a laid-out size before there is anything to rasterise.
+        vm.updateMeasuredSizes(["A": CGSize(width: 200, height: 100), "B": CGSize(width: 200, height: 100)])
+
+        let data = try vm.exportPNGData(scale: 1)
+        // A valid PNG starts with the 8-byte signature.
+        #expect(data.starts(with: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
     }
 }

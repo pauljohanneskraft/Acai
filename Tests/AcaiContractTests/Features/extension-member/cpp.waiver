@@ -1,0 +1,1 @@
+C++ cannot add a member to an existing class; a free function taking the type is the idiom.

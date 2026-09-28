@@ -1,0 +1,1 @@
+C has no interface declaration; the idiom is a struct of function pointers, a concrete type with no conformance edge.

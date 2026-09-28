@@ -1,0 +1,3 @@
+@Marker
+class Box:
+    pass

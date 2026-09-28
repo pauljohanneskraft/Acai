@@ -7,7 +7,7 @@ import Testing
 /// path-escape guarantees as `PathEscapeGuardTests`, but through the actual public entry point
 /// (no bookmark, so `ScopedResourceAccess` takes its plain-path fallback) plus the file-existence
 /// check `resolvedFileURL` adds on top of `PathEscapeGuard`.
-@Suite("Codebase.resolvedFileURL")
+@Suite("Codebase.resolvedFileURL", .timeLimit(.minutes(1)))
 struct CodebaseSourceViewerTests {
 
     private func makeCodebase(at directory: URL) -> Codebase {

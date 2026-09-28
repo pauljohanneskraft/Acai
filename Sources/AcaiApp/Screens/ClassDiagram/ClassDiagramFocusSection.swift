@@ -11,7 +11,7 @@ struct FocusSection: View {
             Toggle(.app("View.FocusSection.FocusClass"), isOn: focusEnabled)
                 .accessibilityIdentifier("diagram.focus.toggle")
 
-            if configuration.focus != nil {
+            if configuration.isFocused {
                 Picker(.app("View.FocusSection.RootType"), selection: rootType) {
                     ForEach(typeNames, id: \.self) { Text(verbatim: $0).tag($0) }
                 }
@@ -49,8 +49,8 @@ struct FocusSection: View {
 
     private var focusEnabled: Binding<Bool> {
         Binding(
-            get: { configuration.focus != nil },
-            set: { configuration.focus = $0 ? FocusConfiguration(rootTypeName: typeNames.first ?? "") : nil }
+            get: { configuration.isFocused },
+            set: { configuration.setFocused($0, rootTypeName: typeNames.first) }
         )
     }
 

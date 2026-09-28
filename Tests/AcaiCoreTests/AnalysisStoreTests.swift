@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-@Suite("AnalysisStore")
+@Suite("AnalysisStore", .timeLimit(.minutes(1)))
 struct AnalysisStoreTests {
     private func makeStore() throws -> (store: AnalysisStore, directory: URL) {
         let directory = FileManager.default.temporaryDirectory
@@ -101,30 +101,15 @@ struct AnalysisStoreTests {
         #expect(entry.fingerprint == secondFingerprint)
     }
 
-    // MARK: - Legacy decode
-
-    @Test func aLegacyBareArtifactFileStillDecodesByName() throws {
+    /// A bare `CodeArtifact` — the shape `acai store` wrote before entries carried a source path and
+    /// fingerprint — is not an entry, so it reads as absent and the caller re-analyses.
+    @Test func aBareArtifactFileIsAbsentNotDecoded() throws {
         let (store, directory) = try makeStore()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let artifact = makeArtifact()
-        try JSONEncoder().encode(artifact).write(to: store.url(forName: "legacy"))
+        try JSONEncoder().encode(makeArtifact()).write(to: store.url(forName: "bare"))
 
-        guard case .legacyArtifact(let decoded) = store.lookup(named: "legacy") else {
-            Issue.record("Expected a legacyArtifact")
-            return
-        }
-        #expect(decoded == artifact)
-    }
-
-    @Test func aLegacyEntryIsNeverCurrent() throws {
-        let (store, directory) = try makeStore()
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        try JSONEncoder().encode(makeArtifact()).write(to: store.url(forName: "legacy"))
-
-        // A legacy entry never resolves via lookup(forResolvedPath:) since it never recorded a
-        // source path — a caller must fall back to full re-analysis for it.
+        #expect(store.lookup(named: "bare") == .absent)
         #expect(store.lookup(forResolvedPath: "/tmp/proj") == .absent)
     }
 

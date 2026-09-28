@@ -1,0 +1,1 @@
+Java has no nullable type; every reference type is implicitly nullable, so nothing in a declaration marks a field optional.

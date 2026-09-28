@@ -4,7 +4,7 @@ import XCTest
 final class SaveAsFreeformJourneyTests: UIJourneyTestCase {
     /// Focus roots at `Base`, which depends on none of the other seeded types, so only `Base` is on screen.
     func testCopyContainsOnlyTheTypesTheFocusedDiagramShows() throws {
-        let codebaseDetail = openIndexedSeededCodebase()
+        let codebaseDetail = openPreindexedSeededCodebase()
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
         diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
 

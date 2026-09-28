@@ -6,7 +6,7 @@ import Testing
 /// so a missing identifier or a missing translation is invisible under `swift build` and surfaces
 /// as raw text in a shipped build. These checks read the source and the catalog directly, which is
 /// why they hold regardless of whether the catalog was compiled.
-@Suite("Localization catalog")
+@Suite("Localization catalog", .timeLimit(.minutes(1)))
 struct LocalizationCatalogTests {
 
     private static let shippedLanguages = ["en", "de", "fr"]

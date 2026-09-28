@@ -243,9 +243,10 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | `--state-from <var>` | State diagram for `"Type.variable"` or a global `"variable"`. |
 | `--max-states <n>` | Fail beyond this many distinct states (default `20`). |
 | `--package` | Package/module dependency diagram with coupling metrics. |
+| `--module-coupling` | The same module graph as `--package`, labelled with each module's `Ca`/`Ce`/`I`/`A`/`D` and its main-sequence zone, with Stable-Dependencies-Principle breaches dashed. |
 | `--call-graph` | Static call graph. |
 | `--call-graph-scope <s>` | `type:Name` or `module:Name`. Whole codebase if omitted. |
-| `--max-nodes <n>` | Fail a class/package diagram beyond this many nodes, naming the count (default `2000`). Narrow with `--focus` instead of raising it. |
+| `--max-nodes <n>` | Fail a class, package or coupling diagram beyond this many nodes, naming the count (default `2000`). Narrow with `--focus` instead of raising it. |
 
 ```sh
 acai diagram --source . --output arch.dot
@@ -254,6 +255,7 @@ acai diagram --from myproj --focus Playlist --focus-depth 2 --output playlist.do
 acai diagram --from myproj --sequence-from "Checkout.placeOrder" --output checkout.dot
 acai diagram --from myproj --state-from "Download.state" --output states.dot
 acai diagram --from myproj --package --output modules.dot
+acai diagram --from myproj --module-coupling --output coupling.dot
 ```
 
 Render DOT anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`.
@@ -480,7 +482,7 @@ Each side is a positional stored-analysis name or `.json` path, **or** a directo
 | `--source-old` / `--source-new` | Analyze a directory as that side. |
 | `--format` | `human` (default), `json` |
 | `--diagram` | `dot` or `mermaid` — render a colour-coded delta diagram instead of a report. |
-| `--sequence-from`, `--state-from`, `--package`, `--call-graph`, `--call-graph-scope` | Pick the diagram family for `--diagram`. |
+| `--sequence-from`, `--state-from`, `--package`, `--module-coupling`, `--call-graph`, `--call-graph-scope` | Pick the diagram family for `--diagram`. |
 
 ```sh
 acai diff main-baseline --source-new ./                    # drift since a baseline
@@ -489,7 +491,7 @@ acai diff old.json new.json --format json
 acai diff --source-old ./before --source-new ./after --diagram dot --output delta.dot
 ```
 
-Delta colouring: **added green, removed red, changed amber**, with `+` / `−` / `~` badges so status is never conveyed by colour alone. Class, package and call-graph deltas are coloured in both DOT and Mermaid; sequence and state deltas are coloured in DOT only, because Mermaid's syntax for those has no per-edge colour.
+Delta colouring: **added green, removed red, changed amber**, with `+` / `−` / `~` badges so status is never conveyed by colour alone. Class, package, coupling and call-graph deltas are coloured in both DOT and Mermaid; sequence and state deltas are coloured in DOT only, because Mermaid's syntax for those has no per-edge colour.
 
 `--format json` output (non-`--diagram`): `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` —
 `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).

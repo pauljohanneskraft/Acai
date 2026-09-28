@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class ExportShareJourneyTests: UIJourneyTestCase {
     func testExportingAnImageSharesItAsAPNGFile() throws {
-        let codebaseDetail = openIndexedSeededCodebase()
+        let codebaseDetail = openPreindexedSeededCodebase()
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
         diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
 
