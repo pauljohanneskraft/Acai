@@ -30,12 +30,11 @@ struct AtlasTool: AnalysisTool {
                     "type": "number",
                     "description": "Diagram resolution scale factor, greater than 0 (default 2)."
                 ],
-                "theme": ["type": "string", "enum": ["light", "dark"], "description": "Colour theme (default light)."],
                 "maxNodes": [
                     "type": "integer",
                     "description": .string(maxNodesDescription)
                 ]
-            ]) { _, new in new },
+            ]) { _, new in new }.merging(EnumArgument<ThemeOption>.theme.property) { $1 },
             required: ["path", "output"])
     }
 
@@ -46,6 +45,7 @@ struct AtlasTool: AnalysisTool {
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
+        let theme = try EnumArgument<ThemeOption>.theme.value(in: arguments, or: .light)
         let output = URL(fileURLWithPath: try arguments.requiredString("output")).standardizedFileURL
         let scale = try arguments.double("scale") ?? 2
         guard scale > 0 else {
@@ -64,7 +64,7 @@ struct AtlasTool: AnalysisTool {
         let analysis = AtlasAnalysis(artifact: artifact, rules: rules, languages: languages)
         let diagrams = await AtlasDiagramSet(
             scale: scale,
-            palette: arguments.string("theme") == "dark" ? .dark : .light,
+            palette: theme.palette,
             languages: languages,
             maxNodes: maxNodes
         ).pages(for: artifact)

@@ -27,9 +27,10 @@ extension AnalysisTool {
     func resolveArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
     ) async throws -> CodeArtifact {
-        try await cache.artifact(
+        let languageNames = try LanguageListArgument.languages.values(in: arguments)
+        return try await cache.artifact(
             path: arguments.requiredString("path"),
-            languageNames: arguments.stringArray("languages"),
+            languageNames: languageNames,
             refresh: try arguments.bool("refresh") ?? false)
     }
 
@@ -78,34 +79,30 @@ extension AnalysisTool {
     }
 
     var baseProperties: [String: Value] {
-        [
+        LanguageListArgument.languages.property.merging([
             "path": [
                 "type": "string",
                 "description": "Path to the project root to analyze (absolute or relative)."
-            ],
-            "languages": [
-                "type": "array",
-                "items": ["type": "string"],
-                "description": "Optional language filter (e.g. swift, kotlin, python). Empty means all."
             ],
             "refresh": [
                 "type": "boolean",
                 "description": "Re-analyze instead of reusing the cached snapshot for this path."
             ]
-        ]
+        ]) { $1 }
     }
 
     var selectorProperties: [String: Value] {
-        [
+        var properties: [String: Value] = [
             "module": ["type": "string", "description": "Only types whose module matches this glob (*, ?)."],
             "type": ["type": "string", "description": "Only types whose id / qualified name matches this glob."],
-            "kind": ["type": "string", "description": "Only types of this kind (e.g. class, protocol, struct)."],
-            "minAccess": ["type": "string", "description": "Only types with at least this visibility (e.g. public)."],
             "stereotype": ["type": "string", "description": "Only types carrying this UML stereotype."],
             "annotation": ["type": "string", "description": "Only types carrying this annotation marker."],
             "minMembers": ["type": "integer", "description": "Only types with at least this many members (god types)."],
             "minNesting": ["type": "integer", "description": "Only types nested at least this deep."]
         ]
+        properties.merge(EnumArgument<TypeKind>.kind.property) { $1 }
+        properties.merge(EnumArgument<AccessLevel>.minimumAccess.property) { $1 }
+        return properties
     }
 
     func objectSchema(extraProperties: [String: Value] = [:], required: [String] = ["path"]) -> Value {
@@ -137,8 +134,8 @@ extension AnalysisTool {
             typeGlob: arguments.string("type"),
             stereotype: arguments.string("stereotype"),
             annotation: arguments.string("annotation"),
-            minimumAccess: arguments.string("minAccess").flatMap(AccessLevel.init(rawValue:)),
-            kind: arguments.string("kind").flatMap(TypeKind.init(rawValue:)),
+            minimumAccess: try EnumArgument<AccessLevel>.minimumAccess.value(in: arguments),
+            kind: try EnumArgument<TypeKind>.kind.value(in: arguments),
             minMembers: try arguments.int("minMembers"),
             minNesting: try arguments.int("minNesting"))
     }
