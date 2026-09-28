@@ -4,12 +4,21 @@ import Foundation
 import ImageIO
 
 /// Draws into an already-flipped (top-left origin, y-down) `CGContext`. Knows nothing about
-/// `Finding`/`CodeMetrics`/`GeneratedDiagram` — `CodebaseAtlasBuilder` owns turning those into the
-/// strings and images handed here.
+/// `AtlasFinding`/`CodeMetrics`/diagrams — `AtlasDocument` owns turning those into the strings and
+/// images handed here.
 struct AtlasPageCanvas {
     let context: CGContext
     let bounds: CGRect
     private var cursorY: CGFloat
+
+    /// The Atlas's own spacing scale, mirroring the app's so a page exported from either side has
+    /// the same rhythm.
+    static let tightSpacing: CGFloat = 2
+    static let lineSpacing: CGFloat = 4
+    static let entrySpacing: CGFloat = 8
+    static let headingSpacing: CGFloat = 12
+    static let sectionSpacing: CGFloat = 16
+    static let titleSpacing: CGFloat = 24
 
     init(context: CGContext, bounds: CGRect) {
         self.context = context
@@ -21,7 +30,9 @@ struct AtlasPageCanvas {
 
     /// Truncates to the page width with an ellipsis rather than wrapping — the Atlas's findings/stats
     /// entries are one line each by design.
-    mutating func drawLine(_ text: String, fontSize: CGFloat, bold: Bool = false, spacing: CGFloat = .spacingXS) {
+    mutating func drawLine(
+        _ text: String, fontSize: CGFloat, bold: Bool = false, spacing: CGFloat = Self.lineSpacing
+    ) {
         let font = CTFontCreateWithName((bold ? "Helvetica-Bold" : "Helvetica") as CFString, fontSize, nil)
         let fontKey = kCTFontAttributeName as NSAttributedString.Key
         let attributed = NSAttributedString(string: text, attributes: [fontKey: font])
@@ -34,7 +45,7 @@ struct AtlasPageCanvas {
         CTLineGetTypographicBounds(fitted, &ascent, &descent, &leading)
         let lineHeight = ascent + descent + leading
         // A line that would run past the bottom margin is dropped rather than drawn off-page;
-        // pagination itself is CodebaseAtlasBuilder's job, not this canvas's.
+        // pagination itself is AtlasDocument's job, not this canvas's.
         guard lineHeight <= remainingHeight else { return }
 
         context.saveGState()

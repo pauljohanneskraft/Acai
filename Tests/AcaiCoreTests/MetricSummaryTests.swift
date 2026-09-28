@@ -1,5 +1,5 @@
 import Testing
-@testable import AcaiApp
+import AcaiCore
 
 @Suite("MetricSummary")
 struct MetricSummaryTests {
