@@ -5,10 +5,11 @@ Lay out and render a diagram straight to a **PNG** — no Graphviz required. App
 ## Overview
 
 `AcaiRender` is the visual half of Açaí. It owns the SwiftUI diagram views, a Sugiyama-style
-hierarchical **layout engine**, and the image renderer that turns either into a PNG. It's shared by
-two front ends: the macOS app's canvas (drag, resize, group) and the `acai image` CLI command — so
-a headless export matches what you'd see on screen, because it runs the same layout and the same
-views.
+hierarchical **layout engine**, the image renderer that turns either into a PNG, and the
+**Codebase Atlas** that bundles a whole codebase into one PDF. It's shared by every front end: the
+macOS app's canvas (drag, resize, group), the `acai image` / `acai atlas` CLI commands and the
+`acai_image` / `acai_atlas` MCP tools — so a headless export matches what you'd see on screen,
+because it runs the same layout and the same views.
 
 > **Apple platforms only.** Rendering goes through SwiftUI's `ImageRenderer`, which needs a
 > window-server session. On Linux, generate DOT with [AcaiDiagram](/documentation/acaidiagram/) and
@@ -27,6 +28,10 @@ views.
   a static SwiftUI view that `ImageRenderer` can rasterise.
 - **Styling** — ``ClassDiagramConfiguration`` and ``DiagramPalette`` control grouping, theme, and
   colours.
+- **The Codebase Atlas** — ``AtlasDocument`` bundles one codebase's diagrams, statistics and
+  findings into a multi-page PDF. The caller supplies the rendered diagram pages, so the app
+  exports the user's saved canvas positions while ``AtlasDiagramSet`` renders the same document
+  headlessly for `acai atlas` and `acai_atlas`.
 
 ## Topics
 
@@ -42,6 +47,18 @@ views.
 - ``CallGraphLayoutModel``
 - ``PackageLayoutModel``
 - ``DiagramLayoutModel/GroupingBox``
+
+### The Codebase Atlas
+
+- ``AtlasDocument``
+- ``AtlasDiagramPage``
+- ``AtlasDiagramSet``
+- ``AtlasAnalysis``
+- ``AtlasStatistics``
+- ``AtlasFinding``
+- ``AtlasFindings``
+- ``PagedSection``
+- ``PDFDocumentWriter``
 
 ### Views & styling
 
