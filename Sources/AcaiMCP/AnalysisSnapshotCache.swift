@@ -32,7 +32,7 @@ actor AnalysisSnapshotCache {
     /// `path` is a source directory to analyze, or a `.json` artifact file to decode (a stored
     /// baseline, used by `acai_diff`).
     func artifact(path: String, languageNames: [String] = [], refresh: Bool = false) async throws -> CodeArtifact {
-        let url = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath()
+        let url = resolvedURL(for: path)
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
             throw MCPError.invalidParams("Path does not exist: \(path)")
@@ -60,6 +60,10 @@ actor AnalysisSnapshotCache {
         analysisCount += 1
         entries[key] = Entry(fingerprint: fingerprint, artifact: artifact)
         return artifact
+    }
+
+    nonisolated func resolvedURL(for path: String) -> URL {
+        URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath()
     }
 
     private func decodeArtifact(at url: URL) throws -> CodeArtifact {
