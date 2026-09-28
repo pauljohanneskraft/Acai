@@ -74,9 +74,8 @@ struct SwiftPackageManifest {
         let name = callee.declName.baseName.text
         guard let kind = Target.Kind(targetFactory: name) else {
             // `binaryTarget` and `systemLibrary` have no sources of their own to parse.
-            guard name == "binaryTarget" || name == "systemLibrary" else {
+            if name != "binaryTarget", name != "systemLibrary" {
                 incompleteReason = "unrecognised target kind `.\(name)`"
-                return
             }
             return
         }

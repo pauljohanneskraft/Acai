@@ -23,12 +23,12 @@ public struct SwiftPackageManagerDetector: BuildSystemDetector {
             return [probedSpec(at: root, reason: "the manifest could not be read")]
         }
         let sources = SwiftPackageSources(root: root, manifest: SwiftPackageManifest(source: source))
-        guard let resolved = sources.resolved else {
-            return [probedSpec(at: root, reason: sources.fallbackReason ?? "the manifest could not be read")]
+        switch sources.outcome {
+        case .resolved(let sourceDirs, let excludedPaths):
+            return [SourceSpec(language: .swift, sourceDirs: sourceDirs, excludedPaths: excludedPaths)]
+        case .probe(let reason):
+            return [probedSpec(at: root, reason: reason)]
         }
-        return [SourceSpec(
-            language: .swift, sourceDirs: resolved.sourceDirs, excludedPaths: resolved.excludedPaths
-        )]
     }
 
     private func probedSpec(at root: URL, reason: String) -> SourceSpec {

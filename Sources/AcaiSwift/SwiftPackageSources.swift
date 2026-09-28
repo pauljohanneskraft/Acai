@@ -6,9 +6,10 @@ import AcaiCore
 /// exists on disk; `sources` narrows a target to the listed subpaths, `exclude` removes them.
 struct SwiftPackageSources {
 
-    struct Resolved {
-        var sourceDirs: [URL]
-        var excludedPaths: [URL]
+    enum Outcome {
+        case resolved(sourceDirs: [URL], excludedPaths: [URL])
+        /// Nothing trustworthy to go on, for the stated reason: probe the filesystem instead.
+        case probe(reason: String)
     }
 
     private let root: URL
@@ -19,10 +20,8 @@ struct SwiftPackageSources {
         self.manifest = manifest
     }
 
-    /// Nil when the manifest was not fully readable, or when nothing it declares exists on disk —
-    /// either way the caller has nothing better to go on than a filesystem probe.
-    var resolved: Resolved? {
-        guard manifest.incompleteReason == nil else { return nil }
+    var outcome: Outcome {
+        if let reason = manifest.incompleteReason { return .probe(reason: reason) }
         var sourceDirs: [URL] = []
         var excludedPaths: [URL] = []
         for target in manifest.targets {
@@ -30,17 +29,11 @@ struct SwiftPackageSources {
             sourceDirs.append(contentsOf: sources(of: target, in: directory))
             excludedPaths.append(contentsOf: target.exclude.map { directory.child($0) })
         }
-        guard !sourceDirs.isEmpty else { return nil }
-        return Resolved(
+        guard !sourceDirs.isEmpty else { return .probe(reason: "no declared target directory exists") }
+        return .resolved(
             sourceDirs: sourceDirs.removingDuplicates { $0.path },
             excludedPaths: excludedPaths.removingDuplicates { $0.path }
         )
-    }
-
-    /// The reason discovery has to fall back, phrased for a diagnostic. Nil when it doesn't.
-    var fallbackReason: String? {
-        guard resolved == nil else { return nil }
-        return manifest.incompleteReason ?? "no declared target directory exists"
     }
 
     private func sources(of target: SwiftPackageManifest.Target, in directory: URL) -> [URL] {
