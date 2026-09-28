@@ -35,6 +35,12 @@ enum CLITestSupport {
         let root = try AcaiCommand.parseAsRoot(["image"] + arguments)
         return try #require(root as? AcaiCommand.Image)
     }
+
+    /// macOS-only: the `hotspots` subcommand needs `AcaiGit`'s libgit2 history walk.
+    static func parseHotspots(_ arguments: [String]) throws -> AcaiCommand.Hotspots {
+        let root = try AcaiCommand.parseAsRoot(["hotspots"] + arguments)
+        return try #require(root as? AcaiCommand.Hotspots)
+    }
     #endif
 
     static func parseRules(_ arguments: [String]) throws -> AcaiCommand.Rules {

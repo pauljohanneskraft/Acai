@@ -8,7 +8,8 @@ import Testing
 @Suite("Tool Registry")
 struct ToolRegistryTests {
 
-    /// The 8 cross-platform tools; `acai_image` is added on macOS (it links the SwiftUI renderer).
+    /// The 8 cross-platform tools; `acai_image` (SwiftUI renderer) and `acai_hotspots` (libgit2
+    /// history walk) are added on macOS.
     private var expectedNames: [String] {
         var names = [
             "acai_analyze", "acai_callgraph", "acai_diagram", "acai_diff",
@@ -16,6 +17,7 @@ struct ToolRegistryTests {
         ]
         #if os(macOS)
         names.append("acai_image")
+        names.append("acai_hotspots")
         #endif
         return names.sorted()
     }
