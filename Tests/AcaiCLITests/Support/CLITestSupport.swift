@@ -35,6 +35,12 @@ enum CLITestSupport {
         let root = try AcaiCommand.parseAsRoot(["image"] + arguments)
         return try #require(root as? AcaiCommand.Image)
     }
+
+    /// macOS-only for the same reason as `image`: the Atlas embeds rendered diagrams.
+    static func parseAtlas(_ arguments: [String]) throws -> AcaiCommand.Atlas {
+        let root = try AcaiCommand.parseAsRoot(["atlas"] + arguments)
+        return try #require(root as? AcaiCommand.Atlas)
+    }
     #endif
 
     static func parseRules(_ arguments: [String]) throws -> AcaiCommand.Rules {
