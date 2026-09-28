@@ -50,6 +50,12 @@ extension DartExtractor {
         nestedTypes: inout [TypeDeclaration],
         parentName: String
     ) {
+        // Nested types are qualified against the enclosing type's own id, so `Outer.Inner` cannot
+        // collide with a top-level `Inner`.
+        let parentID = declarations.qualifiedName(parentName)
+        let outerNamespace = declarations.enter(namespace: parentID)
+        defer { declarations.leave(outerNamespace) }
+
         // A member's `function_body` is a *sibling* of its signature node, paired with whichever
         // member the immediately preceding child produced.
         var previousChildAddedMember = false
