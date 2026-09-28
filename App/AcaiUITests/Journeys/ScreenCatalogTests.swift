@@ -40,6 +40,6 @@ final class ScreenCatalogTests: UIJourneyTestCase {
         browser.openLink("acai://diagram/\(freeformDiagramID)")
         let freeform = FreeformDiagramScreen(app: app)
         freeform.openedIndicator.waitOrFail("the seeded freeform diagram")
-        validateScreenshot("FreeformDiagram", state: "populated")
+        validateScreenshot("FreeformDiagram", state: "emptyCanvas")
     }
 }
