@@ -3,11 +3,7 @@ import AcaiGit
 import AcaiQuality
 import Foundation
 
-/// Loads the churn data off the main actor (this is a git-history walk, real filesystem/
-/// object-store work) and joins it with already-computed complexity into `AcaiQuality`'s
-/// `Hotspots` — the same scoring `acai hotspots` and `acai_hotspots` report. `artifact` is
-/// captured once at construction (not recomputed on every render); only the churn half is
-/// asynchronous.
+/// Walks churn off the main actor and scores it with the same `Hotspots` the CLI and MCP report.
 @MainActor
 final class HotspotViewModel: ObservableObject {
     @Published private(set) var hotspots: Hotspots?

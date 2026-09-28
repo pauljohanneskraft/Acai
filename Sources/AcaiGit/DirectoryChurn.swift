@@ -1,12 +1,6 @@
 import Foundation
 
-/// Per-file churn for a directory that may sit anywhere inside a git working tree — the source
-/// root of an analysis, which is often a subdirectory of the repository (a monorepo package) and
-/// sometimes not in a repository at all.
-///
-/// Resolves the repository root upward from `directory`, walks its history through `GitChurn`, and
-/// offsets the repository-root-relative paths that come back down to `directory`-relative ones,
-/// so the keys line up with the `SourceLocation.filePath` an analysis records.
+/// Per-file churn keyed relative to `directory`, which may sit anywhere inside a git working tree.
 public struct DirectoryChurn: Sendable {
     public let directory: URL
 
@@ -14,10 +8,7 @@ public struct DirectoryChurn: Sendable {
         self.directory = directory
     }
 
-    /// `nil` when `directory` is not inside a git working tree at all — distinct from an empty (but
-    /// non-`nil`) map, which means a real repository with no history to report. Throws
-    /// `HistoryNotFetched` for a shallow clone, whose churn would count only the commits that
-    /// happen to have been fetched.
+    /// `nil` outside a git working tree; throws `HistoryNotFetched` for a shallow clone.
     public func byFile(ref: String = "HEAD", limit: Int = 50) throws -> [String: Int]? {
         guard let root = GitRepositoryRoot(directory: directory).find() else { return nil }
         let raw = try GitChurn(directory: root).byFile(ref: ref, limit: limit)
@@ -25,9 +16,7 @@ public struct DirectoryChurn: Sendable {
     }
 }
 
-/// One directory's path relative to the repository root it lives under — `""` when the directory
-/// *is* the root — and the re-keying that turns repository-root-relative paths into paths relative
-/// to that subdirectory.
+/// A directory's path below its repository root (`""` for the root itself).
 public struct RepositorySubpath: Sendable {
     public let prefix: String
 
@@ -45,8 +34,7 @@ public struct RepositorySubpath: Sendable {
         self.init(prefix: String(directoryPath.dropFirst(rootPath.count + 1)))
     }
 
-    /// Strips `prefix` off every key, dropping the entries that fall outside it. A pass-through
-    /// when the prefix is empty.
+    /// Strips `prefix` off every key, dropping the entries outside it.
     public func offsetting(_ raw: [String: Int]) -> [String: Int] {
         guard !prefix.isEmpty else { return raw }
         let normalized = prefix.hasSuffix("/") ? prefix : prefix + "/"

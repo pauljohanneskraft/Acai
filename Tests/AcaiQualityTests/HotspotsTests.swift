@@ -1,11 +1,31 @@
 import Testing
 @testable import AcaiQuality
 
-/// Covers the churn × complexity join and the quadrant thresholds through the low-level
-/// map-to-map initializer — no artifact or git fixture, so the scoring is tested in isolation from
-/// both parsing and history walking.
 @Suite("Hotspots")
 struct HotspotsTests {
+
+    @Test("Each file carries the type that sets its complexity, nil when it has none")
+    func typeIsCarriedPerFile() {
+        let hotspots = Hotspots(
+            complexityByFile: ["Hot.swift": 40],
+            churnByFile: ["Hot.swift": 20, "Readme.md": 3],
+            typeByFile: ["Hot.swift": "App.Hot"]
+        )
+        #expect(hotspots.files.first { $0.path == "Hot.swift" }?.type == "App.Hot")
+        #expect(hotspots.files.first { $0.path == "Readme.md" }?.type == nil)
+    }
+
+    @Test("A report limited by top still counts every hotspot")
+    func reportTopKeepsFullCount() {
+        let hotspots = Hotspots(
+            complexityByFile: ["A.swift": 30, "B.swift": 50, "C.swift": 1, "D.swift": 1, "E.swift": 40],
+            churnByFile: ["A.swift": 10, "B.swift": 20, "C.swift": 1, "D.swift": 1, "E.swift": 30]
+        )
+        let report = Hotspots.Report(hotspots: hotspots, commitWindow: 50, top: 1)
+        #expect(report.hotspotCount == 2)
+        #expect(report.hotspots.map(\.path) == ["E.swift"])
+        #expect(report.filesScored == 5)
+    }
 
     @Test("A file above both medians is a hotspot")
     func aboveBothMediansIsHotspot() {

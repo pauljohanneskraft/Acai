@@ -1,5 +1,4 @@
-// Churn is a git-history walk via `AcaiGit` (libgit2), linked into the MCP server on macOS only —
-// the same gating `acai_image`/`AcaiRender` uses.
+// `AcaiGit` (libgit2) is linked into the MCP server on macOS only.
 #if os(macOS)
 import Foundation
 import MCP
@@ -43,13 +42,11 @@ struct HotspotsTool: AnalysisTool {
         }
         let churn = try churnByFile(at: url, limit: commits)
         let artifact = try await analysisArtifact(arguments, cache)
-        let payload = Payload(
+        let report = Hotspots.Report(
             hotspots: Hotspots(artifact: artifact, churnByFile: churn), commitWindow: commits, top: top)
-        return .json(try Value(payload))
+        return .json(try Value(report))
     }
 
-    /// Churn is the whole point of the report, so "no history here" is a named failure rather than a
-    /// ranked list that is silently empty.
     private func churnByFile(at url: URL, limit: Int) throws -> [String: Int] {
         do {
             guard let churn = try DirectoryChurn(directory: url).byFile(limit: limit) else {
@@ -64,26 +61,6 @@ struct HotspotsTool: AnalysisTool {
                 "\(url.path) is a shallow clone, so only the commits it happens to hold could be counted. "
                 + "Run `git fetch --unshallow` there first."
             )
-        }
-    }
-
-    private struct Payload: Codable {
-        var churnThreshold: Double
-        var complexityThreshold: Double
-        var commitWindow: Int
-        var filesScored: Int
-        /// Every file above both medians, even when `top` returns fewer.
-        var hotspotCount: Int
-        var hotspots: [Hotspots.File]
-
-        init(hotspots: Hotspots, commitWindow: Int, top: Int?) {
-            churnThreshold = hotspots.churnThreshold
-            complexityThreshold = hotspots.complexityThreshold
-            self.commitWindow = commitWindow
-            filesScored = hotspots.files.count
-            let ranked = hotspots.ranked
-            hotspotCount = ranked.count
-            self.hotspots = top.map { Array(ranked.prefix($0)) } ?? ranked
         }
     }
 }

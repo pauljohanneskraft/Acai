@@ -279,7 +279,7 @@ Churn is a git-history walk, so `path` must be inside a git checkout — a plain
 
 Plus `path` *, `languages`, `refresh`, `includeGenerated`.
 
-Result shape: `{ "churnThreshold": <median>, "complexityThreshold": <median>, "commitWindow": <n>, "filesScored": <n>, "hotspotCount": <n>, "hotspots": [{ "path", "churn", "complexity", "score", "isHotspot" }] }`, ranked highest score first. `hotspotCount` counts every file above both medians, even when `top` returns fewer.
+Result shape: `{ "churnThreshold": <median>, "complexityThreshold": <median>, "commitWindow": <n>, "filesScored": <n>, "hotspotCount": <n>, "hotspots": [{ "path", "type", "churn", "complexity", "score", "isHotspot" }] }`, ranked highest score first. `type` is the declared type whose most complex method sets `complexity`, omitted for a file that declares none. `hotspotCount` counts every file above both medians, even when `top` returns fewer.
 
 ### `acai_image` — macOS only
 

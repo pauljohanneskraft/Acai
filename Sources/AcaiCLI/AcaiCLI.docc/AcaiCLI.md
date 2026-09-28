@@ -324,9 +324,10 @@ walk, so `--source` must point inside a git checkout — a plain folder is an er
 | `--output <path>` | |
 
 `--format json` output: `{ "churnThreshold": <median>, "complexityThreshold": <median>,
-"commitWindow": <n>, "filesScored": <n>, "hotspotCount": <n>, "hotspots": [{ "path", "churn",
-"complexity", "score", "isHotspot" }] }`, ranked highest score first. `hotspotCount` counts every
-file above both medians, even when `--top` lists fewer.
+"commitWindow": <n>, "filesScored": <n>, "hotspotCount": <n>, "hotspots": [{ "path", "type",
+"churn", "complexity", "score", "isHotspot" }] }`, ranked highest score first. `type` is the declared
+type whose most complex method sets `complexity`, omitted for a file that declares none.
+`hotspotCount` counts every file above both medians, even when `--top` lists fewer.
 
 ```sh
 acai hotspots --source . --top 10

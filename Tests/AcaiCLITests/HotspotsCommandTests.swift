@@ -98,6 +98,7 @@ struct HotspotsCommandTests {
             let report = try JSONDecoder().decode(Report.self, from: try Data(contentsOf: output))
             #expect(report.hotspots.map(\.path) == ["Hot.swift"])
             let hot = try #require(report.hotspots.first)
+            #expect(hot.type == "Hot")
             #expect(hot.churn == 3)
             #expect(hot.complexity > 1)
             #expect(hot.score == hot.churn * hot.complexity)
@@ -118,6 +119,7 @@ struct HotspotsCommandTests {
 
             let text = try String(contentsOf: output, encoding: .utf8)
             #expect(text.contains("Hot.swift"))
+            #expect(text.contains("TYPE"))
             #expect(text.contains("last 10 commits"))
             #expect(!text.contains("Cold.swift"))
         }
@@ -179,6 +181,7 @@ struct HotspotsCommandTests {
     private struct Report: Decodable {
         struct File: Decodable {
             let path: String
+            let type: String?
             let churn: Int
             let complexity: Int
             let score: Int
