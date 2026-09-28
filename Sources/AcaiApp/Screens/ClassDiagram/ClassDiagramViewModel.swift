@@ -269,8 +269,8 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Dependents
 
-    /// Every type that (transitively) depends on `nodeID` — the same analysis backing `acai impact`
-    /// and the `acai_impact` MCP tool, reused rather than reimplemented.
+    /// Every type that (transitively) depends on `nodeID` — the same analysis backing `acai dependents`
+    /// and the `acai_dependents` MCP tool, reused rather than reimplemented.
     func dependents(for nodeID: String) -> [ImpactAnalysis.Dependent] {
         ImpactAnalysis(artifact: artifact, rootType: nodeID).report.dependents
     }

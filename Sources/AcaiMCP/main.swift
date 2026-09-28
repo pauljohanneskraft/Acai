@@ -10,8 +10,8 @@ let server = Server(
         an unfamiliar or large codebase: acai_analyze to index a project (set health to check the parse \
         is trustworthy before relying on the rest), then acai_metrics for the raw numbers and \
         acai_quality to find architectural debt, god classes, and code smells (or gate a rules file). \
-        acai_callgraph reports method-level metrics, cycles, or dead code; acai_impact gauges whether a \
-        change is safe; acai_inspect locates types, members, and enums. Every result carries file:line \
+        acai_callgraph reports method-level metrics, cycles, or dead code; acai_dependents gauges whether \
+        a change is safe; acai_inspect locates types, members, and enums. Every result carries file:line \
         jump targets.
         """,
     capabilities: .init(tools: .init(listChanged: false)))

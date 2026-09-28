@@ -130,7 +130,7 @@ Deliberately returns a compact snapshot, not the full model — the whole artifa
 > **Run `health: true` before trusting anything else.** A low score means the parse is incomplete, and every metric, cycle and diagram built on it is unreliable.
 
 You don't have to run it separately every time: `acai_metrics`, `acai_quality`, `acai_callgraph`,
-`acai_inspect`, `acai_diff` and `acai_impact` each embed a compact `health` object (`score`,
+`acai_inspect`, `acai_diff` and `acai_dependents` each embed a compact `health` object (`score`,
 `diagnosticCount`, `countsByKind` — the same shape `acai_analyze`'s `health: true` report uses, without
 its full per-diagnostic list) in their JSON result, so a caller reads one field regardless of which
 tool produced it. `acai_diff` combines both sides into the weaker-trust view. `acai_diagram` has no
@@ -205,7 +205,7 @@ Legal values for `kind`, `minAccess` and `memberKind` are the same lists the CLI
 
 Result shape: `{ "types": [<TypeQuery.TypeRow>], "health": <HealthCheck.Summary> }`, or with `enums: true`: `{ "enums": [<EnumInventory.Entry>], "health": <HealthCheck.Summary> }`.
 
-### `acai_impact`
+### `acai_dependents`
 
 The blast radius of a type: every type that transitively depends on it, with `file:line`. Use it before refactoring or deleting something.
 
@@ -218,7 +218,9 @@ The blast radius of a type: every type that transitively depends on it, with `fi
 
 The only tool with two required properties.
 
-Result shape: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summary> }`.
+Result shape: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summary> }` — the key keeps its original name, so the result shape is unchanged by the rename.
+
+> **`acai_impact` still answers.** It is a deprecated alias for `acai_dependents`, identical in schema and result. It is left out of `tools/list`, so an agent only ever discovers the current name, and it will be removed in a later major release.
 
 ### `acai_diff`
 
@@ -267,7 +269,7 @@ Identical to `acai_diagram`, minus `format`, plus:
 | Property | Type | Notes |
 | --- | --- | --- |
 | `scale` | number | Resolution factor, default `2`. |
-| `theme` | `default` \| `dark` | Default light. |
+| `theme` | `light` \| `dark` | Default light. `default` is still accepted as a deprecated spelling of `light`. |
 
 Returns base64 PNG image content.
 
@@ -308,7 +310,7 @@ The loop is *measurement narrows → reading confirms → editing fixes → re-r
 1. Gate on `acai_analyze` with `health: true`. A bad parse invalidates everything downstream.
 2. `acai_analyze` once to index; every other call reuses that snapshot.
 3. `acai_metrics` to rank outliers, `acai_quality` for verdicts.
-4. `acai_inspect` / `acai_callgraph` / `acai_impact` to localise — and the diagram tools to cross-check the numbers against visual gestalt.
+4. `acai_inspect` / `acai_callgraph` / `acai_dependents` to localise — and the diagram tools to cross-check the numbers against visual gestalt.
 5. Open the *specific* flagged files, make a bounded fix, re-run, and assert the metric actually moved and no new cycle appeared.
 
 The skill is explicit that the tool measures and you judge: a data-model core legitimately has high fan-in, and a metric is a question, not a defect.
@@ -331,6 +333,6 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 | `acai_diagram` | Defaults to `mermaid` where the CLI defaults to `dot`. Exposes none of the class-diagram flags, no theme, no config file, no focus direction/relationship control. |
 | `acai_image` | No `--grouping`, `--hide-members`, `--min-access`, or delta-image inputs. |
 
-`acai_inspect` and `acai_impact` are at full parity.
+`acai_inspect` and `acai_dependents` are at full parity.
 
 **No MCP equivalent at all:** `store`, `list`, `rules`.

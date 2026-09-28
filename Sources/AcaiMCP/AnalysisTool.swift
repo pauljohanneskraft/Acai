@@ -8,10 +8,16 @@ protocol AnalysisTool: Sendable {
     var description: String { get }
     var inputSchema: Value { get }
 
+    /// A tool kept callable under a superseded name. `tools/list` leaves these out, so an agent only
+    /// ever discovers the current name.
+    var isDeprecatedAlias: Bool { get }
+
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput
 }
 
 extension AnalysisTool {
+    var isDeprecatedAlias: Bool { false }
+
     func resolveArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
     ) async throws -> CodeArtifact {

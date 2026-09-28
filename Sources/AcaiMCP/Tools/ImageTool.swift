@@ -22,7 +22,7 @@ struct ImageTool: AnalysisTool {
                 "description": "Diagram kind (default class)."
             ],
             "scale": ["type": "number", "description": "Output resolution scale factor (default 2)."],
-            "theme": ["type": "string", "enum": ["default", "dark"], "description": "Colour theme (default light)."],
+            "theme": ["type": "string", "enum": ["light", "dark"], "description": "Colour theme (default light)."],
             "focus": ["type": "string", "description": "Class diagram: focus on this type's neighbourhood."],
             "focusDepth": ["type": "integer", "description": "Class diagram: max focus traversal depth."],
             "scope": ["type": "string", "description": "Call graph: 'type:Name' or 'module:Name'."],

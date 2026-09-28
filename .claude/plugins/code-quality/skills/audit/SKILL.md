@@ -38,7 +38,7 @@ the default path for the interactive audit. Call **`acai_analyze <path>` with `h
   recursion, hot methods, coverage; `scope: type:Name|module:Name`), `cycles` (method-level SCCs /
   mutual recursion), `deadcode` (uncalled non-entry-point candidates — always read the reported
   **coverage**, since low coverage means more false positives).
-- **`acai_impact <type>`** — the blast radius (transitive dependents) of a type — "is this safe to
+- **`acai_dependents <type>`** — the blast radius (transitive dependents) of a type — "is this safe to
   change?" before you touch it.
 - **`acai_diff` (`pathOld`, `pathNew`)** — the structural delta between two revisions (added/removed
   types, changed relationships, metric movement). Each side is a source dir or a `.json` baseline —
