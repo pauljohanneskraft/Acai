@@ -16,16 +16,6 @@ struct DiagramTool: AnalysisTool {
 
     var inputSchema: Value {
         var properties: [String: Value] = [
-            "kind": [
-                "type": "string",
-                "enum": ["class", "package", "moduleCoupling", "sequence", "state", "callgraph"],
-                "description": "Diagram kind (default class)."
-            ],
-            "format": [
-                "type": "string",
-                "enum": ["dot", "mermaid"],
-                "description": "Output format (default mermaid)."
-            ],
             "focus": ["type": "string", "description": "Class diagram: focus on this type's neighbourhood."],
             "focusDepth": ["type": "integer", "description": "Class diagram: max focus traversal depth."],
             "scope": ["type": "string", "description": "Call graph: 'type:Name' or 'module:Name'."],
@@ -95,9 +85,6 @@ struct DiagramTool: AnalysisTool {
         case .callgraph:
             let request = CallGraphRequest(scope: CallGraphScopeOption(raw: arguments.string("scope")))
             return try CallGraphTextExporter(request: request, theme: nil).export(from: artifact)
-        default:
-            throw MCPError.invalidParams(
-                "kind must be class, package, moduleCoupling, sequence, state, or callgraph.")
         }
     }
 

@@ -1,7 +1,18 @@
 import AcaiLibrary
 
-/// The diagram kinds `acai_diagram` and `acai_image` render.
+/// The diagram kinds `acai_diagram` renders as text.
 enum DiagramKind: String, ArgumentOption {
+    case `class`
+    case package
+    case moduleCoupling
+    case sequence
+    case state
+    case callgraph
+}
+
+/// The diagram kinds `acai_image` renders to a PNG — `moduleCoupling` has no image renderer, matching
+/// `acai image`, which rejects `--module-coupling`.
+enum ImageDiagramKind: String, ArgumentOption {
     case `class`
     case package
     case sequence
@@ -65,6 +76,11 @@ extension EnumArgument where Option == MemberKind {
 }
 
 extension EnumArgument where Option == DiagramKind {
+    static let kind = EnumArgument(
+        name: "kind", description: "Diagram kind (default class).")
+}
+
+extension EnumArgument where Option == ImageDiagramKind {
     static let kind = EnumArgument(
         name: "kind", description: "Diagram kind (default class).")
 }

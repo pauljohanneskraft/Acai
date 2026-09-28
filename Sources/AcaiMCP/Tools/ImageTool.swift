@@ -33,13 +33,13 @@ struct ImageTool: AnalysisTool {
                 "description": "Sequence: 'Protocol=Concrete' receiver mappings."
             ]
         ]
-        properties.merge(EnumArgument<DiagramKind>.kind.property) { $1 }
+        properties.merge(EnumArgument<ImageDiagramKind>.kind.property) { $1 }
         properties.merge(EnumArgument<ThemeOption>.theme.property) { $1 }
         return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
-        let kind = try EnumArgument<DiagramKind>.kind.value(in: arguments, or: .class)
+        let kind = try EnumArgument<ImageDiagramKind>.kind.value(in: arguments, or: .class)
         let theme = try EnumArgument<ThemeOption>.theme.value(in: arguments, or: .light)
         let artifact = try await resolveArtifact(arguments, cache)
         do {
@@ -53,7 +53,7 @@ struct ImageTool: AnalysisTool {
     }
 
     private func renderData(
-        _ kind: DiagramKind, theme: ThemeOption, _ arguments: ToolArguments, artifact: CodeArtifact
+        _ kind: ImageDiagramKind, theme: ThemeOption, _ arguments: ToolArguments, artifact: CodeArtifact
     ) async throws -> Data {
         let scale = try arguments.double("scale") ?? 2
         let palette = theme.palette

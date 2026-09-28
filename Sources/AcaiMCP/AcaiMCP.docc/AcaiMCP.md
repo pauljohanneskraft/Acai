@@ -276,6 +276,7 @@ Identical to `acai_diagram`, minus `format`, plus:
 
 | Property | Type | Notes |
 | --- | --- | --- |
+| `kind` | `class` \| `package` \| `sequence` \| `state` \| `callgraph` | Default `class`. No `moduleCoupling` — it has no image renderer, as `acai image` also rejects `--module-coupling`. Render it as text with `acai_diagram`. |
 | `scale` | number | Resolution factor, default `2`. |
 | `theme` | `light` \| `dark` | Default light. `default` is still parsed as a deprecated spelling of `light`, but the schema no longer advertises it. |
 
