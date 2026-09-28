@@ -57,7 +57,12 @@ enum CLITestSupport {
         return try #require(root as? AcaiCommand.CallGraph)
     }
 
-    static func parseImpact(_ arguments: [String]) throws -> AcaiCommand.Impact {
+    static func parseDependents(_ arguments: [String]) throws -> AcaiCommand.Dependents {
+        let root = try AcaiCommand.parseAsRoot(["dependents"] + arguments)
+        return try #require(root as? AcaiCommand.Dependents)
+    }
+
+    static func parseImpactAlias(_ arguments: [String]) throws -> AcaiCommand.Impact {
         let root = try AcaiCommand.parseAsRoot(["impact"] + arguments)
         return try #require(root as? AcaiCommand.Impact)
     }

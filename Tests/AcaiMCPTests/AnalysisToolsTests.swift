@@ -62,7 +62,7 @@ struct AnalysisToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
             let value = try await MCPTestSupport.call(
-                "acai_impact", on: .standard, path: dir, ["type": .string("Repository")])
+                "acai_dependents", on: .standard, path: dir, ["type": .string("Repository")])
             let object = try #require(value.objectValue?["impact"]?.objectValue)
             #expect(object["found"]?.boolValue == true)
             #expect((object["blastRadius"]?.intValue ?? 0) >= 1)
@@ -182,7 +182,7 @@ struct AnalysisToolsTests {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeLowTrustSwiftSource(in: dir)
             let value = try await MCPTestSupport.call(
-                "acai_impact", on: .standard, path: dir, ["type": .string("Broken")])
+                "acai_dependents", on: .standard, path: dir, ["type": .string("Broken")])
             #expect(number(value.objectValue?["health"]?.objectValue?["score"]) ?? 1 < 1)
         }
     }
