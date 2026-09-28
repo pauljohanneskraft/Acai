@@ -8829,6 +8829,50 @@
         }
       }
     },
+    "View.CodebaseDetailView.LinesOfCode" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codezeilen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lines of Code"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lignes de code"
+          }
+        }
+      }
+    },
+    "View.CodebaseDetailView.LinesOfCodeBlurb" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Physische Zeilen, die ein Typ einnimmt, von der ersten bis zur letzten — einschließlich Members, die aus Extensions in anderen Dateien zusammengeführt wurden. Die Zahl, zu der die meisten zuerst greifen, um einen Typ einzuschätzen, und der Nenner, der die übrigen Messwerte zwischen einem kleinen und einem großen Typ vergleichbar macht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Physical lines a type occupies, from its first to its last — including members merged in from extensions in other files. The number most people reach for first when sizing a type, and the denominator that makes the other measurements comparable between a small type and a large one."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lignes physiques occupées par un type, de la première à la dernière — y compris les membres fusionnés depuis des extensions situées dans d'autres fichiers. Le chiffre vers lequel on se tourne d'abord pour évaluer la taille d'un type, et le dénominateur qui rend les autres mesures comparables entre un petit type et un grand."
+          }
+        }
+      }
+    },
     "View.CodebaseDetailView.Max %@" : {
       "localizations" : {
         "de" : {

@@ -295,7 +295,9 @@ acai image --source-old ./before --source ./after --output delta.png
 | `--sort <metric>` | Ranking for the human tables. Default `fanOut`. |
 | `--top <n>` | Limit the human type table. |
 
-`--sort` accepts: `fanOut`, `fanIn`, `weightedMethods`, `depthOfInheritance`, `numberOfChildren`, `responseForClass`, `publicMemberCount`, `publicMemberRatio`, `mutablePublicState`, `maxParameters`, `meanParameters`, `dataClassScore`, `overrideCount`, `nestingDepth`, `deepAndWide`, `lackOfCohesion`, `featureEnvyMethods`.
+`--sort` accepts: `fanOut`, `fanIn`, `weightedMethods`, `depthOfInheritance`, `numberOfChildren`, `responseForClass`, `publicMemberCount`, `publicMemberRatio`, `mutablePublicState`, `maxParameters`, `meanParameters`, `dataClassScore`, `overrideCount`, `nestingDepth`, `deepAndWide`, `lackOfCohesion`, `featureEnvyMethods`, `linesOfCode`.
+
+**`linesOfCode`** is *physical* lines — every line from a declaration's first to its last, blanks and comments included. It is counted as a union of line ranges per file rather than a sum, so a nested type's lines are not charged again to the type that encloses it, and a type whose behaviour lives in extensions in other files is credited with those lines too. Module totals attribute each declaration to the file it was written in, so a cross-module extension counts toward the module that declares it. Per type it appears as the `loc` column and `TypeMetric.linesOfCode`; per module as the module table's `loc` and `ModuleCoupling.linesOfCode`; across the codebase as the summary's `Lines:` and `Counts.linesOfCode`, which also covers free functions and module-scope variables.
 
 `--format json` output: `{ "metrics": <CodeMetrics>, "health": <HealthCheck.Summary> }`.
 
@@ -346,7 +348,7 @@ movements:
     metric: distance         # no minImprovement: must simply not regress
 ```
 
-**Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`.
+**Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`, `linesOfCode` (see [`metrics`](#metrics) for what it counts).
 
 **Scoping a budget to one language.** A type-scoped budget's `target` may carry a `language` (e.g. `swift`, `c`, `kotlin` — the same values as `--language`), so it only matches types parsed from that language. Omitted, the budget applies to every language, as before. This matters most for a metric a language without encapsulation can't mean the same thing by — C gives every struct field `.public` since it has no access-control keywords, so an unscoped `mutablePublicState` budget in a codebase with any C is set by C's meaningless maximum rather than the OO languages it's meant to protect. `acai rules` seeds one `mutablePublicState` hint per language present when the codebase has more than one, each `target`-scoped to it.
 

@@ -28,4 +28,5 @@ extension CodebaseDetailView {
     static let numberOfChildrenBlurb: LocalizedStringResource = .app("View.CodebaseDetailView.NumberOfChildrenBlurb")
     static let efferentBlurb: LocalizedStringResource = .app("View.CodebaseDetailView.EfferentBlurb")
     static let afferentBlurb: LocalizedStringResource = .app("View.CodebaseDetailView.AfferentBlurb")
+    static let linesOfCodeBlurb: LocalizedStringResource = .app("View.CodebaseDetailView.LinesOfCodeBlurb")
 }

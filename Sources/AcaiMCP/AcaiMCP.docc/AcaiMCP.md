@@ -139,11 +139,11 @@ extra leading text block naming the diagnostic count before the diagram text.
 
 ### `acai_metrics`
 
-Per-module coupling and instability; per-type fan-in/out, weighted methods, inheritance depth, cohesion (LCOM) and data-class score. Use it to find god classes and coupling hotspots before a refactor.
+Per-module coupling and instability; per-type fan-in/out, weighted methods, inheritance depth, cohesion (LCOM), data-class score and physical lines of code. Use it to find god classes and coupling hotspots before a refactor.
 
 Properties: `path` *, `languages`, `refresh`, `includeGenerated`.
 
-Rank client-side: high `fanOut` means too many collaborators (an SRP risk), high `fanIn` means a change-magnet hub, high `weightedMethods` means a god class.
+Rank client-side: high `fanOut` means too many collaborators (an SRP risk), high `fanIn` means a change-magnet hub, high `weightedMethods` means a god class. `linesOfCode` is reported per type, per module and across the codebase (`counts.linesOfCode`), and is the natural denominator when comparing two types' other numbers.
 
 Result shape: `{ "metrics": <CodeMetrics>, "health": <HealthCheck.Summary> }`.
 
