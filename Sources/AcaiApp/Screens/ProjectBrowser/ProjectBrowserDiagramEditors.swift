@@ -85,12 +85,15 @@ struct GeneratedDiagramEditor {
         mutate(diagramID, clearPositions: false) { $0.sequenceConfiguration?.filter = filter }
     }
 
+    /// `debounced` is for saves a user can produce in a burst — recentring the canvas on every
+    /// search match — where writing the file on each one stutters the pan animation.
     func updatePositions(
         diagramID: UUID,
         positions: [String: CGPoint],
         sizes: [String: CGSize] = [:],
         scale: CGFloat,
-        offset: CGPoint
+        offset: CGPoint,
+        debounced: Bool = false
     ) {
         guard var diagram = store.generatedDiagrams[diagramID] else { return }
         diagram.nodePositions = positions.mapValues { .init(point: $0) }
@@ -101,7 +104,11 @@ struct GeneratedDiagramEditor {
         diagram.canvasOffsetX = Double(offset.x)
         diagram.canvasOffsetY = Double(offset.y)
         diagram.lastModified = Date()
-        store.saveGeneratedDiagram(diagram)
+        if debounced {
+            store.saveGeneratedDiagramDebounced(diagram)
+        } else {
+            store.saveGeneratedDiagram(diagram)
+        }
         notify()
     }
 
@@ -210,6 +217,7 @@ struct ProjectCodebaseEditor {
     let invalidateAnalysis: (UUID) -> Void
     /// Real network clone/fetch, swapped for a fixture under a UI test — see `GitRemoteService`.
     var remoteService: GitRemoteService = GitRemoteServiceResolver().resolve()
+    var analyzers: CodebaseAnalyzerProviding = CodebaseAnalyzingResolver()
 
     // MARK: Projects
 
@@ -264,7 +272,10 @@ struct ProjectCodebaseEditor {
     /// Re-points an existing codebase at another folder — the recovery from a directory that was
     /// deleted, moved off a bookmark, or that the sandbox no longer grants access to. Updates the
     /// codebase in place rather than adding one, so its diagrams and artifact survive.
-    func relocateCodebase(id: UUID, directoryURL: URL, securityScopedBookmark: SecurityScopedBookmark?) {
+    @discardableResult
+    func relocateCodebase(
+        id: UUID, directoryURL: URL, securityScopedBookmark: SecurityScopedBookmark?
+    ) -> Task<OperationOutcome, Never> {
         mutateCodebase(id) {
             $0.directoryPath = directoryURL.path
             $0.securityScopedBookmark = securityScopedBookmark
@@ -276,23 +287,25 @@ struct ProjectCodebaseEditor {
         }
         store.artifacts.removeValue(forKey: id)
         invalidateAnalysis(id)
-        Task { await reindex(codebaseID: id) }
+        return Task { await reindex(codebaseID: id) }
     }
 
-    func removeCodebase(_ codebaseID: UUID) {
+    /// The codebase leaves the store before its worktree is removed, so the row disappears at once
+    /// and the git work that follows can be awaited.
+    func removeCodebase(_ codebaseID: UUID) async {
         let removedCodebase = codebase(for: codebaseID)
         for i in store.projects.indices {
             store.deleteCodebaseData(codebaseID, fromProjectAt: i)
         }
-        if removedCodebase?.managedCheckout != nil {
-            removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
-        }
         persist()
+        if removedCodebase?.managedCheckout != nil {
+            await removeWorktree(codebaseID: codebaseID, repository: removedCodebase?.repository)
+        }
     }
 
     /// Deregisters and deletes a codebase's linked worktree, and the shared hub clone with it once no
     /// other codebase's worktree is left on it.
-    private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) {
+    private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) async {
         let worktreeDirectory = store.gitWorktreeURL(for: codebaseID)
         guard let repository else {
             try? FileManager.default.removeItem(at: worktreeDirectory)
@@ -301,18 +314,15 @@ struct ProjectCodebaseEditor {
         let sync = GitWorktreeSync(
             transportURL: repository.remoteURL, ref: repository.ref,
             hubStoreDirectory: store.gitRepositoriesDir, locks: store.gitRepositoryLocks)
-        let worktreeName = store.gitWorktreeName(for: codebaseID)
-        let store = store
-        Task {
-            guard sync.hub.isCloned else {
-                try? FileManager.default.removeItem(at: worktreeDirectory)
-                return
-            }
-            do {
-                try await sync.removeWorktree(named: worktreeName)
-            } catch {
-                store.report(.app("Error.ProjectBrowserViewModel.RemoveCloneFailed \(error.localizedDescription)"))
-            }
+        defer { store.repositoryChanges.send(repository.remoteURL) }
+        guard sync.hub.isCloned else {
+            try? FileManager.default.removeItem(at: worktreeDirectory)
+            return
+        }
+        do {
+            try await sync.removeWorktree(named: store.gitWorktreeName(for: codebaseID))
+        } catch {
+            store.report(.app("Error.ProjectBrowserViewModel.RemoveCloneFailed \(error.localizedDescription)"))
         }
     }
 

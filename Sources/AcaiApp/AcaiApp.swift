@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 /// The app's shared root scene content. `AcaiApp` is a library, not an executable — each platform's
 /// real `@main` entry point lives in the XcodeGen-generated Xcode project under `App/` (one file
@@ -18,7 +21,16 @@ public struct AcaiRootScene: Scene {
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
     #endif
 
-    public init() {}
+    public init() {
+        #if os(iOS)
+        // A text cursor blinks, so any capture of a focused field alternates forever and never
+        // settles — the caret is per-run content in the same way a clock is. Hidden for a UI-test
+        // launch only; `resolveBaseDir()` is inert in release.
+        if UITestFixtureResolver().resolveBaseDir() != nil {
+            UITextField.appearance().tintColor = .clear
+        }
+        #endif
+    }
 
     public var body: some Scene {
         WindowGroup {

@@ -7,7 +7,7 @@ import AcaiQuality
 /// Diagram: opening a dependency cycle now creates a class or package diagram scoped to exactly
 /// that cycle's members, reusing the same selector-filter mechanism `createDiagramFromSelection`
 /// already established for an arbitrary node selection.
-@Suite("Open Cycle as Diagram")
+@Suite("Open Cycle as Diagram", .timeLimit(.minutes(1)))
 @MainActor
 struct OpenCycleDiagramTests {
     private func withTempStoreDir<T>(_ body: (URL) throws -> T) rethrows -> T {

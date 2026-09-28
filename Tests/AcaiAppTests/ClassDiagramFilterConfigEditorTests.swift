@@ -8,7 +8,7 @@ import AcaiQuality
 /// Covers the config-mutation binding the Filter section's `SelectorEditor` writes through
 /// (`ClassDiagramConfigEditor.mutate`) — a unit test rather than a render snapshot, since the
 /// section itself is `Form`-based (see the module's render-snapshot exclusions).
-@Suite("Class Diagram Filter Config Editor")
+@Suite("Class Diagram Filter Config Editor", .timeLimit(.minutes(1)))
 @MainActor
 struct ClassDiagramFilterConfigEditorTests {
 

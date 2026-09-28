@@ -575,14 +575,30 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "double"
+              }
             },
             {
               "internalName" : "y",
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "double"
+              }
             }
           ],
           "referencedTypeNames" : [
@@ -1127,7 +1143,15 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
             }
           ],
           "referencedTypeNames" : [
@@ -2593,6 +2617,51 @@
                 "isArray" : false,
                 "isOptional" : false,
                 "name" : "void Function(int)"
+              }
+            },
+            {
+              "internalName" : "times",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            },
+            {
+              "internalName" : "repeat",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            },
+            {
+              "internalName" : "at",
+              "isVariadic" : false,
+              "modifiers" : [
+                "covariant"
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Point"
               }
             }
           ],

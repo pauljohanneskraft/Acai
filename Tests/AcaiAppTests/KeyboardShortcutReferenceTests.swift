@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Keyboard Shortcut Reference")
+@Suite("Keyboard Shortcut Reference", .timeLimit(.minutes(1)))
 struct KeyboardShortcutReferenceTests {
     private let sourceRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()

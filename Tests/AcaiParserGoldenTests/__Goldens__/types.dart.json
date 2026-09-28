@@ -615,7 +615,22 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "T"
+                  }
+                ],
+                "isArray" : true,
+                "isOptional" : false,
+                "name" : "List"
+              }
             }
           ],
           "referencedTypeNames" : [
@@ -946,7 +961,53 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "int"
+              }
+            },
+            {
+              "internalName" : "cache",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "String"
+                  },
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "List"
+                  },
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "T"
+                  }
+                ],
+                "isArray" : false,
+                "isOptional" : true,
+                "name" : "Map"
+              }
             }
           ],
           "referencedTypeNames" : [
@@ -1197,7 +1258,15 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              }
             }
           ],
           "referencedTypeNames" : [
@@ -1332,7 +1401,15 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Object"
+              }
             }
           ],
           "referencedTypeNames" : [
@@ -2339,7 +2416,15 @@
               "isVariadic" : false,
               "modifiers" : [
 
-              ]
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Store"
+              }
             }
           ],
           "referencedTypeNames" : [

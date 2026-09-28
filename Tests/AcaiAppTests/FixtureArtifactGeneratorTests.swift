@@ -8,7 +8,7 @@ import AcaiCore
 /// `ACAI_UITEST_CODEBASE_ARTIFACTS`/`ACAI_UITEST_COMPARISON_ARTIFACTS`, instead of driving a real parse
 /// through the UI. Re-run this whenever `Fixtures/seeded/SampleSwiftPackage` changes; never hand-edit
 /// the generated JSON.
-@Suite("Fixture CodeArtifact generation (record mode)")
+@Suite("Fixture CodeArtifact generation (record mode)", .timeLimit(.minutes(1)))
 struct FixtureArtifactGeneratorTests {
     private var sampleSwiftPackageDirectory: URL {
         URL(fileURLWithPath: #filePath)
@@ -44,8 +44,12 @@ struct FixtureArtifactGeneratorTests {
         try write(currentArtifact, to: "seeded-with-added.json")
     }
 
+    /// Sorted and indented so a re-record shows only what actually changed — the encoder's key order
+    /// is otherwise arbitrary and rewrites the whole file. Only these committed fixtures are written
+    /// this way; the app's own persistence is untouched, and decoding ignores both.
     private func write(_ artifact: CodeArtifact, to filename: String) throws {
-        let data = try JSONEncoder().encode(artifact)
-        try data.write(to: artifactsDirectory.appendingPathComponent(filename))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(artifact).write(to: artifactsDirectory.appendingPathComponent(filename))
     }
 }

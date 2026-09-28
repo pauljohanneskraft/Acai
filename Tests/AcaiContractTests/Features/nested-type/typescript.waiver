@@ -1,0 +1,1 @@
+TypeScript has no nested class declaration; a class can only be nested inside a namespace, which is a different construct.

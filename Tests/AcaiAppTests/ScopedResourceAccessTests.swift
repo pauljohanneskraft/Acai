@@ -6,7 +6,7 @@ import Testing
 /// so these cover everything around it: the plain-path fallback, the probe that turns an
 /// unreachable directory into a specific error instead of an empty file list, and the bookmark
 /// round-trip that follows a folder to a new location.
-@Suite("ScopedResourceAccess")
+@Suite("ScopedResourceAccess", .timeLimit(.minutes(1)))
 struct ScopedResourceAccessTests {
 
     private func makeTempDirectory() throws -> URL {

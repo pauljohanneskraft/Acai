@@ -1,0 +1,1 @@
+C has no class and no per-member visibility; every struct field is visible wherever the struct is.

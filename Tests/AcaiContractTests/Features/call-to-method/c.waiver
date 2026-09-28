@@ -1,0 +1,1 @@
+C has no member functions, so a call runs from a free function to a free function rather than from one type's method to another's.

@@ -1,0 +1,1 @@
+C has no constructor; a struct is initialised by an initializer list or a hand-written init function, neither of which is a member.

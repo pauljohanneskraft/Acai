@@ -1,0 +1,9 @@
+{
+  "types": [
+    { "name": "Playable", "kind": "interface", "access": "+" },
+    { "name": "Song", "kind": "class", "access": "+", "supertypes": ["Playable"] }
+  ],
+  "relationships": [
+    { "kind": "conformance", "source": "Song", "target": "Playable" }
+  ]
+}

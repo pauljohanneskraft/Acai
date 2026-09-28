@@ -1,3 +1,4 @@
+import AcaiCore
 import Foundation
 
 /// A package/module **dependency diagram**: one node per build module (SwiftPM
@@ -25,6 +26,10 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         /// 1 = either the "zone of pain" or the "zone of uselessness").
         public var distanceFromMainSequence: Double {
             abs(abstractness + instability - 1)
+        }
+
+        public var mainSequenceZone: MainSequenceZone {
+            MainSequenceZone(instability: instability, distanceFromMainSequence: distanceFromMainSequence)
         }
 
         /// A green→red hex tint (`#rrggbb`) keyed on `distanceFromMainSequence`, shared by the
@@ -86,5 +91,17 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         self.title = title
         self.nodes = nodes
         self.edges = edges
+    }
+
+    /// Stable-Dependencies-Principle breaches: edges pointing at a *less* stable module (strictly
+    /// higher instability). Read off the diagram's own nodes, using the same comparison
+    /// `CodeMetrics.ModuleCoupling.stableDependencyViolations` makes, so no second metrics pass is
+    /// needed to mark them.
+    public var stableDependencyBreaches: Set<Edge> {
+        let instabilityByID = Dictionary(nodes.map { ($0.id, $0.instability) }) { first, _ in first }
+        return Set(edges.filter { edge in
+            guard let from = instabilityByID[edge.from], let to = instabilityByID[edge.to] else { return false }
+            return to > from
+        })
     }
 }

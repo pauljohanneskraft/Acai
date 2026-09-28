@@ -3,7 +3,7 @@ import Testing
 import AcaiQuality
 @testable import AcaiApp
 
-@Suite("Diagram create from selection")
+@Suite("Diagram create from selection", .timeLimit(.minutes(1)))
 @MainActor
 struct DiagramCreateFromSelectionTests {
     private func withTempStoreDir<T>(_ body: (URL) throws -> T) rethrows -> T {

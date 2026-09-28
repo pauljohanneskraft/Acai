@@ -1,0 +1,1 @@
+JavaScript can only add a member by mutating the prototype at runtime, which is not a declaration.

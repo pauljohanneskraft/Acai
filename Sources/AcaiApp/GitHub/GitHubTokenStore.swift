@@ -13,8 +13,15 @@ struct GitHubTokenStore {
     /// When a UI-test fixture is active, storage redirects to a plain JSON file under the
     /// fixture's disposable directory instead. `resolveBaseDir()` is `nil` for every real user
     /// launch, so a real credential can never land in a plain file.
-    private var fixtureFileURL: URL? {
-        UITestFixtureResolver().resolveBaseDir()?.appendingPathComponent("github-token.json")
+    private let fixtureFileURL: URL?
+
+    init() {
+        fixtureFileURL = UITestFixtureResolver().resolveBaseDir()?.appendingPathComponent("github-token.json")
+    }
+
+    /// A file instead of the Keychain, for a test's disposable directory.
+    init(fileURL: URL) {
+        fixtureFileURL = fileURL
     }
 
     struct StoredAccount: Codable, Hashable {
@@ -23,8 +30,7 @@ struct GitHubTokenStore {
         var avatarURL: URL?
         /// Read from the `X-OAuth-Scopes` response header at sign-in time — classic PATs and
         /// OAuth/device-flow tokens report this; fine-grained PATs currently don't, so `nil` here
-        /// means "unknown," distinct from `[]` ("confirmed to have none"). Also decodes to `nil`
-        /// for every account persisted before this field existed (see `GitHubTokenStoreMigrationTests`).
+        /// means "unknown," distinct from `[]` ("confirmed to have none").
         var scopes: [String]?
         /// `nil` means "no known expiry" (a classic PAT, or a fine-grained PAT whose expiry wasn't
         /// reported).

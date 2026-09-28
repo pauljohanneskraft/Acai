@@ -68,7 +68,9 @@ struct JSMemberExtractor {
         return Member(
             name: name.isEmpty ? "_anonymous" : name,
             kind: sig.kind,
-            accessLevel: sig.accessLevel ?? .internal,
+            // A class member with no accessibility modifier is public in both TypeScript and
+            // JavaScript; only a `#name` or an explicit `private`/`protected` narrows it.
+            accessLevel: sig.accessLevel ?? .public,
             modifiers: sig.modifiers,
             type: returnType,
             parameters: parameters,
@@ -89,7 +91,10 @@ struct JSMemberExtractor {
         var modifiers: [Modifier] = []
         var isComputed = false
 
-        for child in node.children() {
+        // Excluding the `name` field: a method *called* `get`, `set`, `static` or `async` is not a
+        // getter or a static member, and reading its name as a keyword misclassified it.
+        let nameRange = node.child(byFieldName: "name")?.range
+        for child in node.children() where child.range != nameRange {
             let childText = child.text(in: context)
             if let modifier = Self.methodKeywordModifiers[childText] {
                 modifiers.append(modifier)

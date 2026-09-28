@@ -38,7 +38,7 @@ private final class CountingParser: CodeParser, @unchecked Sendable {
     }
 }
 
-@Suite("AnalysisService cancellation")
+@Suite("AnalysisService cancellation", .timeLimit(.minutes(1)))
 struct AnalysisServiceCancellationTests {
     private func makeTempDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory

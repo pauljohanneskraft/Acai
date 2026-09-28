@@ -9,7 +9,7 @@ import XCTest
 @MainActor
 final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
     func testSequenceDiagramScreenshot() throws {
-        let codebaseDetail = openIndexedSeededCodebase()
+        let codebaseDetail = openPreindexedSeededCodebase()
         let sequence = codebaseDetail.openDiagramConfiguration(
             type: "sequence", as: SequenceDiagramScreen.self, until: { $0.typePicker }
         )
@@ -27,7 +27,7 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
     }
 
     func testStateDiagramScreenshot() throws {
-        let codebaseDetail = openIndexedSeededCodebase()
+        let codebaseDetail = openPreindexedSeededCodebase()
         let state = codebaseDetail.openDiagramConfiguration(
             type: "state", as: StateDiagramScreen.self, until: { $0.scopePicker }
         )
@@ -47,7 +47,7 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
     }
 
     func testPackageDiagramScreenshot() throws {
-        let codebaseDetail = openIndexedSeededCodebase()
+        let codebaseDetail = openPreindexedSeededCodebase()
         let package = codebaseDetail.createDiagram(type: "package", as: PackageDiagramScreen.self)
 
         package.containerNode(named: "SampleSwiftPackage").waitOrFail("the SampleSwiftPackage module", timeout: .uiWork)
@@ -57,7 +57,7 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
     }
 
     func testCallGraphScreenshot() throws {
-        let codebaseDetail = openIndexedSeededCodebase()
+        let codebaseDetail = openPreindexedSeededCodebase()
         let callGraph = codebaseDetail.openDiagramConfiguration(
             type: "callGraph", as: CallGraphScreen.self, until: { $0.createButton }
         )
