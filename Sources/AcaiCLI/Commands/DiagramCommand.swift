@@ -57,6 +57,10 @@ extension AcaiCommand {
                 export = try PackageDiagramTextExporter(
                     languages: artifact.standardLanguageResolver, theme: selectedTheme, maxNodes: shape.maxNodes
                 ).export(from: artifact)
+            } else if shape.moduleCoupling {
+                export = try ModuleCouplingTextExporter(
+                    languages: artifact.standardLanguageResolver, theme: selectedTheme, maxNodes: shape.maxNodes
+                ).export(from: artifact)
             } else if shape.callGraph {
                 let scopeOption = shape.callGraphScopeOption
                 export = try CallGraphTextExporter(
