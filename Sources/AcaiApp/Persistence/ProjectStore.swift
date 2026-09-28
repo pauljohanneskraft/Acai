@@ -159,6 +159,7 @@ final class ProjectStore: ObservableObject {
                     for diagramID in project.freeformDiagramIDs {
                         loadFreeformDiagram(diagramID)
                     }
+                    preindexFixtureCodebases(inProjectAt: projects.count - 1)
                     for codebase in projects[projects.count - 1].codebases where codebase.hasArtifact {
                         loadArtifact(for: codebase.id)
                     }
@@ -169,6 +170,26 @@ final class ProjectStore: ObservableObject {
             }
         } catch {
             report(.app("Error.ProjectStore.LoadProjectDirectory \(error.localizedDescription)"))
+        }
+    }
+
+    /// Indexes the fixture's codebases from a canned artifact at launch, so a journey that needs an
+    /// indexed codebase starts on one instead of tapping Reindex and waiting. Inert outside a UI test:
+    /// `resolvePreindexedArtifactURL()` reads an environment variable a real launch never carries, and
+    /// `lastIndexed` is fixed so the date this puts on screen is the same in every run.
+    private func preindexFixtureCodebases(inProjectAt projectIndex: Int) {
+        guard let artifactURL = UITestFixtureResolver().resolvePreindexedArtifactURL(),
+              let data = try? Data(contentsOf: artifactURL),
+              let artifact = try? JSONDecoder().decode(CodeArtifact.self, from: data)
+        else { return }
+        for index in projects[projectIndex].codebases.indices {
+            let sourcePath = projects[projectIndex].codebases[index].directoryPath.resolvedAsAnalysisSourcePath
+            let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
+            guard (try? analysisStore.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)) != nil
+            else { continue }
+            projects[projectIndex].codebases[index].hasArtifact = true
+            projects[projectIndex].codebases[index].lastIndexed = Date(timeIntervalSince1970: 1_700_000_000)
+            projects[projectIndex].codebases[index].indexedFingerprint = fingerprint
         }
     }
 

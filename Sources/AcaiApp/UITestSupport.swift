@@ -84,6 +84,15 @@ struct UITestFixtureResolver: Sendable {
         return URL(fileURLWithPath: path)
     }
 
+    static let preindexedArtifactVariable = "ACAI_UITEST_PREINDEXED_ARTIFACT"
+
+    /// An artifact every seeded codebase is already indexed with at launch, so a journey that needs an
+    /// indexed codebase doesn't have to tap Reindex and wait to reach the state it is actually about.
+    func resolvePreindexedArtifactURL() -> URL? {
+        guard let path = environment[Self.preindexedArtifactVariable], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
     static let comparisonArtifactsVariable = "ACAI_UITEST_COMPARISON_ARTIFACTS"
 
     struct ComparisonArtifactKey: Hashable {
