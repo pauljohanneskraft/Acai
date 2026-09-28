@@ -221,7 +221,6 @@ struct ModuleCouplingExportTests {
     }
 }
 
-
 @Suite("Call graph DOT exports")
 struct CallGraphExportTests {
 
