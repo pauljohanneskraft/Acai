@@ -22,7 +22,7 @@ extension AcaiCommand {
             + "fanOut (default), fanIn, weightedMethods, depthOfInheritance, numberOfChildren, "
             + "responseForClass, publicMemberCount, publicMemberRatio, mutablePublicState, maxParameters, "
             + "meanParameters, dataClassScore, overrideCount, nestingDepth, deepAndWide, lackOfCohesion, "
-            + "featureEnvyMethods."))
+            + "featureEnvyMethods, linesOfCode."))
         var sort: MetricsSortKey = .fanOut
 
         @Option(name: .long, help: "Limit the human type table to the top N rows.")

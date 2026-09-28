@@ -24,6 +24,9 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var properties: Int
         public var relationships: Int
         public var relationshipsByKind: [String: Int]
+        /// Physical lines of code across the whole artifact: the distinct lines its declarations
+        /// cover, so a nested type never counts twice. `0` when no parser supplied an extent.
+        public var linesOfCode: Int
     }
 
     /// Robert Martin package metrics, one entry per build module.
@@ -46,6 +49,10 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         /// (higher instability) — not a cycle, so cycle detection misses it. Sorted; empty when the
         /// module only depends on equally- or more-stable ones.
         public var stableDependencyViolations: [String]
+        /// Physical lines of code in this module's own files. Attributed by the file each
+        /// declaration was written in, so a cross-module extension counts toward the module that
+        /// declares it, matching how the coupling numbers above are attributed.
+        public var linesOfCode: Int
     }
 
     public struct TypeMetric: Codable, Equatable, Sendable {
@@ -94,6 +101,11 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         /// Deep-and-wide inheritance shape (`DIT × NOC`): deeply derived and widely subclassed marks a
         /// fragile hierarchy hub. Filled from `depthOfInheritance × numberOfChildren` in `computeTypeMetrics`.
         public var deepAndWide: Int
+
+        /// Physical lines of code: the distinct lines the declaration and its members cover,
+        /// including members merged in from extensions in other files. `0` when the parser supplied
+        /// no extent, so an aggregate can tell an unmeasured type from an empty one.
+        public var linesOfCode: Int
     }
 }
 
@@ -103,14 +115,26 @@ extension CodeArtifact {
     public func computeMetrics() -> CodeMetrics {
         let flat = Self.allTypes(types)
         let identity = TypeIdentityResolver(types: types)
+        let spans = declarationSpans
         return CodeMetrics(
-            counts: computeCounts(flat: flat),
-            modules: computeModuleCoupling(flat: flat, identity: identity),
+            counts: computeCounts(flat: flat, spans: spans),
+            modules: computeModuleCoupling(flat: flat, identity: identity, spans: spans),
             types: computeTypeMetrics(flat: flat, identity: identity)
         )
     }
 
-    private func computeCounts(flat: [TypeDeclaration]) -> CodeMetrics.Counts {
+    /// Every line the artifact's declarations occupy, measured over the original (un-flattened)
+    /// tree so a nested type's lines are not counted again for its parent. Free functions and
+    /// module-scope variables are included, so a script-shaped file still reports its size.
+    private var declarationSpans: LineSpanUnion {
+        var union = LineSpanUnion()
+        for type in types { union.formUnion(type.lineSpans) }
+        for function in freestandingFunctions { union.add(function.location) }
+        for variable in globalVariables { union.add(variable.location) }
+        return union
+    }
+
+    private func computeCounts(flat: [TypeDeclaration], spans: LineSpanUnion) -> CodeMetrics.Counts {
         var byKind: [String: Int] = [:]
         var methodCount = 0
         var propertyCount = 0
@@ -137,7 +161,8 @@ extension CodeArtifact {
             methods: methodCount,
             properties: propertyCount,
             relationships: relationships.count,
-            relationshipsByKind: relByKind
+            relationshipsByKind: relByKind,
+            linesOfCode: spans.lineCount
         )
     }
 
@@ -194,7 +219,8 @@ extension CodeArtifact {
                 nestingDepth: nesting[type.id] ?? 0,
                 lackOfCohesion: LcomAnalysis(type: type).componentCount,
                 featureEnvyMethods: FeatureEnvy(type: type, identity: identity).enviousMethodCount,
-                deepAndWide: depth(of: type.id, visiting: [type.id]) * childCount[type.id, default: 0]
+                deepAndWide: depth(of: type.id, visiting: [type.id]) * childCount[type.id, default: 0],
+                linesOfCode: type.linesOfCode
             )
         }
     }
@@ -234,7 +260,7 @@ extension CodeArtifact {
     }
 
     private func computeModuleCoupling(
-        flat: [TypeDeclaration], identity: TypeIdentityResolver
+        flat: [TypeDeclaration], identity: TypeIdentityResolver, spans: LineSpanUnion
     ) -> [CodeMetrics.ModuleCoupling] {
         let resolver = ModuleResolver.standard
         var idToModule: [String: String] = [:]
@@ -258,7 +284,7 @@ extension CodeArtifact {
         }
         addBodyReferenceCoupling(flat: flat, identity: identity, idToModule: idToModule, into: &sets)
 
-        return moduleCouplings(moduleTypes: moduleTypes, sets: sets)
+        return moduleCouplings(moduleTypes: moduleTypes, sets: sets, spans: spans)
     }
 
     /// Construction/body dependencies between modules. Source is the member's declaring file (so an
@@ -285,8 +311,9 @@ extension CodeArtifact {
     }
 
     private func moduleCouplings(
-        moduleTypes: [String: [TypeDeclaration]], sets: ModuleCouplingSets
+        moduleTypes: [String: [TypeDeclaration]], sets: ModuleCouplingSets, spans: LineSpanUnion
     ) -> [CodeMetrics.ModuleCoupling] {
+        let resolver = ModuleResolver.standard
         let efferent = sets.efferent
         let afferent = sets.afferent
         let moduleAdjacency = sets.moduleAdjacency
@@ -316,7 +343,8 @@ extension CodeArtifact {
                 abstractness: abstractness,
                 distanceFromMainSequence: abs(abstractness + instabilityValue - 1),
                 publicMemberCount: moduleTypeList.reduce(0) { $0 + $1.publicMemberCount },
-                stableDependencyViolations: violations
+                stableDependencyViolations: violations,
+                linesOfCode: spans.lineCount(inFilesWhere: { resolver.productName(forFilePath: $0) == name })
             )
         }
     }
