@@ -71,21 +71,72 @@ public struct CallSiteResolver {
     }
 }
 
+// MARK: - MemberReceiver
+
+/// A call's receiver expression, decomposed into the three shapes the shared decision tree knows.
+///
+/// Grammars disagree on how they spell each one — a field-name grammar nests a member access under
+/// `object`/`field` fields, Kotlin nests `navigation_expression`s, Dart flattens the whole call into
+/// sibling selectors — so a language answers in these terms and the tree stays one implementation.
+public enum MemberReceiver {
+
+    /// `this` / `self`.
+    case selfExpression
+
+    /// A bare name: the `a` of `a.method()`.
+    case name(String)
+
+    /// `<object>.<hop>`: the receiver is itself a member access, as in the `a.b` of `a.b.method()`.
+    case memberAccess(object: Node, hop: String)
+}
+
+/// One grammar's answer to "what shape is this receiver expression?".
+public protocol MemberReceiverSyntax {
+
+    func receiver(_ node: Node) -> MemberReceiver?
+}
+
+/// Receiver decomposition for grammars that expose a member access through `object` and a named
+/// member field — Java's `field_access`, JS's `member_expression`, Python's `attribute`.
+struct FieldNameReceiverSyntax: MemberReceiverSyntax {
+
+    let context: SourceFileContext
+    let grammar: MemberCallGrammar
+
+    func receiver(_ node: Node) -> MemberReceiver? {
+        if let selfNodeType = grammar.selfNodeType, node.nodeType == selfNodeType {
+            return .selfExpression
+        }
+        if node.nodeType == "identifier" {
+            let text = node.text(in: context)
+            return text == grammar.selfIdentifier ? .selfExpression : .name(text)
+        }
+        guard node.nodeType == grammar.memberAccessType,
+              let object = node.child(byFieldName: "object"),
+              let member = node.child(byFieldName: grammar.memberField)
+        else { return nil }
+        return .memberAccess(object: object, hop: member.text(in: context))
+    }
+}
+
 // MARK: - MemberCallResolver
 
-/// The receiver decision tree for field-name-based grammars: `this.method()` → unqualified
-/// self-call; `receiver.method()` / `this.prop.method()` → resolved against the scope; a deeper
-/// chain whose head resolves but whose hop doesn't → deferred `.propertyChain`.
+/// The receiver decision tree every field-name-and-chain grammar shares: `this.method()` →
+/// unqualified self-call; `receiver.method()` / `this.prop.method()` → resolved against the scope; a
+/// deeper chain whose head resolves but whose hop doesn't → deferred `.propertyChain`.
 ///
 /// Grammar-specific call-node unwrapping stays with the caller — `receiver` arrives unwrapped.
 public struct MemberCallResolver {
 
-    private let context: SourceFileContext
-    private let grammar: MemberCallGrammar
+    private let syntax: any MemberReceiverSyntax
 
+    public init(syntax: any MemberReceiverSyntax) {
+        self.syntax = syntax
+    }
+
+    /// Field-name grammars get the shared decomposition rather than writing one.
     public init(context: SourceFileContext, grammar: MemberCallGrammar) {
-        self.context = context
-        self.grammar = grammar
+        self.init(syntax: FieldNameReceiverSyntax(context: context, grammar: grammar))
     }
 
     public func callSite(
@@ -94,49 +145,77 @@ public struct MemberCallResolver {
         scope: CallSiteScope,
         location: SourceLocation?
     ) -> CallSite? {
-        if receiver.nodeType == grammar.selfNodeType {
-            return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
-        }
+        guard let shape = syntax.receiver(receiver) else { return nil }
+        return callSite(receiver: shape, methodName: methodName, scope: scope, location: location)
+    }
 
-        if receiver.nodeType == "identifier" {
-            return scope.resolvedCallSite(
-                receiverName: receiver.text(in: context), methodName: methodName, location: location
+    /// The entry point for a grammar that flattens a call into siblings, where the receiver is not a
+    /// single node the syntax could decompose on its own.
+    public func callSite(
+        receiver: MemberReceiver,
+        methodName: String,
+        scope: CallSiteScope,
+        location: SourceLocation?
+    ) -> CallSite? {
+        switch receiver {
+        case .selfExpression:
+            return CallSite(receiver: .selfDispatch, methodName: methodName, location: location)
+        case .name(let name):
+            return scope.resolvedCallSite(receiverName: name, methodName: methodName, location: location)
+        case .memberAccess(let object, let hop):
+            return chainedCallSite(
+                object: object, hop: hop, methodName: methodName, scope: scope, location: location
             )
         }
+    }
 
-        guard receiver.nodeType == grammar.memberAccessType,
-              let object = receiver.child(byFieldName: "object"),
-              let member = receiver.child(byFieldName: grammar.memberField)
-        else { return nil }
-        let hop = member.text(in: context)
-
-        if object.nodeType == grammar.selfNodeType {
+    /// A chain off `this` is just a call on that property; a chain off a resolvable head defers the
+    /// hop to the post-merge pass. Anything deeper than one hop stays dropped.
+    private func chainedCallSite(
+        object: Node,
+        hop: String,
+        methodName: String,
+        scope: CallSiteScope,
+        location: SourceLocation?
+    ) -> CallSite? {
+        switch syntax.receiver(object) {
+        case .selfExpression:
             return scope.resolvedCallSite(receiverName: hop, methodName: methodName, location: location)
+        case .name(let headName):
+            let headType = scope.knownProperties[headName]
+                ?? (scope.knownTypeNames.contains(headName) ? headName : nil)
+            guard let headType else { return nil }
+            return CallSite(
+                receiver: .propertyChain(headTypeName: headType, hops: [hop]),
+                methodName: methodName, location: location
+            )
+        case .memberAccess, nil:
+            return nil
         }
-
-        guard object.nodeType == "identifier" else { return nil }
-        let headName = object.text(in: context)
-        let headType = scope.knownProperties[headName]
-            ?? (scope.knownTypeNames.contains(headName) ? headName : nil)
-        guard let headType else { return nil }
-        return CallSite(
-            receiver: .propertyChain(headTypeName: headType, hops: [hop]),
-            methodName: methodName, location: location
-        )
     }
 }
 
 /// The grammar node types a language uses for member-call receiver resolution.
 public struct MemberCallGrammar: Sendable {
-    /// The node type of a `this`/`self` expression (e.g. `"this"`).
-    public let selfNodeType: String
-    /// The node type of a `<self>.<member>` access (e.g. `"field_access"`).
+    /// The node type of a `this`/`self` expression (e.g. `"this"`), where the grammar has a distinct
+    /// one.
+    public let selfNodeType: String?
+    /// The identifier text naming the enclosing instance, where the grammar spells it as a plain
+    /// identifier instead (Python's `self`).
+    public let selfIdentifier: String?
+    /// The node type of a `<object>.<member>` access (e.g. `"field_access"`).
     public let memberAccessType: String
     /// The field name holding the member in that access (e.g. `"field"`).
     public let memberField: String
 
-    public init(selfNodeType: String, memberAccessType: String, memberField: String) {
+    public init(
+        selfNodeType: String? = nil,
+        selfIdentifier: String? = nil,
+        memberAccessType: String,
+        memberField: String
+    ) {
         self.selfNodeType = selfNodeType
+        self.selfIdentifier = selfIdentifier
         self.memberAccessType = memberAccessType
         self.memberField = memberField
     }
