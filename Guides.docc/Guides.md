@@ -76,7 +76,8 @@ Higher-level questions asked of a parsed model.
   members, relationships and metrics changed. Also produces the renderable union behind
   colour-coded delta diagrams.
 - **[AcaiQuality](/documentation/acaiquality/)** — the architecture fitness function: selectors, metric
-  budgets, forbidden dependencies, layering, stereotype contracts and cycle detection.
+  budgets, forbidden dependencies, layering, stereotype contracts, cycle detection, and the
+  churn × complexity hotspot scoring the app, `acai hotspots` and `acai_hotspots` share.
 
 ### Applications
 
@@ -96,8 +97,8 @@ Internal building blocks. You would not normally depend on these directly, but t
 so nothing in the package is a blank spot.
 
 - **[AcaiGit](/documentation/acaigit/)** — a libgit2 wrapper (clone, fetch, checkout, worktrees, diff,
-  churn) used by the app for repository cloning, revision comparison and hotspot charts. Built only
-  on Apple platforms, and not a package product.
+  churn) behind the app's repository cloning and revision comparison, and behind the churn half of
+  `acai hotspots` / `acai_hotspots`. Built only on Apple platforms, and not a package product.
 - **[CPythonScanner](/documentation/cpythonscanner/)** — vendors the Python grammar's external C
   scanner; see `Package.swift` for why it must be pinned to the grammar version.
 - **[AcaiPNGComparison](/documentation/acaipngcomparison/)** — golden-image comparison maths shared by
