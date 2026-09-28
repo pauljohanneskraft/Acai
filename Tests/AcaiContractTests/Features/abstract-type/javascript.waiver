@@ -1,0 +1,1 @@
+JavaScript has no abstract keyword; the idiom is a base class whose method throws at runtime, which carries no abstractness the parser can see.

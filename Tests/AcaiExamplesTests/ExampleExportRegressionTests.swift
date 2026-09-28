@@ -183,6 +183,44 @@ struct PackageDiagramExportTests {
     }
 }
 
+@Suite("Module coupling DOT exports")
+struct ModuleCouplingExportTests {
+
+    /// Reuses the package sample's two-module trees (`Core` + `Banking`) rather than a tree of its
+    /// own: the coupling view is a second rendering of the same `PackageDiagram`, so sharing the
+    /// source keeps the two goldens comparable module-for-module.
+    @Test("regenerated coupling DOT matches the checked-in golden",
+          arguments: PackageDiagramExportTests.cases)
+    func matchesGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
+            ExampleExports.examples("PackageDiagram", dir), language: language
+        )
+        // Mirrors ModuleCouplingTextExporter (enriched + default theme/font), as DiagramCommand calls it.
+        let diagram = PackageDiagramBuilder().build(
+            from: artifact.enriched(using: artifact.standardLanguageResolver))
+        let generated = ModuleCouplingDOTRenderer().render(diagram)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("PackageDiagram", "Exports", "\(stem).coupling.dot")
+        )
+        #expect(generated == expected, "Coupling DOT for \(stem) drifted; regenerate per Examples/README.md")
+    }
+
+    @Test("regenerated coupling Mermaid matches the checked-in golden",
+          arguments: PackageDiagramExportTests.cases)
+    func matchesMermaidGolden(stem: String, dir: String, language: CodeArtifact.SourceLanguage) async throws {
+        let artifact = try await ExampleExports.analyze(
+            ExampleExports.examples("PackageDiagram", dir), language: language
+        )
+        let diagram = PackageDiagramBuilder().build(
+            from: artifact.enriched(using: artifact.standardLanguageResolver))
+        let generated = ModuleCouplingMermaidRenderer().render(diagram)
+        let expected = try ExampleExports.golden(
+            ExampleExports.examples("PackageDiagram", "Exports", "\(stem).coupling.mmd")
+        )
+        #expect(generated == expected, "Coupling Mermaid for \(stem) drifted; regenerate per Examples/README.md")
+    }
+}
+
 @Suite("Call graph DOT exports")
 struct CallGraphExportTests {
 

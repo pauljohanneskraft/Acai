@@ -1,0 +1,24 @@
+{
+  "types": [
+    {
+      "name": "Base",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "rank", "role": "method", "access": "+", "type": "#primitive" }
+      ]
+    },
+    {
+      "name": "Sub",
+      "kind": "class",
+      "access": "+",
+      "supertypes": ["Base"],
+      "members": [
+        { "name": "rank", "role": "method", "access": "+", "modifiers": ["override"], "type": "#primitive" }
+      ]
+    }
+  ],
+  "relationships": [
+    { "kind": "inheritance", "source": "Sub", "target": "Base" }
+  ]
+}

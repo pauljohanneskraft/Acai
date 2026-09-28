@@ -48,16 +48,17 @@ struct FindingsAggregator {
         results.append(contentsOf: violationFindings(analysis.quality, codebase: codebase, artifact: artifact))
         results.append(contentsOf: deadCodeFindings(analysis.deadCode, codebase: codebase, artifact: artifact))
         results.append(contentsOf: healthFindings(analysis.health, codebase: codebase))
-        return results
+        // Two reports of the very same breach are one finding.
+        return results.removingDuplicates(by: \.id)
     }
 
     private func violationFindings(
         _ report: QualityReport, codebase: Codebase, artifact: CodeArtifact?
     ) -> [Finding] {
-        report.violations.enumerated().map { offset, violation in
+        report.violations.map { violation in
             Finding(
                 AtlasFinding(violation: violation),
-                id: "violation-\(codebase.id)-\(violation.ruleKind)-\(violation.subject)-\(offset)",
+                id: "violation-\(codebase.id)-\(violation.findingIdentity)",
                 codebase: codebase,
                 reference: artifact.flatMap { violation.codeElementReference(in: $0) },
                 cycle: violation.ruleKind == "cycle"
@@ -82,10 +83,12 @@ struct FindingsAggregator {
     }
 
     private func healthFindings(_ report: HealthCheck.Report, codebase: Codebase) -> [Finding] {
-        report.diagnostics.enumerated().map { offset, diagnostic in
-            Finding(
+        report.diagnostics.map { diagnostic in
+            let location = diagnostic.location
+            return Finding(
                 AtlasFinding(diagnostic: diagnostic),
-                id: "health-\(codebase.id)-\(diagnostic.location.filePath)-\(diagnostic.location.line)-\(offset)",
+                id: "health-\(codebase.id)-\(location.filePath)-\(location.line)-\(location.column)"
+                    + "-\(diagnostic.kind.rawValue)-\(diagnostic.message)",
                 codebase: codebase,
                 reference: nil,
                 cycle: nil)

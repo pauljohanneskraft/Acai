@@ -1,0 +1,12 @@
+{
+  "types": [
+    {
+      "name": "Outer",
+      "kind": "class",
+      "access": "+",
+      "nested": [
+        { "name": "Inner", "kind": "class", "access": "+" }
+      ]
+    }
+  ]
+}

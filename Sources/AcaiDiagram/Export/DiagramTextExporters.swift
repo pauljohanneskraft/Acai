@@ -86,6 +86,31 @@ public struct PackageDiagramTextExporter: Sendable {
     }
 }
 
+/// The coupling view over the same `PackageDiagram` model `PackageDiagramTextExporter` builds, so the
+/// two stay in lockstep and a coupling diagram diffs through `PackageDiagramDiff` like any other.
+public struct ModuleCouplingTextExporter: Sendable {
+    public let languages: LanguageConfigurationResolver
+    public let theme: DiagramTheme?
+    /// Generation fails once the diagram would exceed this many nodes. `nil` means unlimited.
+    public let maxNodes: Int?
+
+    public init(languages: LanguageConfigurationResolver, theme: DiagramTheme?, maxNodes: Int? = nil) {
+        self.languages = languages
+        self.theme = theme
+        self.maxNodes = maxNodes
+    }
+
+    public func export(from artifact: CodeArtifact) throws -> DiagramExport {
+        let diagram = PackageDiagramRequest().build(from: artifact, languages: languages)
+        try DiagramNodeLimit(maximum: maxNodes).validate(nodeCount: diagram.nodes.count)
+        let theme = theme
+        return DiagramExport(
+            dot: { ModuleCouplingDOTRenderer(theme: theme).render(diagram) },
+            mermaid: { ModuleCouplingMermaidRenderer(theme: theme).render(diagram) }
+        )
+    }
+}
+
 /// Emits no coverage note — a caller that wants it reads `graph.coverage` off the built graph.
 public struct CallGraphTextExporter: Sendable {
     public let request: CallGraphRequest

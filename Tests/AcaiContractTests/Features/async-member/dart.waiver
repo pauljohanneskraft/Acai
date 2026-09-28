@@ -1,0 +1,1 @@
+Dart's async method must declare Future<T> rather than T, so its return type is a wrapper the languages that mark async with a modifier alone do not add.

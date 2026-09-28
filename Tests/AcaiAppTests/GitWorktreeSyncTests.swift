@@ -5,7 +5,7 @@ import Testing
 
 // Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
 #if os(macOS)
-@Suite("GitWorktreeSync (app-layer wiring)")
+@Suite("GitWorktreeSync (app-layer wiring)", .timeLimit(.minutes(1)))
 struct GitWorktreeSyncTests {
     @Test("Two codebases attaching worktrees for the same remote share one hub clone")
     func sharesOneHubAcrossTwoWorktrees() async throws {

@@ -136,6 +136,22 @@ struct KotlinRelationshipTests {
         #expect(extRel?.source == "isPalindrome")
     }
 
+    /// An extension on a type declared in the same artifact augments that type, so enrichment merges
+    /// the member into it — as it does for a Swift `extension` or a Dart `extension … on`.
+    @Test func extensionOnDeclaredTypeMergesIntoIt() {
+        let source = """
+        class Box
+
+        fun Box.extra(): Int = 0
+        """
+        let parsed = parser.parse(source: source, fileName: "BoxExt.kt")
+        #expect(parsed.freestandingFunctions.isEmpty)
+        let enriched = parsed.enriched(configuration: parser.configuration)
+        let box = enriched.types.first { $0.name == "Box" }
+        #expect(box?.members.map(\.name) == ["extra"])
+        #expect(enriched.types.allSatisfy { $0.kind != .extension })
+    }
+
     @Test func genericExtensionFunction() {
         let source = """
         fun <T> List<T>.secondOrNull(): T? {

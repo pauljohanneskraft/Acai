@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-@Suite("SourceTreeFingerprint")
+@Suite("SourceTreeFingerprint", .timeLimit(.minutes(1)))
 struct SourceTreeFingerprintTests {
     private func makeTempDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory

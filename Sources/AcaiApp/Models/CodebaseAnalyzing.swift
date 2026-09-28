@@ -5,14 +5,20 @@ protocol CodebaseAnalyzing: Sendable {
     func enrichedArtifact(at url: URL, fileFilter: FileFilter?) async throws -> CodeArtifact
 }
 
-/// A codebase only gets `FixtureCodebaseAnalyzer` if the launch staged a canned artifact for it
-/// specifically — a journey that stages none still gets the real analyzer.
-struct CodebaseAnalyzingResolver {
-    func resolve(codebaseID: UUID) -> CodebaseAnalyzing {
-        guard UITestFixtureResolver().resolveBaseDir() != nil else { return CodebaseAnalyzer() }
-        guard let artifactURL = UITestFixtureResolver().resolveCodebaseArtifactURLs()[codebaseID] else {
-            return CodebaseAnalyzer()
-        }
+protocol CodebaseAnalyzerProviding: Sendable {
+    func analyzer(for codebaseID: UUID) -> CodebaseAnalyzing
+}
+
+/// A UI test's canned artifact for this codebase, else its default canned artifact, else the real
+/// analyzer — so a journey that stages nothing still parses for real.
+struct CodebaseAnalyzingResolver: CodebaseAnalyzerProviding {
+    var fixtures = UITestFixtureResolver()
+
+    func analyzer(for codebaseID: UUID) -> CodebaseAnalyzing {
+        guard fixtures.resolveBaseDir() != nil,
+              let artifactURL = fixtures.resolveCodebaseArtifactURLs()[codebaseID]
+                ?? fixtures.resolveDefaultCodebaseArtifactURL()
+        else { return CodebaseAnalyzer() }
         return FixtureCodebaseAnalyzer(artifactURL: artifactURL)
     }
 }

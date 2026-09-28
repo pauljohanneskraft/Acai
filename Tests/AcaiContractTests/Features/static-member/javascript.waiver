@@ -1,0 +1,1 @@
+JavaScript carries no return-type annotation, so a static method's declared type cannot be compared.

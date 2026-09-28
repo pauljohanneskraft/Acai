@@ -1,0 +1,1 @@
+C has no member functions, so a field read happens in a free function against a struct passed by pointer, not within the owning type.

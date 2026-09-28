@@ -73,4 +73,18 @@ extension ClassDiagramConfiguration {
             methodVisibility[id] = show
         }
     }
+
+    public var isFocused: Bool { focus != nil }
+
+    /// Focusing starts from `rootTypeName` with every default (unlimited depth, dependencies,
+    /// all relationship kinds); unfocusing drops the whole focus rather than keeping a root the
+    /// diagram no longer narrows to. An already-focused diagram keeps the root it has.
+    public mutating func setFocused(_ focused: Bool, rootTypeName: String?) {
+        guard focused else {
+            focus = nil
+            return
+        }
+        guard focus == nil else { return }
+        focus = FocusConfiguration(rootTypeName: rootTypeName ?? "")
+    }
 }

@@ -38,6 +38,13 @@ struct DiagramShapeFlags: ParsableArguments {
     var package: Bool = false
 
     @Flag(name: .long, help: ArgumentHelp(
+        "Render the module coupling view: the same module graph as --package, labelled with each"
+        + " module's Ca/Ce/I/A/D and its main-sequence zone, with Stable-Dependencies-Principle"
+        + " breaches dashed."
+    ))
+    var moduleCoupling: Bool = false
+
+    @Flag(name: .long, help: ArgumentHelp(
         "Render a static call graph (one node per method, edges for resolvable calls)"
         + " instead of a class diagram."
     ))
@@ -83,16 +90,18 @@ struct DiagramShapeFlags: ParsableArguments {
     ))
     var maxNodes: Int = DiagramNodeLimit.defaultMaximum
 
-    /// Mode exclusivity (`--sequence-from`/`--state-from`/`--package`/`--call-graph`), `--call-graph-
-    /// scope` requiring `--call-graph`, and the shared depth/state/node limits.
+    /// Mode exclusivity (`--sequence-from`/`--state-from`/`--package`/`--module-coupling`/`--call-
+    /// graph`), `--call-graph-scope` requiring `--call-graph`, and the shared depth/state/node limits.
     func validate() throws {
         if sequenceFrom != nil && stateFrom != nil {
             throw ValidationError("Specify either --sequence-from or --state-from, not both.")
         }
-        let modeFlags = [sequenceFrom != nil, stateFrom != nil, package, callGraph].filter { $0 }.count
+        let modeFlags = [sequenceFrom != nil, stateFrom != nil, package, moduleCoupling, callGraph]
+            .filter { $0 }.count
         if modeFlags > 1 {
             throw ValidationError(
-                "Specify only one of --sequence-from, --state-from, --package, or --call-graph."
+                "Specify only one of --sequence-from, --state-from, --package, --module-coupling,"
+                + " or --call-graph."
             )
         }
         if callGraphScope != nil && !callGraph {

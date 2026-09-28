@@ -4,7 +4,7 @@ import Testing
 
 // Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
 #if os(macOS)
-@Suite("CodebaseFreshnessChecker")
+@Suite("CodebaseFreshnessChecker", .timeLimit(.minutes(1)))
 struct CodebaseFreshnessCheckerTests {
     @Test("A plain, non-git folder is fingerprinted by file state")
     func plainFolderUsesFileSystemFingerprint() throws {

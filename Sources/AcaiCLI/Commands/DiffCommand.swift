@@ -39,13 +39,16 @@ extension AcaiCommand {
         ))
         var language: [LanguageOption] = []
 
+        @OptionGroup var generatedScope: GeneratedScopeOption
+
         @Option(name: .long, help: "Report format: human or json.")
         var format: ReportFormatOption = .human
 
         @Option(name: .long, help: ArgumentHelp(
             "Render a delta diagram (dot or mermaid) with added/removed/changed elements colour-coded,"
             + " instead of a textual report. Defaults to a class diagram; combine with one of"
-            + " --sequence-from / --state-from / --package / --call-graph for the other diagram types."
+            + " --sequence-from / --state-from / --package / --module-coupling / --call-graph for the"
+            + " other diagram types."
         ))
         var diagram: FormatOption?
 
@@ -64,6 +67,9 @@ extension AcaiCommand {
         @Flag(name: .long, help: "Delta a package/module dependency diagram.")
         var package = false
 
+        @Flag(name: .long, help: "Delta the module coupling view (Ca/Ce/I/A/D plus main-sequence zone).")
+        var moduleCoupling = false
+
         @Flag(name: .long, help: "Delta a static call graph.")
         var callGraph = false
 
@@ -76,10 +82,12 @@ extension AcaiCommand {
         mutating func validate() throws {
             try Self.validateSide(name: "old", ref: old, source: sourceOld)
             try Self.validateSide(name: "new", ref: new, source: sourceNew)
-            let modeFlags = [sequenceFrom != nil, stateFrom != nil, package, callGraph].filter { $0 }.count
+            let modeFlags = [sequenceFrom != nil, stateFrom != nil, package, moduleCoupling, callGraph]
+                .filter { $0 }.count
             if modeFlags > 1 {
                 throw ValidationError(
-                    "Specify only one of --sequence-from, --state-from, --package, or --call-graph.")
+                    "Specify only one of --sequence-from, --state-from, --package, --module-coupling,"
+                    + " or --call-graph.")
             }
             if modeFlags > 0 && diagram == nil {
                 throw ValidationError("A diagram-type flag requires --diagram dot|mermaid.")
@@ -101,8 +109,8 @@ extension AcaiCommand {
         }
 
         mutating func run() async throws {
-            let oldArtifact = try await ArtifactSource.resolve(from: old, source: sourceOld, language: language)
-            let newArtifact = try await ArtifactSource.resolve(from: new, source: sourceNew, language: language)
+            let oldArtifact = try await resolvedArtifact(ref: old, source: sourceOld)
+            let newArtifact = try await resolvedArtifact(ref: new, source: sourceNew)
 
             let rendered: String
             if let diagram {
@@ -114,6 +122,11 @@ extension AcaiCommand {
                 rendered = try report(for: diff, health: health)
             }
             try rendered.writeOutput(to: output, label: "diff")
+        }
+
+        private func resolvedArtifact(ref: String?, source: String?) async throws -> CodeArtifact {
+            let artifact = try await ArtifactSource.resolve(from: ref, source: source, language: language)
+            return generatedScope.applied(to: artifact)
         }
 
         private func report(for diff: ArtifactDiff, health: HealthCheck.Summary) throws -> String {
@@ -138,6 +151,8 @@ extension AcaiCommand {
                 ).render(old: old, new: new, format: diagramFormat)
             } else if package {
                 return PackageDeltaExporter().render(old: old, new: new, format: diagramFormat)
+            } else if moduleCoupling {
+                return ModuleCouplingDeltaExporter().render(old: old, new: new, format: diagramFormat)
             } else if callGraph {
                 return try CallGraphDeltaExporter(
                     request: CallGraphRequest(scope: CallGraphScopeOption(raw: callGraphScope))

@@ -40,6 +40,7 @@ extension ProjectCodebaseEditor {
                 repository: CodebaseRepositoryReference(remoteURL: persistedRemoteURL, ref: ref)
             ))
             persist()
+            store.repositoryChanges.send(persistedRemoteURL)
             await reindex(codebaseID: codebaseID)
         } catch {
             report(error, for: endpoint, generic: { .app("Error.ProjectBrowserViewModel.CloneFailed \($0)") })
@@ -48,10 +49,11 @@ extension ProjectCodebaseEditor {
 
     /// Fetches a managed codebase's remote and moves it to the latest commit of its ref, then
     /// reindexes if that commit actually moved.
-    func pull(codebaseID: UUID) async {
+    @discardableResult
+    func pull(codebaseID: UUID) async -> OperationOutcome {
         guard let codebase = codebase(for: codebaseID), let checkout = codebase.managedCheckout,
               let repository = codebase.repository
-        else { return }
+        else { return .cancelled }
         let target = RemoteCheckoutTarget(
             endpoint: RemoteEndpoint(remoteURL: repository.remoteURL), ref: repository.ref)
         do {
@@ -60,24 +62,27 @@ extension ProjectCodebaseEditor {
                 kind: .gitFetch, subject: .codebase(codebaseID),
                 resyncOperation(codebase: codebase, target: target)
             )
-            guard let latestSHA = fetchResult, latestSHA != checkout.lastSyncedCommitSHA else { return }
+            guard let latestSHA = fetchResult else { return .cancelled }
+            guard latestSHA != checkout.lastSyncedCommitSHA else { return .completed }
             mutateCodebase(codebaseID) {
                 $0.managedCheckout?.lastSyncedCommitSHA = latestSHA
                 $0.managedCheckout?.lastSyncedAt = Date()
             }
-            await reindex(codebaseID: codebaseID)
+            return await reindex(codebaseID: codebaseID)
         } catch {
             report(error, for: target.endpoint, generic: { .app("Error.ProjectBrowserViewModel.PullFailed \($0)") })
+            return .failed
         }
     }
 
     /// Moves a managed codebase to another branch or tag. The stored ref only changes once the
     /// checkout against it has succeeded, so a failed switch leaves the codebase on its previous,
     /// still-valid ref.
-    func switchRef(codebaseID: UUID, ref: String, kind: GitCheckout.Ref.Kind) async {
+    @discardableResult
+    func switchRef(codebaseID: UUID, ref: String, kind: GitCheckout.Ref.Kind) async -> OperationOutcome {
         guard let codebase = codebase(for: codebaseID), codebase.managedCheckout != nil,
               let repository = codebase.repository
-        else { return }
+        else { return .cancelled }
         let target = RemoteCheckoutTarget(endpoint: RemoteEndpoint(remoteURL: repository.remoteURL), ref: ref)
         do {
             let switchResult = try await store.activityCenter.run(
@@ -85,18 +90,19 @@ extension ProjectCodebaseEditor {
                 kind: .gitFetch, subject: .codebase(codebaseID),
                 resyncOperation(codebase: codebase, target: target)
             )
-            guard let headSHA = switchResult else { return }
+            guard let headSHA = switchResult else { return .cancelled }
             mutateCodebase(codebaseID) {
                 $0.managedCheckout?.refKind = kind
                 $0.managedCheckout?.lastSyncedCommitSHA = headSHA
                 $0.managedCheckout?.lastSyncedAt = Date()
                 $0.repository?.ref = ref
             }
-            await reindex(codebaseID: codebaseID)
+            return await reindex(codebaseID: codebaseID)
         } catch {
             report(
                 error, for: target.endpoint,
                 generic: { .app("Error.ProjectBrowserViewModel.BranchSwitchFailed \($0)") })
+            return .failed
         }
     }
 
@@ -117,6 +123,9 @@ extension ProjectCodebaseEditor {
                     endpoint, hubStoreDirectory: hubStoreDirectory, locks: locks, onProgress: onProgress)
             } != nil
             notify()
+            if finished {
+                store.repositoryChanges.send(remoteURL)
+            }
             return finished
         } catch {
             report(

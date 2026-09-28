@@ -1,0 +1,12 @@
+{
+  "types": [
+    {
+      "name": "Loader",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "fetch", "role": "method", "access": "+", "modifiers": ["async"], "type": "#primitive" }
+      ]
+    }
+  ]
+}

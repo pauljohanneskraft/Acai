@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Codebase freshness (issue #178)")
+@Suite("Codebase freshness (issue #178)", .timeLimit(.minutes(1)))
 @MainActor
 struct CodebaseFreshnessViewModelTests {
     private func makeModel(sourceDir: URL, baseDir: URL, codebaseID: UUID) -> ProjectBrowserViewModel {
@@ -68,5 +68,36 @@ struct CodebaseFreshnessViewModelTests {
 
         await model.ensureFreshnessLoaded(codebaseID: codebaseID)
         #expect(model.freshness(for: codebaseID) == nil)
+        #expect(!model.showsStaleBanner(codebaseID: codebaseID))
+    }
+
+    @Test func staleCodebaseShowsTheStaleBanner() async throws {
+        let baseDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let sourceDir = baseDir.appendingPathComponent("source", isDirectory: true)
+        try FileManager.default.createDirectory(at: sourceDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: baseDir) }
+        let file = sourceDir.appendingPathComponent("Widget.swift")
+        try "class Widget {}\n".write(to: file, atomically: true, encoding: .utf8)
+
+        let codebaseID = UUID()
+        let model = makeModel(sourceDir: sourceDir, baseDir: baseDir, codebaseID: codebaseID)
+
+        await model.editing.reindex(codebaseID: codebaseID)
+        await model.ensureFreshnessLoaded(codebaseID: codebaseID)
+        #expect(!model.showsStaleBanner(codebaseID: codebaseID))
+
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date().addingTimeInterval(-5)], ofItemAtPath: file.path)
+        try "class Widget { var x = 1 }\n".write(to: file, atomically: true, encoding: .utf8)
+        await model.refreshFreshness(codebaseID: codebaseID)
+
+        #expect(model.showsStaleBanner(codebaseID: codebaseID))
+    }
+
+    @Test func unknownCodebaseNeverShowsTheStaleBanner() {
+        let baseDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let model = makeModel(sourceDir: baseDir, baseDir: baseDir, codebaseID: UUID())
+
+        #expect(!model.showsStaleBanner(codebaseID: UUID()))
     }
 }
