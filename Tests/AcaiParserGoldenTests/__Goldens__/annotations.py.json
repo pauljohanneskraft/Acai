@@ -22,6 +22,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 59,
         "filePath" : "annotations.py",
         "line" : 58
       },
@@ -97,6 +98,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 9,
         "filePath" : "annotations.py",
         "line" : 6
       },
@@ -123,6 +125,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 9,
             "filePath" : "annotations.py",
             "line" : 8
           },
@@ -176,6 +179,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 13,
         "filePath" : "annotations.py",
         "line" : 12
       },
@@ -212,6 +216,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 55,
         "filePath" : "annotations.py",
         "line" : 16
       },
@@ -241,6 +246,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 18,
             "filePath" : "annotations.py",
             "line" : 18
           },
@@ -303,6 +309,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 19,
             "filePath" : "annotations.py",
             "line" : 19
           },
@@ -346,6 +353,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 22,
             "filePath" : "annotations.py",
             "line" : 22
           },
@@ -389,6 +397,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 23,
             "filePath" : "annotations.py",
             "line" : 23
           },
@@ -432,6 +441,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 24,
             "filePath" : "annotations.py",
             "line" : 24
           },
@@ -482,6 +492,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 25,
             "filePath" : "annotations.py",
             "line" : 25
           },
@@ -540,6 +551,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 26,
             "filePath" : "annotations.py",
             "line" : 26
           },
@@ -598,6 +610,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 27,
             "filePath" : "annotations.py",
             "line" : 27
           },
@@ -648,6 +661,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 28,
             "filePath" : "annotations.py",
             "line" : 28
           },
@@ -679,6 +693,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 22,
                 "filePath" : "annotations.py",
                 "line" : 22
               },
@@ -692,6 +707,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 23,
                 "filePath" : "annotations.py",
                 "line" : 23
               },
@@ -705,6 +721,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 24,
                 "filePath" : "annotations.py",
                 "line" : 24
               },
@@ -718,6 +735,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 25,
                 "filePath" : "annotations.py",
                 "line" : 25
               },
@@ -731,6 +749,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 26,
                 "filePath" : "annotations.py",
                 "line" : 26
               },
@@ -744,6 +763,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 27,
                 "filePath" : "annotations.py",
                 "line" : 27
               },
@@ -757,6 +777,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 28,
                 "filePath" : "annotations.py",
                 "line" : 28
               },
@@ -772,6 +793,7 @@
             {
               "location" : {
                 "column" : 61,
+                "endLine" : 22,
                 "filePath" : "annotations.py",
                 "line" : 22
               },
@@ -785,6 +807,7 @@
             {
               "location" : {
                 "column" : 87,
+                "endLine" : 26,
                 "filePath" : "annotations.py",
                 "line" : 26
               },
@@ -798,6 +821,7 @@
             {
               "location" : {
                 "column" : 107,
+                "endLine" : 26,
                 "filePath" : "annotations.py",
                 "line" : 26
               },
@@ -811,6 +835,7 @@
             {
               "location" : {
                 "column" : 61,
+                "endLine" : 27,
                 "filePath" : "annotations.py",
                 "line" : 27
               },
@@ -827,6 +852,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 22,
                 "filePath" : "annotations.py",
                 "line" : 22
               },
@@ -835,6 +861,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 23,
                 "filePath" : "annotations.py",
                 "line" : 23
               },
@@ -843,6 +870,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 24,
                 "filePath" : "annotations.py",
                 "line" : 24
               },
@@ -851,6 +879,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 25,
                 "filePath" : "annotations.py",
                 "line" : 25
               },
@@ -859,6 +888,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 26,
                 "filePath" : "annotations.py",
                 "line" : 26
               },
@@ -867,6 +897,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 27,
                 "filePath" : "annotations.py",
                 "line" : 27
               },
@@ -875,6 +906,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 28,
                 "filePath" : "annotations.py",
                 "line" : 28
               },
@@ -888,6 +920,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 28,
             "filePath" : "annotations.py",
             "line" : 21
           },
@@ -941,6 +974,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 31,
             "filePath" : "annotations.py",
             "line" : 30
           },
@@ -999,6 +1033,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 34,
             "filePath" : "annotations.py",
             "line" : 33
           },
@@ -1071,6 +1106,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 37,
             "filePath" : "annotations.py",
             "line" : 36
           },
@@ -1136,6 +1172,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 40,
             "filePath" : "annotations.py",
             "line" : 39
           },
@@ -1201,6 +1238,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 43,
             "filePath" : "annotations.py",
             "line" : 42
           },
@@ -1249,6 +1287,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 46,
                 "filePath" : "annotations.py",
                 "line" : 46
               },
@@ -1271,6 +1310,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 46,
             "filePath" : "annotations.py",
             "line" : 45
           },
@@ -1329,6 +1369,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 49,
             "filePath" : "annotations.py",
             "line" : 48
           },
@@ -1424,6 +1465,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 52,
             "filePath" : "annotations.py",
             "line" : 51
           },
@@ -1466,6 +1508,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 55,
             "filePath" : "annotations.py",
             "line" : 54
           },
@@ -1604,6 +1647,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 68,
         "filePath" : "annotations.py",
         "line" : 62
       },
@@ -1629,6 +1673,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 65,
             "filePath" : "annotations.py",
             "line" : 65
           },
@@ -1675,6 +1720,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 65,
                 "filePath" : "annotations.py",
                 "line" : 65
               },
@@ -1694,6 +1740,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 65,
                 "filePath" : "annotations.py",
                 "line" : 65
               },
@@ -1707,6 +1754,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 65,
             "filePath" : "annotations.py",
             "line" : 64
           },
@@ -1737,6 +1785,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 68,
                 "filePath" : "annotations.py",
                 "line" : 68
               },
@@ -1753,6 +1802,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 68,
                 "filePath" : "annotations.py",
                 "line" : 68
               },
@@ -1766,6 +1816,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 68,
             "filePath" : "annotations.py",
             "line" : 67
           },

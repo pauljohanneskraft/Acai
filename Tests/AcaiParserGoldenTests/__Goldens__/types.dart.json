@@ -125,6 +125,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 5,
         "filePath" : "types.dart",
         "line" : 3
       },
@@ -150,6 +151,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 4,
             "filePath" : "types.dart",
             "line" : 4
           },
@@ -211,6 +213,7 @@
       "kind" : "mixin",
       "location" : {
         "column" : 1,
+        "endLine" : 13,
         "filePath" : "types.dart",
         "line" : 7
       },
@@ -236,6 +239,7 @@
           "kind" : "property",
           "location" : {
             "column" : 25,
+            "endLine" : 8,
             "filePath" : "types.dart",
             "line" : 8
           },
@@ -267,6 +271,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 11,
                 "filePath" : "types.dart",
                 "line" : 11
               },
@@ -286,6 +291,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 11,
                 "filePath" : "types.dart",
                 "line" : 11
               },
@@ -299,6 +305,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 10,
             "filePath" : "types.dart",
             "line" : 10
           },
@@ -362,6 +369,7 @@
       "kind" : "mixin",
       "location" : {
         "column" : 1,
+        "endLine" : 17,
         "filePath" : "types.dart",
         "line" : 15
       },
@@ -388,6 +396,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 16,
             "filePath" : "types.dart",
             "line" : 16
           },
@@ -442,6 +451,7 @@
       "kind" : "mixin",
       "location" : {
         "column" : 1,
+        "endLine" : 21,
         "filePath" : "types.dart",
         "line" : 19
       },
@@ -468,6 +478,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 20,
             "filePath" : "types.dart",
             "line" : 20
           },
@@ -527,6 +538,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 28,
         "filePath" : "types.dart",
         "line" : 23
       },
@@ -552,6 +564,7 @@
           "kind" : "property",
           "location" : {
             "column" : 33,
+            "endLine" : 24,
             "filePath" : "types.dart",
             "line" : 24
           },
@@ -602,6 +615,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 25,
             "filePath" : "types.dart",
             "line" : 25
           },
@@ -638,6 +652,7 @@
             {
               "location" : {
                 "column" : 79,
+                "endLine" : 27,
                 "filePath" : "types.dart",
                 "line" : 27
               },
@@ -651,6 +666,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 27,
             "filePath" : "types.dart",
             "line" : 27
           },
@@ -784,6 +800,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 38,
         "filePath" : "types.dart",
         "line" : 30
       },
@@ -809,6 +826,7 @@
           "kind" : "property",
           "location" : {
             "column" : 25,
+            "endLine" : 31,
             "filePath" : "types.dart",
             "line" : 31
           },
@@ -852,6 +870,7 @@
           "kind" : "property",
           "location" : {
             "column" : 61,
+            "endLine" : 32,
             "filePath" : "types.dart",
             "line" : 32
           },
@@ -918,6 +937,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 34,
             "filePath" : "types.dart",
             "line" : 34
           },
@@ -965,6 +985,7 @@
             {
               "location" : {
                 "column" : 73,
+                "endLine" : 37,
                 "filePath" : "types.dart",
                 "line" : 37
               },
@@ -981,6 +1002,7 @@
             {
               "location" : {
                 "column" : 79,
+                "endLine" : 37,
                 "filePath" : "types.dart",
                 "line" : 37
               },
@@ -989,6 +1011,7 @@
             {
               "location" : {
                 "column" : 121,
+                "endLine" : 37,
                 "filePath" : "types.dart",
                 "line" : 37
               },
@@ -1002,6 +1025,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 37,
             "filePath" : "types.dart",
             "line" : 37
           },
@@ -1072,6 +1096,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 40,
         "filePath" : "types.dart",
         "line" : 40
       },
@@ -1116,6 +1141,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 45,
         "filePath" : "types.dart",
         "line" : 42
       },
@@ -1141,6 +1167,7 @@
           "kind" : "property",
           "location" : {
             "column" : 31,
+            "endLine" : 43,
             "filePath" : "types.dart",
             "line" : 43
           },
@@ -1184,6 +1211,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 44,
             "filePath" : "types.dart",
             "line" : 44
           },
@@ -1251,6 +1279,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 50,
         "filePath" : "types.dart",
         "line" : 47
       },
@@ -1276,6 +1305,7 @@
           "kind" : "property",
           "location" : {
             "column" : 31,
+            "endLine" : 48,
             "filePath" : "types.dart",
             "line" : 48
           },
@@ -1319,6 +1349,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 49,
             "filePath" : "types.dart",
             "line" : 49
           },
@@ -1394,6 +1425,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 57,
         "filePath" : "types.dart",
         "line" : 52
       },
@@ -1420,6 +1452,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 54,
             "filePath" : "types.dart",
             "line" : 54
           },
@@ -1463,6 +1496,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 56,
             "filePath" : "types.dart",
             "line" : 56
           },
@@ -1511,6 +1545,7 @@
           ],
           "location" : {
             "column" : 5,
+            "endLine" : 60,
             "filePath" : "types.dart",
             "line" : 60
           },
@@ -1522,6 +1557,7 @@
           ],
           "location" : {
             "column" : 5,
+            "endLine" : 61,
             "filePath" : "types.dart",
             "line" : 61
           },
@@ -1561,6 +1597,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 68,
         "filePath" : "types.dart",
         "line" : 59
       },
@@ -1586,6 +1623,7 @@
           "kind" : "property",
           "location" : {
             "column" : 25,
+            "endLine" : 63,
             "filePath" : "types.dart",
             "line" : 63
           },
@@ -1629,6 +1667,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 64,
             "filePath" : "types.dart",
             "line" : 64
           },
@@ -1665,6 +1704,7 @@
             {
               "location" : {
                 "column" : 71,
+                "endLine" : 67,
                 "filePath" : "types.dart",
                 "line" : 67
               },
@@ -1673,6 +1713,7 @@
             {
               "location" : {
                 "column" : 101,
+                "endLine" : 67,
                 "filePath" : "types.dart",
                 "line" : 67
               },
@@ -1686,6 +1727,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 67,
             "filePath" : "types.dart",
             "line" : 67
           },
@@ -1756,6 +1798,7 @@
       "kind" : "extension",
       "location" : {
         "column" : 1,
+        "endLine" : 74,
         "filePath" : "types.dart",
         "line" : 70
       },
@@ -1776,6 +1819,7 @@
             {
               "location" : {
                 "column" : 49,
+                "endLine" : 71,
                 "filePath" : "types.dart",
                 "line" : 71
               },
@@ -1789,6 +1833,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 71,
             "filePath" : "types.dart",
             "line" : 71
           },
@@ -1824,6 +1869,7 @@
             {
               "location" : {
                 "column" : 45,
+                "endLine" : 73,
                 "filePath" : "types.dart",
                 "line" : 73
               },
@@ -1840,6 +1886,7 @@
             {
               "location" : {
                 "column" : 65,
+                "endLine" : 73,
                 "filePath" : "types.dart",
                 "line" : 73
               },
@@ -1853,6 +1900,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 73,
             "filePath" : "types.dart",
             "line" : 73
           },
@@ -1909,6 +1957,7 @@
       "kind" : "extension",
       "location" : {
         "column" : 1,
+        "endLine" : 78,
         "filePath" : "types.dart",
         "line" : 76
       },
@@ -1925,6 +1974,7 @@
             {
               "location" : {
                 "column" : 43,
+                "endLine" : 77,
                 "filePath" : "types.dart",
                 "line" : 77
               },
@@ -1947,6 +1997,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 77,
             "filePath" : "types.dart",
             "line" : 77
           },
@@ -2016,6 +2067,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 85,
         "filePath" : "types.dart",
         "line" : 80
       },
@@ -2042,6 +2094,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 81,
             "filePath" : "types.dart",
             "line" : 81
           },
@@ -2102,6 +2155,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 84,
             "filePath" : "types.dart",
             "line" : 84
           },
@@ -2172,6 +2226,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 101,
         "filePath" : "types.dart",
         "line" : 89
       },
@@ -2197,6 +2252,7 @@
           "kind" : "property",
           "location" : {
             "column" : 25,
+            "endLine" : 90,
             "filePath" : "types.dart",
             "line" : 90
           },
@@ -2240,6 +2296,7 @@
           "kind" : "property",
           "location" : {
             "column" : 39,
+            "endLine" : 91,
             "filePath" : "types.dart",
             "line" : 91
           },
@@ -2283,6 +2340,7 @@
           "kind" : "property",
           "location" : {
             "column" : 29,
+            "endLine" : 92,
             "filePath" : "types.dart",
             "line" : 92
           },
@@ -2326,6 +2384,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 93,
             "filePath" : "types.dart",
             "line" : 93
           },
@@ -2358,6 +2417,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 98,
                 "filePath" : "types.dart",
                 "line" : 98
               },
@@ -2374,6 +2434,7 @@
             {
               "location" : {
                 "column" : 39,
+                "endLine" : 96,
                 "filePath" : "types.dart",
                 "line" : 96
               },
@@ -2382,6 +2443,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 97,
                 "filePath" : "types.dart",
                 "line" : 97
               },
@@ -2390,6 +2452,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 98,
                 "filePath" : "types.dart",
                 "line" : 98
               },
@@ -2403,6 +2466,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 95,
             "filePath" : "types.dart",
             "line" : 95
           },
