@@ -8,7 +8,7 @@ import Testing
 /// `ensureComparisonLoaded` resolving `GitCheckout.mergeBase` and loading both sides as historical
 /// snapshots — proving three-dot semantics (the base branch's own unrelated later commits don't
 /// leak into the diff) through the real view model, not just `GitCheckout` in isolation.
-@Suite("ProjectBrowserViewModel pull-request comparison")
+@Suite("ProjectBrowserViewModel pull-request comparison", .timeLimit(.minutes(1)))
 @MainActor
 struct PullRequestComparisonTests {
     private func makeTempDirectory(_ name: String) throws -> URL {

@@ -5,7 +5,7 @@ import AcaiCore
 
 // Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
 #if os(macOS)
-@Suite("Git revision snapshot")
+@Suite("Git revision snapshot", .timeLimit(.minutes(1)))
 struct GitRevisionSnapshotTests {
 
     /// `git archive`-based snapshot returns the artifact as it was at the committed revision, while

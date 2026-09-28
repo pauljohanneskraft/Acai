@@ -4,7 +4,7 @@ import Testing
 
 /// A blocked file is excluded before real Swift parsing runs, exercised end-to-end through
 /// `CodebaseAnalyzer.enrichedArtifact(at:fileFilter:)` — the same call the live reindex path makes.
-@Suite("CodebaseAnalyzer file filter")
+@Suite("CodebaseAnalyzer file filter", .timeLimit(.minutes(1)))
 struct CodebaseAnalyzerFileFilterTests {
 
     private func makeTempDirectory() throws -> URL {

@@ -263,15 +263,21 @@ Render a diagram as DOT or Mermaid text you can embed in a reply.
 | --- | --- | --- |
 | `path` * | string | |
 | `languages`, `refresh` | | |
-| `kind` | `class` \| `package` \| `sequence` \| `state` \| `callgraph` | Default `class`. |
+| `kind` | `class` \| `package` \| `moduleCoupling` \| `sequence` \| `state` \| `callgraph` | Default `class`. |
 | `format` | `dot` \| `mermaid` | **Default `mermaid`** — note the CLI defaults to `dot`. |
 | `focus`, `focusDepth` | string, integer | Class diagram only. |
 | `scope` | string | Call graph: `type:Name` or `module:Name`. |
 | `sequenceFrom` | string | Required for `kind: sequence`. |
 | `stateFrom` | string | Required for `kind: state`. |
 | `maxDepth`, `maxStates` | integer | Defaults 5 and 20. |
-| `maxNodes` | integer | Class/package only. Fails beyond this many nodes, naming the count (default `2000`). |
+| `maxNodes` | integer | Class, package and `moduleCoupling` only. Fails beyond this many nodes, naming the count (default `2000`). |
 | `map` | string[] | `Protocol=Concrete` receiver mappings for sequence tracing. |
+
+`kind: moduleCoupling` renders the same module graph as `kind: package`, but labels each node with its full
+Martin metric set (`Ca`/`Ce`/`I`/`A`/`D`) and names its main-sequence zone — `balanced`, `zone of pain` or
+`zone of uselessness` — in the label text rather than by fill colour alone. Edges that breach the
+Stable-Dependencies Principle (a dependency on a *less* stable module) are dashed in DOT, dotted in Mermaid,
+and labelled `(SDP)`. Use it to audit layering; use `kind: package` for the plain dependency shape.
 
 `sequenceFrom` and `stateFrom` are required in practice for their kinds, but the schema doesn't express that. Setting `focus` forces `groupBy` off and traverses in both directions — a focused view is a local neighbourhood, and grouping would split it into mismatched clusters.
 

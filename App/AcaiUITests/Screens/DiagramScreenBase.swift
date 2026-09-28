@@ -58,7 +58,7 @@ class DiagramScreenBase {
     ) {
         if content.exists { return }
         if !settingsContent.exists && !inspectorContent.exists {
-            tapSidebarToggle(file: file, line: line)
+            tapSidebarToggle(until: anySidebarContent, file: file, line: line)
         }
         // Opening the sidebar restores the tab it was last on, which is usually this one already.
         if content.exists { return }
@@ -145,8 +145,24 @@ class DiagramScreenBase {
         tapToolbarButton(identifier: "diagram.fitToViewButton", label: "Fit to View", file: file, line: line)
     }
 
-    func tapSidebarToggle(file: StaticString = #filePath, line: UInt = #line) {
-        tapToolbarButton(identifier: "diagram.sidebarToggleButton", label: "Sidebar", file: file, line: line)
+    /// The sidebar is open once either tab's content is in the tree, whichever it was last on. Only
+    /// the generated diagrams have these — a freeform diagram's sidebar is the node catalog.
+    var anySidebarContent: XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["diagram.sidebarContent.settings", "diagram.sidebarContent.inspector"]
+        )).firstMatch
+    }
+
+    /// `destination` is what the caller expects the toggle to bring on screen: without it a tap that
+    /// lands while the overflow menu is still presenting does nothing and is never retried. Closing
+    /// the sidebar has no destination to name, so it passes none.
+    func tapSidebarToggle(
+        until destination: XCUIElement? = nil, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        tapToolbarButton(
+            identifier: "diagram.sidebarToggleButton", label: "Sidebar", until: destination,
+            file: file, line: line
+        )
     }
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)
@@ -169,5 +185,16 @@ class DiagramScreenBase {
     func compare(against name: String, timeout: TimeInterval = .uiWork, file: StaticString = #filePath, line: UInt = #line) {
         compareRefRow(name).tapWhenReady("compare ref row \(name)", file: file, line: line)
         compareOperation.waitUntilLoaded("Comparing against \(name)", timeout: timeout, file: file, line: line)
+    }
+
+    /// Closes the compare panel, which otherwise covers the canvas it was opened over: the sheet's
+    /// Done button on iOS, Escape for the macOS popover.
+    func dismissCompare(file: StaticString = #filePath, line: UInt = #line) {
+        #if os(macOS)
+        app.typeKey(.escape, modifierFlags: [])
+        #else
+        app.buttons["delta.doneButton"].tapWhenReady("the compare panel's Done button", file: file, line: line)
+        #endif
+        compareRefRow("HEAD").waitForDisappearanceOrFail("the compare panel", file: file, line: line)
     }
 }

@@ -1,0 +1,1 @@
+C has no member functions; `static` on a file-scope function means internal linkage, an unrelated concept.

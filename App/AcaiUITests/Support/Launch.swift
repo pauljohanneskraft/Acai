@@ -66,6 +66,10 @@ extension XCUIApplication {
         #if os(macOS)
         // A window a previous journey opened would otherwise be restored into this one.
         launchArguments += ["-ApplePersistenceIgnoreState", "YES"]
+        // A blinking insertion point never lets a capture of a focused field settle. Holding it
+        // steady keeps the pixels stable; iOS hides its caret in `AcaiRootScene` instead, having no
+        // equivalent default.
+        launchArguments += ["-NSTextInsertionPointBlinkPeriodOn", "100000", "-NSTextInsertionPointBlinkPeriodOff", "0"]
         #endif
         assertLaunchArgumentsAreDefaults(file: file, line: line)
         launch()

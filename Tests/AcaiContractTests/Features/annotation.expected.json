@@ -1,0 +1,5 @@
+{
+  "types": [
+    { "name": "Box", "kind": "class", "access": "+", "annotations": ["Marker"] }
+  ]
+}

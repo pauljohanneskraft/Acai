@@ -1,0 +1,26 @@
+{
+  "types": [
+    {
+      "name": "Car",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        {
+          "name": "go", "role": "method", "access": "+", "type": "#primitive",
+          "parameters": ["engine: Engine"], "calls": ["Engine.start"]
+        }
+      ]
+    },
+    {
+      "name": "Engine",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "start", "role": "method", "access": "+", "type": "#primitive" }
+      ]
+    }
+  ],
+  "relationships": [
+    { "kind": "dependency", "source": "Car", "target": "Engine" }
+  ]
+}

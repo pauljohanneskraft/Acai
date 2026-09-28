@@ -1,0 +1,1 @@
+C has no optional type and no class; a nullable pointer is the idiom and carries no optionality the declaration states.

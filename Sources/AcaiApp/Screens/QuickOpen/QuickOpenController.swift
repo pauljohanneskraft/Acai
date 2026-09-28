@@ -39,7 +39,6 @@ struct QuickOpenController {
     /// Pure filter — the debounce/cancellation timing stays in `QuickOpenView`, a View-lifecycle
     /// concern, not business logic.
     func filtered(_ entries: [QuickOpenEntry], matching query: String) -> [QuickOpenEntry] {
-        guard !query.isEmpty else { return [] }
-        return entries.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        QuickOpenSearch(entries: entries, query: query).results
     }
 }

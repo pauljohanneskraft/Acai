@@ -33,10 +33,11 @@ final class RemoteCodebaseJourneyTests: UIJourneyTestCase {
         codebaseRow.waitOrFail("the cloned codebase's row")
         let codebaseDetail = CodebaseDetailScreen(app: app)
         codebaseRow.tap("the cloned codebase's row", until: codebaseDetail.refPicker)
+        // `switchRef` waits for the operation to report loaded, which now means it actually succeeded.
+        // That the switched worktree holds the branch's own content is
+        // `ProjectCodebaseEditorRemoteSyncTests.switchingRefMovesTheWorktreeAndRecordsTheNewRef`,
+        // so this no longer builds a diagram to read `Extra` off the canvas.
         codebaseDetail.switchRef(to: "feature")
-
-        let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
-        diagram.typeNode(named: "Extra").waitOrFail("the feature branch's Extra type node", timeout: .uiWork)
     }
 
     /// A repository GitHub reports as large asks before cloning; the latest-snapshot clone says so,
@@ -69,9 +70,9 @@ final class RemoteCodebaseJourneyTests: UIJourneyTestCase {
         codebaseRow.waitOrFail("the cloned codebase's row")
         let codebaseDetail = CodebaseDetailScreen(app: app)
         codebaseRow.tap("the cloned codebase's row", until: codebaseDetail.latestSnapshotBadge)
-
-        let hotspot = codebaseDetail.createDiagram(type: "hotspot", as: HotspotScreen.self)
-        hotspot.historyNotFetchedState.waitOrFail("the hotspot's history-not-fetched state", timeout: .uiWork)
-        hotspot.fetchFullHistory()
+        // Deepened from the badge rather than through the hotspot screen: that a shallow clone reports
+        // "history not fetched" instead of charting one commit is
+        // `HotspotViewModelTests.aShallowCloneSaysHistoryIsNotFetchedInsteadOfChartingOneCommit`.
+        codebaseDetail.fetchFullHistory()
     }
 }

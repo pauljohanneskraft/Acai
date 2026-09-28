@@ -62,7 +62,7 @@ struct ModuleCouplingChartData {
                 abstractness: module.abstractness,
                 distance: module.distanceFromMainSequence,
                 publicMemberCount: module.publicMemberCount,
-                zone: module.mainSequenceZone
+                zone: Zone(module.mainSequenceZone)
             )
         }
     }
@@ -72,12 +72,18 @@ struct ModuleCouplingChartData {
     }
 }
 
-extension CodeMetrics.ModuleCoupling {
-    /// Which side of the main sequence this module falls on, per `ModuleCouplingChartData.Zone`'s
-    /// documentation — a computed property on the value the classification actually describes,
-    /// rather than a free-standing helper function.
-    fileprivate var mainSequenceZone: ModuleCouplingChartData.Zone {
-        guard distanceFromMainSequence >= 0.3 else { return .balanced }
-        return instability < 0.5 ? .painful : .useless
+extension ModuleCouplingChartData.Zone {
+    /// The chart's presentation of `AcaiCore`'s shared classification: the thresholds live once, on
+    /// `MainSequenceZone`, so a module falls in the same zone here as in `acai diagram
+    /// --module-coupling`. This adds only the chart's shape/colour vocabulary on top.
+    fileprivate init(_ zone: MainSequenceZone) {
+        switch zone {
+        case .painful:
+            self = .painful
+        case .useless:
+            self = .useless
+        case .balanced:
+            self = .balanced
+        }
     }
 }

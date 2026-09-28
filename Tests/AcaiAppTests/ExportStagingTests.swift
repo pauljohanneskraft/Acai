@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Staging an export for the share sheet")
+@Suite("Staging an export for the share sheet", .timeLimit(.minutes(1)))
 struct ExportStagingTests {
     private let staging = ExportStaging(
         root: FileManager.default.temporaryDirectory

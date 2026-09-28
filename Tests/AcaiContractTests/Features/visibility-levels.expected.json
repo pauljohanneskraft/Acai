@@ -1,0 +1,13 @@
+{
+  "types": [
+    {
+      "name": "Box",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "open", "role": "property", "access": "+", "type": "#primitive" },
+        { "name": "shut", "role": "property", "access": "-", "type": "#primitive" }
+      ]
+    }
+  ]
+}

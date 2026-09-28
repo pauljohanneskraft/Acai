@@ -45,14 +45,6 @@ extension AcaiCommand {
                         files: String(entry.artifact.metadata.filePaths.count),
                         path: entry.sourcePath
                     ).formatted)
-                case .legacyArtifact(let artifact):
-                    print(Row(
-                        name: name,
-                        language: artifact.metadata.sourceLanguage.rawValue,
-                        types: String(artifact.types.count),
-                        files: String(artifact.metadata.filePaths.count),
-                        path: ""
-                    ).formatted)
                 case .absent:
                     print(Row(name: name, language: "(error reading)", types: "", files: "", path: "").formatted)
                 }

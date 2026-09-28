@@ -42,7 +42,7 @@ struct ProjectDetailView: View {
                                 Label(.app("View.ProjectDetailView.AddCodebase"), systemImage: "folder.badge.plus")
                             }
                             .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                            addDiagramButton
+                            addDiagramButton()
                             Divider()
                             findingsButton
                         } label: {
@@ -61,7 +61,7 @@ struct ProjectDetailView: View {
                             Label(.app("View.ProjectDetailView.AddCodebase"), systemImage: "folder.badge.plus")
                         }
                         .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                        addDiagramButton
+                        addDiagramButton()
                         findingsButton
                     }
                 }
@@ -80,7 +80,7 @@ struct ProjectDetailView: View {
                 presenting: codebasePendingDeletion
             ) { codebase in
                 Button(.app("View.ProjectDetailView.DeleteCodebase"), role: .destructive) {
-                    model.editing.removeCodebase(codebase.id)
+                    Task { await model.editing.removeCodebase(codebase.id) }
                 }
                 .accessibilityIdentifier("projectDetail.codebase.delete.confirmButton")
             } message: { _ in
@@ -328,7 +328,7 @@ struct ProjectDetailView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                addDiagramButton
+                addDiagramButton()
             }
             findingsButton
                 .buttonStyle(.bordered)

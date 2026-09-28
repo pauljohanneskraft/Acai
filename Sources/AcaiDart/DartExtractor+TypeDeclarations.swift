@@ -51,7 +51,8 @@ extension DartExtractor {
         }
 
         return TypeDeclaration(
-            id: typeId, name: name, qualifiedName: typeId, kind: .class,
+            id: typeId, name: name, qualifiedName: typeId,
+            kind: isInterfaceClass(node) ? .interface : .class,
             accessLevel: DartName(name).accessLevel,
             modifiers: modifiers,
             genericParameters: genericParams, inheritedTypes: inheritedTypes,
@@ -231,5 +232,12 @@ extension DartExtractor {
             annotations: annotations.annotations(of: node),
             namespace: declarations.currentNamespace, location: nodeLoc
         )
+    }
+
+    /// Dart 3's `interface class` / `abstract interface class`: a class that may only be implemented,
+    /// which is Dart's interface declaration and belongs under `TypeKind.interface` rather than being
+    /// rendered as an ordinary class. A plain `abstract class` stays a class.
+    func isInterfaceClass(_ node: Node) -> Bool {
+        node.children().contains { $0.nodeType == "interface" || $0.text(in: context) == "interface" }
     }
 }

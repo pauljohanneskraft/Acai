@@ -1,0 +1,12 @@
+{
+  "types": [
+    {
+      "name": "Counter",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "reset", "role": "method", "access": "+", "modifiers": ["static"], "type": "#primitive" }
+      ]
+    }
+  ]
+}

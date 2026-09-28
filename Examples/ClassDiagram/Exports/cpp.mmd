@@ -8,6 +8,7 @@ classDiagram
         -title_ std::string
         -duration_ double
         -genre_ Genre
+        +MediaItem(title std::string, duration double, genre Genre)
         +title() std::string
         +duration() double
         +play() void
@@ -30,23 +31,27 @@ classDiagram
     class Player["Player"] {
         -library_ Library
         -nowPlaying_ Playable
+        +Player(library Library)
         +play(item Playable) void
         +playFirstItem(playlistNamed std::string) void
     }
     class Playlist["Playlist"] {
         -name_ std::string
         -items_ std::vector~MediaItem~
+        +Playlist(name std::string)
         +totalDuration() double
         +add(item MediaItem) void
     }
     class Podcast["Podcast"] {
         -host_ std::string
         -episodeNumber_ int
+        +Podcast(title std::string, duration double, host std::string, episodeNumber int)
         +play() void
     }
     class Song["Song"] {
         -artist_ std::string
         -album_ std::string
+        +Song(title std::string, duration double, genre Genre, artist std::string, album std::string)
         +play() void
     }
     Playable <|-- MediaItem
@@ -57,3 +62,4 @@ classDiagram
     Player *-- "1" Library : library_
     Player *-- "1" Playable : nowPlaying_
     Playlist o-- "*" MediaItem : items_
+    Song ..> Genre

@@ -6,7 +6,7 @@ import AcaiQuality
 /// `FilterPresetStore`/`FilterPresetList`: the plain, diffable, git-reviewable file a "Save as
 /// Preset" action writes to, kept deliberately separate from `ProjectStore` itself — see
 /// `FindingsSuppressionStoreTests`, whose shape this mirrors.
-@Suite("Filter Preset Store")
+@Suite("Filter Preset Store", .timeLimit(.minutes(1)))
 struct FilterPresetStoreTests {
     private func makeTempStore() -> FilterPresetStore {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

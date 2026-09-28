@@ -12,6 +12,7 @@ Examples/
   SequenceDiagram/   Swift Kotlin Java TypeScript Dart Python C Cpp                       + Exports/
   StateDiagram/      Swift Kotlin Java TypeScript JavaScript Dart Python C Cpp            + Exports/
   PackageDiagram/    Swift Kotlin Java TypeScript Dart Python C Cpp  (Core/ + Banking/)   + Exports/
+                     (Exports/ also holds the coupling view: <language>.coupling.dot / .mmd)
   CallGraph/         Swift Kotlin Java TypeScript Dart Python C Cpp                       + Exports/
   ClassDiagramDiff/    Swift Kotlin Java TypeScript Dart Python C Cpp        (Before/+After/) + Exports/
   SequenceDiagramDiff/ Swift Kotlin Java TypeScript Dart Python C Cpp        (Before/+After/) + Exports/
@@ -32,6 +33,7 @@ Not every language can express every diagram, and where one bows out there's a r
 | **Sequence** | Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++  | Needs callable receivers. The OO languages enter on a method (`Checkout.placeOrder`); C has no methods, so it enters on the free function `place_order` and renders the same call chain as `<<control>>` lifelines. Only plain JavaScript stays out (no typed call data). |
 | **State**    | Swift, Kotlin, Java, TypeScript, JavaScript, Dart, Python, C, C++ | Value-flow analysis only needs assignments, which every parser extracts. C has no methods, so its transitions live in free functions that mutate the struct by pointer (`d->state = …`); the analysis attributes those writes to `Download` by receiver type. (C has no in-struct initializer, so it omits the `idle` initial-only state the others show.) |
 | **Package**  | Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | Module grouping is path-based (`BuildProduct`); each parser's cross-module relationships are exercised. The same `Core` abstraction counts toward abstractness, so the seven that express it as an abstract type — Swift/Kotlin/Java/TS `protocol`/`interface`, Dart `abstract class`, Python `ABC`, C++ pure-virtual `class` — report `A=0.33`. Only C reports `A=0.00`: its abstraction is a struct of function pointers, a concrete type. |
+| **Coupling** | Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | The same two-module trees as **Package**, rendered by `--module-coupling`: each node labelled `Ca`/`Ce`/`I`/`A`/`D` plus its named main-sequence zone. Every language puts `Core` in the zone of pain, but at different depths — the seven with a real abstraction report `A=0.33`/`D=0.67`, while C's function-pointer struct is concrete, so it reports `A=0.00`/`D=1.00`, the worst possible distance. Neither example's single edge breaches the Stable-Dependencies Principle (`Core` is the stable end), so the dashed `(SDP)` marking is covered by unit tests instead. DOT and Mermaid only — there is no `acai image --module-coupling`, so no `.png`. |
 | **CallGraph**| Swift, Kotlin, Java, TypeScript, Dart, Python, C, C++ | Needs typed call receivers (like Sequence); JavaScript is omitted. C resolves free-function → free-function calls; the rest render the same order-submission graph. |
 | **…Diff** (×5) | Each base diagram type's coverage | A `acai diff` between two revisions of one codebase (`Before/` + `After/`), rendered as that diagram type with its added/removed/changed elements **colour-coded — added green, removed red, changed amber, unchanged untinted**. One `*Diff/` tree per diagram type (`ClassDiagramDiff`, `SequenceDiagramDiff`, `StateDiagramDiff`, `PackageDiagramDiff`, `CallGraphDiff`), each mirroring that type's language coverage. Each delta ships a `.delta.dot`, a `.delta.mmd` and a `.delta.png`. **Mermaid caveat:** Mermaid's `sequenceDiagram`/`stateDiagram` syntaxes have no per-edge colour, so those two `.delta.mmd` are the union **uncolored** (the `.delta.dot` and `.delta.png` carry the colour); class/package/call-graph get colour in all three. |
 
@@ -43,6 +45,7 @@ Five little domains, each chosen to exercise a different corner of the analysis:
 - **CallGraph** — an order-submission flow. `OrderController.submit` fans out to `Validator.validate` and `OrderService.place`, which in turn call `PaymentService.charge` and `OrderRepository.save` — a small branching static call graph built from `callSites`.
 - **SequenceDiagram** — a checkout flow. `Checkout.placeOrder()` → `PaymentService.charge()` → `PaymentGateway.authorize()`, traced through explicitly-typed properties.
 - **StateDiagram** — a `Download` whose `state` advances through a pipeline. `run()` walks the happy path (`requested → downloading → verifying → finished`) as a sequence of assignments, which the value-flow analysis renders as a transition chain, while `fail()` branches off.
+- **Coupling** — no tree of its own: the coupling view is a second rendering of the **PackageDiagram** model, so it reuses those sources and its goldens sit beside them as `<language>.coupling.dot` / `.mmd`. Sharing the input is the point — the two goldens stay comparable module-for-module, and a drift in one that the other doesn't show means the renderers have diverged, not the analysis.
 - **PackageDiagram** — a two-module banking model. A `Core` module (`Money`, `Account`, and the `AccountRepository` abstraction) and a `Banking` module (`TransferService`, `InMemoryAccountRepository`) that depends on it, yielding a `Banking → Core` edge with the modules' instability/abstractness metrics. Unlike the other examples (one type-name set reused across languages), modules are **directories**, so each language lives in its own tree scanned on its own.
 - **…Diff** (five trees) — each proves the **delta** rendering for one diagram type by analysing a `Before/` and an `After/` revision and rendering the union with changed elements tinted. The change is chosen to read naturally in each language (per-language-natural, not one shared model): **ClassDiagramDiff** drops an inheritance and adds a composition in the OO languages, and swaps one composition for another in C (no inheritance); **SequenceDiagramDiff** removes a `verify()` message and adds a `log()` one; **StateDiagramDiff** removes the `verifying` step so its two transitions appear added and the old direct edge removed; **PackageDiagramDiff** adds a new `Reporting` module depending on `Core`; **CallGraphDiff** adds the `OrderService.place → OrderRepository.save` call. `acai diff --diagram` (plus the matching diagram-type flag) renders each.
 
@@ -95,6 +98,12 @@ acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package
     --output Examples/PackageDiagram/Exports/<lang>.mmd
 acai image   --source Examples/PackageDiagram/<Lang> --language <lang> --package \
     --output Examples/PackageDiagram/Exports/<lang>.png --scale 2
+
+# Module coupling view — same sources, DOT + Mermaid only (no PNG: acai image has no --module-coupling)
+acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --module-coupling \
+    --output Examples/PackageDiagram/Exports/<lang>.coupling.dot
+acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --module-coupling --format mermaid \
+    --output Examples/PackageDiagram/Exports/<lang>.coupling.mmd
 
 # Call graph (swift kotlin java typescript dart python c cpp) — whole-codebase scope.
 acai diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph \

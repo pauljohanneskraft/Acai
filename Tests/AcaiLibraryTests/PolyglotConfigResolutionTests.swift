@@ -7,7 +7,7 @@ import AcaiCore
 /// language, but merges into a single `CodeArtifact` with one top-level language. These tests prove
 /// the per-type `LanguageConfigurationResolver` classifies each type under *its own* language rather
 /// than the single dominant one — the fix for the polyglot config-flattening bug.
-@Suite("Polyglot per-type config resolution")
+@Suite("Polyglot per-type config resolution", .timeLimit(.minutes(1)))
 struct PolyglotConfigResolutionTests {
 
     private func analyzePolyglotFixture() async throws -> CodeArtifact {

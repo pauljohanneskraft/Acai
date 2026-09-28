@@ -1,0 +1,1 @@
+C++ has no annotation; a [[attribute]] is a compiler directive, not a declaration the model records.
