@@ -15,6 +15,8 @@ public struct Hotspots: Sendable, Equatable, Codable {
         public let complexity: Int
         /// Churn × complexity — the ranking the top-right quadrant is ordered by.
         public let score: Int
+        /// Above both medians. A carried flag rather than something a presentation re-derives, so a
+        /// scatter plot can state it in text and in an accessibility value instead of by colour.
         public let isHotspot: Bool
 
         public var id: String { path }
