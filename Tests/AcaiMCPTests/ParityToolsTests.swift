@@ -102,11 +102,14 @@ struct ParityToolsTests {
     @Test func qualityRejectsMovementsWithoutABaseline() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
-            let rules = try Self.movementRules(in: dir)
-            await #expect(throws: (any Error).self) {
+            let rules = try movementRules(in: dir)
+            let error = await #expect(throws: MCPError.self) {
                 _ = try await MCPTestSupport.call(
                     "acai_quality", on: MCPTestSupport.testRegistry, path: dir, ["rules": .string(rules.path)])
             }
+            // A rules file this tool cannot read is also `invalidParams`, so the refusal has to be
+            // told apart by what it says, not merely by something having been thrown.
+            #expect("\(try #require(error))".contains("'baseline'"))
         }
     }
 
@@ -131,8 +134,8 @@ struct ParityToolsTests {
             try await MCPTestSupport.withTempDirectory { head in
                 try MCPTestSupport.writeSampleSwiftSource(in: baseline)
                 try MCPTestSupport.writeSampleSwiftSource(in: head)
-                try Self.addCollaborator(to: head)
-                let rules = try Self.movementRules(in: head)
+                try addCollaborator(to: head)
+                let rules = try movementRules(in: head)
                 let value = try await MCPTestSupport.call(
                     "acai_quality", on: MCPTestSupport.testRegistry, path: head,
                     ["rules": .string(rules.path), "baseline": .string(baseline.path)])
@@ -161,8 +164,8 @@ struct ParityToolsTests {
             let artifact = try await AnalysisService.standard.analyzeProject(at: dir, allowedLanguages: [])
             let baseline = dir.appendingPathComponent("baseline.json")
             try JSONEncoder().encode(artifact).write(to: baseline)
-            try Self.addCollaborator(to: dir)
-            let rules = try Self.movementRules(in: dir)
+            try addCollaborator(to: dir)
+            let rules = try movementRules(in: dir)
             let value = try await MCPTestSupport.call(
                 "acai_quality", on: MCPTestSupport.testRegistry, path: dir,
                 ["rules": .string(rules.path), "baseline": .string(baseline.path)])
@@ -174,7 +177,7 @@ struct ParityToolsTests {
     }
 
     /// `minImprovement` omitted means "must not get worse", which is what the regression above trips.
-    private static func movementRules(in directory: URL) throws -> URL {
+    private func movementRules(in directory: URL) throws -> URL {
         let url = directory.appendingPathComponent("quality.yml")
         try """
         movements:
@@ -185,7 +188,7 @@ struct ParityToolsTests {
     }
 
     /// Gives `Service` a second collaborator, raising its `fanOut` by one.
-    private static func addCollaborator(to directory: URL) throws {
+    private func addCollaborator(to directory: URL) throws {
         try """
         class Logger {
             func log() {}
