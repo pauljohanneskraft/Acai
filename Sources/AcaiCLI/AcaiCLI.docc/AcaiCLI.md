@@ -19,7 +19,7 @@ against your build.
 - [Install](#Install)
 - [The mental model](#The-mental-model)
 - [Shared options](#Shared-options)
-- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`impact`](#impact) · [`diff`](#diff)
+- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`dependents`](#dependents) · [`diff`](#diff)
 - [Recipes](#Recipes)
 - [Platform differences](#Platform-differences)
 
@@ -88,7 +88,7 @@ A stored analysis is also your **baseline** for drift checks — see [`diff`](#d
 
 > **Trust the parse first.** `acai analyze --health` scores how cleanly your code parsed. A low score means every metric, cycle and diagram built on it is unreliable. Run it before you act on anything else.
 >
-> You don't have to run it separately: `metrics`, `quality`, `callgraph`, `inspect`, `diff` and `impact`
+> You don't have to run it separately: `metrics`, `quality`, `callgraph`, `inspect`, `diff` and `dependents`
 > each embed a compact `health` object (`score`, `diagnosticCount`, `countsByKind`) — the same shape
 > `analyze --health` uses, without its full per-diagnostic list — in their `--format json` output, under
 > a `health` key alongside the command's own data. `diff` combines both sides into the weaker-trust
@@ -125,7 +125,7 @@ understands reports the found and expected version numbers rather than misreadin
 | Flag | Values | Notes |
 | --- | --- | --- |
 | `--output <path>` | — | Writes to a file; prints to stdout if omitted. |
-| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `impact`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`. |
+| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `dependents`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`. |
 | `--include-generated` | flag | Machine-generated types are **excluded by default**; this includes them. |
 
 ### Selector facets
@@ -233,7 +233,7 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | Flag | Notes |
 | --- | --- |
 | `--format` | `dot` (default), `mermaid` |
-| `--theme` | `default`, `dark` |
+| `--theme` | `light`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
 | *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency`, `--color-by`, `--rules` |
 | *focus flags* | `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections` |
@@ -258,6 +258,11 @@ acai diagram --from myproj --package --output modules.dot
 
 Render DOT anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`.
 
+> **`--theme default` still works**, on `diagram` and `image` alike. It is a deprecated spelling of
+> `light` — accepted, hidden from `--help`, and due for removal in a later major release. The `theme:`
+> key in a `--config` file takes either spelling too.
+
+
 ### `image`
 
 > Render a class diagram to a PNG image (**macOS only**).
@@ -271,7 +276,7 @@ Same diagram families as `diagram`, rendered natively through SwiftUI instead of
 | `--min-access <level>` | Hides members *and whole types* below the level. |
 | `--hide-members` | |
 | `--scale <n>` | Resolution factor, default `2.0`. |
-| `--theme` | `default` (light), `dark` |
+| `--theme` | `light` (default), `dark` |
 | `--source-old` / `--from-old` | Render a **delta image** against this older side. |
 | *diagram-kind + focus flags* | as `diagram` |
 
@@ -435,14 +440,14 @@ acai callgraph --from myproj --mode deadcode
 
 `--format json` output wraps each mode's data alongside `health`: `{ "callGraph": <CallGraphMetrics.Report>, "health": ... }`, `{ "cycles": [<MethodCycles.Cluster>], "health": ... }`, or `{ "deadCode": <DeadCodeScan.Report>, "health": ... }`.
 
-### `impact`
+### `dependents`
 
 > Show the transitive dependents (blast radius) of a type.
 
 The type is a **positional argument**, not a flag.
 
 ```
-acai impact [options] <type>
+acai dependents [options] <type>
 ```
 
 | Flag | Notes |
@@ -451,11 +456,15 @@ acai impact [options] <type>
 | `--format` | `json` (default), `human` |
 
 ```sh
-acai impact --from myproj Playlist
-acai impact --from myproj --depth 2 --format human MediaItem
+acai dependents --from myproj Playlist
+acai dependents --from myproj --depth 2 --format human MediaItem
 ```
 
-`--format json` output: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summary> }`.
+`--format json` output: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summary> }` — the
+key keeps its original name, so the output shape is unchanged by the rename.
+
+> **`acai impact` still works.** It is a deprecated alias for `dependents` with identical behaviour and
+> identical output, hidden from `--help` and due for removal in a later major release.
 
 ### `diff`
 
@@ -547,7 +556,7 @@ acai image   --from x --grouping directory --output overview.png
 **Check a refactor is safe.**
 
 ```sh
-acai impact --from x --format human LegacyService
+acai dependents --from x --format human LegacyService
 acai callgraph --from x --mode deadcode
 ```
 

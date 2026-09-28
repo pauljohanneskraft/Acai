@@ -155,7 +155,7 @@ Twelve commands over the same engine. `acai --help` (or `acai <command> --help`)
 # Look around
 acai analyze --source ./MyProject --health          # can I trust this parse?
 acai inspect --source . --kind class --min-members 20
-acai impact  --source . Playlist                    # what breaks if I change this?
+acai dependents --source . Playlist                 # what breaks if I change this?
 
 # Draw
 acai diagram --source . --format mermaid --output arch.mmd
@@ -173,7 +173,7 @@ The interesting one is `acai quality`: a declarative `quality.yml` turns your ar
 
 ### 🤖 The `acai-mcp` server
 
-An [MCP](https://modelcontextprotocol.io) server exposing the read-only engine as nine tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_impact`, `acai_diff`, `acai_diagram`, and `acai_image` (macOS only). One parse is cached per project path and reused across every call.
+An [MCP](https://modelcontextprotocol.io) server exposing the read-only engine as nine tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_dependents`, `acai_diff`, `acai_diagram`, and `acai_image` (macOS only). One parse is cached per project path and reused across every call.
 
 ```json
 {
