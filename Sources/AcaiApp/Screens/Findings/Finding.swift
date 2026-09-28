@@ -106,12 +106,9 @@ extension Finding {
         let members: [String]
     }
 
-    init(
-        _ finding: AtlasFinding, id: String, codebase: Codebase, reference: CodeElementReference?,
-        cycle: CycleReference?
-    ) {
+    init(_ finding: AtlasFinding, codebase: Codebase, reference: CodeElementReference?, cycle: CycleReference?) {
         self.init(
-            id: id,
+            id: "\(finding.kind.rawValue)-\(codebase.id)-\(finding.identity)",
             kind: Kind(finding.kind),
             severity: Severity(finding.severity),
             codebaseID: codebase.id,

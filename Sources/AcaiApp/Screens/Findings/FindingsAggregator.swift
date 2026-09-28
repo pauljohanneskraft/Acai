@@ -58,7 +58,6 @@ struct FindingsAggregator {
         report.violations.map { violation in
             Finding(
                 AtlasFinding(violation: violation),
-                id: "violation-\(codebase.id)-\(violation.findingIdentity)",
                 codebase: codebase,
                 reference: artifact.flatMap { violation.codeElementReference(in: $0) },
                 cycle: violation.ruleKind == "cycle"
@@ -75,7 +74,6 @@ struct FindingsAggregator {
         report.candidates.map { candidate in
             Finding(
                 AtlasFinding(deadCode: candidate, coverage: report.coverage),
-                id: "deadCode-\(codebase.id)-\(candidate.id)",
                 codebase: codebase,
                 reference: artifact.flatMap { candidate.codeElementReference(in: $0) },
                 cycle: nil)
@@ -84,11 +82,8 @@ struct FindingsAggregator {
 
     private func healthFindings(_ report: HealthCheck.Report, codebase: Codebase) -> [Finding] {
         report.diagnostics.map { diagnostic in
-            let location = diagnostic.location
-            return Finding(
+            Finding(
                 AtlasFinding(diagnostic: diagnostic),
-                id: "health-\(codebase.id)-\(location.filePath)-\(location.line)-\(location.column)"
-                    + "-\(diagnostic.kind.rawValue)-\(diagnostic.message)",
                 codebase: codebase,
                 reference: nil,
                 cycle: nil)

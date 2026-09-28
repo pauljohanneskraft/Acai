@@ -63,16 +63,25 @@ struct AtlasFindingsTests {
         #expect(results.map(\.kind) == [.violation, .deadCode, .health])
     }
 
+    @Test func twoReportsOfTheSameBreachAreOneFinding() {
+        let breach = Violation(ruleKind: "budget", message: "Too wide.", subject: "Widget", detail: ["value": "12"])
+        let remeasured = Violation(ruleKind: "budget", message: "Too wide.", subject: "Widget", detail: ["value": "13"])
+        let other = Violation(ruleKind: "budget", message: "Too wide.", subject: "Gadget")
+        let results = findings(violations: [breach, remeasured, other])
+        #expect(results.map(\.title) == ["Widget", "Gadget"])
+    }
+
     @Test func theExportedLineNamesSeverityLensSubjectAndLocation() {
         let finding = AtlasFinding(
             kind: .violation, severity: .critical, title: "Widget", message: "Too wide.",
-            location: location(12))
+            location: location(12), identity: "budget-Widget")
         #expect(finding.line == "[Critical] Quality Violation — Widget: Too wide. (Widget.swift:12)")
     }
 
     @Test func aFindingWithNoLocationOmitsTheSuffix() {
         let finding = AtlasFinding(
-            kind: .deadCode, severity: .info, title: "Widget.unused", message: "No caller.", location: nil)
+            kind: .deadCode, severity: .info, title: "Widget.unused", message: "No caller.", location: nil,
+            identity: "Widget.unused")
         #expect(finding.line == "[Info] Dead Code — Widget.unused: No caller.")
     }
 }

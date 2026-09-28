@@ -46,15 +46,19 @@ public struct AtlasFinding: Sendable {
     public let title: String
     public let message: String
     public let location: SourceLocation?
+    /// Stable across reindexes and unique within its `kind`; two reports of one breach share it.
+    public let identity: String
 
     public init(
-        kind: Kind, severity: Severity, title: String, message: String, location: SourceLocation?
+        kind: Kind, severity: Severity, title: String, message: String, location: SourceLocation?,
+        identity: String
     ) {
         self.kind = kind
         self.severity = severity
         self.title = title
         self.message = message
         self.location = location
+        self.identity = identity
     }
 
     public var line: String {
@@ -74,7 +78,8 @@ extension AtlasFinding {
             severity: violation.ruleKind == "cycle" ? .critical : .warning,
             title: violation.subject,
             message: violation.message,
-            location: violation.source)
+            location: violation.source,
+            identity: violation.findingIdentity)
     }
 
     /// Ranked `.info`: a best-effort lead whose reliability is bounded by the call graph's `coverage`.
@@ -85,16 +90,20 @@ extension AtlasFinding {
             severity: .info,
             title: candidate.id,
             message: "No resolved caller found (call-graph coverage \(percent)% — may be a false positive).",
-            location: candidate.location)
+            location: candidate.location,
+            identity: candidate.id)
     }
 
     public init(diagnostic: ParseDiagnostic) {
+        let location = diagnostic.location
         self.init(
             kind: .health,
             severity: diagnostic.kind == .error ? .critical : .warning,
             title: diagnostic.message,
             message: diagnostic.kind.rawValue,
-            location: diagnostic.location)
+            location: location,
+            identity: "\(location.filePath)-\(location.line)-\(location.column)"
+                + "-\(diagnostic.kind.rawValue)-\(diagnostic.message)")
     }
 }
 
@@ -111,8 +120,9 @@ public struct AtlasFindings {
     }
 
     public var findings: [AtlasFinding] {
-        quality.violations.map(AtlasFinding.init(violation:))
+        let all = quality.violations.map(AtlasFinding.init(violation:))
             + deadCode.candidates.map { AtlasFinding(deadCode: $0, coverage: deadCode.coverage) }
             + health.diagnostics.map(AtlasFinding.init(diagnostic:))
+        return all.removingDuplicates { "\($0.kind.rawValue)-\($0.identity)" }
     }
 }

@@ -23,7 +23,8 @@ struct AtlasDocumentTests {
             AtlasFinding(
                 kind: .violation, severity: .warning, title: "Issue \(index)",
                 message: "Something worth flagging.",
-                location: SourceLocation(filePath: "Widget.swift", line: index + 1, column: 1))
+                location: SourceLocation(filePath: "Widget.swift", line: index + 1, column: 1),
+                identity: "issue-\(index)")
         }
     }
 
