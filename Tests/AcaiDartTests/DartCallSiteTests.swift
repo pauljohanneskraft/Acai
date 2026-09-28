@@ -162,4 +162,53 @@ struct DartCallSiteTests {
         let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
         #expect(sites.contains { $0.methodName == "shared" && $0.receiverType == "Worker" })
     }
+
+    /// `head.hop.method()` — the head resolves to a declared type but the hop is a property of
+    /// *that* type, unknowable in this file, so it defers to `.propertyChain` for the post-merge
+    /// pass. Dart previously dropped every chain outright, its grammar flattening the extra hop
+    /// into one more sibling selector.
+    @Test func chainedCallOnKnownHeadDefersToPropertyChain() {
+        let source = """
+        class Sink {
+            void write(String message) {}
+        }
+        class Logger {
+            Sink sink = Sink();
+        }
+        class Worker {
+            Logger audit = Logger();
+
+            void run() {
+                audit.sink.write('x');
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.dart")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains {
+            $0.methodName == "write" && $0.receiver == .propertyChain(headTypeName: "Logger", hops: ["sink"])
+        })
+    }
+
+    /// `this.prop.method()` resolves straight to the property's type rather than deferring — the
+    /// enclosing type's own properties are in scope. Dart dropped this shape too.
+    @Test func chainOffThisResolvesToThePropertyType() {
+        let source = """
+        class Logger {
+            void log(String message) {}
+        }
+        class Worker {
+            Logger audit = Logger();
+
+            void run() {
+                this.audit.log('x');
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.dart")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
+    }
 }

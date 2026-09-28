@@ -148,4 +148,57 @@ struct KotlinCallSiteBroadeningTests {
         #expect(allSites.contains { $0.methodName == "wire" })
         #expect(allSites.contains { $0.methodName == "format" })
     }
+
+    /// `head.hop.method()` — the head resolves to a declared type but the hop is a property of
+    /// *that* type, unknowable in this file, so it defers to `.propertyChain` for the post-merge
+    /// pass instead of being dropped.
+    @Test func chainedCallOnKnownHeadDefersToPropertyChain() {
+        let source = """
+        class Sink {
+            fun write(message: String) {}
+        }
+        class Logger {
+            val sink: Sink = Sink()
+        }
+        class Worker {
+            val audit: Logger = Logger()
+
+            fun run() {
+                audit.sink.write("x")
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.kt")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains {
+            $0.methodName == "write" && $0.receiver == .propertyChain(headTypeName: "Logger", hops: ["sink"])
+        })
+    }
+
+    /// A chain whose head is a declared type name rather than a property is the static analogue
+    /// (`Logger.sink.write()`), and defers the same way.
+    @Test func chainedCallOnTypeNameHeadDefersToPropertyChain() {
+        let source = """
+        class Sink {
+            fun write(message: String) {}
+        }
+        class Logger {
+            companion object {
+                val sink: Sink = Sink()
+            }
+        }
+        class Worker {
+            fun run() {
+                Logger.sink.write("x")
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.kt")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.contains {
+            $0.methodName == "write" && $0.receiver == .propertyChain(headTypeName: "Logger", hops: ["sink"])
+        })
+    }
 }
