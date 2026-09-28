@@ -101,7 +101,7 @@ struct ImageTool: AnalysisTool {
 extension ThemeOption {
     var palette: DiagramPalette {
         switch self {
-        case .light:
+        case .light, .default:
             .light
         case .dark:
             .dark

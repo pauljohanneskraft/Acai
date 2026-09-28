@@ -194,14 +194,16 @@ Enumerate types and members matching a selector, each with a `file:line` jump ta
 | --- | --- |
 | `path` *, `languages`, `refresh`, `includeGenerated` | |
 | `module`, `type` | string — glob (`*`, `?`) |
-| `kind`, `minAccess`, `stereotype`, `annotation` | string |
+| `kind` | `class` \| `actor` \| `struct` \| `enum` \| `protocol` \| `interface` \| `trait` \| `typeAlias` \| `object` \| `extension` \| `annotation` \| `module` \| `record` \| `mixin` |
+| `minAccess` | `public` \| `open` \| `internal` \| `protected` \| `private` \| `filePrivate` \| `packagePrivate` |
+| `stereotype`, `annotation` | string |
 | `minMembers`, `minNesting` | integer |
-| `memberKind` | string |
+| `memberKind` | `property` \| `method` \| `initializer` \| `deinitializer` \| `subscript` |
 | `minParameters` | integer |
 | `publicVars`, `overrides` | boolean |
 | `enums` | boolean — inventory enum cases with raw and associated values instead |
 
-Legal values for `kind`, `minAccess` and `memberKind` are the same lists the CLI enumerates (see [AcaiCLI](/documentation/acaicli/)). They're declared as plain strings here, so an unrecognised value is **silently ignored** rather than rejected. Likewise `publicVars: false` means "no constraint", not "exclude".
+Legal values for `kind`, `minAccess` and `memberKind` are the same lists the CLI enumerates (see [AcaiCLI](/documentation/acaicli/)), and each argument's `enum` in the schema is that list. An unrecognised value is an `invalidParams` error naming the argument, the value received and the accepted values — the filter is never dropped, which would silently widen the call to every type. `publicVars: false` still means "no constraint", not "exclude".
 
 Result shape: `{ "types": [<TypeQuery.TypeRow>], "health": <HealthCheck.Summary> }`, or with `enums: true`: `{ "enums": [<EnumInventory.Entry>], "health": <HealthCheck.Summary> }`.
 
@@ -269,7 +271,7 @@ Identical to `acai_diagram`, minus `format`, plus:
 | Property | Type | Notes |
 | --- | --- | --- |
 | `scale` | number | Resolution factor, default `2`. |
-| `theme` | `light` \| `dark` | Default light. `default` is still accepted as a deprecated spelling of `light`. |
+| `theme` | `light` \| `dark` | Default light. `default` is still parsed as a deprecated spelling of `light`, but the schema no longer advertises it. |
 
 Returns base64 PNG image content.
 

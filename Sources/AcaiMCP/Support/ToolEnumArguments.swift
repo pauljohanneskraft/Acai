@@ -1,7 +1,7 @@
 import AcaiLibrary
 
 /// The diagram kinds `acai_diagram` and `acai_image` render.
-enum DiagramKind: String, CaseIterable {
+enum DiagramKind: String, ArgumentOption {
     case `class`
     case package
     case sequence
@@ -10,14 +10,14 @@ enum DiagramKind: String, CaseIterable {
 }
 
 /// The three cuts of the static call graph `acai_callgraph` reports.
-enum CallGraphMode: String, CaseIterable {
+enum CallGraphMode: String, ArgumentOption {
     case metrics
     case cycles
     case deadcode
 }
 
 /// The cycle scopes `acai_quality` lists in explore mode.
-enum CycleScope: String, CaseIterable {
+enum CycleScope: String, ArgumentOption {
     case modules
     case types
     case all
@@ -35,10 +35,20 @@ enum CycleScope: String, CaseIterable {
 }
 
 /// The colour themes `acai_image` renders with.
-enum ThemeOption: String, CaseIterable {
+enum ThemeOption: String, ArgumentOption {
     case light
     case dark
+    /// Deprecated spelling of `light`, kept parseable and left out of the schema so no existing call
+    /// breaks. Remove in the next major release, as the CLI's `--theme` does.
+    case `default`
+
+    static var advertisedCases: [ThemeOption] { [.light, .dark] }
 }
+
+extension TypeKind: ArgumentOption {}
+extension AccessLevel: ArgumentOption {}
+extension MemberKind: ArgumentOption {}
+extension DiagramFormat: ArgumentOption {}
 
 extension EnumArgument where Option == TypeKind {
     static let kind = EnumArgument(
