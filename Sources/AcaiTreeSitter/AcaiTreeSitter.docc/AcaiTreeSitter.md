@@ -32,6 +32,12 @@ can use them as well.
 ``LiteralNodeTypes``, ``MemberCallGrammar``, ``ModifierClassifier``'s keyword lookup, and the
 branch-node set for `Node.cyclomaticComplexity(branchKinds:)`.
 
+``MemberCallResolver`` is parameterised one step further, by ``MemberReceiverSyntax``: a grammar
+answers what shape a receiver expression has (``MemberReceiver``) and the decision tree stays one
+implementation. A grammar that spells a member access as `object`/`field` children says so with a
+``MemberCallGrammar`` and writes no adapter; one that nests or flattens its chains — Kotlin's
+`navigation_expression`, Dart's sibling selectors — writes the decomposition instead.
+
 Because an adapter is a stateless value rather than a protocol the extractor conforms to, a
 plugin's own small collaborator types can be handed the same resolvers. Every plugin is built this
 way; `AcaiPython` is the worked example: `PythonExtractor` owns a `DeclarationBuilder` and one
@@ -46,6 +52,8 @@ instance of each resolver, and conforms to nothing.
 - ``SourceFileContext``
 - ``LiteralNodeTypes``
 - ``MemberCallGrammar``
+- ``MemberReceiverSyntax``
+- ``MemberReceiver``
 
 ### Shared extraction algorithms
 
