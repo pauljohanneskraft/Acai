@@ -3,19 +3,12 @@ import AcaiCore
 import AcaiDiagram
 import Foundation
 
-/// The Atlas's diagram section for a caller with no saved diagrams of its own: the three kinds that
-/// need no per-diagram configuration — the whole-codebase class diagram, the module/package graph
-/// and the call graph. The kinds that need an entry point (sequence) or a variable (state) are left
-/// out rather than guessed at.
-///
-/// A value you instantiate over the output settings and ask for `pages(for:)`. A kind that fails to
-/// render (a node limit, a renderer error) becomes a `.failed` page rather than failing the whole
-/// Atlas, so the document's shape never depends on one diagram's luck.
+/// The diagram section for a caller with no saved diagrams; a diagram that fails becomes a `.failed` page.
 public struct AtlasDiagramSet: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
     public let languages: LanguageConfigurationResolver
-    /// Rendering a graph diagram fails once it would exceed this many nodes. `nil` means unlimited.
+    /// `nil` means unlimited.
     public let maxNodes: Int?
 
     public init(

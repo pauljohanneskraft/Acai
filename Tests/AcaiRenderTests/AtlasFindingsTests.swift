@@ -8,8 +8,8 @@ import Testing
 @Suite("Atlas Findings")
 struct AtlasFindingsTests {
 
-    private func location(_ line: Int) -> SourceLocation {
-        SourceLocation(filePath: "Widget.swift", line: line, column: 1)
+    private func location(_ line: Int) -> AcaiCore.SourceLocation {
+        AcaiCore.SourceLocation(filePath: "Widget.swift", line: line, column: 1)
     }
 
     private func findings(

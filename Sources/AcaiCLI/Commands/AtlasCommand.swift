@@ -7,18 +7,16 @@ import AcaiQuality
 import AcaiRender
 
 extension AcaiCommand {
-    /// macOS-only, like `image`: the Atlas embeds rendered diagrams, and rendering needs SwiftUI's
-    /// `ImageRenderer`, which requires a GUI / window-server session.
+    /// macOS-only, like `image`: the embedded diagrams render through SwiftUI's `ImageRenderer`.
     struct Atlas: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "atlas",
             abstract: "Bundle a codebase's diagrams, statistics and findings into one PDF (macOS only)",
             discussion: """
-            The same document the app's "Export Codebase Atlas" action produces: a title page, one \
-            page per diagram, the statistics the codebase detail pane shows, and every quality \
-            violation, dead-code candidate and parse diagnostic. The diagram section covers the \
-            three kinds that need no per-diagram configuration — the class diagram, the package \
-            graph and the call graph.
+            The same document format as the app's Codebase Atlas export: a title page, one page per \
+            diagram, the statistics the codebase detail pane shows, and every quality violation, \
+            dead-code candidate and parse diagnostic. The diagram section is the default class \
+            diagram, package graph and call graph.
 
               acai atlas --source ./ --output atlas.pdf
               acai atlas --source ./ --output atlas.pdf --rules quality.yml --theme dark
@@ -75,8 +73,7 @@ extension AcaiCommand {
             print("Wrote atlas to \(output)")
         }
 
-        /// A diagram that could not be rendered still gets its page, so say on stderr why — the PDF
-        /// is otherwise the only place that reason appears.
+        /// Otherwise the reason appears only inside the PDF.
         private func warnAboutUnrenderedDiagrams(in pages: [AtlasDiagramPage]) {
             for page in pages {
                 guard let reason = page.image.failureReason else { continue }

@@ -2,14 +2,7 @@ import AcaiCore
 import AcaiRender
 import Foundation
 
-/// The app's side of the Codebase Atlas: renders each of the codebase's generated diagrams through
-/// the on-canvas view models (so the user's saved node positions are the ones exported) and hands
-/// them, the metrics and the findings to the shared `AtlasDocument`, which owns the bundling for
-/// the app, `acai atlas` and `acai_atlas` alike.
-///
-/// `@MainActor` because diagram PNG rendering goes through `ImageRenderer`, which requires it —
-/// this also makes the struct implicitly `Sendable` despite `Codebase` not being `Sendable`
-/// itself, so it can be captured by `ActivityCenter.run`'s `@Sendable` closure.
+/// Renders the saved diagrams with their on-canvas positions; `@MainActor` for `ImageRenderer`.
 @MainActor
 struct CodebaseAtlasExport {
     let codebase: Codebase

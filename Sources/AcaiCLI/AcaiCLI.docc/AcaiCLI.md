@@ -289,16 +289,17 @@ acai image --source-old ./before --source ./after --output delta.png
 
 > Bundle a codebase's diagrams, statistics and findings into one PDF (**macOS only**).
 
-The same document the app's "Export Codebase Atlas" action produces: a title page, one page per diagram, the statistics the codebase detail pane shows, and every quality violation, dead-code candidate and parse diagnostic. The diagram section covers the three kinds that need no per-diagram configuration — the class diagram, the package graph and the call graph; a kind that cannot be rendered gets a page saying so rather than failing the export.
+The same document format as the app's Codebase Atlas export: a title page, one page per diagram, the statistics the codebase detail pane shows, and every quality violation, dead-code candidate and parse diagnostic. The diagram section is the default class diagram, package graph and call graph; a diagram that cannot be rendered gets a page saying so (and a warning on stderr) rather than failing the export.
 
 | Flag | Notes |
 | --- | --- |
-| `--output <path>` | **Required.** The PDF to write. |
-| `--name <text>` | Title-page name. Defaults to the analyzed directory's name. |
-| `--rules <path>` | YAML rules file the findings section is judged by. Defaults to the built-in curated smell budgets. |
-| `--scale <n>` | Resolution factor for the embedded diagrams, default `2.0`. |
-| `--theme` | `light` (default), `dark` |
-| `--max-nodes <n>` | Node ceiling per graph diagram before its page reports it could not render. |
+| `--from`, `--source`, `--language` | artifact source |
+| `--output <output>` | **Required.** Output PDF file path. |
+| `--name <name>` | Name for the title page. Defaults to the analyzed directory's name. |
+| `--rules <rules>` | Path to the YAML rules file the findings section is judged by. Defaults to the built-in curated smell budgets. |
+| `--scale <scale>` | Output resolution scale factor for the embedded diagrams (default `2.0`). |
+| `--theme <theme>` | Colour theme for the embedded diagrams: `light` (default), `dark`. |
+| `--max-nodes <max-nodes>` | Maximum node count before a graph diagram's page reports it could not render (default `2000`). |
 
 ```sh
 acai atlas --source . --output atlas.pdf

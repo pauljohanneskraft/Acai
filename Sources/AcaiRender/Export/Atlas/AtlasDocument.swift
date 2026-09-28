@@ -2,8 +2,7 @@ import AcaiCore
 import CoreGraphics
 import Foundation
 
-/// Splits `itemCount` items into fixed-size pages — at least one page even when `itemCount == 0`,
-/// so an empty section still gets a page saying so rather than vanishing.
+/// Always at least one page, so an empty section still gets a page saying so.
 public struct PagedSection {
     public let itemCount: Int
     public let itemsPerPage: Int
@@ -25,25 +24,16 @@ public struct PagedSection {
     }
 }
 
-/// One diagram's page: its heading plus the image the caller rendered for it. Rendering happens
-/// outside — the app renders through the on-canvas view models that hold the user's saved node
-/// positions, `acai atlas` and `acai_atlas` through this module's headless exporters — so the
-/// bundling below stays the one implementation either way.
+/// One diagram's page, with the image its caller already rendered.
 public struct AtlasDiagramPage: Sendable {
     public enum Image: Sendable {
         case rendered(Data)
-        /// This diagram kind has no PNG-export path (the chart-style kinds — module coupling,
-        /// hotspots — are not canvas diagrams with a layout model).
+        /// The diagram kind has no PNG-export path (e.g. the chart-style kinds).
         case unsupported
-        /// Rendering was attempted and failed; the page says so, and why where the error says,
-        /// rather than silently disappearing — the Atlas's page count never depends on whether
-        /// rendering happened to succeed.
         case failed(reason: String)
     }
 
     public let name: String
-    /// Drawn under `name`: the diagram kind for a named diagram the app exports, the diagram's
-    /// scope for a headless one, whose name is already its kind.
     public let subtitle: String
     public let image: Image
 
@@ -55,14 +45,10 @@ public struct AtlasDiagramPage: Sendable {
 }
 
 extension AtlasDiagramPage.Image {
-    /// A failure page whose reason names the error as precisely as the error itself allows: its
-    /// own message where it carries one (`DiagramRequestError` does, e.g. a node limit), the error
-    /// itself otherwise (`DiagramImageRenderError.renderingFailed`, say).
     public init(failure error: any Error) {
         self = .failed(reason: (error as? any LocalizedError)?.errorDescription ?? String(describing: error))
     }
 
-    /// The failure's reason, or `nil` for a page that is not a failure.
     public var failureReason: String? {
         guard case .failed(let reason) = self else { return nil }
         return reason
@@ -76,16 +62,12 @@ enum AtlasPage {
     case findings(items: [AtlasFinding], pageIndex: Int, totalPages: Int)
 }
 
-/// The Codebase Atlas: one codebase's diagrams, statistics and findings bundled into a single
-/// multi-page PDF. Every input is already resolved by the caller, so this is a pure layout and
-/// pagination pass that produces the same document from the app, the CLI and the MCP server.
+/// The Codebase Atlas PDF: one codebase's diagrams, statistics and findings.
 public struct AtlasDocument: Sendable {
     public let codebaseName: String
     public let diagrams: [AtlasDiagramPage]
     public let metrics: CodeMetrics
     public let findings: [AtlasFinding]
-    /// Stamped on the title page. Injected rather than read from the clock so a caller can produce
-    /// a byte-stable document.
     public let generatedAt: Date
 
     public static let pageSize = CGSize(width: 612, height: 792)
@@ -221,8 +203,7 @@ public struct AtlasDocument: Sendable {
         }
     }
 
-    /// Pinned, not the reader's locale: this date is written into the exported atlas, which stays
-    /// the same document whatever language the app is running in.
+    /// Pinned rather than the reader's locale, like the rest of the exported text.
     private static let generatedAtFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")

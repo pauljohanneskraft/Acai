@@ -3,12 +3,8 @@ import AcaiDiagram
 import AcaiQuality
 import Foundation
 
-/// One flaw the Atlas's findings section lists. Deliberately plain text — the Atlas is an export
-/// format, so its severity/kind wording stays English and stable rather than following the reader's
-/// locale (the app's own `Finding` carries the localized, interactive form of the same lenses).
+/// One flaw the Atlas's findings section lists, in stable English rather than the reader's locale.
 public struct AtlasFinding: Sendable {
-    /// Derived structurally rather than carried by any lens, so one ordered vocabulary ranks all
-    /// three (see ``AtlasFindings``).
     public enum Severity: Int, Comparable, CaseIterable, Sendable {
         case info
         case warning
@@ -61,7 +57,6 @@ public struct AtlasFinding: Sendable {
         self.location = location
     }
 
-    /// The findings section's one-line form: severity, lens, subject, explanation and location.
     public var line: String {
         var line = "[\(severity.label)] \(kind.displayName) — \(title): \(message)"
         if let location {
@@ -71,10 +66,39 @@ public struct AtlasFinding: Sendable {
     }
 }
 
-/// Normalizes the three whole-artifact quality lenses into the Atlas's findings section. A value you
-/// instantiate over one codebase's reports and read `findings` from — the same normalization
-/// whether the reports came from the app's cached analysis or from a headless `acai atlas` run, so
-/// both produce the same document.
+extension AtlasFinding {
+    public init(violation: Violation) {
+        self.init(
+            kind: .violation,
+            // A dependency cycle is a structural problem, ranked above an ordinary rule breach.
+            severity: violation.ruleKind == "cycle" ? .critical : .warning,
+            title: violation.subject,
+            message: violation.message,
+            location: violation.source)
+    }
+
+    /// Ranked `.info`: a best-effort lead whose reliability is bounded by the call graph's `coverage`.
+    public init(deadCode candidate: DeadCodeScan.Candidate, coverage: CallGraph.Coverage) {
+        let percent = Int((coverage.fraction * 100).rounded())
+        self.init(
+            kind: .deadCode,
+            severity: .info,
+            title: candidate.id,
+            message: "No resolved caller found (call-graph coverage \(percent)% — may be a false positive).",
+            location: candidate.location)
+    }
+
+    public init(diagnostic: ParseDiagnostic) {
+        self.init(
+            kind: .health,
+            severity: diagnostic.kind == .error ? .critical : .warning,
+            title: diagnostic.message,
+            message: diagnostic.kind.rawValue,
+            location: diagnostic.location)
+    }
+}
+
+/// The Atlas's findings section over one codebase's three quality lenses, in lens order.
 public struct AtlasFindings {
     public let quality: QualityReport
     public let deadCode: DeadCodeScan.Report
@@ -87,44 +111,8 @@ public struct AtlasFindings {
     }
 
     public var findings: [AtlasFinding] {
-        violationFindings + deadCodeFindings + healthFindings
-    }
-
-    private var violationFindings: [AtlasFinding] {
-        quality.violations.map { violation in
-            AtlasFinding(
-                kind: .violation,
-                // A dependency cycle is a structural problem, not just a style nit — ranked above
-                // an ordinary rule breach (e.g. a budget or naming-convention violation).
-                severity: violation.ruleKind == "cycle" ? .critical : .warning,
-                title: violation.subject,
-                message: violation.message,
-                location: violation.source)
-        }
-    }
-
-    private var deadCodeFindings: [AtlasFinding] {
-        let coverage = Int((deadCode.coverage.fraction * 100).rounded())
-        return deadCode.candidates.map { candidate in
-            AtlasFinding(
-                kind: .deadCode,
-                // A best-effort lead, not a verdict (see `DeadCodeScan`'s own doc comment on
-                // `coverage`) — ranked below an actual rule breach or parse error.
-                severity: .info,
-                title: candidate.id,
-                message: "No resolved caller found (call-graph coverage \(coverage)% — may be a false positive).",
-                location: candidate.location)
-        }
-    }
-
-    private var healthFindings: [AtlasFinding] {
-        health.diagnostics.map { diagnostic in
-            AtlasFinding(
-                kind: .health,
-                severity: diagnostic.kind == .error ? .critical : .warning,
-                title: diagnostic.message,
-                message: diagnostic.kind.rawValue,
-                location: diagnostic.location)
-        }
+        quality.violations.map(AtlasFinding.init(violation:))
+            + deadCode.candidates.map { AtlasFinding(deadCode: $0, coverage: deadCode.coverage) }
+            + health.diagnostics.map(AtlasFinding.init(diagnostic:))
     }
 }

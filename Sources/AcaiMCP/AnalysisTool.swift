@@ -14,8 +14,7 @@ protocol AnalysisTool: Sendable {
     /// ever discovers the current name.
     var isDeprecatedAlias: Bool { get }
 
-    /// Whether the tool only reads. All but the Atlas export do, which is what `tools/list`
-    /// advertises through `readOnlyHint`.
+    /// Advertised by `tools/list` as `readOnlyHint`.
     var isReadOnly: Bool { get }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput
@@ -45,8 +44,7 @@ extension AnalysisTool {
         return include ? artifact : artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
     }
 
-    /// Decodes the `rules` argument's YAML directly since the CLI's `.load` helper is
-    /// AcaiCLI-internal; absent, the built-in curated smell budgets apply.
+    /// Absent, the built-in curated smell budgets apply.
     func qualityRules(_ arguments: ToolArguments) throws -> QualityRules {
         guard let rulesPath = arguments.string("rules") else { return .defaultQuality }
         do {
@@ -129,8 +127,7 @@ extension AnalysisTool {
         }
     }
 
-    /// Absent facets stay `nil`, so a call with no selector arguments matches every type. Qualified
-    /// because this file imports Foundation, which re-exports ObjectiveC's own `Selector` on Darwin.
+    /// Qualified because Foundation re-exports ObjectiveC's own `Selector` on Darwin.
     func selector(from arguments: ToolArguments) throws -> AcaiQuality.Selector {
         AcaiQuality.Selector(
             module: arguments.string("module"),

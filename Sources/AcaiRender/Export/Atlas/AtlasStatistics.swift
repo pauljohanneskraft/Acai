@@ -1,17 +1,10 @@
 import AcaiCore
 import Foundation
 
-/// Extracts `CodeMetrics`' headline numbers into one text line per metric — the Atlas statistics
-/// section's content. Mirrors the metric families the app's stat-card grid shows (module coupling,
-/// classic OO, code-smell, structural), but as plain "max/avg" text lines rather than rendering the
-/// interactive card views flat: the Atlas has no need for the cards' tap-through drill-downs or
-/// hover blurbs, only the same underlying numbers. A value you instantiate over one codebase's
-/// metrics and read `lines` from.
+/// The app's stat-card metric families as plain "max/avg" text lines.
 public struct AtlasStatistics {
     public let metrics: CodeMetrics
 
-    /// How many stat lines fit one Atlas page — chosen so the ~24-line metric set spans a couple of
-    /// pages rather than one dense wall of text.
     public static let linesPerPage = 12
 
     public init(metrics: CodeMetrics) {

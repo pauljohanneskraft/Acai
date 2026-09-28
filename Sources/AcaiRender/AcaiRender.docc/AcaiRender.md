@@ -30,8 +30,10 @@ because it runs the same layout and the same views.
   colours.
 - **The Codebase Atlas** — ``AtlasDocument`` bundles one codebase's diagrams, statistics and
   findings into a multi-page PDF. The caller supplies the rendered diagram pages, so the app
-  exports the user's saved canvas positions while ``AtlasDiagramSet`` renders the same document
-  headlessly for `acai atlas` and `acai_atlas`.
+  exports the user's saved diagrams and canvas positions while ``AtlasDiagramSet`` renders the
+  default class diagram, package graph and call graph headlessly for `acai atlas` and `acai_atlas`.
+  ``AtlasFinding`` is also where the app's Findings screen takes each finding's severity and wording
+  from, so the screen and the export always agree.
 
 ## Topics
 

@@ -13,8 +13,7 @@ struct ToolRegistry: Sendable {
         self.cache = cache
     }
 
-    /// `acai_image` and `acai_atlas` are appended on macOS only (they link the SwiftUI renderer),
-    /// mirroring the CLI's `image`/`atlas` gating.
+    /// `acai_image` and `acai_atlas` are macOS-only: they link the SwiftUI renderer.
     static var standard: ToolRegistry {
         var tools: [any AnalysisTool] = [
             AnalyzeTool(),

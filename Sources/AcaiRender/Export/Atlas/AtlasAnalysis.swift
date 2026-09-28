@@ -3,12 +3,7 @@ import AcaiDiagram
 import AcaiQuality
 import Foundation
 
-/// The statistics and findings an Atlas is built from, computed from one artifact in a single pass.
-/// A value you instantiate over an artifact plus the rules to judge it by.
-///
-/// The rules' `includeGeneratedTypes` (default `false`) governs the whole bundle — metrics, health
-/// and dead code are computed on the same filtered artifact the quality report uses, so the Atlas's
-/// sections stay internally consistent, matching what the app's statistics pane shows.
+/// The rules' `includeGeneratedTypes` governs every section, not just the quality report.
 public struct AtlasAnalysis {
     public let metrics: CodeMetrics
     public let findings: [AtlasFinding]

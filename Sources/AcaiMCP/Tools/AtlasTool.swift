@@ -10,12 +10,12 @@ struct AtlasTool: AnalysisTool {
     let name = "acai_atlas"
     let description = """
         Bundle everything about a codebase into one PDF you can hand to a person: a page per diagram \
-        (class, package, call graph), the statistics, and every quality violation, dead-code \
-        candidate and parse diagnostic. Use when someone wants the whole picture as a document \
-        rather than one answer. Writes the file to 'output' and returns its path. macOS only.
+        (the default class diagram, package graph and call graph), the statistics, and every quality \
+        violation, dead-code candidate and parse diagnostic. Same document format as the app's Codebase \
+        Atlas export. Use when someone wants the whole picture as a document rather than one answer. \
+        Writes the file to 'output' and returns its absolute path. macOS only.
         """
 
-    /// The one tool that writes: it produces a PDF at `output`.
     let isReadOnly = false
 
     var inputSchema: Value {
@@ -26,28 +26,47 @@ struct AtlasTool: AnalysisTool {
                     "type": "string",
                     "description": "Name for the title page (default: the analyzed directory's name)."
                 ],
-                "scale": ["type": "number", "description": "Diagram resolution scale factor (default 2)."],
+                "scale": [
+                    "type": "number",
+                    "description": "Diagram resolution scale factor, greater than 0 (default 2)."
+                ],
                 "theme": ["type": "string", "enum": ["light", "dark"], "description": "Colour theme (default light)."],
                 "maxNodes": [
                     "type": "integer",
-                    "description": "Max node count before a graph diagram's page reports it could not render."
+                    "description": .string(maxNodesDescription)
                 ]
             ]) { _, new in new },
             required: ["path", "output"])
     }
 
+    private var maxNodesDescription: String {
+        let allowed = DiagramNodeLimit.allowedMaximums
+        return "Max node count before a graph diagram's page reports it could not render "
+            + "(\(allowed.lowerBound)–\(allowed.upperBound), default \(DiagramNodeLimit.defaultMaximum))."
+    }
+
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
+        let output = URL(fileURLWithPath: try arguments.requiredString("output")).standardizedFileURL
+        let scale = try arguments.double("scale") ?? 2
+        guard scale > 0 else {
+            throw MCPError.invalidParams("scale must be greater than 0.")
+        }
+        let maxNodes = try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
+        let allowed = DiagramNodeLimit.allowedMaximums
+        guard allowed.contains(maxNodes) else {
+            throw MCPError.invalidParams(
+                "maxNodes must be between \(allowed.lowerBound) and \(allowed.upperBound).")
+        }
+        let rules = try qualityRules(arguments)
         let artifact = try await resolveArtifact(arguments, cache)
-        let output = try arguments.requiredString("output")
         let languages = artifact.standardLanguageResolver
 
-        let analysis = AtlasAnalysis(
-            artifact: artifact, rules: try qualityRules(arguments), languages: languages)
+        let analysis = AtlasAnalysis(artifact: artifact, rules: rules, languages: languages)
         let diagrams = await AtlasDiagramSet(
-            scale: try arguments.double("scale") ?? 2,
+            scale: scale,
             palette: arguments.string("theme") == "dark" ? .dark : .light,
             languages: languages,
-            maxNodes: try arguments.int("maxNodes") ?? DiagramNodeLimit.defaultMaximum
+            maxNodes: maxNodes
         ).pages(for: artifact)
 
         let document = AtlasDocument(
@@ -55,12 +74,12 @@ struct AtlasTool: AnalysisTool {
             metrics: analysis.metrics, findings: analysis.findings)
         let data = try document.pdfData()
         do {
-            try data.write(to: URL(fileURLWithPath: output), options: .atomic)
+            try data.write(to: output, options: .atomic)
         } catch {
-            throw MCPError.invalidParams("Could not write the atlas to \(output): \(error.localizedDescription)")
+            throw MCPError.invalidParams("Could not write the atlas to \(output.path): \(error.localizedDescription)")
         }
         return .json(try Value(Payload(
-            path: output, formatVersion: AtlasDocument.formatVersion,
+            path: output.path, formatVersion: AtlasDocument.formatVersion,
             diagramCount: diagrams.count, findingCount: analysis.findings.count, byteCount: data.count,
             unrenderedDiagrams: diagrams.compactMap { page in
                 page.image.failureReason.map { "\(page.name): \($0)" }
@@ -73,8 +92,6 @@ struct AtlasTool: AnalysisTool {
         var diagramCount: Int
         var findingCount: Int
         var byteCount: Int
-        /// Diagrams whose page says it could not be rendered, and why — the PDF is otherwise the
-        /// only place that reason appears.
         var unrenderedDiagrams: [String]
     }
 

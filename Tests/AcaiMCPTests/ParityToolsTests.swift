@@ -3,9 +3,12 @@ import MCP
 import Testing
 import AcaiLibrary
 @testable import AcaiMCP
+#if os(macOS)
+import AcaiRender
+#endif
 
 /// Covers the tools that brought the MCP to parity with the CLI: diff, callgraph cycles mode, inspect
-/// enums mode, diagram, and (macOS) image.
+/// enums mode, diagram, and (macOS) image and atlas.
 @Suite("Parity Tools")
 struct ParityToolsTests {
 
@@ -110,6 +113,53 @@ struct ParityToolsTests {
             }
             #expect(mimeType == "image/png")
             #expect(Data(base64Encoded: data)?.isEmpty == false)
+        }
+    }
+
+    @Test func atlasWritesAVersionedPDF() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("atlas.pdf")
+            let value = try await MCPTestSupport.call(
+                "acai_atlas", on: MCPTestSupport.testRegistry, path: dir, ["output": .string(output.path)])
+            let object = try #require(value.objectValue)
+            #expect(object["path"]?.stringValue == output.standardizedFileURL.path)
+            #expect(object["formatVersion"]?.intValue == AtlasDocument.formatVersion)
+            #expect(object["diagramCount"]?.intValue == 3)
+            let data = try Data(contentsOf: output)
+            #expect(data.starts(with: Data("%PDF".utf8)))
+        }
+    }
+
+    @Test func atlasRejectsAMissingRulesFile() async throws {
+        try await expectAtlasInvalidParams([
+            "rules": .string("/nonexistent/quality.yml")
+        ])
+    }
+
+    @Test func atlasRejectsANonPositiveScale() async throws {
+        try await expectAtlasInvalidParams(["scale": .double(0)])
+    }
+
+    @Test func atlasRejectsAnOutOfRangeNodeLimit() async throws {
+        try await expectAtlasInvalidParams(["maxNodes": .int(0)])
+    }
+
+    private func expectAtlasInvalidParams(_ arguments: [String: Value]) async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("atlas.pdf")
+            let error = await #expect(throws: MCPError.self) {
+                _ = try await MCPTestSupport.testRegistry.call(
+                    name: "acai_atlas",
+                    arguments: ["path": .string(dir.path), "output": .string(output.path)]
+                        .merging(arguments) { _, new in new })
+            }
+            guard case .invalidParams = error else {
+                Issue.record("expected invalidParams, got \(String(describing: error))")
+                return
+            }
+            #expect(!FileManager.default.fileExists(atPath: output.path))
         }
     }
     #endif
