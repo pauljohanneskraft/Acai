@@ -129,9 +129,10 @@ extension AnalysisTool {
         }
     }
 
-    /// Absent facets stay `nil`, so a call with no selector arguments matches every type.
-    func selector(from arguments: ToolArguments) throws -> Selector {
-        Selector(
+    /// Absent facets stay `nil`, so a call with no selector arguments matches every type. Qualified
+    /// because this file imports Foundation, which re-exports ObjectiveC's own `Selector` on Darwin.
+    func selector(from arguments: ToolArguments) throws -> AcaiQuality.Selector {
+        AcaiQuality.Selector(
             module: arguments.string("module"),
             typeGlob: arguments.string("type"),
             stereotype: arguments.string("stereotype"),
