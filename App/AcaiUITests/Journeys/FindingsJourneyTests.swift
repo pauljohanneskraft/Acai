@@ -8,7 +8,7 @@ import XCTest
 final class FindingsJourneyTests: UIJourneyTestCase {
 
     func testAViolationOpensItsSourceAndSurfacesInFindings() throws {
-        openIndexedSeededCodebase(analysis: .canned)
+        openPreindexedSeededCodebase()
 
         let dismissButton = app.buttons["sourceViewer.dismissButton"]
         app.buttons["violation.viewSourceButton"].firstMatch.tap("View Source", until: dismissButton)

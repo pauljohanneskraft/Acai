@@ -11,7 +11,7 @@ final class AccessibilityTextSizeJourneyTests: UIJourneyTestCase {
     func testClassDiagramHoldsAtTheLargestAccessibilityTextSize() throws {
         // Canned: what this proves is the layout at `accessibility5`, and the canned artifact carries
         // the same four types a parse would — `SeededFixtureContractTests` keeps the two in step.
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .canned, dynamicTypeSize: "accessibility5")
+        let codebaseDetail = openPreindexedSeededCodebase(dynamicTypeSize: "accessibility5")
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
         diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)

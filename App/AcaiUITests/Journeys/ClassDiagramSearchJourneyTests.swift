@@ -21,7 +21,7 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
     }
 
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
-        let codebaseDetail = openIndexedSeededCodebase(analysis: .canned)
+        let codebaseDetail = openPreindexedSeededCodebase()
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
         diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
