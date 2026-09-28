@@ -17,9 +17,13 @@ public struct ProjectBrowserView: View {
     let windowAddress: Binding<AppAddress?>?
 
     @EnvironmentObject var browserWindows: BrowserWindows
-    // Published below as a focused scene object on macOS, so ⌘K reaches the key window's own — see
-    // `QuickOpenPresenter`'s doc comment.
+    // See `QuickOpenPresenter` for why macOS's is per window — published below as a focused scene
+    // object, so ⌘K reaches the key window's own — and iOS's comes from the scene.
+    #if os(macOS)
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
+    #else
+    @EnvironmentObject private var quickOpenPresenter: QuickOpenPresenter
+    #endif
     // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
@@ -73,9 +77,6 @@ public struct ProjectBrowserView: View {
                         } label: {
                             Label(.app("View.ProjectBrowserView.QuickOpen"), systemImage: "magnifyingglass")
                         }
-                        // ⌘K from a hardware keyboard, bound here rather than on a menu item —
-                        // see `QuickOpenCommands` for what iPadOS does with the menu placements.
-                        .keyboardShortcut(.quickOpen)
                         .accessibilityIdentifier("sidebar.quickOpenButton")
                     }
                     // `.topBarTrailing`, not `.secondaryAction`: with more than one `.secondaryAction`

@@ -13,6 +13,10 @@ public struct AcaiRootScene: Scene {
     @StateObject private var settingsPresenter = SettingsPresenter()
     @StateObject private var keyboardShortcutsPresenter = KeyboardShortcutsPresenter()
     @StateObject private var browserWindows = BrowserWindows()
+    #if !os(macOS)
+    // The one scene's Quick Open — see `QuickOpenPresenter` for why macOS's is per window instead.
+    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
+    #endif
 
     public init() {}
 
@@ -31,26 +35,27 @@ public struct AcaiRootScene: Scene {
         }
         // A shortcut bound only in a macOS-only command is silently missing from an iPad's hardware
         // keyboard. `KeyboardShortcutReferenceTests` rejects that unless the shortcut's group is
-        // `isMacOSOnly` (`BrowserWindowCommands`) or a view binds the same shortcut off macOS —
-        // which is how ⌘K reaches an iPad, since a menu item there never fires it (see
-        // `QuickOpenCommands`).
+        // `isMacOSOnly`, which is why only `BrowserWindowCommands` is attached on macOS alone.
         .commands {
             DiagramThemeCommands()
             KeyboardShortcutCommands()
-            #if os(macOS)
             QuickOpenCommands()
+            #if os(macOS)
             BrowserWindowCommands()
             #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also
-        // read these via `@EnvironmentObject` (`KeyboardShortcutCommands` needs
-        // `keyboardShortcutsPresenter`).
+        // read these via `@EnvironmentObject` (`KeyboardShortcutCommands` and, off macOS,
+        // `QuickOpenCommands` need theirs).
         .environmentObject(accountStore)
         .environmentObject(projectStore)
         .environmentObject(settingsPresenter)
         .environmentObject(keyboardShortcutsPresenter)
         .environmentObject(browserWindows)
+        #if !os(macOS)
+        .environmentObject(quickOpenPresenter)
+        #endif
         #if os(macOS)
         WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
             ProjectBrowserView(store: projectStore, windowAddress: $address)
