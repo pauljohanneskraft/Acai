@@ -38,9 +38,14 @@ xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 
 # The keyboard's one-time "Slide to Type" overlay only renders the first time any keyboard appears,
-# so whichever test happened to type first would capture it.
+# so whichever test happened to type first would capture it. Prediction and autocorrection go with
+# it: the QuickType bar's suggestions are per-run content in any screenshot that has the keyboard up.
 xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.preferences \
     DidShowContinuousPathIntroduction -bool true
+xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.preferences \
+    KeyboardPrediction -bool false
+xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.preferences \
+    KeyboardAutocorrection -bool false
 
 if [ -n "$APP_PATH" ]; then
     echo "▸ Warming up $BUNDLE_ID"
