@@ -149,7 +149,7 @@ Generated diagrams are the fast path; the app is where you go when you want to *
 
 ### ⌨️ The `acai` CLI
 
-Twelve commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
+Thirteen commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
 
 ```sh
 # Look around
@@ -167,6 +167,9 @@ acai callgraph --source . --mode deadcode
 
 # Review a change
 acai diff --source-old ./before --source-new ./after
+
+# Hand someone the whole picture
+acai atlas --source . --output atlas.pdf             # diagrams + stats + findings, macOS
 ```
 
 The interesting one is `acai quality`: a declarative `quality.yml` turns your architecture into a fitness function — forbidden dependencies, layering, module-cycle bans, and budgets on 19 metrics. This repo gates itself with the [`quality.yml`](quality.yml) at its root.
@@ -237,7 +240,7 @@ Adding a language is a self-contained plugin — see [Contributing](#contributin
 
 No tool is magic. Worth knowing up front:
 
-- **PNG rendering is Apple-only.** `acai image` and the app's Export Image both go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux the `image` command doesn't exist at all — emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`), which runs everywhere.
+- **PNG rendering is Apple-only.** `acai image`, `acai atlas` and the app's Export Image all go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux neither command exists at all — emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`), which runs everywhere.
 - **It's static analysis.** Açaí reads source text. It does not run your build, resolve your package graph, or execute anything. Relationships are inferred from what the code *says*, not from a compiler's resolved symbol table — so dynamic dispatch, reflection and code generation are invisible to it.
 - **Plain JavaScript is thin.** With no type annotations to read, a JS-only diagram shows little beyond inheritance. TypeScript gives the full picture.
 - **C reads differently.** C has no classes, so its domain appears as structs plus composition, and free functions are attributed to the type they mutate by pointer. Faithful, but its abstractions are concrete structs — they don't count toward abstractness the way a C++ pure-virtual class does.
@@ -353,7 +356,7 @@ On Apple platforms, `AcaiRender`'s `DiagramImageRenderer` takes it the rest of t
 
 - **Swift 6** toolchain.
 - **Libraries + CLI**: macOS 15+, iOS 17+, tvOS 16+, watchOS 9+, visionOS 1+, and Linux.
-- **`acai image` / PNG export**: macOS only (needs a window-server session).
+- **`acai image` / `acai atlas` / PNG export**: macOS only (needs a window-server session).
 - **The apps**: macOS 26 / iOS 26.
 - **Graphviz** (optional) — only to turn DOT into images: `brew install graphviz`.
 
