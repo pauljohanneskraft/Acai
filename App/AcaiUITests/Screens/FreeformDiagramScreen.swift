@@ -45,8 +45,8 @@ final class FreeformDiagramScreen: DiagramScreenBase {
     /// closes itself once placement begins. The sidebar starts closed when a diagram opens and this
     /// leaves it closed, so it always opens it instead of branching on a not-yet-settled tree read.
     func placeNodeViaCatalog(kindID: String, file: StaticString = #filePath, line: UInt = #line) {
-        tapSidebarToggle(file: file, line: line)
         let catalog = catalogNodeButton(kindID)
+        tapSidebarToggle(until: catalog, file: file, line: line)
         catalog.tapWhenReady("catalog entry '\(kindID)'", file: file, line: line)
         cancelPlacementButton.waitOrFail("placement mode", file: file, line: line)
         if !SnapshotPlatform().usesCompactLayout {

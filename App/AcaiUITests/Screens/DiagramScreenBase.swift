@@ -58,7 +58,7 @@ class DiagramScreenBase {
     ) {
         if content.exists { return }
         if !settingsContent.exists && !inspectorContent.exists {
-            tapSidebarToggle(file: file, line: line)
+            tapSidebarToggle(until: anySidebarContent, file: file, line: line)
         }
         // Opening the sidebar restores the tab it was last on, which is usually this one already.
         if content.exists { return }
@@ -145,16 +145,22 @@ class DiagramScreenBase {
         tapToolbarButton(identifier: "diagram.fitToViewButton", label: "Fit to View", file: file, line: line)
     }
 
-    /// The sidebar is open once either tab's content is in the tree, whichever it was last on.
-    private var anySidebarContent: XCUIElement {
+    /// The sidebar is open once either tab's content is in the tree, whichever it was last on. Only
+    /// the generated diagrams have these — a freeform diagram's sidebar is the node catalog.
+    var anySidebarContent: XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(
             format: "identifier IN %@", ["diagram.sidebarContent.settings", "diagram.sidebarContent.inspector"]
         )).firstMatch
     }
 
-    func tapSidebarToggle(file: StaticString = #filePath, line: UInt = #line) {
+    /// `destination` is what the caller expects the toggle to bring on screen: without it a tap that
+    /// lands while the overflow menu is still presenting does nothing and is never retried. Closing
+    /// the sidebar has no destination to name, so it passes none.
+    func tapSidebarToggle(
+        until destination: XCUIElement? = nil, file: StaticString = #filePath, line: UInt = #line
+    ) {
         tapToolbarButton(
-            identifier: "diagram.sidebarToggleButton", label: "Sidebar", until: anySidebarContent,
+            identifier: "diagram.sidebarToggleButton", label: "Sidebar", until: destination,
             file: file, line: line
         )
     }
