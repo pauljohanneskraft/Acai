@@ -1,5 +1,7 @@
+import Foundation
 import MCP
 import AcaiLibrary
+import Yams
 
 /// One read-only analysis tool: a `name`, a trigger-shaped `description` (what an agent reads when
 /// deciding to reach for it), a JSON input schema, and a `run` returning the report as a `Value`.
@@ -36,6 +38,28 @@ extension AnalysisTool {
         let artifact = try await resolveArtifact(arguments, cache)
         let include = try arguments.bool("includeGenerated") ?? false
         return include ? artifact : artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
+    }
+
+    /// Decodes the `rules` argument's YAML directly since the CLI's `.load` helper is
+    /// AcaiCLI-internal; absent, the built-in curated smell budgets apply.
+    func qualityRules(_ arguments: ToolArguments) throws -> QualityRules {
+        guard let rulesPath = arguments.string("rules") else { return .defaultQuality }
+        do {
+            let yaml = try String(contentsOf: URL(fileURLWithPath: rulesPath), encoding: .utf8)
+            return try YAMLDecoder().decode(QualityRules.self, from: yaml)
+        } catch {
+            throw MCPError.invalidParams(
+                "Could not read quality rules from \(rulesPath): \(error.localizedDescription)")
+        }
+    }
+
+    var rulesProperty: [String: Value] {
+        [
+            "rules": [
+                "type": "string",
+                "description": "Path to the YAML rules file. Omit for the built-in curated smell budgets."
+            ]
+        ]
     }
 
     var generatedScopeProperty: [String: Value] {

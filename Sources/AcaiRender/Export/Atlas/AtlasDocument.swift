@@ -41,13 +41,14 @@ public struct AtlasDiagramPage: Sendable {
     }
 
     public let name: String
-    /// The diagram kind's English display name, e.g. "Class Diagram".
-    public let kind: String
+    /// Drawn under `name`: the diagram kind for a named diagram the app exports, the diagram's
+    /// scope for a headless one, whose name is already its kind.
+    public let subtitle: String
     public let image: Image
 
-    public init(name: String, kind: String, image: Image) {
+    public init(name: String, subtitle: String, image: Image) {
         self.name = name
-        self.kind = kind
+        self.subtitle = subtitle
         self.image = image
     }
 }
@@ -162,7 +163,7 @@ public struct AtlasDocument: Sendable {
     private func drawDiagramPage(_ diagram: AtlasDiagramPage, in context: CGContext) {
         var canvas = AtlasPageCanvas(context: context, bounds: contentBounds)
         canvas.drawLine(diagram.name, fontSize: 16, bold: true, spacing: AtlasPageCanvas.lineSpacing)
-        canvas.drawLine(diagram.kind, fontSize: 11, spacing: AtlasPageCanvas.headingSpacing)
+        canvas.drawLine(diagram.subtitle, fontSize: 11, spacing: AtlasPageCanvas.headingSpacing)
         switch diagram.image {
         case .rendered(let data):
             if let image = data.cgImage {

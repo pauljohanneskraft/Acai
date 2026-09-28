@@ -23,7 +23,7 @@ struct CodebaseAtlasExport {
         for diagram in diagrams {
             try Task.checkCancellation()
             pages.append(AtlasDiagramPage(
-                name: diagram.name, kind: diagram.type.displayName,
+                name: diagram.name, subtitle: diagram.type.displayName,
                 image: renderer.render(diagram, scale: AtlasDocument.renderScale).atlasImage))
             await Task.yield()
         }

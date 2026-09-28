@@ -1,7 +1,6 @@
 import Foundation
 import MCP
 import AcaiLibrary
-import Yams
 
 /// `acai_quality` — validates the codebase against a declarative code-quality rules file and returns
 /// the pass/fail verdict with each violation's file:line. Mirrors `acai quality --format json`.
@@ -16,11 +15,7 @@ struct QualityTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        objectSchema(extraProperties: [
-            "rules": [
-                "type": "string",
-                "description": "Path to the YAML rules file. Omit for the built-in curated smell budgets."
-            ],
+        objectSchema(extraProperties: rulesProperty.merging([
             "explore": [
                 "type": "boolean",
                 "description": "Rank findings and additionally list dependency cycles at 'scope' (no gate)."
@@ -30,12 +25,12 @@ struct QualityTool: AnalysisTool {
                 "enum": ["modules", "types", "all"],
                 "description": "Cycle scope listed in explore mode: modules, types, or all (default)."
             ]
-        ])
+        ]) { _, new in new })
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let artifact = try await resolveArtifact(arguments, cache)
-        let ruleSet = try loadRules(arguments)
+        let ruleSet = try qualityRules(arguments)
         var report = QualityEvaluator(
             rules: ruleSet,
             languageResolver: artifact.standardLanguageResolver
@@ -52,18 +47,6 @@ struct QualityTool: AnalysisTool {
     private struct Payload: Codable {
         var quality: QualityReport
         var health: HealthCheck.Summary
-    }
-
-    /// Decodes the YAML directly since the CLI's `.load` helper is AcaiCLI-internal.
-    private func loadRules(_ arguments: ToolArguments) throws -> QualityRules {
-        guard let rulesPath = arguments.string("rules") else { return .defaultQuality }
-        do {
-            let yaml = try String(contentsOf: URL(fileURLWithPath: rulesPath), encoding: .utf8)
-            return try YAMLDecoder().decode(QualityRules.self, from: yaml)
-        } catch {
-            throw MCPError.invalidParams(
-                "Could not read quality rules from \(rulesPath): \(error.localizedDescription)")
-        }
     }
 
     private func cycleFindings(_ artifact: CodeArtifact, scope: String) -> [Violation] {
