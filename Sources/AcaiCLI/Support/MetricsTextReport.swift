@@ -21,7 +21,7 @@ enum MetricsSortKey: String, CaseIterable {
     case linesOfCode
 
     // `Double` so ratio/mean/score metrics sort alongside integer ones. A lookup table keeps this
-    // within the cyclomatic-complexity budget instead of a 15-case switch.
+    // within the cyclomatic-complexity budget instead of a case-per-metric switch.
     fileprivate func value(_ metric: CodeMetrics.TypeMetric) -> Double {
         Self.accessors[self]?(metric) ?? 0
     }
