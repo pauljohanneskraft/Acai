@@ -1,34 +1,24 @@
 import SwiftUI
 
-/// ⌘K for Quick Open — matches Xcode/every other developer tool's convention. Acts on a
-/// `QuickOpenPresenter` it doesn't own, since a `Commands` menu item lives outside any view
-/// hierarchy — see that type for where each platform's presenter comes from.
+/// The Mac's ⌘K entry point for Quick Open — matches Xcode/every other developer tool's
+/// convention. Acts on the key window's `QuickOpenPresenter`.
 ///
-/// The Mac keeps the item in the Edit menu. iPadOS builds only some of the system menus SwiftUI's
-/// `CommandGroup` placements target, and a shortcut in one it leaves out never reaches the keyboard:
-/// on iPadOS 26 the same button went unhandled after `.textEditing` and after `.newItem`, while ⌘/
-/// after `.help` fires. A menu the app declares itself is always built, so iPad gets one of its own.
+/// iPad binds the same shortcut on the Quick Open toolbar button in `ProjectBrowserView` instead of
+/// here. A `Commands` menu item never fired it on iPadOS 26 — not after `.textEditing`, not after
+/// `.newItem`, and not from a `CommandMenu` of the app's own — while ⌘/ after `.help` does, so only
+/// some of the menus these placements target are built there. A visible, enabled button in the view
+/// hierarchy has no such gaps; an invisible one does, which is why it is that button and not a
+/// dedicated hidden one.
 struct QuickOpenCommands: Commands {
-    #if os(macOS)
     @FocusedObject private var presenter: QuickOpenPresenter?
-    #else
-    @EnvironmentObject private var scenePresenter: QuickOpenPresenter
-    private var presenter: QuickOpenPresenter? { scenePresenter }
-    #endif
 
     var body: some Commands {
-        #if os(macOS)
-        CommandGroup(after: .textEditing) { quickOpenItem }
-        #else
-        CommandMenu(Text(localized: .app("View.QuickOpenCommands.Navigation"))) { quickOpenItem }
-        #endif
-    }
-
-    private var quickOpenItem: some View {
-        Button(.app("View.QuickOpenCommands.QuickOpen")) {
-            presenter?.isPresented = true
+        CommandGroup(after: .textEditing) {
+            Button(.app("View.QuickOpenCommands.QuickOpen")) {
+                presenter?.isPresented = true
+            }
+            .keyboardShortcut(.quickOpen)
+            .disabled(presenter == nil)
         }
-        .keyboardShortcut(.quickOpen)
-        .disabled(presenter == nil)
     }
 }
