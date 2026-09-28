@@ -322,8 +322,9 @@ walk, so `--source` must point inside a git checkout — a plain folder is an er
 | `--output <path>` | |
 
 `--format json` output: `{ "churnThreshold": <median>, "complexityThreshold": <median>,
-"commitWindow": <n>, "filesScored": <n>, "hotspots": [{ "path", "churn", "complexity", "score",
-"isHotspot" }] }`, ranked highest score first.
+"commitWindow": <n>, "filesScored": <n>, "hotspotCount": <n>, "hotspots": [{ "path", "churn",
+"complexity", "score", "isHotspot" }] }`, ranked highest score first. `hotspotCount` counts every
+file above both medians, even when `--top` lists fewer.
 
 ```sh
 acai hotspots --source . --top 10

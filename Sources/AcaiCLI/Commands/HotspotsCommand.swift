@@ -49,7 +49,9 @@ extension AcaiCommand {
 
         mutating func run() async throws {
             let url = URL(fileURLWithPath: source).standardizedFileURL
-            guard FileManager.default.fileExists(atPath: url.path) else {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
                 throw ValidationError("Source directory does not exist: \(source)")
             }
             let churn = try churnByFile(at: url)
@@ -96,6 +98,8 @@ private struct HotspotsReport: Encodable {
     let complexityThreshold: Double
     let commitWindow: Int
     let filesScored: Int
+    /// Every file above both medians, even when `--top` shows fewer.
+    let hotspotCount: Int
     let hotspots: [Hotspots.File]
 
     init(hotspots: Hotspots, commitWindow: Int, top: Int?) {
@@ -104,13 +108,14 @@ private struct HotspotsReport: Encodable {
         self.commitWindow = commitWindow
         filesScored = hotspots.files.count
         let ranked = hotspots.ranked
+        hotspotCount = ranked.count
         self.hotspots = top.map { Array(ranked.prefix($0)) } ?? ranked
     }
 
     var text: String {
         let header = """
             Hotspots — churn × complexity over the last \(commitWindow) commits
-            \(filesScored) files scored, \(hotspots.count) above both medians \
+            \(filesScored) files scored, \(hotspotCount) above both medians \
             (churn \(formatted(churnThreshold)), complexity \(formatted(complexityThreshold)))
             """
         guard !hotspots.isEmpty else {

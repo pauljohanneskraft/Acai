@@ -103,6 +103,7 @@ struct HotspotsCommandTests {
             #expect(hot.score == hot.churn * hot.complexity)
             #expect(report.commitWindow == 50)
             #expect(report.filesScored == 3)
+            #expect(report.hotspotCount == 1)
         }
     }
 
@@ -133,6 +134,7 @@ struct HotspotsCommandTests {
 
             let report = try JSONDecoder().decode(Report.self, from: try Data(contentsOf: output))
             #expect(report.hotspots.count == 1)
+            #expect(report.hotspotCount == 1)
         }
     }
 
@@ -184,6 +186,7 @@ struct HotspotsCommandTests {
         let hotspots: [File]
         let commitWindow: Int
         let filesScored: Int
+        let hotspotCount: Int
     }
 }
 #endif

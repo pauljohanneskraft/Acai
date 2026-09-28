@@ -35,7 +35,13 @@ struct HotspotsTool: AnalysisTool {
         let top = try arguments.int("top")
         if let top, top < 1 { throw MCPError.invalidParams("'top' must be at least 1.") }
 
-        let churn = try churnByFile(at: URL(fileURLWithPath: path).standardizedFileURL, limit: commits)
+        let url = URL(fileURLWithPath: path).standardizedFileURL
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw MCPError.invalidParams("Hotspots need a source directory inside a git checkout: \(path)")
+        }
+        let churn = try churnByFile(at: url, limit: commits)
         let artifact = try await analysisArtifact(arguments, cache)
         let payload = Payload(
             hotspots: Hotspots(artifact: artifact, churnByFile: churn), commitWindow: commits, top: top)
@@ -66,6 +72,8 @@ struct HotspotsTool: AnalysisTool {
         var complexityThreshold: Double
         var commitWindow: Int
         var filesScored: Int
+        /// Every file above both medians, even when `top` returns fewer.
+        var hotspotCount: Int
         var hotspots: [Hotspots.File]
 
         init(hotspots: Hotspots, commitWindow: Int, top: Int?) {
@@ -74,6 +82,7 @@ struct HotspotsTool: AnalysisTool {
             self.commitWindow = commitWindow
             filesScored = hotspots.files.count
             let ranked = hotspots.ranked
+            hotspotCount = ranked.count
             self.hotspots = top.map { Array(ranked.prefix($0)) } ?? ranked
         }
     }
