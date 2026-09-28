@@ -18,7 +18,7 @@ struct QualityTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        objectSchema(extraProperties: [
+        var properties: [String: Value] = [
             "rules": [
                 "type": "string",
                 "description": "Path to the YAML rules file. Omit for the built-in curated smell budgets."
@@ -26,11 +26,6 @@ struct QualityTool: AnalysisTool {
             "explore": [
                 "type": "boolean",
                 "description": "Rank findings and additionally list dependency cycles at 'scope' (no gate)."
-            ],
-            "scope": [
-                "type": "string",
-                "enum": ["modules", "types", "all"],
-                "description": "Cycle scope listed in explore mode: modules, types, or all (default)."
             ],
             "baseline": [
                 "type": "string",
@@ -40,10 +35,13 @@ struct QualityTool: AnalysisTool {
                     + " 'path'). Evaluates the rules' 'movements' and adds the structural drift since it."
                     + " Required when the rules declare any movement.")
             ]
-        ])
+        ]
+        properties.merge(EnumArgument<CycleScope>.scope.property) { $1 }
+        return objectSchema(extraProperties: properties)
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
+        let scope = try EnumArgument<CycleScope>.scope.value(in: arguments, or: .all)
         let artifact = try await resolveArtifact(arguments, cache)
         let ruleSet = try loadRules(arguments)
         let baseline = try await baselineArtifact(arguments, cache, rules: ruleSet)
@@ -54,7 +52,7 @@ struct QualityTool: AnalysisTool {
 
         let explore = try arguments.bool("explore") ?? false
         if explore, ruleSet.cycles == nil {
-            report.violations += cycleFindings(artifact, scope: arguments.string("scope") ?? "all")
+            report.violations += cycleFindings(artifact, scope: scope)
         }
         let payload = Payload(
             quality: report,
@@ -88,7 +86,7 @@ struct QualityTool: AnalysisTool {
         }
         return try await cache.artifact(
             path: path,
-            languageNames: arguments.stringArray("languages"),
+            languageNames: try LanguageListArgument.languages.values(in: arguments),
             refresh: try arguments.bool("refresh") ?? false)
     }
 
@@ -104,11 +102,9 @@ struct QualityTool: AnalysisTool {
         }
     }
 
-    private func cycleFindings(_ artifact: CodeArtifact, scope: String) -> [Violation] {
+    private func cycleFindings(_ artifact: CodeArtifact, scope: CycleScope) -> [Violation] {
         let finder = CycleFinder(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
-        let scopes: [CycleFinder.Scope] = scope == "types" ? [.types]
-            : scope == "modules" ? [.modules] : [.modules, .types]
-        return scopes.flatMap { cycleScope in
+        return scope.finderScopes.flatMap { cycleScope in
             finder.cycles(scope: cycleScope).map { cycle in
                 Violation(
                     ruleKind: "cycle",

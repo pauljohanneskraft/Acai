@@ -40,8 +40,12 @@ struct ToolArguments: Sendable {
         return projected
     }
 
-    func stringArray(_ key: String) -> [String] {
-        values[key]?.arrayValue?.compactMap(\.stringValue) ?? []
+    func stringArray(_ key: String) throws -> [String] {
+        guard let value = values[key] else { return [] }
+        guard let strings = value.arrayValue?.map(\.stringValue), !strings.contains(nil) else {
+            throw MCPError.invalidParams("Argument '\(key)' must be an array of strings.")
+        }
+        return strings.compactMap { $0 }
     }
 
     func requiredString(_ key: String) throws -> String {

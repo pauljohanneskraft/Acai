@@ -14,7 +14,7 @@ struct InspectTool: AnalysisTool {
 
     var inputSchema: Value {
         var properties = selectorProperties
-        properties["memberKind"] = ["type": "string", "description": "Only members of this kind (method, property, …)."]
+        properties.merge(EnumArgument<MemberKind>.memberKind.property) { $1 }
         properties["minParameters"] = ["type": "integer", "description": "Only members with at least N parameters."]
         properties["publicVars"] = ["type": "boolean", "description": "Only publicly-settable stored properties."]
         properties["overrides"] = ["type": "boolean", "description": "Only members that override an inherited member."]
@@ -24,6 +24,12 @@ struct InspectTool: AnalysisTool {
     }
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
+        let selector = try selector(from: arguments)
+        let members = MemberFilter(
+            kind: try EnumArgument<MemberKind>.memberKind.value(in: arguments),
+            minParameters: try arguments.int("minParameters"),
+            isPublicVar: (try arguments.bool("publicVars") ?? false) ? true : nil,
+            isOverride: (try arguments.bool("overrides") ?? false) ? true : nil)
         let artifact = try await analysisArtifact(arguments, cache)
         let health = HealthCheck(artifact: artifact).summary
         if try arguments.bool("enums") ?? false {
@@ -32,12 +38,8 @@ struct InspectTool: AnalysisTool {
         }
         let rows = TypeQuery(
             artifact: artifact,
-            selector: try selector(from: arguments),
-            members: MemberFilter(
-                kind: arguments.string("memberKind").flatMap(MemberKind.init(rawValue:)),
-                minParameters: try arguments.int("minParameters"),
-                isPublicVar: (try arguments.bool("publicVars") ?? false) ? true : nil,
-                isOverride: (try arguments.bool("overrides") ?? false) ? true : nil),
+            selector: selector,
+            members: members,
             languageResolver: artifact.standardLanguageResolver
         ).rows
         return .json(try Value(InspectPayload(types: rows, health: health)))
