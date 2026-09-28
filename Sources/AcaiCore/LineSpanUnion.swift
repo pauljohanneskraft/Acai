@@ -26,15 +26,17 @@ public struct LineSpanUnion: Equatable, Sendable {
         files.values.reduce(0) { $0 + $1.count }
     }
 
-    /// Distinct lines covered in the files `predicate` accepts — how a per-module total attributes
-    /// each extent to the module of the file it was written in, not the module of the type it
-    /// belongs to (a cross-module extension is declared elsewhere).
-    public func lineCount(inFilesWhere predicate: (String) -> Bool) -> Int {
-        files.filter { predicate($0.key) }.values.reduce(0) { $0 + $1.count }
+    /// Distinct lines covered, keyed by whatever `group` derives from each file's path — how a
+    /// per-module total attributes each extent to the module of the file it was written in rather
+    /// than the module of the type it belongs to (a cross-module extension is declared elsewhere).
+    ///
+    /// One pass over the files, not one per group: two files never share a line, so a group's total
+    /// is simply the sum of its files'.
+    public func lineCounts(groupedBy group: (String) -> String) -> [String: Int] {
+        var totals: [String: Int] = [:]
+        for (path, lines) in files { totals[group(path), default: 0] += lines.count }
+        return totals
     }
-
-    /// Every file an extent was recorded in.
-    public var filePaths: [String] { Array(files.keys) }
 
     /// The extents recorded within one file, merged on read so overlapping declarations count once.
     private struct FileLines: Equatable {

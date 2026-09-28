@@ -51,7 +51,8 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var stableDependencyViolations: [String]
         /// Physical lines of code in this module's own files. Attributed by the file each
         /// declaration was written in, so a cross-module extension counts toward the module that
-        /// declares it, matching how the coupling numbers above are attributed.
+        /// declares it, matching how the coupling numbers above are attributed. These rows exist only
+        /// for modules that declare types, so their sum can fall short of `Counts.linesOfCode`.
         public var linesOfCode: Int
     }
 
@@ -99,7 +100,7 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var featureEnvyMethods: Int
 
         /// Deep-and-wide inheritance shape (`DIT × NOC`): deeply derived and widely subclassed marks a
-        /// fragile hierarchy hub. Filled from `depthOfInheritance × numberOfChildren` in `computeTypeMetrics`.
+        /// fragile hierarchy hub. Filled from `depthOfInheritance × numberOfChildren` (see ``InheritanceShape``).
         public var deepAndWide: Int
 
         /// Physical lines of code: the distinct lines the declaration and its members cover,
@@ -169,30 +170,7 @@ extension CodeArtifact {
     private func computeTypeMetrics(
         flat: [TypeDeclaration], identity: TypeIdentityResolver
     ) -> [CodeMetrics.TypeMetric] {
-        let typeIds = Set(flat.map(\.id))
-        let isaEdges = relationships.filter {
-            ($0.kind == .inheritance || $0.kind == .conformance)
-                && typeIds.contains($0.source) && typeIds.contains($0.target)
-        }
-        var childCount: [String: Int] = [:]
-        var parents: [String: [String]] = [:]
-        for edge in isaEdges {
-            childCount[edge.target, default: 0] += 1
-            parents[edge.source, default: []].append(edge.target)
-        }
-
-        var ditMemo: [String: Int] = [:]
-        func depth(of id: String, visiting: Set<String>) -> Int {
-            if let cached = ditMemo[id] { return cached }
-            guard let ps = parents[id] else { ditMemo[id] = 0; return 0 }
-            var best = 0
-            for parent in ps where !visiting.contains(parent) {
-                best = max(best, 1 + depth(of: parent, visiting: visiting.union([id])))
-            }
-            ditMemo[id] = best
-            return best
-        }
-
+        let shape = InheritanceShape(types: flat, relationships: relationships)
         let (fanIn, fanOut) = fanMetrics(flat: flat, identity: identity)
         // Measured over the original (un-flattened) tree since `allTypes(_:)` clears `nestedTypes`.
         let nesting = nestingDepths(types)
@@ -201,8 +179,8 @@ extension CodeArtifact {
                 id: type.id,
                 name: type.qualifiedName,
                 module: ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? ""),
-                depthOfInheritance: depth(of: type.id, visiting: [type.id]),
-                numberOfChildren: childCount[type.id, default: 0],
+                depthOfInheritance: shape.depth(of: type.id),
+                numberOfChildren: shape.children(of: type.id),
                 weightedMethods: type.members.filter { $0.kind == .method }.count,
                 maxCyclomaticComplexity: type.members.compactMap(\.cyclomaticComplexity).max() ?? 0,
                 numberOfProperties: type.members.filter { $0.kind == .property }.count,
@@ -219,7 +197,7 @@ extension CodeArtifact {
                 nestingDepth: nesting[type.id] ?? 0,
                 lackOfCohesion: LcomAnalysis(type: type).componentCount,
                 featureEnvyMethods: FeatureEnvy(type: type, identity: identity).enviousMethodCount,
-                deepAndWide: depth(of: type.id, visiting: [type.id]) * childCount[type.id, default: 0],
+                deepAndWide: shape.deepAndWide(of: type.id),
                 linesOfCode: type.linesOfCode
             )
         }
@@ -314,6 +292,7 @@ extension CodeArtifact {
         moduleTypes: [String: [TypeDeclaration]], sets: ModuleCouplingSets, spans: LineSpanUnion
     ) -> [CodeMetrics.ModuleCoupling] {
         let resolver = ModuleResolver.standard
+        let linesByModule = spans.lineCounts(groupedBy: { resolver.productName(forFilePath: $0) })
         let efferent = sets.efferent
         let afferent = sets.afferent
         let moduleAdjacency = sets.moduleAdjacency
@@ -344,7 +323,7 @@ extension CodeArtifact {
                 distanceFromMainSequence: abs(abstractness + instabilityValue - 1),
                 publicMemberCount: moduleTypeList.reduce(0) { $0 + $1.publicMemberCount },
                 stableDependencyViolations: violations,
-                linesOfCode: spans.lineCount(inFilesWhere: { resolver.productName(forFilePath: $0) == name })
+                linesOfCode: linesByModule[name, default: 0]
             )
         }
     }
