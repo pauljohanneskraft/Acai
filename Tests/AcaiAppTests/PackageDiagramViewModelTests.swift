@@ -119,4 +119,61 @@ struct PackageDiagramViewModelTests {
         // A valid PNG starts with the 8-byte signature.
         #expect(data.starts(with: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
     }
+
+    // MARK: - Delta mode
+
+    /// `ModuleA.A` always depends on `ModuleB.B`; only the newer revision's `A` gained a `log`
+    /// method returning `ModuleC.C`, so that module and the edge into it are what the delta marks.
+    private func artifact(dependingOnModuleC: Bool) -> CodeArtifact {
+        let logMethod = Member(
+            name: "log", kind: .method, accessLevel: .public, type: TypeReference(name: "C"))
+        var types = [
+            TypeDeclaration(
+                id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public,
+                members: dependingOnModuleC ? [logMethod] : [],
+                location: .init(filePath: "Sources/ModuleA/A.swift", line: 1, column: 1)
+            ),
+            TypeDeclaration(
+                id: "B", name: "B", qualifiedName: "B", kind: .protocol, accessLevel: .public,
+                location: .init(filePath: "Sources/ModuleB/B.swift", line: 1, column: 1)
+            )
+        ]
+        if dependingOnModuleC {
+            types.append(TypeDeclaration(
+                id: "C", name: "C", qualifiedName: "C", kind: .class, accessLevel: .public,
+                location: .init(filePath: "Sources/ModuleC/C.swift", line: 1, column: 1)
+            ))
+        }
+        return CodeArtifact(
+            metadata: .init(sourceLanguage: .swift),
+            types: types,
+            relationships: [Relationship(kind: .conformance, source: "A", target: "B")]
+        )
+    }
+
+    @Test func comparisonArtifactMarksAddedElements() throws {
+        let vm = PackageDiagramViewModel(
+            artifact: artifact(dependingOnModuleC: true),
+            comparisonArtifact: artifact(dependingOnModuleC: false))
+
+        #expect(vm.isDeltaMode)
+        let moduleC = try #require(vm.diagram.nodes.first { $0.name == "ModuleC" })
+        let moduleA = try #require(vm.diagram.nodes.first { $0.name == "ModuleA" })
+        let moduleB = try #require(vm.diagram.nodes.first { $0.name == "ModuleB" })
+
+        #expect(vm.nodeDeltaStatus(id: moduleC.id) == .added)
+        #expect(vm.nodeDeltaColor(id: moduleC.id) != nil)
+        #expect(vm.edgeDeltaColor(from: moduleA.id, to: moduleC.id) != nil)
+        // Everything the revisions share carries no badge and no tint.
+        #expect(vm.nodeDeltaStatus(id: moduleB.id) == nil)
+        #expect(vm.edgeDeltaColor(from: moduleA.id, to: moduleB.id) == nil)
+    }
+
+    @Test func noComparisonArtifactMeansNoDeltaStatus() throws {
+        let vm = PackageDiagramViewModel(artifact: artifact(dependingOnModuleC: true))
+        let moduleC = try #require(vm.diagram.nodes.first { $0.name == "ModuleC" })
+        #expect(!vm.isDeltaMode)
+        #expect(vm.nodeDeltaStatus(id: moduleC.id) == nil)
+        #expect(vm.nodeDeltaColor(id: moduleC.id) == nil)
+    }
 }

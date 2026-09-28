@@ -19,7 +19,7 @@ import SwiftUI
 /// `XCUIApplication.launchWithFixture(_:)` in `App/AcaiUITests/Support/Launch.swift`). **The
 /// variable names below and the ones in `Launch.swift` must match** — they can't share a constant
 /// across the SwiftPM package / Xcode-project boundary.
-struct UITestFixtureResolver {
+struct UITestFixtureResolver: Sendable {
     static let fixtureBaseDirVariable = "ACAI_UITEST_FIXTURE_BASE_DIR"
 
     private let environment: [String: String]
@@ -73,6 +73,24 @@ struct UITestFixtureResolver {
             result[codebaseID] = URL(fileURLWithPath: fields[1])
         }
         return result
+    }
+
+    static let defaultCodebaseArtifactVariable = "ACAI_UITEST_DEFAULT_CODEBASE_ARTIFACT"
+
+    /// The canned artifact for any codebase without its own entry — a codebase the journey creates
+    /// itself (a clone) gets an id no launch could have staged.
+    func resolveDefaultCodebaseArtifactURL() -> URL? {
+        guard let path = environment[Self.defaultCodebaseArtifactVariable], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    static let preindexedArtifactVariable = "ACAI_UITEST_PREINDEXED_ARTIFACT"
+
+    /// An artifact every seeded codebase is already indexed with at launch, so a journey that needs an
+    /// indexed codebase doesn't have to tap Reindex and wait to reach the state it is actually about.
+    func resolvePreindexedArtifactURL() -> URL? {
+        guard let path = environment[Self.preindexedArtifactVariable], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path)
     }
 
     static let comparisonArtifactsVariable = "ACAI_UITEST_COMPARISON_ARTIFACTS"

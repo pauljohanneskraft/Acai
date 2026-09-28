@@ -95,6 +95,8 @@ just its API.
 Internal building blocks. You would not normally depend on these directly, but they are documented
 so nothing in the package is a blank spot.
 
+- **[AcaiAppModel](/documentation/acaiappmodel/)** — the app's UI-free models: the state and rules
+  its screens render, with no SwiftUI or git dependency, so they build and are tested on Linux too.
 - **[AcaiGit](/documentation/acaigit/)** — a libgit2 wrapper (clone, fetch, checkout, worktrees, diff,
   churn) used by the app for repository cloning, revision comparison and hotspot charts. Built only
   on Apple platforms, and not a package product.
@@ -102,8 +104,10 @@ so nothing in the package is a blank spot.
   scanner; see `Package.swift` for why it must be pinned to the grammar version.
 - **[AcaiPNGComparison](/documentation/acaipngcomparison/)** — golden-image comparison maths shared by
   the render and app snapshot tests.
-- **[AcaiTestSupport](/documentation/acaitestsupport/)** — async waiting primitives shared by the test
-  targets.
+- **[AcaiTestSupport](/documentation/acaitestsupport/)** — async waiting primitives shared by the
+  test targets.
+- **[AcaiArtifactGenerator](/documentation/acaiartifactgenerator/)** — a seeded, deterministic
+  generator of random-but-valid `CodeArtifact`s, for the property-based invariant tests.
 
 ## Project discovery
 

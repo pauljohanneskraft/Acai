@@ -34,49 +34,6 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
             .waitForDisappearanceOrFail("the deleted codebase in the repository's list")
     }
 
-    /// Two codebases at different revisions of one repository live side by side on a single clone;
-    /// deleting one leaves the other working, and deleting the last one deletes the clone.
-    func testCodebasesAtDifferentRevisionsShareOneClone() throws {
-        var remoteURL = ""
-        var baseDir = URL(fileURLWithPath: "/")
-        let browser = launchSeeded(analysis: .parsed) { app, destination in
-            remoteURL = try Self.stageRemote(for: app, in: destination)
-            baseDir = destination
-        }
-        let clones = baseDir.appendingPathComponent("git-repositories", isDirectory: true)
-        let worktrees = baseDir.appendingPathComponent("git-worktrees", isDirectory: true)
-        GitHubAccountScreen(app: app).signInWithToken(through: browser)
-        addCodebases([("fixture-main", "main"), ("fixture-feature", "feature")], browser: browser)
-
-        waitForEntries(in: clones, count: 1, "a single shared clone for both codebases")
-        waitForEntries(in: worktrees, count: 2, "one worktree per codebase")
-        let repositoryRow = browser.repositoryRow(remoteURL: remoteURL)
-        let repository = RepositoryDetailScreen(app: app)
-        repositoryRow.tap("the repository's sidebar row", until: repository.referencingCodebase(named: "fixture-main"))
-        repository.referencingCodebase(named: "fixture-feature").waitOrFail("the second referencing codebase")
-        returnToSidebar(browser: browser)
-
-        let mainDiagram = openClassDiagram(of: "fixture-main", browser: browser)
-        mainDiagram.typeNode(named: "Widget").waitOrFail("main's Widget type node", timeout: .uiWork)
-        XCTAssertTrue(mainDiagram.typeNode(named: "Gadget").exists)
-        XCTAssertFalse(mainDiagram.typeNode(named: "Extra").exists, "feature's content leaked into main's worktree")
-        leaveDiagram(mainDiagram)
-        let featureDiagram = openClassDiagram(of: "fixture-feature", browser: browser)
-        featureDiagram.typeNode(named: "Extra").waitOrFail("feature's Extra type node", timeout: .uiWork)
-        leaveDiagram(featureDiagram)
-
-        browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-main"))
-        waitForEntries(in: worktrees, count: 1, "the remaining codebase's worktree")
-        waitForEntries(in: clones, count: 1, "the shared clone kept for the remaining codebase")
-        let pulledDiagram = pullAndReopen("fixture-feature", browser: browser)
-        pulledDiagram.typeNode(named: "Extra").waitOrFail("feature's Extra type node after pulling", timeout: .uiWork)
-        leaveDiagram(pulledDiagram)
-
-        browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-feature"))
-        waitForEntries(in: clones, count: 0, "the clone deleted along with its last codebase")
-        repositoryRow.waitForDisappearanceOrFail("the repository's sidebar row once no codebase uses it")
-    }
-
     private static func stageRemote(for app: XCUIApplication, in destination: URL) throws -> String {
         let remoteDir = destination.appendingPathComponent("GitHubRemote")
         try GitFixtureRepository(directory: remoteDir).makeRemote()

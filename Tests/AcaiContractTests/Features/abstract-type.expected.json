@@ -1,0 +1,13 @@
+{
+  "types": [
+    {
+      "name": "Shape",
+      "kind": "class",
+      "access": "+",
+      "modifiers": ["abstract"],
+      "members": [
+        { "name": "area", "role": "method", "access": "+", "modifiers": ["abstract"], "type": "#primitive" }
+      ]
+    }
+  ]
+}

@@ -13,13 +13,10 @@ import Yams
 ///   diagrams/
 ///     generated_<diagramID>.json  – GeneratedDiagram
 ///     freeform_<diagramID>.json     – FreeformDiagram
-///   artifacts/
-///     codebase_<codebaseID>.json – pre-shared-store `CodeArtifact`, read once for migration
 /// ```
 /// A codebase's own analysis result lives in `AcaiCore.AnalysisStore` — `~/.acai/analysis`, shared
 /// with the CLI and an MCP session over the same directory — keyed by the codebase's resolved
-/// `directoryPath` rather than its id. `artifacts/` above is the format this store migrates away
-/// from on first load, kept only so an existing install's index isn't dropped.
+/// `directoryPath` rather than its id.
 @MainActor
 final class ProjectStore: ObservableObject {
     /// The one store every window and system action of the running app shares.
@@ -35,22 +32,33 @@ final class ProjectStore: ObservableObject {
 
     /// A user-presentable persistence error. `Identifiable` so SwiftUI `.alert(item:)` can bind it.
     struct StoreError: Identifiable {
+        /// The cause, separate from the presented `message`, so a caller can act on it.
+        enum Reason: Equatable, Sendable {
+            /// The codebase's folder is gone, moved, or refused by the sandbox.
+            case codebaseUnreachable
+            case indexingFailed
+            case other
+        }
+
         let id = UUID()
         let message: String
+        var reason: Reason = .other
         /// Set when the failure was "this codebase's folder can't be reached", which the user can
         /// fix by pointing it at another folder — the alert then offers that instead of just "OK".
         var relocatableCodebaseID: UUID?
     }
 
-    func report(_ message: LocalizedStringResource, relocating codebaseID: UUID? = nil) {
-        report(String(localized: message), relocating: codebaseID)
+    func report(
+        _ message: LocalizedStringResource, reason: StoreError.Reason = .other, relocating codebaseID: UUID? = nil
+    ) {
+        report(String(localized: message), reason: reason, relocating: codebaseID)
     }
 
     /// The `String` overload carries text the app did not write — an engine or system error's own
     /// `localizedDescription`, which is shown untranslated rather than guessed at.
-    func report(_ message: String, relocating codebaseID: UUID? = nil) {
+    func report(_ message: String, reason: StoreError.Reason = .other, relocating codebaseID: UUID? = nil) {
         print(message)
-        lastError = StoreError(message: message, relocatableCodebaseID: codebaseID)
+        lastError = StoreError(message: message, reason: reason, relocatableCodebaseID: codebaseID)
     }
 
     /// Codebases the app cloned from GitHub — the ones the signed-in account's token reaches.
@@ -62,13 +70,17 @@ final class ProjectStore: ObservableObject {
     }
 
     let baseDir: URL
+    /// Writes generated diagrams, coalescing bursts. Injectable so a test can count writes and
+    /// shorten the debounce.
+    let diagramWriter: DebouncedDiagramWriter
     /// The shared analysis store an artifact is read from and written to — `AnalysisStore.standard`
     /// (`~/.acai/analysis`) in production, shared with the CLI and an MCP session over the same
     /// directory. Injectable so a test's writes never reach the real store.
     let analysisStore: AnalysisStore
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
-    private var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
-    private var artifactsDir: URL { baseDir.appendingPathComponent("artifacts", isDirectory: true) }
+    // Not `private`: `ProjectStore+DiagramFiles.swift`'s extension needs it too — same "not private,
+    // another file's extension needs it too" pattern used throughout this app.
+    var diagramsDir: URL { baseDir.appendingPathComponent("diagrams", isDirectory: true) }
     /// A check whose `rulesPath` resolves inside this directory is "managed" — editable in the
     /// form; any other path is an external file the user referenced.
     var rulesDir: URL { baseDir.appendingPathComponent("rules", isDirectory: true) }
@@ -83,9 +95,16 @@ final class ProjectStore: ObservableObject {
     let activityCenter = ActivityCenter()
     /// Codebases whose cached analysis every window must drop.
     let analysisInvalidations = PassthroughSubject<UUID, Never>()
+    /// Remotes whose hub clone changed on disk (a worktree attached or removed, history deepened),
+    /// which `projects` alone doesn't show since the git work finishes after the store changes.
+    let repositoryChanges = PassthroughSubject<URL, Never>()
 
-    init(baseDir: URL? = nil, analysisStore: AnalysisStore = .standard) {
+    init(
+        baseDir: URL? = nil, analysisStore: AnalysisStore = .standard,
+        diagramWriter: DebouncedDiagramWriter = DebouncedDiagramWriter()
+    ) {
         self.analysisStore = analysisStore
+        self.diagramWriter = diagramWriter
         let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
@@ -111,12 +130,9 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: self.baseDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: projectsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
-        try? fileManager.createDirectory(at: artifactsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
-        try? fileManager.removeItem(at: self.baseDir.appendingPathComponent("recentlyViewed.json"))
-        try? fileManager.removeItem(at: self.baseDir.appendingPathComponent("github-clones", isDirectory: true))
         load()
         let gitStorageSweep = GitStorageSweep(store: self)
         if !gitStorageSweep.isEmpty {
@@ -143,7 +159,7 @@ final class ProjectStore: ObservableObject {
                     for diagramID in project.freeformDiagramIDs {
                         loadFreeformDiagram(diagramID)
                     }
-                    discardPerCodebaseClones(inProjectAt: projects.count - 1)
+                    preindexFixtureCodebases(inProjectAt: projects.count - 1)
                     for codebase in projects[projects.count - 1].codebases where codebase.hasArtifact {
                         loadArtifact(for: codebase.id)
                     }
@@ -154,6 +170,26 @@ final class ProjectStore: ObservableObject {
             }
         } catch {
             report(.app("Error.ProjectStore.LoadProjectDirectory \(error.localizedDescription)"))
+        }
+    }
+
+    /// Indexes the fixture's codebases from a canned artifact at launch, so a journey that needs an
+    /// indexed codebase starts on one instead of tapping Reindex and waiting. Inert outside a UI test:
+    /// `resolvePreindexedArtifactURL()` reads an environment variable a real launch never carries, and
+    /// `lastIndexed` is fixed so the date this puts on screen is the same in every run.
+    private func preindexFixtureCodebases(inProjectAt projectIndex: Int) {
+        guard let artifactURL = UITestFixtureResolver().resolvePreindexedArtifactURL(),
+              let data = try? Data(contentsOf: artifactURL),
+              let artifact = try? JSONDecoder().decode(CodeArtifact.self, from: data)
+        else { return }
+        for index in projects[projectIndex].codebases.indices {
+            let sourcePath = projects[projectIndex].codebases[index].directoryPath.resolvedAsAnalysisSourcePath
+            let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
+            guard (try? analysisStore.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)) != nil
+            else { continue }
+            projects[projectIndex].codebases[index].hasArtifact = true
+            projects[projectIndex].codebases[index].lastIndexed = Date(timeIntervalSince1970: 1_700_000_000)
+            projects[projectIndex].codebases[index].indexedFingerprint = fingerprint
         }
     }
 
@@ -179,51 +215,19 @@ final class ProjectStore: ObservableObject {
         }
     }
 
-    /// Versioned envelope around a persisted `CodeArtifact`. Bumping ``currentArtifactFormat`` makes
-    /// `loadArtifact` treat older stored analyses as stale so the UI offers Reindex. v2 persists the
-    /// semantic (un-flattened) artifact so nesting-depth metrics are correct; v1 stored the
-    /// display-flattened form and read nesting as 0.
-    private struct StoredArtifact: Codable {
-        var formatVersion: Int
-        var artifact: CodeArtifact
-    }
-
-    /// Current on-disk artifact format. A lower version — or a pre-envelope bare `CodeArtifact`
-    /// (fails to decode as ``StoredArtifact``) — is dropped back to "not indexed".
-    private static let currentArtifactFormat = 2
-
+    /// The shared analysis store (`AcaiCore.AnalysisStore`) is the only source of an artifact — the
+    /// CLI and an MCP session over the same directory read and write it too. A codebase with no entry
+    /// there reads as never indexed, so the UI offers Reindex.
     func loadArtifact(for codebaseID: UUID) {
         guard artifacts[codebaseID] == nil else { return }
-
-        // The shared analysis store (`AcaiCore.AnalysisStore`) is the source of truth going
-        // forward — the CLI and an MCP session over the same directory read and write it too.
-        if let sourcePath = resolvedSourcePath(for: codebaseID),
-           case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourcePath) {
-            guard !rejectingUnsupportedSchema(of: entry.artifact, for: codebaseID) else { return }
-            artifacts[codebaseID] = entry.artifact
+        guard let sourcePath = resolvedSourcePath(for: codebaseID),
+              case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourcePath)
+        else {
+            markCodebaseNotIndexed(codebaseID)
             return
         }
-
-        // Predates the shared store: this codebase's private `artifacts/codebase_<UUID>.json`,
-        // migrated into the shared store below so this branch is never taken again for it.
-        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        do {
-            let data = try Data(contentsOf: url)
-            let stored = try JSONDecoder().decode(StoredArtifact.self, from: data)
-            guard stored.formatVersion >= Self.currentArtifactFormat else {
-                markCodebaseNotIndexed(codebaseID)
-                return
-            }
-            guard !rejectingUnsupportedSchema(of: stored.artifact, for: codebaseID) else { return }
-            artifacts[codebaseID] = stored.artifact
-            migrateArtifactToSharedStore(stored.artifact, for: codebaseID)
-        } catch is DecodingError {
-            // Predates the versioned envelope, or a schema change — treat as never indexed so the
-            // UI offers Reindex rather than a decode error the user can't act on.
-            markCodebaseNotIndexed(codebaseID)
-        } catch {
-            report(.app("Error.ProjectStore.LoadStoredAnalysis \(error.localizedDescription)"))
-        }
+        guard !rejectingUnsupportedSchema(of: entry.artifact, for: codebaseID) else { return }
+        artifacts[codebaseID] = entry.artifact
     }
 
     /// `true` when `artifact`'s schema is too new for this build to read — reports the specific
@@ -236,18 +240,6 @@ final class ProjectStore: ObservableObject {
         report(.app("Error.ProjectStore.UnsupportedArtifactSchema \(found) \(expected)"))
         markCodebaseNotIndexed(codebaseID)
         return true
-    }
-
-    /// Writes an artifact loaded from the pre-shared-store `artifacts/` file into the shared store,
-    /// so this codebase's next load finds it there directly. Best-effort and silent: a failure here
-    /// just means the next load migrates it again, since the private file is left untouched.
-    private func migrateArtifactToSharedStore(_ artifact: CodeArtifact, for codebaseID: UUID) {
-        guard let sourcePath = resolvedSourcePath(for: codebaseID) else { return }
-        let store = analysisStore
-        Task.detached(priority: .utility) {
-            let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
-            _ = try? store.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)
-        }
     }
 
     /// The standardized, symlink-resolved absolute path `AnalysisStore` keys entries on, for the
@@ -303,17 +295,6 @@ final class ProjectStore: ObservableObject {
             try encoder.encode(project).write(to: url, options: .atomic)
         } catch {
             report(.app("Error.ProjectStore.SaveProject \(project.title) \(error.localizedDescription)"))
-        }
-    }
-
-    func saveGeneratedDiagram(_ diagram: GeneratedDiagram) {
-        generatedDiagrams[diagram.id] = diagram
-        let encoder = JSONEncoder()
-        let url = diagramsDir.appendingPathComponent("generated_\(diagram.id.uuidString).json")
-        do {
-            try encoder.encode(diagram).write(to: url, options: .atomic)
-        } catch {
-            report(.app("Error.ProjectStore.SaveDiagram \(diagram.name) \(error.localizedDescription)"))
         }
     }
 
@@ -381,8 +362,6 @@ final class ProjectStore: ObservableObject {
     /// store's entry can no longer be found by resolved path.
     func deleteArtifactFile(for codebaseID: UUID, directoryPath: String? = nil) {
         artifacts.removeValue(forKey: codebaseID)
-        let url = artifactsDir.appendingPathComponent("codebase_\(codebaseID.uuidString).json")
-        try? FileManager.default.removeItem(at: url)
         let sourcePath = directoryPath?.resolvedAsAnalysisSourcePath ?? resolvedSourcePath(for: codebaseID)
         if let sourcePath {
             try? analysisStore.removeEntry(forResolvedPath: sourcePath)
@@ -405,16 +384,6 @@ final class ProjectStore: ObservableObject {
         deleteManagedRules(forCodebase: codebaseID)
     }
 
-    /// A managed codebase with no `repository` is one with its own independent clone, a layout the app
-    /// no longer supports. It is discarded rather than migrated.
-    private func discardPerCodebaseClones(inProjectAt projectIndex: Int) {
-        let discarded = projects[projectIndex].codebases.filter { $0.managedCheckout != nil && $0.repository == nil }
-        guard !discarded.isEmpty else { return }
-        for codebase in discarded {
-            deleteCodebaseData(codebase.id, fromProjectAt: projectIndex)
-        }
-        saveProject(projects[projectIndex])
-    }
 }
 
 /// Thrown by `ProjectStore.writeArtifactToDisk` when the codebase an analysis is being saved for

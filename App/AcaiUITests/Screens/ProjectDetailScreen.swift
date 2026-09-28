@@ -8,8 +8,16 @@ final class ProjectDetailScreen {
         self.app = app
     }
 
-    var addCodebaseButton: XCUIElement { app.buttons["projectDetail.addCodebaseButton"] }
-    var addDiagramButton: XCUIElement { app.buttons["projectDetail.addDiagramButton"] }
+    /// An empty project on regular width offers the action twice — once in the toolbar, once in the
+    /// empty state — under two identifiers. Either performs it, so match whichever is on screen.
+    var addCodebaseButton: XCUIElement { eitherPlacement(of: "addCodebaseButton") }
+    var addDiagramButton: XCUIElement { eitherPlacement(of: "addDiagramButton") }
+
+    private func eitherPlacement(of action: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(
+            format: "identifier IN %@", ["projectDetail.\(action)", "projectDetail.emptyState.\(action)"]
+        )).firstMatch
+    }
     var findingsButton: XCUIElement { app.buttons["projectDetail.findingsButton"] }
     var emptyState: XCUIElement { app.descendants(matching: .any)["projectDetail.emptyState"] }
 

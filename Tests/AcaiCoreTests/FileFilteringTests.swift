@@ -20,7 +20,7 @@ private struct SingleFileParser: CodeParser {
     }
 }
 
-@Suite("AnalysisService file filtering")
+@Suite("AnalysisService file filtering", .timeLimit(.minutes(1)))
 struct FileFilteringTests {
 
     private func makeTempDirectory() throws -> URL {

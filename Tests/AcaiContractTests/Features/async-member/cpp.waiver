@@ -1,0 +1,1 @@
+C++ has no async marker; a coroutine is identified by its return type's promise_type, which the declaration does not state.

@@ -46,7 +46,7 @@ private struct DialectBParser: CodeParser {
     }
 }
 
-@Suite("Per-file language routing")
+@Suite("Per-file language routing", .timeLimit(.minutes(1)))
 struct PerFileLanguageRoutingTests {
 
     @Test("each file is enriched with its own detected language's configuration")

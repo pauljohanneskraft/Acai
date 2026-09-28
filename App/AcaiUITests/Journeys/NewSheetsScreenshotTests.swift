@@ -9,30 +9,23 @@ import XCTest
 @MainActor
 final class NewSheetsScreenshotTests: UIJourneyTestCase {
 
-    func testNewProjectSheetScreenshot() throws {
-        let browser = launchSeeded(analysis: .parsed)
-        let sheet = NewProjectSheetScreen(app: app)
-        browser.newProjectButton.tap("New Project", until: sheet.titleField)
+    /// One launch for all three states: creating the project is what produces the empty state, and the
+    /// empty state's own prompt is what opens the codebase sheet, so each capture is a step of the flow
+    /// that leads to the next rather than a launch of its own.
+    func testTheNewProjectAndCodebaseSheetsAndTheEmptyStateBetweenThem() throws {
+        let browser = launchSeeded()
+        let projectSheet = NewProjectSheetScreen(app: app)
+        browser.newProjectButton.tap("New Project", until: projectSheet.titleField)
         validateScreenshot("NewProjectSheet", state: "empty")
-    }
 
-    func testEmptyProjectOffersOneAddPrompt() throws {
-        let browser = launchSeeded(analysis: .parsed)
-        let sheet = NewProjectSheetScreen(app: app)
-        browser.newProjectButton.tap("New Project", until: sheet.titleField)
-        sheet.create(title: "Empty")
-
+        projectSheet.create(title: "Empty")
         let detail = ProjectDetailScreen(app: app)
         detail.emptyState.waitOrFail("the empty project's add prompt")
         validateScreenshot("ProjectDetail", state: "empty")
-    }
 
-    func testNewCodebaseSheetLocalTabScreenshot() throws {
-        let detail = openSeededProject(analysis: .parsed)
-        detail.tapAddCodebase()
-
-        let sheet = NewCodebaseSheetScreen(app: app)
-        sheet.localNameField.waitOrFail("the new codebase sheet's name field")
+        detail.addCodebaseButton.tapWhenReady("the empty project's Add Codebase prompt")
+        let codebaseSheet = NewCodebaseSheetScreen(app: app)
+        codebaseSheet.localNameField.waitOrFail("the new codebase sheet's name field")
         validateScreenshot("NewCodebaseSheet", state: "localTabEmpty")
     }
 }

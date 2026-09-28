@@ -4,7 +4,7 @@ import Testing
 
 // Fixture helper shells out to real `git` via `Process`, unavailable on iOS.
 #if os(macOS)
-@Suite("Local-folder git detection")
+@Suite("Local-folder git detection", .timeLimit(.minutes(1)))
 struct LocalGitRepositoryDetectorTests {
     @Test func plainNonGitFolderDetectsNothing() throws {
         let dir = try makeTempDirectory()

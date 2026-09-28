@@ -1,0 +1,13 @@
+{
+  "types": [
+    {
+      "name": "Box",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        { "name": "get", "role": "method", "access": "+", "type": "#primitive", "reads": ["value"] },
+        { "name": "value", "role": "property", "access": "+", "type": "#primitive" }
+      ]
+    }
+  ]
+}

@@ -47,15 +47,16 @@ struct FindingsAggregator {
         results.append(contentsOf: violationFindings(analysis.quality, codebase: codebase, artifact: artifact))
         results.append(contentsOf: deadCodeFindings(analysis.deadCode, codebase: codebase, artifact: artifact))
         results.append(contentsOf: healthFindings(analysis.health, codebase: codebase))
-        return results
+        // Two reports of the very same breach are one finding.
+        return results.removingDuplicates(by: \.id)
     }
 
     private func violationFindings(
         _ report: QualityReport, codebase: Codebase, artifact: CodeArtifact?
     ) -> [Finding] {
-        report.violations.enumerated().map { offset, violation in
+        report.violations.map { violation in
             Finding(
-                id: "violation-\(codebase.id)-\(violation.ruleKind)-\(violation.subject)-\(offset)",
+                id: "violation-\(codebase.id)-\(violation.findingIdentity)",
                 kind: .violation,
                 // A dependency cycle is a structural problem, not just a style nit — ranked above
                 // an ordinary rule breach (e.g. a budget or naming-convention violation).
@@ -98,9 +99,11 @@ struct FindingsAggregator {
     }
 
     private func healthFindings(_ report: HealthCheck.Report, codebase: Codebase) -> [Finding] {
-        report.diagnostics.enumerated().map { offset, diagnostic in
-            Finding(
-                id: "health-\(codebase.id)-\(diagnostic.location.filePath)-\(diagnostic.location.line)-\(offset)",
+        report.diagnostics.map { diagnostic in
+            let location = diagnostic.location
+            return Finding(
+                id: "health-\(codebase.id)-\(location.filePath)-\(location.line)-\(location.column)"
+                    + "-\(diagnostic.kind.rawValue)-\(diagnostic.message)",
                 kind: .health,
                 severity: diagnostic.kind == .error ? .critical : .warning,
                 codebaseID: codebase.id,

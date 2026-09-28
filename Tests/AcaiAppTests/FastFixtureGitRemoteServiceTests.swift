@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("FastFixtureGitRemoteService")
+@Suite("FastFixtureGitRemoteService", .timeLimit(.minutes(1)))
 struct FastFixtureGitRemoteServiceTests {
     private func makeTempDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -22,7 +22,8 @@ struct FastFixtureGitRemoteServiceTests {
             }
             sourceDirectoriesByRef[ref] = refDirectory
         }
-        return FastFixtureGitRemoteService(sourceDirectoriesByRef: sourceDirectoriesByRef)
+        return FastFixtureGitRemoteService(
+            sourceDirectoriesByRef: sourceDirectoriesByRef, clones: FastFixtureCloneLog())
     }
 
     private let endpoint = RemoteEndpoint(
@@ -92,6 +93,32 @@ struct FastFixtureGitRemoteServiceTests {
         let resyncSHA = try await service.resyncWorktree(target("feature"), destination: destination)
         #expect(FileManager.default.fileExists(atPath: worktree.appendingPathComponent("Extra.swift").path))
         #expect(attachSHA != resyncSHA)
+    }
+
+    @Test("A latest-snapshot attach reports shallow, and its worktree, until full history is fetched")
+    func recordsDepthAndWorktreesOfWhatItCloned() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = try makeService(root: root, refs: ["main": ["A.swift": "class A {}"]])
+        let destination = makeDestination(root: root)
+        let hub = destination.hubStoreDirectory
+
+        let before = await service.inspectClone(endpoint, hubStoreDirectory: hub)
+        #expect(before == .absent)
+
+        var target = target("main")
+        target.depth = .latestSnapshot
+        try await service.attachWorktree(target, destination: destination)
+
+        let shallow = await service.inspectClone(endpoint, hubStoreDirectory: hub)
+        #expect(shallow.isCloned)
+        #expect(shallow.isShallow)
+        #expect(shallow.worktreeNames == ["codebase-1"])
+
+        try await service.fetchFullHistory(endpoint, hubStoreDirectory: hub, locks: destination.locks)
+        let deepened = await service.inspectClone(endpoint, hubStoreDirectory: hub)
+        #expect(deepened.isCloned)
+        #expect(!deepened.isShallow)
     }
 
     @Test("Listing reports exactly the staged refs, and attachWorktree throws for an unstaged ref")

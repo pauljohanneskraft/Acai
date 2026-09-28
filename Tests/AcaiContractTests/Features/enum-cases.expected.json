@@ -1,0 +1,10 @@
+{
+  "types": [
+    {
+      "name": "Genre",
+      "kind": "enumeration",
+      "access": "+",
+      "enumCases": ["pop", "rock"]
+    }
+  ]
+}

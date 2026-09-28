@@ -35,19 +35,15 @@ struct ParserGoldenTests {
     @Test("parsed artifact matches its checked-in golden", arguments: fixtures)
     func matchesGolden(fixture: ParserGoldenCorpus.Fixture) throws {
         let corpus = ParserGoldenCorpus()
-        let artifact = fixture.parser.parse(
-            source: try corpus.source(of: fixture), fileName: fixture.fileName
-        )
-        let snapshot = try CodeArtifactSnapshot(artifact: artifact).json()
+        let snapshot = try CodeArtifactSnapshot(artifact: try corpus.artifact(of: fixture)).json()
 
         guard !corpus.isRecording else {
             try corpus.record(snapshot, for: fixture)
             return
         }
 
-        let golden = try corpus.golden(of: fixture)
         #expect(
-            snapshot == golden,
+            snapshot == (try corpus.golden(of: fixture)),
             """
             \(fixture.fileName) parsed differently than its golden.
             Read the diff before re-recording — see this suite's documentation.

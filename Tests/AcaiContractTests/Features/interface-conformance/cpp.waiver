@@ -1,0 +1,1 @@
+C++ has no interface declaration; the idiom is a class whose members are all pure virtual, which the engine models as an abstract class plus an inheritance edge, not an interface plus a conformance edge.

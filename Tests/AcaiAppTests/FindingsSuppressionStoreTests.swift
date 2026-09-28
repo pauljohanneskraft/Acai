@@ -5,7 +5,7 @@ import Testing
 /// `FindingsSuppressionStore`/`FindingsSuppressionBaseline`: the plain, diffable,
 /// git-reviewable file a "Suppress" action writes to, kept deliberately separate from
 /// `ProjectStore` itself (see the type's own doc comment).
-@Suite("Findings Suppression Store")
+@Suite("Findings Suppression Store", .timeLimit(.minutes(1)))
 struct FindingsSuppressionStoreTests {
     private func makeTempStore() -> FindingsSuppressionStore {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

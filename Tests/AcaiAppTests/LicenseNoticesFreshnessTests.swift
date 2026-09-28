@@ -8,7 +8,7 @@ import Testing
 /// that no longer matches what ships. This compares the two directly — bypassing `LicenseCatalog`'s
 /// bundle lookup, the same way `LocalizationCatalogTests` reads its catalog straight off disk — so
 /// staleness fails a test rather than only showing up as a legal problem later.
-@Suite("License notices freshness")
+@Suite("License notices freshness", .timeLimit(.minutes(1)))
 struct LicenseNoticesFreshnessTests {
 
     private let repoRoot = URL(fileURLWithPath: #filePath)
