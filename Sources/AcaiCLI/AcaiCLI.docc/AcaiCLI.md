@@ -262,7 +262,6 @@ Render DOT anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`.
 > `light` — accepted, hidden from `--help`, and due for removal in a later major release. The `theme:`
 > key in a `--config` file takes either spelling too.
 
-
 ### `image`
 
 > Render a class diagram to a PNG image (**macOS only**).
