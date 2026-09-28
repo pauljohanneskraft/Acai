@@ -1,7 +1,7 @@
 classDiagram
     class Library["Library"] {
         +playlists List~Playlist~
-        +Library()
+        +Library(playlists List)
         +addPlaylist(playlist Playlist) void
         +playlist(named String) Playlist
     }
@@ -9,7 +9,7 @@ classDiagram
         +title String
         +duration double
         +genre Genre
-        +MediaItem(title, duration, genre)
+        +MediaItem(title String, duration double, genre Genre)
         +play() void
     }
     class Playable["Playable"] {
@@ -29,7 +29,7 @@ classDiagram
     class Player["Player"] {
         +library Library
         +nowPlaying Playable?
-        +Player(library)
+        +Player(library Library)
         +play(item Playable) void
         +playFirstItem(playlistNamed String) void
     }
@@ -37,19 +37,19 @@ classDiagram
         +name String
         +items List~MediaItem~
         +totalDuration double
-        +Playlist(name)
+        +Playlist(name String, items List)
         +add(item MediaItem) void
     }
     class Podcast["Podcast"] {
         +host String
         +episodeNumber int
-        +Podcast(title String, duration double, host, episodeNumber)
+        +Podcast(title String, duration double, host String, episodeNumber int)
         +play() void
     }
     class Song["Song"] {
         +artist String
         +album String?
-        +Song(title String, duration double, genre Genre, artist)
+        +Song(title String, duration double, genre Genre, artist String, album String?)
         +play() void
     }
     Playable <|.. MediaItem

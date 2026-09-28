@@ -22,6 +22,10 @@ struct ParserGoldenCorpus {
         directory = URL(fileURLWithPath: "\(testFile)").deletingLastPathComponent()
     }
 
+    func artifact(of fixture: Fixture) throws -> CodeArtifact {
+        fixture.parser.parse(source: try source(of: fixture), fileName: fixture.fileName)
+    }
+
     func source(of fixture: Fixture) throws -> String {
         try String(
             contentsOf: directory.appendingPathComponent("Fixtures").appendingPathComponent(fixture.fileName),

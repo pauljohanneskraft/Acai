@@ -1,0 +1,1 @@
+C has no abstract type; a struct is always concrete and instantiable.

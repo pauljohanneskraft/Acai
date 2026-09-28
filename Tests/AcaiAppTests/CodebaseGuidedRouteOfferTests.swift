@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-@Suite("Codebase guided route offer")
+@Suite("Codebase guided route offer", .timeLimit(.minutes(1)))
 @MainActor
 struct CodebaseGuidedRouteOfferTests {
     @Test func legacyCodebaseWithoutTheFieldDecodesAsNeverOffered() throws {

@@ -77,6 +77,25 @@ struct PackageDeltaExporter {
     }
 }
 
+/// The coupling view's delta. Shares `PackageDiagramDiff` with `PackageDeltaExporter` — the two
+/// render the same model, so only the renderer pair differs.
+struct ModuleCouplingDeltaExporter {
+    func render(old: CodeArtifact, new: CodeArtifact, format: DiagramFormat) -> String {
+        let request = PackageDiagramRequest()
+        let diff = PackageDiagramDiff(
+            old: request.build(from: old, languages: old.standardLanguageResolver),
+            new: request.build(from: new, languages: new.standardLanguageResolver))
+        let nodeColor: @Sendable (String) -> String? = { diff.status(ofNode: $0).deltaHex }
+        let edgeColor: @Sendable (String, String) -> String? = { diff.status(ofEdgeFrom: $0, to: $1).deltaHex }
+        switch format {
+        case .dot:
+            return ModuleCouplingDOTRenderer(nodeColor: nodeColor, edgeColor: edgeColor).render(diff.union)
+        case .mermaid:
+            return ModuleCouplingMermaidRenderer(nodeColor: nodeColor, edgeColor: edgeColor).render(diff.union)
+        }
+    }
+}
+
 struct CallGraphDeltaExporter {
     let request: CallGraphRequest
 

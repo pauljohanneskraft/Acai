@@ -94,9 +94,10 @@ struct Finding: Identifiable, Hashable {
         }
     }
 
-    /// Stable across app launches for a given codebase state — used both as `Identifiable`'s `id`
-    /// and, once suppressed, as the baseline's key. Not stable across a code edit that shifts
-    /// the flagged line (the same limitation SwiftLint's own baseline file has).
+    /// Derived from the finding's own identity, never from its position in a report, so it is the
+    /// same across launches and reindexes — used both as `Identifiable`'s `id` and, once suppressed,
+    /// as the baseline's key. Not stable across a code edit that shifts the flagged line (the same
+    /// limitation SwiftLint's own baseline file has).
     let id: String
     let kind: Kind
     let severity: Severity

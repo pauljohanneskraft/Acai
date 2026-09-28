@@ -3,7 +3,7 @@ import Testing
 @testable import AcaiApp
 @testable import AcaiCore
 
-@Suite("Diagram export via system actions")
+@Suite("Diagram export via system actions", .timeLimit(.minutes(1)))
 @MainActor
 struct DiagramExporterTests {
     private func makeIndexedModel() -> (ProjectBrowserViewModel, projectID: UUID, codebaseID: UUID) {

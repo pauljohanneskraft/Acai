@@ -5,7 +5,7 @@ import Testing
 
 /// `FreeformDiagramViewModel`'s checkpoint methods: save/restore/delete round-trip through the
 /// real `ProjectStore`, and restoring is a single undoable step.
-@Suite("Freeform Diagram Checkpoints (view model)")
+@Suite("Freeform Diagram Checkpoints (view model)", .timeLimit(.minutes(1)))
 @MainActor
 struct FreeformDiagramViewModelCheckpointTests {
 

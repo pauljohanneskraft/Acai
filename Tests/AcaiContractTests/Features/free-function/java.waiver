@@ -1,0 +1,1 @@
+Java has no top-level function; every method belongs to a class, so the closest form is a static method on a holder type.

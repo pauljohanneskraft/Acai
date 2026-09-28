@@ -2,6 +2,12 @@ included:
   - Sources
   - Tests
 
+# Parser input, not code: these `.swift` files are read as text and fed to `SwiftCodeParser`, so they
+# are written to exercise the extractor rather than to satisfy the style rules.
+excluded:
+  - Tests/AcaiParserGoldenTests/Fixtures
+  - Tests/AcaiContractTests/Features
+
 disabled_rules:
   - todo
   - blanket_disable_command

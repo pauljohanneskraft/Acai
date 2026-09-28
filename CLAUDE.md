@@ -99,11 +99,14 @@ failure (generic frame, specific detail in a disclosure). Destructive actions ge
 naming the item and its specific consequence, plus "This cannot be undone" — unless a discoverable
 undo exists, in which case say so instead of demanding a modal.
 
-**Persistence.** Every shipped `Codable` model is a migration constraint: a new field must decode
-from already-persisted data lacking it, and a removed one is decoded-and-discarded for a release
-rather than dropped. Writes are atomic. Multi-step operations complete into a staging form and swap
-in only on full success — a partial failure leaves what was there untouched. Every export/import
-format carries a version marker from day one.
+**Persistence.** Persisted state that no longer decodes is **dropped, not migrated**: the codebase
+carries no compatibility shims for earlier on-disk shapes, and a store that can't read what it finds
+falls back to "not indexed" so the UI offers Reindex. Don't add a decode path, a legacy coding key or
+a snapshot corpus for a format the app no longer writes. A field that is merely optional today
+(`scopes` on a stored GitHub account) is optional because the *current* data can lack it, not for
+compatibility. Writes are atomic. Multi-step operations complete into a staging form and swap in only
+on full success — a partial failure leaves what was there untouched. Every export/import format
+carries a version marker from day one.
 
 **Security.** Secrets live in Keychain, never in `UserDefaults`, a plain file, or persisted app
 state, and are never logged or placed in a URL. Any path or archive entry built from external input
@@ -248,6 +251,22 @@ retries**: a journey that fails intermittently has a real defect — in the app 
 the fix is to find it, never to re-run, add a retry, raise a timeout or widen a screenshot threshold.
 Every past "flake" here had a concrete cause: a dropped navigation in the app, a tap on an unsettled
 control, a retried action that created a duplicate, a stale golden, an unpinned status bar.
+
+CI splits each iOS device's journeys across `UI_TEST_SHARDS` jobs, from a list the build job enumerates
+once off the built bundle (`Scripts/ui_test_shard.sh`), so a new journey needs no registration — and
+may run in any shard, beside any other journey, so it can never rely on another having run first. A
+pull request skips journeys only when `Scripts/ci_needs_journeys.sh` finds every changed path outside
+what they exercise; keep that list to paths a journey provably can't reach.
+
+**A journey is a budgeted resource, not a free addition.** `JourneyBudgetTests` caps how many exist,
+because each one costs its own launch on three platforms and a shard's wall clock is dominated by
+launches rather than by the behaviour under test. Adding one means proving something in a unit test and
+deleting a journey, or folding the new steps into a journey that already reaches that screen; raising
+the budget needs a reason in the commit that raises it. What earns a journey is wiring (a tap reaches
+its action), presentation (sheets, alerts, focus, navigation), platform integration (Quick Look, the
+share sheet, file pickers) and screenshots — not logic, which belongs in the lowest layer that owns it.
+Real indexing, cloning, git history and PNG rendering each stay in exactly **one** named journey; every
+other journey uses the canned fixtures and instant fakes behind `UITestFixtureResolver`.
 
 **Structure.** Subclass `UIJourneyTestCase`. Start from the fixture helpers in
 `Support/SeededFixture.swift` (`openSeededCodebase`, `openIndexedSeededCodebase`, …) instead of

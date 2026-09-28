@@ -99,6 +99,7 @@ extension DartExtractor {
         }
         attachCallSites(pendingBodies, to: &members)
         markBodylessMethodsAbstract(&members, bodiedIndices: Set(pendingBodies.map(\.index)))
+        resolveFieldFormalParameterTypes(in: &members)
     }
 
     /// Handles `declaration` nodes inside class bodies: `[modifiers] [type] [nullable_type?]
@@ -239,6 +240,25 @@ extension DartExtractor {
             && !bodiedIndices.contains(index)
             && !members[index].modifiers.contains(.abstract) {
             members[index].modifiers.append(.abstract)
+        }
+    }
+
+    /// Fills in each untyped constructor parameter's type from the same-named stored property: a
+    /// field formal parameter (`this.artist`) states no type of its own, and the field it initialises
+    /// may be declared after the constructor.
+    private func resolveFieldFormalParameterTypes(in members: inout [Member]) {
+        let propertyTypes = members.reduce(into: [String: TypeReference]()) { types, member in
+            guard member.isStoredProperty, let type = member.type else { return }
+            types[member.name] = type
+        }
+        guard !propertyTypes.isEmpty else { return }
+        for index in members.indices where members[index].kind == .initializer {
+            for parameterIndex in members[index].parameters.indices {
+                guard members[index].parameters[parameterIndex].type == nil,
+                      let type = propertyTypes[members[index].parameters[parameterIndex].internalName]
+                else { continue }
+                members[index].parameters[parameterIndex].type = type
+            }
         }
     }
 }

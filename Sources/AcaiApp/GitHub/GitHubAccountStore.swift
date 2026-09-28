@@ -11,12 +11,13 @@ final class GitHubAccountStore: ObservableObject {
     @Published private(set) var account: GitHubTokenStore.StoredAccount?
     @Published private(set) var isRefreshingScopes = false
 
-    private let tokenStore = GitHubTokenStore()
+    private let tokenStore: GitHubTokenStore
     private let service: GitHubAccountService
 
-    init(service: GitHubAccountService? = nil) {
+    init(service: GitHubAccountService? = nil, tokenStore: GitHubTokenStore = GitHubTokenStore()) {
         self.service = service ?? (UITestFixtureResolver().resolveBaseDir() != nil
             ? FixtureGitHubAccountService() : LiveGitHubAccountService())
+        self.tokenStore = tokenStore
         self.account = tokenStore.load()
     }
 

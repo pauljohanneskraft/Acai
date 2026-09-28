@@ -1,0 +1,16 @@
+{
+  "types": [
+    {
+      "name": "Box",
+      "kind": "class",
+      "access": "+",
+      "generics": ["Element"],
+      "members": [
+        { "name": "put", "role": "method", "access": "+", "type": "#primitive", "parameters": ["item: Element"] }
+      ]
+    }
+  ],
+  "relationships": [
+    { "kind": "dependency", "source": "Box", "target": "Element" }
+  ]
+}

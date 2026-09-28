@@ -1,0 +1,1 @@
+JavaScript carries no parameter-type annotation, so a constructor's parameter types cannot be compared.

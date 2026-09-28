@@ -45,10 +45,6 @@ extension Codebase {
         case guidedRoute, analysedRevision
     }
 
-    private enum LegacyCodingKeys: String, CodingKey {
-        case githubSource
-    }
-
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
@@ -67,13 +63,6 @@ extension Codebase {
         repository = try container.decodeIfPresent(CodebaseRepositoryReference.self, forKey: .repository)
         guidedRoute = try container.decodeIfPresent(GuidedRouteOffer.self, forKey: .guidedRoute)
         analysedRevision = try container.decodeIfPresent(String.self, forKey: .analysedRevision)
-
-        // Without a `repository` it had its own per-codebase clone, which `ProjectStore` discards.
-        let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
-        if managedCheckout == nil,
-           let source = try? legacy.decodeIfPresent(LegacyGitHubSource.self, forKey: .githubSource) {
-            managedCheckout = source.managedCheckout
-        }
     }
 }
 
