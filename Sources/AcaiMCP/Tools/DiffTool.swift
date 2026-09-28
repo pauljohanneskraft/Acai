@@ -41,10 +41,12 @@ struct DiffTool: AnalysisTool {
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let languages = arguments.stringArray("languages")
         let refresh = try arguments.bool("refresh") ?? false
-        let old = try generatedScoped(try await cache.artifact(
-            path: try arguments.requiredString("pathOld"), languageNames: languages, refresh: refresh), arguments)
-        let new = try generatedScoped(try await cache.artifact(
-            path: try arguments.requiredString("pathNew"), languageNames: languages, refresh: refresh), arguments)
+        let oldPath = try arguments.requiredString("pathOld")
+        let newPath = try arguments.requiredString("pathNew")
+        let old = try generatedScoped(
+            await cache.artifact(path: oldPath, languageNames: languages, refresh: refresh), arguments)
+        let new = try generatedScoped(
+            await cache.artifact(path: newPath, languageNames: languages, refresh: refresh), arguments)
         let diff = ArtifactDiffer().diff(old: old, new: new)
         let health = HealthCheck(artifact: old).summary.combined(with: HealthCheck(artifact: new).summary)
         return .json(try Value(Payload(diff: diff, health: health)))

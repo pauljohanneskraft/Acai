@@ -33,12 +33,12 @@ extension AnalysisTool {
     func analysisArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache
     ) async throws -> CodeArtifact {
-        try generatedScoped(try await resolveArtifact(arguments, cache), arguments)
+        let artifact = try await resolveArtifact(arguments, cache)
+        return try generatedScoped(artifact, arguments)
     }
 
-    /// The `includeGenerated` semantic on an artifact the tool resolved itself — `DiffTool` loads two
-    /// sides, and filters each through here so a generated type is never reported as added or removed
-    /// by the filtering itself.
+    /// The `includeGenerated` semantic on an already-resolved artifact, so a tool loading more than
+    /// one side (`DiffTool`) filters each of them identically.
     func generatedScoped(_ artifact: CodeArtifact, _ arguments: ToolArguments) throws -> CodeArtifact {
         let include = try arguments.bool("includeGenerated") ?? false
         return include ? artifact : artifact.filteringGeneratedTypes(using: artifact.standardLanguageResolver)
