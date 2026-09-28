@@ -30,7 +30,8 @@ the default path for the interactive audit. Call **`acai_analyze <path>` with `h
   nesting, god classes) — each finding carries a `file:line` and a fix hint. Pass a `rules:` path to
   gate a `quality.yml` (forbidden deps, layering, cycles, budgets, stereotype contracts). Set
   `explore: true` (with `scope: modules|types|all`) to also list dependency cycles and never fail.
-  Pass `baseline:` (a source dir or a `.json` artifact, resolved like `acai_diff`'s `pathOld`) to
+  Pass `baseline:` (a `.json` snapshot written before the edit, or a different checkout's source dir —
+  a directory is analyzed as it is now) to
   evaluate the rules' `movements` and add the structural `drift` since that snapshot — this is the
   **verify** step of the loop below.
 - **`acai_inspect`** — enumerate types **and** members filtered by a type selector (`kind`, `module`,
@@ -77,10 +78,12 @@ Capture a baseline → read the *specific* files the tool flags → make a bound
 audit and assert the metric moved the right way (and no new cycles / budget breaches). Cross-check
 metric outliers against the diagrams before acting.
 
-**Verify deterministically, don't eyeball two reports.** Before editing, snapshot the tree the
-baseline side can be read from: `acai store` on the CLI, or copy the `.json` an `acai analyze
---format json` run wrote. Then state the movement you intend in the rules file and let the tool
-judge it:
+**Verify deterministically, don't eyeball two reports.** Before editing, write a snapshot outside
+the analyzed tree: `acai analyze --source . --include-generated --output <tmp>/baseline.json`.
+Pass that `.json` as `baseline:` — not the project directory, which is analyzed as it is *now* and
+so is rejected as its own baseline, and not an `acai store` entry, which `baseline:` can't resolve
+and the next MCP re-analysis overwrites. Then state the movement you intend in the rules file and
+let the tool judge it:
 
 ```yaml
 movements:
@@ -89,7 +92,7 @@ movements:
     minImprovement: 2
 ```
 
-After the fix, call `acai_quality` with `rules:` and `baseline:` set to that snapshot. A movement
+After the fix, call `acai_quality` with `rules:` and `baseline:` set to that `.json`. A movement
 that fell short — or an outright regression, including a *hidden* one on another metric of the same
 target — comes back in `quality.violations` with `ruleKind: "movement"` and a `detail` of
 `metric` / `before` / `after`, so you branch on structured fields rather than on prose. `drift`

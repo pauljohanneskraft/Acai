@@ -97,8 +97,6 @@ struct ParityToolsTests {
         }
     }
 
-    /// A rules file declaring a movement is only meaningful against a baseline, so the tool refuses
-    /// the call rather than passing on a check it never ran — the CLI's `--baseline` refusal.
     @Test func qualityRejectsMovementsWithoutABaseline() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
@@ -107,14 +105,11 @@ struct ParityToolsTests {
                 _ = try await MCPTestSupport.call(
                     "acai_quality", on: MCPTestSupport.testRegistry, path: dir, ["rules": .string(rules.path)])
             }
-            // A rules file this tool cannot read is also `invalidParams`, so the refusal has to be
-            // told apart by what it says, not merely by something having been thrown.
+            // An unreadable rules file also throws `invalidParams`.
             #expect("\(try #require(error))".contains("'baseline'"))
         }
     }
 
-    /// Without a baseline there is no drift to report, and the key stays out of the payload entirely —
-    /// so a caller can tell a plain gate run from a drift run by its presence alone.
     @Test func qualityWithoutABaselineOmitsDrift() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
@@ -126,9 +121,6 @@ struct ParityToolsTests {
         }
     }
 
-    /// The verify half of the audit loop: the same tree plus one extra collaborator raises `Service`'s
-    /// `fanOut`, which the movement rule says must not get worse. The violation has to carry the
-    /// before/after numbers in `detail`, so an agent branches on structure rather than on prose.
     @Test func qualityWithABaselineReportsAMovementInTheWrongDirection() async throws {
         try await MCPTestSupport.withTempDirectory { baseline in
             try await MCPTestSupport.withTempDirectory { head in
@@ -156,8 +148,19 @@ struct ParityToolsTests {
         }
     }
 
-    /// A baseline is resolved exactly like `acai_diff`'s `pathOld`, so a stored `.json` artifact works
-    /// in place of a directory.
+    @Test func qualityRejectsTheAnalyzedPathAsItsOwnBaseline() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let rules = try movementRules(in: dir)
+            let error = await #expect(throws: MCPError.self) {
+                _ = try await MCPTestSupport.call(
+                    "acai_quality", on: MCPTestSupport.testRegistry, path: dir,
+                    ["rules": .string(rules.path), "baseline": .string(dir.path + "/.")])
+            }
+            #expect("\(try #require(error))".contains("the analyzed path itself"))
+        }
+    }
+
     @Test func qualityAcceptsAJSONArtifactAsTheBaseline() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)
@@ -176,7 +179,7 @@ struct ParityToolsTests {
         }
     }
 
-    /// `minImprovement` omitted means "must not get worse", which is what the regression above trips.
+    /// No `minImprovement`: the metric must not get worse.
     private func movementRules(in directory: URL) throws -> URL {
         let url = directory.appendingPathComponent("quality.yml")
         try """
@@ -187,7 +190,6 @@ struct ParityToolsTests {
         return url
     }
 
-    /// Gives `Service` a second collaborator, raising its `fanOut` by one.
     private func addCollaborator(to directory: URL) throws {
         try """
         class Logger {

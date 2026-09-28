@@ -35,9 +35,10 @@ struct QualityTool: AnalysisTool {
             "baseline": [
                 "type": "string",
                 "description": .string(
-                    "Snapshot to compare against — a source directory or a .json artifact, resolved like"
-                    + " acai_diff's pathOld. Evaluates the rules' 'movements' and adds the structural drift"
-                    + " since it. Required when the rules declare any movement.")
+                    "Snapshot to compare against — a .json artifact written before the edit, or a different"
+                    + " checkout's source directory (a directory is analyzed as it is now, so it can't be"
+                    + " 'path'). Evaluates the rules' 'movements' and adds the structural drift since it."
+                    + " Required when the rules declare any movement.")
             ]
         ])
     }
@@ -62,16 +63,12 @@ struct QualityTool: AnalysisTool {
         return .json(try Value(payload))
     }
 
-    /// `drift` is omitted entirely from the JSON when no `baseline` was given, so a caller can tell a
-    /// gate run from a drift run by the key's presence — the shape `acai quality --format json` emits.
     private struct Payload: Codable {
         var quality: QualityReport
         var drift: ArtifactDiff?
         var health: HealthCheck.Summary
     }
 
-    /// Mirrors the CLI's refusal to silently skip declared movements: without a baseline there is
-    /// nothing to measure them against, so the rules file would pass on a check it never ran.
     private func baselineArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache, rules: QualityRules
     ) async throws -> CodeArtifact? {
@@ -82,6 +79,12 @@ struct QualityTool: AnalysisTool {
                     + " 'baseline' to evaluate.")
             }
             return nil
+        }
+        guard cache.resolvedURL(for: path) != cache.resolvedURL(for: try arguments.requiredString("path")) else {
+            throw MCPError.invalidParams(
+                "'baseline' is the analyzed path itself, so it would be compared with its own current state."
+                + " A directory baseline is analyzed as it is now: pass a .json snapshot written before the"
+                + " edit (acai analyze --source <dir> --output <file>.json) or a different checkout.")
         }
         return try await cache.artifact(
             path: path,

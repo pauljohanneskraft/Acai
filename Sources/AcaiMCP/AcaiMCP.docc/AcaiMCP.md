@@ -159,7 +159,7 @@ Check against a declarative rules file: forbidden dependencies, cycles, layering
 | `rules` | string | Path to the YAML rules file. Omit for the built-in smell budgets. |
 | `explore` | boolean | Rank findings and additionally list dependency cycles, with no pass/fail gate. |
 | `scope` | `modules` \| `types` \| `all` | Cycle scope in explore mode. Default `all`. |
-| `baseline` | string | Snapshot to compare against: a source directory or a `.json` artifact, resolved exactly like `acai_diff`'s `pathOld`. |
+| `baseline` | string | Snapshot to compare against: a `.json` artifact or a source directory, resolved exactly like `acai_diff`'s `pathOld`. A directory is analyzed as it is *now*, so it must be a different checkout (an old worktree, say); for the same tree, pass a `.json` written before the edit. `baseline` equal to `path` is rejected with `invalidParams`. |
 
 Cycle findings are appended only when `explore` is set *and* the rules file doesn't already own the cycle check. The rules-file schema is documented under [AcaiCLI](/documentation/acaicli/).
 
@@ -180,7 +180,7 @@ A movement in the wrong direction lands in `quality.violations` as an ordinary v
   "detail": { "metric": "fanOut", "before": "3", "after": "5" } }
 ```
 
-This closes the audit loop — measure, fix, re-run with the previous snapshot as `baseline`, and read the verdict — without shelling out to the CLI.
+This closes the audit loop — snapshot with `acai analyze --source <dir> --include-generated --output <file>.json` (outside the analyzed tree), fix, re-run with that `.json` as `baseline`, and read the verdict. The project directory itself can't serve as the previous snapshot: a directory baseline is analyzed as it is now, so it has to be a `.json` written before the edit or a different checkout.
 
 Result shape: `{ "quality": <QualityReport>, "drift": <ArtifactDiff>?, "health": <HealthCheck.Summary> }`.
 `drift` is the same structural delta `acai_diff` returns, present only when `baseline` was given — so the
@@ -329,7 +329,7 @@ The loop is *measurement narrows → reading confirms → editing fixes → re-r
 2. `acai_analyze` once to index; every other call reuses that snapshot.
 3. `acai_metrics` to rank outliers, `acai_quality` for verdicts.
 4. `acai_inspect` / `acai_callgraph` / `acai_dependents` to localise — and the diagram tools to cross-check the numbers against visual gestalt.
-5. Open the *specific* flagged files, make a bounded fix, re-run, and assert the metric actually moved and no new cycle appeared — `acai_quality` with `baseline` set to the pre-fix snapshot makes that assertion for you.
+5. Open the *specific* flagged files, make a bounded fix, re-run, and assert the metric actually moved and no new cycle appeared — `acai_quality` with `baseline` set to a pre-fix `.json` snapshot makes that assertion for you.
 
 The skill is explicit that the tool measures and you judge: a data-model core legitimately has high fan-in, and a metric is a question, not a defect.
 
@@ -344,7 +344,7 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 | Tool | Divergence |
 | --- | --- |
 | `acai_analyze` | Returns a compact summary, not the full model. `health: true` does mirror `acai analyze --health`. |
-| `acai_quality` | Never exits non-zero — it can't gate CI. `baseline` accepts a directory or `.json` artifact, where `--baseline` also takes a stored analysis *name*. |
+| `acai_quality` | Never exits non-zero — it can't gate CI. `baseline: <dir>` analyzes that directory's *current* contents, so it must be a different checkout or a `.json` written before the edit; `--baseline <dir>` instead reads that directory's *stored* analysis, and also accepts a stored analysis name. |
 | `acai_metrics` | No `--sort` / `--top`; rank client-side. JSON only. |
 | `acai_callgraph` | No `--top`, no `--no-fail`. JSON only. |
 | `acai_diff` | Both sides must be filesystem paths. No delta-diagram rendering. |
