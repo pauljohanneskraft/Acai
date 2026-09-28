@@ -42,7 +42,7 @@ struct ProjectDetailView: View {
                                 Label(.app("View.ProjectDetailView.AddCodebase"), systemImage: "folder.badge.plus")
                             }
                             .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                            addDiagramButton
+                            addDiagramButton()
                             Divider()
                             findingsButton
                         } label: {
@@ -61,7 +61,7 @@ struct ProjectDetailView: View {
                             Label(.app("View.ProjectDetailView.AddCodebase"), systemImage: "folder.badge.plus")
                         }
                         .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                        addDiagramButton
+                        addDiagramButton()
                         findingsButton
                     }
                 }
@@ -328,7 +328,7 @@ struct ProjectDetailView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("projectDetail.addCodebaseButton")
-                addDiagramButton
+                addDiagramButton()
             }
             findingsButton
                 .buttonStyle(.bordered)

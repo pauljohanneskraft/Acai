@@ -54,9 +54,12 @@ final class CodebaseDetailScreen {
     ) {
         guard !button.exists else { return }
         // Anchored on the class card — the grid's first, always built — so this never picks the
-        // sidebar's list, as `app.scrollViews.firstMatch` would on macOS.
-        let scrollView = app.scrollViews
+        // sidebar's list, as `app.scrollViews.firstMatch` would on macOS. At the largest
+        // accessibility text sizes the header alone fills the column and even that card starts
+        // below the built range, leaving the anchor nothing to match.
+        let anchored = app.scrollViews
             .containing(.any, identifier: "codebaseDetail.diagramButton.class").firstMatch
+        let scrollView = anchored.exists ? anchored : app.scrollViews.firstMatch
         for _ in 0..<6 where !button.exists {
             #if os(macOS)
             scrollView.scroll(byDeltaX: 0, deltaY: -60)

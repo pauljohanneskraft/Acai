@@ -30,6 +30,9 @@ extension ProjectDetailView {
         .accessibilityIdentifier("projectDetail.emptyState")
     }
 
+    /// Regular width keeps the toolbar's Add Codebase/Add Diagram on screen beside this empty state,
+    /// so these carry their own identifiers — two elements answering to one makes every query for it
+    /// ambiguous, which throws rather than picking either.
     @ViewBuilder
     private var emptyProjectActions: some View {
         Button {
@@ -37,17 +40,17 @@ extension ProjectDetailView {
         } label: {
             Label(.app("View.ProjectDetailView.AddCodebaseMenu"), systemImage: "plus")
         }
-        .accessibilityIdentifier("projectDetail.addCodebaseButton")
-        addDiagramButton
+        .accessibilityIdentifier("projectDetail.emptyState.addCodebaseButton")
+        addDiagramButton(identifier: "projectDetail.emptyState.addDiagramButton")
     }
 
-    var addDiagramButton: some View {
+    func addDiagramButton(identifier: String = "projectDetail.addDiagramButton") -> some View {
         Button {
             createDiagram(name: "New Freeform Diagram")
         } label: {
             Label(.app("View.ProjectDetailView.AddDiagram"), systemImage: "rectangle.3.group")
         }
-        .accessibilityIdentifier("projectDetail.addDiagramButton")
+        .accessibilityIdentifier(identifier)
     }
 
     func createDiagram(name: String) {
