@@ -36,6 +36,12 @@ struct CFamilyHeaderClassifier {
         return scan.codePreservingStrings.contains("extern \"C++\"")
     }
 
+    /// An Objective-C header is neither dialect; `@` is never structural C or C++.
+    var looksLikeObjectiveC: Bool {
+        let code = scanned.stripped
+        return ["@interface", "@protocol", "@class", "@import", "@end"].contains { code.contains($0) }
+    }
+
     // MARK: - Helpers
 
     /// Whether `word` appears as a whole identifier token (not a substring of a longer name).

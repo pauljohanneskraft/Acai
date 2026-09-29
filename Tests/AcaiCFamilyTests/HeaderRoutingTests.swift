@@ -81,6 +81,20 @@ struct HeaderRoutingTests {
         #expect(parser.parse(source: source, fileName: "handle.h").metadata.sourceLanguage == .c)
     }
 
+    @Test func objectiveCHeaderContributesNoTypesAndNoParseErrors() {
+        let source = """
+        @import Foundation;
+
+        @interface Widget : NSObject
+        @property (nonatomic) int identifier;
+        @end
+        """
+        let artifact = parser.parse(source: source, fileName: "Widget.h")
+        #expect(artifact.types.isEmpty)
+        #expect(!artifact.metadata.hasParseErrors)
+        #expect(!CFamilyHeaderClassifier(source: "/* @interface */ struct S { int a; };").looksLikeObjectiveC)
+    }
+
     @Test func externCppInsideAStringLiteralStaysC() {
         // The text appears as data; its inner quotes are escaped, so it is not a linkage spec.
         let source = """

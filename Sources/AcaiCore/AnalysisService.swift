@@ -74,7 +74,7 @@ public struct AnalysisService: Sendable {
 
         var combinedArtifact: CodeArtifact?
 
-        for spec in specs {
+        for spec in specs.mergedByLanguage {
             if let artifact = try await parseSpec(spec, rootURL: rootURL, includingFile: includingFile) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }

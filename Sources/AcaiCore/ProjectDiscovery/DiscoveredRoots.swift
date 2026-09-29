@@ -25,3 +25,19 @@ extension [SourceSpec] {
         return order.compactMap { byKey[$0] }
     }
 }
+
+extension [SourceSpec] {
+    /// One spec per language, in first-seen order, so enrichment sees every root of a language at once
+    /// and a type in one root still resolves references into another.
+    var mergedByLanguage: [SourceSpec] {
+        var merged: [SourceSpec] = []
+        for spec in self {
+            guard let index = merged.firstIndex(where: { $0.language == spec.language }) else {
+                merged.append(spec)
+                continue
+            }
+            merged[index].sourceDirs.append(contentsOf: spec.sourceDirs)
+        }
+        return merged
+    }
+}

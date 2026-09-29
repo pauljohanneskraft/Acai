@@ -7,9 +7,15 @@ import AcaiCore
 public struct XcodeDetector: BuildSystemDetector {
     public init() {}
 
+    /// A project bundle is not a root of its own, though its embedded `project.xcworkspace` looks like one.
     public func isPresent(at root: URL) -> Bool {
+        guard !isProjectBundle(root.lastPathComponent) else { return false }
         let entries = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
-        return entries.contains(where: { $0.hasSuffix(".xcodeproj") || $0.hasSuffix(".xcworkspace") })
+        return entries.contains(where: isProjectBundle)
+    }
+
+    private func isProjectBundle(_ name: String) -> Bool {
+        name.hasSuffix(".xcodeproj") || name.hasSuffix(".xcworkspace")
     }
 
     public func discoverSourceSpecs(

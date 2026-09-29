@@ -17,10 +17,8 @@ public struct NodeDetector: BuildSystemDetector {
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
         let request = LanguageRequest(requestedLanguages)
-        let searchDirs = tsConfigSourceDirs(in: root)
-            ?? SourceDirectoryProbe(preferring: "src").directories(in: root)
-
-        let hasTS = SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: searchDirs)
+        let searchDirs = self.searchDirs(in: root)
+        let hasTS = hasTypeScript(in: searchDirs)
         let hasJS = SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: searchDirs)
 
         var specs: [SourceSpec] = []
@@ -33,6 +31,26 @@ public struct NodeDetector: BuildSystemDetector {
         }
 
         return specs
+    }
+
+    /// A TypeScript project's JavaScript is config and build output, not source.
+    public func withheldLanguages(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> Set<CodeArtifact.SourceLanguage> {
+        let request = LanguageRequest(requestedLanguages)
+        guard request.wants(.javaScript), !request.explicitlyWants(.javaScript),
+              hasTypeScript(in: searchDirs(in: root))
+        else { return [] }
+        return [.javaScript]
+    }
+
+    private func searchDirs(in root: URL) -> [URL] {
+        tsConfigSourceDirs(in: root) ?? SourceDirectoryProbe(preferring: "src").directories(in: root)
+    }
+
+    private func hasTypeScript(in searchDirs: [URL]) -> Bool {
+        SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: searchDirs)
     }
 
     // MARK: - tsconfig.json Parsing

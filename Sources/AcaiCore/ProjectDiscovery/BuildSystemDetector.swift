@@ -42,4 +42,19 @@ public protocol BuildSystemDetector: Sendable {
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec]
+
+    /// Languages this root deliberately leaves out, which the fallback must therefore not add back.
+    func withheldLanguages(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> Set<CodeArtifact.SourceLanguage>
+}
+
+extension BuildSystemDetector {
+    public func withheldLanguages(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> Set<CodeArtifact.SourceLanguage> {
+        []
+    }
 }

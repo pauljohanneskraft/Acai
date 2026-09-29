@@ -155,7 +155,57 @@ struct ProjectRootDiscoveryTests {
         }
     }
 
+    @Test func theFallbackDoesNotAddTheJavaScriptATypeScriptRootLeftOut() throws {
+        try withTempDir { base in
+            try write("package.json", in: base, contents: "{}")
+            try write("src/app.ts", in: base, contents: "export class App {}")
+            try write("jest.config.js", in: base, contents: "module.exports = {}")
+            try write("lib/app.js", in: base, contents: "class App {}")
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [])
+
+            #expect(specs.map(\.language) == [.typeScript])
+        }
+    }
+
+    @Test func anXcodeProjectBundleIsNotARootOfItsOwn() throws {
+        try withTempDir { base in
+            try write("Package.swift", in: base)
+            try write("Sources/App.swift", in: base, contents: "class App {}")
+            try write("App.xcodeproj/project.xcworkspace/contents.xcworkspacedata", in: base)
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [])
+
+            #expect(roots(specs, relativeTo: base) == ["./SwiftPackageManagerDetector"])
+        }
+    }
+
     // MARK: - Recorded on the artifact
+
+    @Test func typesInOneRootResolveAgainstAnotherRootOfTheSameLanguage() async throws {
+        try await withTempDirAsync { base in
+            try write("core/build.gradle.kts", in: base)
+            try write("core/src/main/kotlin/Base.kt", in: base, contents: """
+                package com.core
+                open class Base
+                class Engine
+                """)
+            try write("app/build.gradle.kts", in: base)
+            try write("app/src/main/kotlin/Derived.kt", in: base, contents: """
+                package com.app
+                import com.core.Base
+                import com.core.Engine
+                class Derived(val engine: Engine) : Base()
+                """)
+            let artifact = try await AnalysisService.standard.analyzeProject(
+                at: base, allowedLanguages: [])
+
+            let edges = Set(artifact.relationships.map { "\($0.kind) \($0.source)->\($0.target)" })
+            #expect(edges == [
+                "inheritance com.app.Derived->com.core.Base",
+                "composition com.app.Derived->com.core.Engine"
+            ])
+            #expect(artifact.metadata.discoveredRoots.map(\.path).sorted() == ["app", "core"])
+        }
+    }
 
     @Test func theDiscoveredRootsReachTheArtifactsMetadata() async throws {
         try await withTempDirAsync { base in

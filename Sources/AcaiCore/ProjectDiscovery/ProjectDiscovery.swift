@@ -39,7 +39,9 @@ public struct ProjectDiscovery: Sendable {
         var walk = DiscoveryWalk(discovery: self, requestedLanguages: requestedLanguages)
         walk.descend(into: rootURL)
         return walk.specs + fallbackSpecs(
-            at: rootURL, requestedLanguages: requestedLanguages, claimed: Set(walk.specs.map(\.language))
+            at: rootURL,
+            requestedLanguages: requestedLanguages,
+            claimed: Set(walk.specs.map(\.language)).union(walk.withheldLanguages)
         )
     }
 
@@ -65,6 +67,7 @@ private struct DiscoveryWalk {
     let requestedLanguages: [CodeArtifact.SourceLanguage]
 
     var specs: [SourceSpec] = []
+    var withheldLanguages: Set<CodeArtifact.SourceLanguage> = []
     private var claimedDirs: [CodeArtifact.SourceLanguage: [String]] = [:]
     private var claimedSubtrees: [String] = []
 
@@ -87,6 +90,9 @@ private struct DiscoveryWalk {
             for spec in detected where claimedHere.insert(spec.language).inserted {
                 record(spec.detected(by: detector), at: directory)
             }
+            withheldLanguages.formUnion(
+                detector.withheldLanguages(at: directory, requestedLanguages: requestedLanguages)
+            )
         }
     }
 
