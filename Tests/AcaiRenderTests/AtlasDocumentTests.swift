@@ -14,7 +14,7 @@ struct AtlasDocumentTests {
         CodeMetrics(
             counts: .init(
                 totalTypes: 1, byKind: [:], protocols: 0, globalVariables: 0, freestandingFunctions: 0,
-                methods: 0, properties: 0, relationships: 0, relationshipsByKind: [:]),
+                methods: 0, properties: 0, relationships: 0, relationshipsByKind: [:], linesOfCode: 0),
             modules: [], types: [])
     }
 
