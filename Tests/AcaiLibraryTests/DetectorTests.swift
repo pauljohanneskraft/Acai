@@ -133,6 +133,40 @@ struct DetectorTests {
         }
     }
 
+    @Test func spmFindsTheOnlyTargetOfAKindDirectlyInItsPredefinedDirectory() throws {
+        let detector = SwiftPackageManagerDetector()
+        try withTempDir { root in
+            try write("Package.swift", in: root, contents: """
+            let package = Package(
+                name: "tool",
+                targets: [.executableTarget(name: "tool"), .testTarget(name: "toolTests")]
+            )
+            """)
+            try write("Sources/main.swift", in: root)
+            try write("Tests/ToolTests.swift", in: root)
+
+            let spec = try #require(
+                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
+            #expect(spec.diagnostics.isEmpty)
+            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Sources", "Tests"])
+        }
+    }
+
+    @Test func spmProbesRatherThanDroppingATargetWhoseDirectoryIsMissing() throws {
+        let detector = SwiftPackageManagerDetector()
+        try withTempDir { root in
+            try write("Package.swift", in: root, contents: """
+            let package = Package(name: "Demo", targets: [.target(name: "Core"), .target(name: "Gone")])
+            """)
+            try write("Sources/Core/Core.swift", in: root)
+
+            let spec = try #require(
+                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
+            #expect(spec.diagnostics.map(\.kind) == [.incompleteDiscovery])
+            #expect(spec.diagnostics.first?.message.contains("`Gone`") == true)
+        }
+    }
+
     // MARK: - Xcode
 
     @Test func xcodeDetectsProjectBundle() throws {

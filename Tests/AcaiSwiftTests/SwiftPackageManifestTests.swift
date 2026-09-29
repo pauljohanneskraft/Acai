@@ -98,6 +98,29 @@ struct SwiftPackageManifestTests {
         #expect(parsed.targets.isEmpty)
     }
 
+    @Test(arguments: [
+        "package.targets.append(.target(name: \"Extra\"))",
+        "package.targets += [.target(name: \"Extra\")]",
+        "package.targets[0].path = \"Elsewhere\"",
+        "for target in package.targets { target.exclude.append(\"Fixtures\") }"
+    ])
+    func changingTheLayoutAfterTheInitializerIsIncomplete(statement: String) {
+        let parsed = SwiftPackageManifest(source: """
+        let package = Package(name: "Demo", targets: [.target(name: "Core")])
+        \(statement)
+        """)
+        #expect(parsed.incompleteReason != nil)
+    }
+
+    @Test func settingsAppliedAfterTheInitializerLeaveTheLayoutReadable() {
+        let parsed = SwiftPackageManifest(source: """
+        let package = Package(name: "Demo", targets: [.target(name: "Core")])
+        for target in package.targets { target.swiftSettings = [.enableUpcomingFeature("ExistentialAny")] }
+        """)
+        #expect(parsed.incompleteReason == nil)
+        #expect(parsed.targets.map(\.name) == ["Core"])
+    }
+
     @Test func aManifestWithoutAPackageInitializerIsIncomplete() {
         #expect(SwiftPackageManifest(source: "// nothing here").incompleteReason != nil)
         #expect(SwiftPackageManifest(source: "").incompleteReason != nil)

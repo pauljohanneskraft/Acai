@@ -25,7 +25,9 @@ struct SwiftPackageSources {
         var sourceDirs: [URL] = []
         var excludedPaths: [URL] = []
         for target in manifest.targets {
-            guard let directory = self.directory(for: target) else { continue }
+            guard let directory = self.directory(for: target) else {
+                return .probe(reason: "the directory of target `\(target.name)` was not found")
+            }
             sourceDirs.append(contentsOf: sources(of: target, in: directory))
             excludedPaths.append(contentsOf: target.exclude.map { directory.child($0) })
         }
@@ -46,10 +48,13 @@ struct SwiftPackageSources {
             let declared = root.child(path)
             return declared.existsOnDisk ? declared : nil
         }
-        return target.kind.defaultDirectories
-            .lazy
-            .map { root.child($0).child(target.name) }
-            .first { $0.existsOnDisk }
+        let defaults = target.kind.defaultDirectories.lazy.map { root.child($0) }
+        if let named = defaults.map({ $0.child(target.name) }).first(where: \.existsOnDisk) {
+            return named
+        }
+        // SwiftPM lets the only target of its kind keep its sources directly in the predefined directory.
+        guard manifest.targets.filter({ $0.kind == target.kind }).count == 1 else { return nil }
+        return target.kind.flatLayoutDirectories.lazy.map { root.child($0) }.first { $0.existsOnDisk }
     }
 }
 

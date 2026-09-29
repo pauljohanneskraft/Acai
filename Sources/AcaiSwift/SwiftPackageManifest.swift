@@ -27,6 +27,10 @@ struct SwiftPackageManifest {
                     ["Plugins"]
                 }
             }
+
+            var flatLayoutDirectories: [String] {
+                self == .test ? ["Tests"] : defaultDirectories
+            }
         }
 
         var name: String
@@ -47,6 +51,10 @@ struct SwiftPackageManifest {
     private mutating func read(_ file: SourceFileSyntax) {
         let finder = PackageCallFinder(viewMode: .sourceAccurate)
         finder.walk(file)
+        guard !finder.changesLayoutAfterInitializer else {
+            incompleteReason = "targets or their paths are changed after the Package(...) initializer"
+            return
+        }
         guard finder.callCount == 1 else {
             incompleteReason = finder.callCount == 0
                 ? "no Package(...) initializer found"
@@ -173,13 +181,48 @@ extension StringLiteralExprSyntax {
 private final class PackageCallFinder: SyntaxVisitor {
     private(set) var targetsArgument: ExprSyntax?
     private(set) var callCount = 0
+    /// Set by `package.targets += […]`, `package.targets.append(…)`, `target.path = …` and the like —
+    /// but not by `target.swiftSettings = …`, which leaves the layout alone.
+    private(set) var changesLayoutAfterInitializer = false
+
+    private let layoutMembers: Set<String> = ["targets", "path", "exclude", "sources"]
+    private let mutatingCalls: Set<String> = ["append", "insert", "remove", "removeAll", "removeFirst", "removeLast"]
+
+    override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
+        let elements = Array(node.elements)
+        for (index, element) in elements.enumerated().dropFirst() where element.isAssignment {
+            if isLayoutMember(elements[index - 1]) { changesLayoutAfterInitializer = true }
+        }
+        return .visitChildren
+    }
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
+        if let callee = node.calledExpression.as(MemberAccessExprSyntax.self),
+           mutatingCalls.contains(callee.declName.baseName.text),
+           let base = callee.base, isLayoutMember(base) {
+            changesLayoutAfterInitializer = true
+        }
         guard node.calledExpression.as(DeclReferenceExprSyntax.self)?.baseName.text == "Package" else {
             return .visitChildren
         }
         callCount += 1
         targetsArgument = node.arguments.first { $0.label?.text == "targets" }?.expression
         return .skipChildren
+    }
+}
+
+extension PackageCallFinder {
+    fileprivate func isLayoutMember(_ expression: ExprSyntax) -> Bool {
+        guard let access = expression.as(MemberAccessExprSyntax.self), access.base != nil else { return false }
+        return layoutMembers.contains(access.declName.baseName.text)
+    }
+}
+
+extension ExprSyntax {
+    /// `=` or a compound assignment such as `+=`, as it appears in an unfolded sequence expression.
+    fileprivate var isAssignment: Bool {
+        if self.is(AssignmentExprSyntax.self) { return true }
+        guard let text = self.as(BinaryOperatorExprSyntax.self)?.operator.text else { return false }
+        return text.hasSuffix("=") && !["==", "!=", "<=", ">=", "==="].contains(text)
     }
 }
