@@ -21,13 +21,18 @@ public struct FallbackDetector: BuildSystemDetector {
         let excludedDirectories = parsers.reduce(into: AcaiConstants.standard.defaultExcludedSourceDirectories) {
             $0.formUnion($1.configuration.excludedDirectories)
         }
-        return langs.compactMap { lang in
-            guard let parser = parsers.first(where: { $0.language == lang }) else { return nil }
-            let exts = Set(parser.fileExtensions)
-            guard !FileManager.default.fileURLs(
-                in: root, withExtensions: exts, excludingDirectories: excludedDirectories
-            ).isEmpty else { return nil }
-            return SourceSpec(language: lang, sourceDirs: [root], root: root)
+        let candidates = langs.compactMap { lang in parsers.first { $0.language == lang } }
+        // One walk for every language rather than one each: the fallback now runs on every analysis,
+        // for whichever languages no project root claimed.
+        let present = FileManager.default.fileExtensionsPresent(
+            in: root,
+            among: Set(candidates.flatMap(\.fileExtensions).map { $0.lowercased() }),
+            excludingDirectories: excludedDirectories
+        )
+        return candidates.compactMap { parser in
+            guard parser.fileExtensions.contains(where: { present.contains($0.lowercased()) })
+            else { return nil }
+            return SourceSpec(language: parser.language, sourceDirs: [root], root: root)
         }
     }
 }

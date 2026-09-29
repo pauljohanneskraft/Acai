@@ -81,6 +81,10 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
             self.discoveredRoots = discoveredRoots
         }
 
+        private enum CodingKeys: String, CodingKey {
+            case sourceLanguage, filePaths, toolVersion, parseDiagnostics, discoveredRoots
+        }
+
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.sourceLanguage = try container.decode(SourceLanguage.self, forKey: .sourceLanguage)
@@ -89,6 +93,19 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
             self.parseDiagnostics = try container.decode([ParseDiagnostic].self, forKey: .parseDiagnostics)
             self.discoveredRoots =
                 try container.decodeIfPresent([DiscoveredRoot].self, forKey: .discoveredRoots) ?? []
+        }
+
+        /// Roots are a discovery-level fact, so an artifact a parser produced on its own has none and
+        /// writes none — the key is absent rather than an empty array, which is how it reads back.
+        public func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(sourceLanguage, forKey: .sourceLanguage)
+            try container.encode(filePaths, forKey: .filePaths)
+            try container.encodeIfPresent(toolVersion, forKey: .toolVersion)
+            try container.encode(parseDiagnostics, forKey: .parseDiagnostics)
+            if !discoveredRoots.isEmpty {
+                try container.encode(discoveredRoots, forKey: .discoveredRoots)
+            }
         }
     }
 

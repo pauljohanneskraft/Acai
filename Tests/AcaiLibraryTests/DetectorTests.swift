@@ -31,6 +31,11 @@ struct DetectorTests {
         specs.first { $0.language == language }?.sourceDirs.map(\.lastPathComponent) ?? []
     }
 
+    /// A detector claims the directory it was asked about, whatever source dirs it reports under it.
+    private func allClaim(_ specs: [SourceSpec], _ root: URL) -> Bool {
+        !specs.isEmpty && specs.allSatisfy { $0.root.standardizedFileURL == root.standardizedFileURL }
+    }
+
     // MARK: - Swift Package Manager
 
     @Test func spmDetectsManifestAndPrefersSourcesDir() throws {
@@ -45,6 +50,7 @@ struct DetectorTests {
             try write("Sources/A.swift", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .swift)
                 == ["Sources"])
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.kotlin]).isEmpty)
         }
     }
@@ -59,6 +65,7 @@ struct DetectorTests {
                 at: root.appendingPathComponent("App.xcodeproj"), withIntermediateDirectories: true)
             #expect(detector.isPresent(at: root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: []).first?.language == .swift)
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.java]).isEmpty)
         }
     }
@@ -77,6 +84,8 @@ struct DetectorTests {
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(dirNames(specs, for: .kotlin) == ["kotlin"])
             #expect(dirNames(specs, for: .java) == ["java"])
+            // The nested source dirs sit under the root, but the claimed root is the folder itself.
+            #expect(allClaim(specs, root))
             let kotlinOnly = detector.discoverSourceSpecs(at: root, requestedLanguages: [.kotlin])
             #expect(kotlinOnly.map(\.language) == [.kotlin])
         }
@@ -90,6 +99,7 @@ struct DetectorTests {
             try write("Main.java", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .java)
                 == [root.lastPathComponent])
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
         }
     }
 
@@ -107,6 +117,7 @@ struct DetectorTests {
             try write("src/b.js", in: root)
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.map(\.language) == [.typeScript])
+            #expect(allClaim(specs, root))
             let withJS = detector.discoverSourceSpecs(at: root, requestedLanguages: [.javaScript])
             #expect(withJS.contains { $0.language == .javaScript })
         }
@@ -119,6 +130,7 @@ struct DetectorTests {
             try write("src/only.js", in: root)
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.map(\.language) == [.javaScript])
+            #expect(allClaim(specs, root))
         }
     }
 
@@ -135,6 +147,7 @@ struct DetectorTests {
             try write("lib/main.dart", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
                 == ["lib"])
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
         }
     }
 
@@ -150,6 +163,7 @@ struct DetectorTests {
             try write("src/app.py", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .python)
                 == ["src"])
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.swift]).isEmpty)
         }
     }
@@ -168,6 +182,7 @@ struct DetectorTests {
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.contains { $0.language == .c })
             #expect(specs.contains { $0.language == .cpp })
+            #expect(allClaim(specs, root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.cpp]).map(\.language) == [.cpp])
         }
     }
