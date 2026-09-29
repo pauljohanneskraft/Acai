@@ -15,13 +15,12 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     /// The enclosing type's own method names, so a bare method-reference-as-value (`Button(action:
     /// chooseFile)`) resolves the same way it does in a plain function body.
     private let methodNames: Set<String>
-    private let fileName: String
     private(set) var collected: [CallSite] = []
 
     init(
         collector: CallSiteCollector, propertyMap: [String: String],
         enclosingTypeName: String?, methodReturnTypes: [String: String] = [:],
-        methodNames: Set<String> = [], fileName: String
+        methodNames: Set<String> = []
     ) {
         self.collector = collector
         self.receiverMap = propertyMap
@@ -29,7 +28,6 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
         self.enclosingTypeName = enclosingTypeName
         self.methodReturnTypes = methodReturnTypes
         self.methodNames = methodNames
-        self.fileName = fileName
         super.init(viewMode: .sourceAccurate)
     }
 
@@ -50,7 +48,7 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
         if let site = collector.callSite(
             from: node, propertyMap: receiverMap,
-            enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames, fileName: fileName) {
+            enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames) {
             collected.append(site)
         }
         return .visitChildren
@@ -59,7 +57,7 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
         guard collector.isBareReferenceUse(node),
               let site = collector.methodReference(
-                from: node, propertyMap: receiverMap, methodNames: methodNames, fileName: fileName)
+                from: node, propertyMap: receiverMap, methodNames: methodNames)
         else { return .visitChildren }
         collected.append(site)
         return .visitChildren

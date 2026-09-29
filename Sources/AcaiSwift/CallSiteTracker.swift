@@ -32,9 +32,11 @@ final class CallSiteTracker {
 
     let callSites: CallSiteCollector
     private let signatures = DeclarationSignatureExtractor()
+    private let sourceLocations: SourceLocationResolver
 
-    init(knownTypeNames: Set<String>) {
-        self.callSites = CallSiteCollector(knownTypeNames: knownTypeNames)
+    init(knownTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
+        self.callSites = CallSiteCollector(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
+        self.sourceLocations = sourceLocations
     }
 
     private var currentMethodReturnTypes: [String: String] { methodReturnTypeMapStack.last ?? [:] }
@@ -201,13 +203,13 @@ final class CallSiteTracker {
     /// method reached only from a computed property (a SwiftUI `body`, a derived value) is not
     /// mistaken for dead code.
     func accessorCallSites(
-        from node: VariableDeclSyntax, propertyMap: [String: String], enclosingTypeName: String?, fileName: String
+        from node: VariableDeclSyntax, propertyMap: [String: String], enclosingTypeName: String?
     ) -> [CallSite] {
         var sites: [CallSite] = []
         for binding in node.bindings {
             guard let accessor = binding.accessorBlock else { continue }
             let walker = propertyCallSiteWalker(
-                propertyMap: propertyMap, enclosingTypeName: enclosingTypeName, fileName: fileName)
+                propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
             walker.walk(accessor)
             sites.append(contentsOf: walker.collected)
         }
@@ -218,13 +220,13 @@ final class CallSiteTracker {
     /// false)`), which only walks computed accessor bodies. Without this, a call made only from a
     /// stored property's initializer is invisible to the call graph.
     func initializerCallSites(
-        from node: VariableDeclSyntax, propertyMap: [String: String], enclosingTypeName: String?, fileName: String
+        from node: VariableDeclSyntax, propertyMap: [String: String], enclosingTypeName: String?
     ) -> [CallSite] {
         var sites: [CallSite] = []
         for binding in node.bindings {
             guard let value = binding.initializer?.value else { continue }
             let walker = propertyCallSiteWalker(
-                propertyMap: propertyMap, enclosingTypeName: enclosingTypeName, fileName: fileName)
+                propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
             walker.walk(value)
             sites.append(contentsOf: walker.collected)
         }
@@ -232,22 +234,22 @@ final class CallSiteTracker {
     }
 
     private func propertyCallSiteWalker(
-        propertyMap: [String: String], enclosingTypeName: String?, fileName: String
+        propertyMap: [String: String], enclosingTypeName: String?
     ) -> AccessorCallSiteWalker {
         AccessorCallSiteWalker(
             collector: callSites, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName,
-            methodReturnTypes: currentMethodReturnTypes, methodNames: currentMethodNames, fileName: fileName)
+            methodReturnTypes: currentMethodReturnTypes, methodNames: currentMethodNames)
     }
 
     // MARK: - Call-Site, Assignment & Field-Read Recording
 
     func recordCallSite(
         from node: FunctionCallExprSyntax, scope: CallSiteScope,
-        enclosingTypeName: String?, topLevelGlobalPropertyMap: @autoclosure () -> [String: String], fileName: String
+        enclosingTypeName: String?, topLevelGlobalPropertyMap: @autoclosure () -> [String: String]
     ) {
         switch scope {
         case .functionBody:
-            recordIterationClosureCallSites(in: node, enclosingTypeName: enclosingTypeName, fileName: fileName)
+            recordIterationClosureCallSites(in: node, enclosingTypeName: enclosingTypeName)
             // Parameters and locals resolve receivers too, but must not leak into field-read
             // detection, so they're merged in only here (shadowing same-named stored properties and
             // each other).
@@ -260,15 +262,15 @@ final class CallSiteTracker {
             }
             if let site = callSites.callSite(
                 from: node, propertyMap: receiverMap, enclosingTypeName: enclosingTypeName,
-                knownLocalNames: callSiteState.knownLocalNames, fileName: fileName) ?? callSites.deferredCallSite(
-                    from: node, localReceiverOriginMap: callSiteState.localReceiverOriginMap, fileName: fileName) {
+                knownLocalNames: callSiteState.knownLocalNames) ?? callSites.deferredCallSite(
+                    from: node, localReceiverOriginMap: callSiteState.localReceiverOriginMap) {
                 callSiteState.pendingCallSites.append(site)
             }
         case .fileScope:
             if let site = callSites.callSite(
-                from: node, propertyMap: topLevelGlobalPropertyMap(), enclosingTypeName: nil, fileName: fileName)
+                from: node, propertyMap: topLevelGlobalPropertyMap(), enclosingTypeName: nil)
                 ?? callSites.deferredCallSite(
-                    from: node, localReceiverOriginMap: topLevelGlobalReceiverOriginMap, fileName: fileName) {
+                    from: node, localReceiverOriginMap: topLevelGlobalReceiverOriginMap) {
                 // Its calls have nowhere to attach as a member, so they're recorded separately and
                 // given a synthetic reachable member in `buildArtifact()`.
                 topLevelCallSites.append(site)
@@ -278,18 +280,18 @@ final class CallSiteTracker {
         }
     }
 
-    func recordAssignment(from node: SequenceExprSyntax, fileName: String) {
-        guard let assignment = callSites.assignment(from: node, fileName: fileName) else { return }
+    func recordAssignment(from node: SequenceExprSyntax) {
+        guard let assignment = callSites.assignment(from: node) else { return }
         callSiteState.pendingAssignments.append(assignment)
     }
 
-    func recordFieldReadAndMethodReference(from node: DeclReferenceExprSyntax, fileName: String) {
-        if let read = callSites.fieldRead(from: node, propertyMap: callSiteState.propertyMap, fileName: fileName) {
+    func recordFieldReadAndMethodReference(from node: DeclReferenceExprSyntax) {
+        if let read = callSites.fieldRead(from: node, propertyMap: callSiteState.propertyMap) {
             callSiteState.pendingFieldReads.append(read)
         }
         if callSites.isBareReferenceUse(node),
            let site = callSites.methodReference(
-            from: node, propertyMap: callSiteState.propertyMap, methodNames: currentMethodNames, fileName: fileName) {
+            from: node, propertyMap: callSiteState.propertyMap, methodNames: currentMethodNames) {
             callSiteState.pendingCallSites.append(site)
         }
     }
@@ -298,14 +300,14 @@ final class CallSiteTracker {
     /// type (`addedRelationships.map { $0.reportPhrase() }`). A no-op when `node` isn't such a closure
     /// or its receiver isn't a resolvable array property.
     private func recordIterationClosureCallSites(
-        in node: FunctionCallExprSyntax, enclosingTypeName: String?, fileName: String
+        in node: FunctionCallExprSyntax, enclosingTypeName: String?
     ) {
         guard let (receiverBase, closure) = callSites.iterationClosure(in: node),
               let elementReceiver = callSites.arrayElementReceiverType(
                 of: receiverBase, arrayElementPropertyMap: callSiteState.arrayElementPropertyMap,
                 enclosingTypeName: enclosingTypeName, knownLocalNames: callSiteState.knownLocalNames)
         else { return }
-        let walker = Closure0CallSiteWalker(elementReceiver: elementReceiver, fileName: fileName)
+        let walker = Closure0CallSiteWalker(elementReceiver: elementReceiver, sourceLocations: sourceLocations)
         walker.walk(closure)
         callSiteState.pendingCallSites.append(contentsOf: walker.collected)
     }
