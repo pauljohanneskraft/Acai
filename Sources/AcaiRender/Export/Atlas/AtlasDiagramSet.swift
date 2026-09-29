@@ -36,7 +36,7 @@ public struct AtlasDiagramSet: Sendable {
             },
             await page(named: "Call Graph", subtitle: "Whole codebase") {
                 try await CallGraphImageExporter(
-                    scale: scale, palette: palette, scope: CallGraphScopeOption(raw: nil)
+                    scale: scale, palette: palette, scope: CallGraphScopeOption(raw: nil), maxNodes: maxNodes
                 ).render(artifact: artifact)
             }
         ]

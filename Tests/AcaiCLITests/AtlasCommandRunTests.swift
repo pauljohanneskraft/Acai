@@ -50,6 +50,22 @@ struct AtlasCommandRunTests {
         }
     }
 
+    @Test func movementRulesAreRejectedRatherThanSilentlySkipped() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let rulesURL = dir.appendingPathComponent("quality.yml")
+            try "movements:\n  - metric: fanOut\n".write(to: rulesURL, atomically: true, encoding: .utf8)
+            let output = dir.appendingPathComponent("atlas.pdf")
+            var cmd = try CLITestSupport.parseAtlas([
+                "--source", dir.path, "--language", "swift", "--output", output.path, "--rules", rulesURL.path
+            ])
+            await #expect(throws: (any Error).self) {
+                try await cmd.run()
+            }
+            #expect(!FileManager.default.fileExists(atPath: output.path))
+        }
+    }
+
     @Test func anOutOfRangeNodeLimitFailsValidation() {
         #expect(throws: (any Error).self) {
             _ = try CLITestSupport.parseAtlas(

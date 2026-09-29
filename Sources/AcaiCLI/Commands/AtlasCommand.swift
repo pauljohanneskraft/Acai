@@ -57,6 +57,12 @@ extension AcaiCommand {
         mutating func run() async throws {
             let artifact = try await artifactSource.resolve()
             let ruleSet = try rules.map { try QualityRules.load(contentsOf: $0) } ?? QualityRules.defaultQuality
+            guard ruleSet.movements.isEmpty else {
+                throw ValidationError(
+                    "The rules file declares \(ruleSet.movements.count) movement rule(s), which the atlas"
+                    + " cannot evaluate without a baseline. Use `acai quality --baseline` for those."
+                )
+            }
             let languages = artifact.standardLanguageResolver
 
             let analysis = AtlasAnalysis(artifact: artifact, rules: ruleSet, languages: languages)

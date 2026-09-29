@@ -293,6 +293,14 @@ struct ParityToolsTests {
         ])
     }
 
+    @Test func atlasRejectsMovementRulesItCannotEvaluate() async throws {
+        let rulesURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("atlas-movements-\(UUID().uuidString).yml")
+        try "movements:\n  - metric: fanOut\n".write(to: rulesURL, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: rulesURL) }
+        try await expectAtlasInvalidParams(["rules": .string(rulesURL.path)])
+    }
+
     @Test func atlasRejectsANonPositiveScale() async throws {
         try await expectAtlasInvalidParams(["scale": .double(0)])
     }

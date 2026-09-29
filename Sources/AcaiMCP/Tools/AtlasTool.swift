@@ -58,6 +58,11 @@ struct AtlasTool: AnalysisTool {
                 "maxNodes must be between \(allowed.lowerBound) and \(allowed.upperBound).")
         }
         let rules = try qualityRules(arguments)
+        guard rules.movements.isEmpty else {
+            throw MCPError.invalidParams(
+                "The rules file declares \(rules.movements.count) movement rule(s), which acai_atlas cannot"
+                + " evaluate without a baseline. Use acai_quality with 'baseline' for those.")
+        }
         let artifact = try await resolveArtifact(arguments, cache)
         let languages = artifact.standardLanguageResolver
 
