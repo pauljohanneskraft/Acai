@@ -11,19 +11,29 @@ public struct SwiftCodeParser: CodeParser {
     public init() {}
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
+        parse(source: source, fileName: fileName, makeConverter: SourceLocationConverter.init(fileName:tree:))
+    }
+
+    /// `makeConverter` is the seam a test counts through: building a converter walks the whole tree,
+    /// so exactly one is built per file and shared by every location lookup and the diagnostics pass.
+    func parse(
+        source: String, fileName: String,
+        makeConverter: (String, SourceFileSyntax) -> SourceLocationConverter
+    ) -> CodeArtifact {
         let sourceFile = Parser.parse(source: source)
+        let converter = makeConverter(fileName, sourceFile)
+        let sourceLocations = SourceLocationResolver(fileName: fileName, converter: converter)
         let typeNameCollector = TypeNameCollector(viewMode: .sourceAccurate)
         typeNameCollector.walk(sourceFile)
         let protocolPropertyCollector = ProtocolPropertyCollector(viewMode: .sourceAccurate)
         protocolPropertyCollector.walk(sourceFile)
         let visitor = DeclarationVisitor(
-            fileName: fileName, knownTypeNames: typeNameCollector.names,
+            sourceLocations: sourceLocations, knownTypeNames: typeNameCollector.names,
             protocolProperties: protocolPropertyCollector.propertiesByProtocol)
         visitor.walk(sourceFile)
         var artifact = visitor.buildArtifact()
         // Surface malformed input rather than silently returning a partial tree.
         if sourceFile.hasError {
-            let converter = SourceLocationConverter(fileName: fileName, tree: sourceFile)
             artifact.metadata.parseDiagnostics = ParseDiagnosticsGenerator
                 .diagnostics(for: sourceFile)
                 .map { diagnostic in

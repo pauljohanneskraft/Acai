@@ -2,7 +2,7 @@ import SwiftSyntax
 import AcaiCore
 
 final class DeclarationVisitor: SyntaxVisitor {
-    let fileName: String
+    let sourceLocations: SourceLocationResolver
     /// The file's completed declarations; a type still being walked lives on `typeStack` until its
     /// `visitPost`, so nesting is derived from the stack rather than the builder's namespace.
     var declarations = DeclarationBuilder()
@@ -16,7 +16,7 @@ final class DeclarationVisitor: SyntaxVisitor {
     /// resolve, since the property lives on the protocol, not the extension's own member list.
     let protocolProperties: [String: [String: String]]
 
-    private let typeDeclarations = TypeDeclarationExtractor()
+    private let typeDeclarations: TypeDeclarationExtractor
     private let relationships = RelationshipExtractor()
     private let members: MemberExtractor
     let signatures = DeclarationSignatureExtractor()
@@ -25,11 +25,15 @@ final class DeclarationVisitor: SyntaxVisitor {
     /// `knownTypeNames` are the simple names of every type declared in the file, seeded up front so
     /// `TypeName.method()` static calls resolve regardless of declaration order, including
     /// forward-declared siblings.
-    init(fileName: String, knownTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]) {
-        self.fileName = fileName
+    init(
+        sourceLocations: SourceLocationResolver, knownTypeNames: Set<String> = [],
+        protocolProperties: [String: [String: String]] = [:]
+    ) {
+        self.sourceLocations = sourceLocations
         self.protocolProperties = protocolProperties
-        self.members = MemberExtractor(knownTypeNames: knownTypeNames)
-        self.scope = CallSiteTracker(knownTypeNames: knownTypeNames)
+        self.typeDeclarations = TypeDeclarationExtractor(sourceLocations: sourceLocations)
+        self.members = MemberExtractor(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
+        self.scope = CallSiteTracker(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
         declarations.declaredTypeNames = knownTypeNames
         super.init(viewMode: .sourceAccurate)
     }
@@ -40,14 +44,14 @@ final class DeclarationVisitor: SyntaxVisitor {
             completed.freestandingFunctions.append(Member(
                 name: "<top-level>", kind: .method, accessLevel: .public, callSites: scope.topLevelCallSites))
         }
-        return completed.artifact(language: .swift, filePath: fileName)
+        return completed.artifact(language: .swift, filePath: sourceLocations.fileName)
     }
 
     // MARK: - Type Declarations
 
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = typeDeclarations.extractClass(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = typeDeclarations.extractClass(from: node, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
         declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
@@ -60,7 +64,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = typeDeclarations.extractStruct(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = typeDeclarations.extractStruct(from: node, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
         declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
@@ -73,7 +77,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = typeDeclarations.extractEnum(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = typeDeclarations.extractEnum(from: node, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
         declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
@@ -86,7 +90,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = typeDeclarations.extractProtocol(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = typeDeclarations.extractProtocol(from: node, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
         declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
@@ -104,7 +108,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = typeDeclarations.extractExtension(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = typeDeclarations.extractExtension(from: node, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
         declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
@@ -117,7 +121,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: TypeAliasDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = typeDeclarations.extractTypeAlias(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = typeDeclarations.extractTypeAlias(from: node, namespace: currentNamespace)
         if typeStack.isEmpty {
             declarations.types.append(typeDecl)
         } else {
@@ -128,7 +132,7 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0 else { return .skipChildren }
-        let typeDecl = typeDeclarations.extractActor(from: node, fileName: fileName, namespace: currentNamespace)
+        let typeDecl = typeDeclarations.extractActor(from: node, namespace: currentNamespace)
         pushType(typeDecl, memberBlock: node.memberBlock)
         declarations.relationships.append(contentsOf: relationships.extract(from: node, typeId: typeDecl.id))
         return .visitChildren
@@ -160,7 +164,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         functionBodyDepth -= 1
         guard functionBodyDepth == 0 else { return }
         var member = members.extractFunction(
-            from: node, fileName: fileName, callSites: scope.callSiteState.pendingCallSites,
+            from: node, callSites: scope.callSiteState.pendingCallSites,
             assignments: scope.callSiteState.pendingAssignments, fieldReads: scope.callSiteState.pendingFieldReads)
         if let body = node.body {
             member.referencedTypeNames = scope.callSites.referencedTypes(in: body)
@@ -190,7 +194,7 @@ final class DeclarationVisitor: SyntaxVisitor {
             return .visitChildren
         }
         var extractedMembers = attachingInitializerReferencedTypes(
-            to: members.extractVariable(from: node, fileName: fileName), from: node)
+            to: members.extractVariable(from: node), from: node)
         // A binding is either stored or computed, never both, so unconditional attachment is safe.
         let propertySites = collectPropertyCallSites(from: node)
         if !propertySites.isEmpty {
@@ -230,7 +234,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         functionBodyDepth -= 1
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return }
         var member = members.extractInitializer(
-            from: node, fileName: fileName, callSites: scope.callSiteState.pendingCallSites,
+            from: node, callSites: scope.callSiteState.pendingCallSites,
             assignments: scope.callSiteState.pendingAssignments, fieldReads: scope.callSiteState.pendingFieldReads)
         if let body = node.body {
             member.referencedTypeNames = scope.callSites.referencedTypes(in: body)
@@ -241,21 +245,21 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: DeinitializerDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
-        let member = members.extractDeinitializer(from: node, fileName: fileName)
+        let member = members.extractDeinitializer(from: node)
         typeStack[typeStack.count - 1].members.append(member)
         return .skipChildren
     }
 
     override func visit(_ node: SubscriptDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
-        let member = members.extractSubscript(from: node, fileName: fileName)
+        let member = members.extractSubscript(from: node)
         typeStack[typeStack.count - 1].members.append(member)
         return .skipChildren
     }
 
     override func visit(_ node: EnumCaseDeclSyntax) -> SyntaxVisitorContinueKind {
         guard functionBodyDepth == 0, !typeStack.isEmpty else { return .skipChildren }
-        let cases = members.extractEnumCases(from: node, fileName: fileName)
+        let cases = members.extractEnumCases(from: node)
         typeStack[typeStack.count - 1].enumCases.append(contentsOf: cases)
         return .skipChildren
     }
@@ -283,21 +287,20 @@ final class DeclarationVisitor: SyntaxVisitor {
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
         scope.recordCallSite(
             from: node, scope: functionBodyDepth > 0 ? .functionBody : (typeStack.isEmpty ? .fileScope : .other),
-            enclosingTypeName: typeStack.last?.name, topLevelGlobalPropertyMap: topLevelGlobalPropertyMap(),
-            fileName: fileName)
+            enclosingTypeName: typeStack.last?.name, topLevelGlobalPropertyMap: topLevelGlobalPropertyMap())
         return .visitChildren
     }
 
     override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
         if functionBodyDepth > 0 {
-            scope.recordAssignment(from: node, fileName: fileName)
+            scope.recordAssignment(from: node)
         }
         return .visitChildren
     }
 
     override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
         if functionBodyDepth > 0 {
-            scope.recordFieldReadAndMethodReference(from: node, fileName: fileName)
+            scope.recordFieldReadAndMethodReference(from: node)
         }
         return .visitChildren
     }
