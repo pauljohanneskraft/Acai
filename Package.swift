@@ -113,6 +113,10 @@ optionalTargets.append(
 )
 #endif
 
+// Hoisted out of the `Package(...)` literal below: concatenating there leaves that one expression
+// too large for the manifest to type-check in reasonable time.
+let mcpTestDependencies: [Target.Dependency] =
+    ["AcaiMCP", "AcaiLibrary", "AcaiCore"] + mcpOptionalDependencies
 
 let package = Package(
     name: "Acai",
@@ -370,8 +374,7 @@ let package = Package(
             exclude: ["Fixtures"]
         ),
         .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
-        .testTarget(
-            name: "AcaiMCPTests", dependencies: ["AcaiMCP", "AcaiLibrary", "AcaiCore"] + mcpOptionalDependencies),
+        .testTarget(name: "AcaiMCPTests", dependencies: mcpTestDependencies),
         .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram"]),
 
         // MARK: Characterization goldens pinning every parser's whole encoded `CodeArtifact`.
