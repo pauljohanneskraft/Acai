@@ -156,6 +156,7 @@ extension FreeformDiagramView {
             // Resolve the backing edges once: layout message ids index this array (see
             // `messageEdges`), so the tap targets don't each re-filter and re-sort the edges.
             let messageEdges = viewModel.sequence.messageEdges
+            let names = nodeNames
 
             SequenceEnsembleView(layout: layout)
                 .offset(y: anchorY)
@@ -165,6 +166,7 @@ extension FreeformDiagramView {
                 messageTapTarget(
                     message,
                     edge: messageEdges.indices.contains(message.id) ? messageEdges[message.id] : nil,
+                    names: names,
                     anchorY: anchorY
                 )
             }
@@ -223,6 +225,7 @@ extension FreeformDiagramView {
     private func messageTapTarget(
         _ message: SequenceLayoutModel.MessageLayout,
         edge: FreeformDiagram.Edge?,
+        names: [String: String],
         anchorY: CGFloat
     ) -> some View {
         let width = max(abs(message.toX - message.fromX), 44)
@@ -243,7 +246,7 @@ extension FreeformDiagramView {
             .position(x: midX, y: anchorY + message.y - 4)
             .accessibilityElement()
             .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
-            .accessibilityValue(Text(verbatim: messageSummary(edge)))
+            .accessibilityValue(Text(verbatim: messageSummary(edge, names: names)))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleEdgeSelection(edge) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
@@ -257,9 +260,8 @@ extension FreeformDiagramView {
             }
     }
 
-    private func messageSummary(_ edge: FreeformDiagram.Edge?) -> String {
+    private func messageSummary(_ edge: FreeformDiagram.Edge?, names: [String: String]) -> String {
         guard let edge else { return "" }
-        let names = nodeNames
         return DiagramElementDescription(
             edgeFrom: names[edge.sourceNodeID] ?? "",
             to: names[edge.targetNodeID] ?? "",

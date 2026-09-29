@@ -32,13 +32,11 @@ extension DiagramElementDescription {
         self.init(label: node.name, details: details + delta.changeDetails)
     }
 
-    init(callGraphNode node: CallGraph.Node, in graph: CallGraph, delta: DeltaStatus?) {
-        let callsOut = graph.edges.filter { $0.from == node.id }.count
-        let calledBy = graph.edges.filter { $0.to == node.id }.count
+    init(callGraphNode node: CallGraph.Node, counts: CallGraphCallCounts, delta: DeltaStatus?) {
         var details: [LocalizedStringResource] = [
             node.isFreeFunction ? .app("DiagramElementDescription.Function") : .app("DiagramElementDescription.Method"),
-            .app("DiagramElementDescription.CallsOut \(callsOut)"),
-            .app("DiagramElementDescription.CalledBy \(calledBy)")
+            .app("DiagramElementDescription.CallsOut \(counts.callsOut(of: node.id))"),
+            .app("DiagramElementDescription.CalledBy \(counts.calledBy(of: node.id))")
         ]
         if !node.inScope { details.append(.app("DiagramElementDescription.OutsideScope")) }
         self.init(label: node.label, details: details + delta.changeDetails)
@@ -129,6 +127,22 @@ extension DiagramElementDescription {
     func edgeAccessibility(identifier: String? = nil) -> EdgeAccessibility {
         EdgeAccessibility(label: summary, identifier: identifier)
     }
+}
+
+/// Every node's call counts, tallied in one pass so a render doesn't rescan the edges per node.
+struct CallGraphCallCounts {
+    private var outgoing: [String: Int] = [:]
+    private var incoming: [String: Int] = [:]
+
+    init(graph: CallGraph) {
+        for edge in graph.edges {
+            outgoing[edge.from, default: 0] += 1
+            incoming[edge.to, default: 0] += 1
+        }
+    }
+
+    func callsOut(of id: String) -> Int { outgoing[id] ?? 0 }
+    func calledBy(of id: String) -> Int { incoming[id] ?? 0 }
 }
 
 private struct TypeMemberCounts {

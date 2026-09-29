@@ -13,7 +13,10 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     private let scope: CallGraphScope
     private let comparisonArtifact: CodeArtifact?
 
-    @Published private(set) var graph: CallGraph
+    @Published private(set) var graph: CallGraph {
+        didSet { callCounts = CallGraphCallCounts(graph: graph) }
+    }
+    private(set) var callCounts = CallGraphCallCounts(graph: CallGraph())
     @Published private(set) var filter: AcaiQuality.Selector?
 
     @Published var positionOverrides: [String: CGPoint] = [:]

@@ -25,13 +25,18 @@ extension SequenceDiagramView {
                 let messageColors = Dictionary(uniqueKeysWithValues: layout.messages.compactMap { message in
                     viewModel.messageDeltaColor(message).map { (message.id, $0) }
                 })
+                let messages = viewModel.orderedMessages
+                let names = Dictionary(
+                    layout.participants.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
                 ZStack(alignment: .topLeading) {
                     SequenceEnsembleView(layout: layout, messageColor: { messageColors[$0.id] })
                     ForEach(layout.participants) { participant in
                         participantHeader(participant)
                     }
                     ForEach(layout.messages) { message in
-                        messageTapTarget(message)
+                        messageTapTarget(
+                            message,
+                            description: messageDescription(message, messages: messages, names: names))
                     }
                 }
             }
@@ -75,7 +80,9 @@ extension SequenceDiagramView {
     /// An invisible tap strip over a message arrow, selecting it for the Inspector tab — mirrors
     /// `FreeformDiagramView+Canvas.swift`'s `messageTapTarget`, but sized to a full 44pt tall hit area
     /// (Freeform's 30pt strip is a tap-target shortfall this doesn't repeat).
-    func messageTapTarget(_ message: SequenceLayoutModel.MessageLayout) -> some View {
+    func messageTapTarget(
+        _ message: SequenceLayoutModel.MessageLayout, description: DiagramElementDescription
+    ) -> some View {
         let width = max(abs(message.toX - message.fromX), 44)
         let midX = (message.fromX + message.toX) / 2
         let isSelected = viewModel.selectedMessageID == message.id
@@ -93,7 +100,7 @@ extension SequenceDiagramView {
             .position(x: midX, y: message.y)
             .accessibilityElement()
             .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
-            .accessibilityValue(Text(verbatim: messageDescription(message).summary))
+            .accessibilityValue(Text(verbatim: description.summary))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleMessageSelection(message.id) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
@@ -107,15 +114,17 @@ extension SequenceDiagramView {
             }
     }
 
-    private func messageDescription(_ layout: SequenceLayoutModel.MessageLayout) -> DiagramElementDescription {
-        let messages = viewModel.orderedMessages
+    /// `messages` and `names` are resolved once per render by the caller, not once per message.
+    private func messageDescription(
+        _ layout: SequenceLayoutModel.MessageLayout, messages: [SequenceDiagram.Message], names: [String: String]
+    ) -> DiagramElementDescription {
         guard messages.indices.contains(layout.id) else {
             return DiagramElementDescription(label: "", details: [])
         }
         let message = messages[layout.id]
         return DiagramElementDescription(
-            edgeFrom: viewModel.participantName(message.from) ?? message.from,
-            to: viewModel.participantName(message.to) ?? message.to,
+            edgeFrom: names[message.from] ?? message.from,
+            to: names[message.to] ?? message.to,
             details: layout.label.map { [.app("DiagramElementDescription.EdgeLabel \($0)")] } ?? [],
             delta: viewModel.messageDeltaStatus(message))
     }

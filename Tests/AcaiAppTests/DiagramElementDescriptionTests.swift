@@ -51,7 +51,8 @@ struct DiagramElementDescriptionTests {
         let callee = CallGraph.Node(id: "B.go", typeName: "B", methodName: "go", inScope: false)
         let graph = CallGraph(nodes: [caller, callee], edges: [CallGraph.Edge(from: "A.run", to: "B.go")])
 
-        let description = DiagramElementDescription(callGraphNode: callee, in: graph, delta: .changed)
+        let description = DiagramElementDescription(
+            callGraphNode: callee, counts: CallGraphCallCounts(graph: graph), delta: .changed)
 
         #expect(description.label == "B.go")
         #expect(description.details.map(\.key) == [

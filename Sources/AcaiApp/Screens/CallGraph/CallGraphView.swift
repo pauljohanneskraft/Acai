@@ -268,7 +268,7 @@ private struct CallGraphCanvasView: View {
         .deltaBadge(viewModel.nodeDeltaStatus(id: node.id))
         .diagramNodeAccessibility(
             DiagramElementDescription(
-                callGraphNode: node.node, in: viewModel.graph, delta: viewModel.nodeDeltaStatus(id: node.id)),
+                callGraphNode: node.node, counts: viewModel.callCounts, delta: viewModel.nodeDeltaStatus(id: node.id)),
             identifier: "diagram.callGraphNode.\(node.id)",
             isSelected: viewModel.selectedNodeIDs.contains(node.id),
             onSelect: { viewModel.selectNode(node.id, extending: false) },

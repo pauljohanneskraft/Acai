@@ -146,6 +146,14 @@ public struct ProjectBrowserView: View {
             SettingsSheet()
                 .environmentObject(model)
         }
+        // One view presents one sheet at a time. A shortcut that fires over another sheet would
+        // otherwise leave its flag set with nothing shown, and every later press would be a no-op.
+        .onChange(of: keyboardShortcutsPresenter.isPresented) { _, shown in
+            if shown, presentedSheetCount > 1 { keyboardShortcutsPresenter.isPresented = false }
+        }
+        .onChange(of: quickOpenPresenter.isPresented) { _, shown in
+            if shown, presentedSheetCount > 1 { quickOpenPresenter.isPresented = false }
+        }
         #endif
         .modifier(ExportPresentation(model: model))
         .modifier(StoreErrorAlert(
@@ -182,6 +190,15 @@ public struct ProjectBrowserView: View {
             Text(.app("View.ProjectBrowserView.DeletesDiagramsCachedAnalysis"))
         }
     }
+
+    #if !os(macOS)
+    private var presentedSheetCount: Int {
+        [
+            newProjectPresented, quickOpenPresenter.isPresented,
+            settingsPresenter.isPresented, keyboardShortcutsPresenter.isPresented
+        ].filter { $0 }.count
+    }
+    #endif
 
     // MARK: - Sidebar (Left Column)
 
