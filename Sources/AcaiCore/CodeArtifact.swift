@@ -59,6 +59,9 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
         public var toolVersion: String?
         /// Empty when every source file parsed cleanly.
         public var parseDiagnostics: [ParseDiagnostic]
+        /// The project roots discovery claimed, in the order it found them. Empty in an artifact
+        /// written before this was recorded, which reads the same as "no roots discovered".
+        public var discoveredRoots: [DiscoveredRoot]
 
         /// `true` when at least one source file could not be fully parsed
         /// (the best-effort tree contained missing/unexpected nodes).
@@ -68,12 +71,41 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
             sourceLanguage: SourceLanguage,
             filePaths: [String] = [],
             toolVersion: String? = nil,
-            parseDiagnostics: [ParseDiagnostic] = []
+            parseDiagnostics: [ParseDiagnostic] = [],
+            discoveredRoots: [DiscoveredRoot] = []
         ) {
             self.sourceLanguage = sourceLanguage
             self.filePaths = filePaths
             self.toolVersion = toolVersion
             self.parseDiagnostics = parseDiagnostics
+            self.discoveredRoots = discoveredRoots
+        }
+
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.sourceLanguage = try container.decode(SourceLanguage.self, forKey: .sourceLanguage)
+            self.filePaths = try container.decode([String].self, forKey: .filePaths)
+            self.toolVersion = try container.decodeIfPresent(String.self, forKey: .toolVersion)
+            self.parseDiagnostics = try container.decode([ParseDiagnostic].self, forKey: .parseDiagnostics)
+            self.discoveredRoots =
+                try container.decodeIfPresent([DiscoveredRoot].self, forKey: .discoveredRoots) ?? []
+        }
+    }
+
+    /// A project root discovery claimed: where it sits, which detector claimed it, and the languages
+    /// it accounted for. Recorded so a consumer can attribute a type to the project it came from
+    /// rather than inferring one from a path anchor.
+    public struct DiscoveredRoot: Codable, Equatable, Hashable, Sendable {
+        /// Relative to the analysed folder; `"."` when the folder is itself the root.
+        public var path: String
+        /// The claiming detector's type name.
+        public var detector: String
+        public var languages: [SourceLanguage]
+
+        public init(path: String, detector: String, languages: [SourceLanguage]) {
+            self.path = path
+            self.detector = detector
+            self.languages = languages
         }
     }
 
@@ -117,7 +149,9 @@ extension CodeArtifact {
                 sourceLanguage: metadata.sourceLanguage,
                 filePaths: metadata.filePaths + other.metadata.filePaths,
                 toolVersion: metadata.toolVersion ?? other.metadata.toolVersion,
-                parseDiagnostics: metadata.parseDiagnostics + other.metadata.parseDiagnostics
+                parseDiagnostics: metadata.parseDiagnostics + other.metadata.parseDiagnostics,
+                discoveredRoots: (metadata.discoveredRoots + other.metadata.discoveredRoots)
+                    .removingDuplicates { $0 }
             ),
             types: types + other.types,
             relationships: relationships + other.relationships,

@@ -18,6 +18,6 @@ public struct PythonDetector: BuildSystemDetector {
 
         let sourceDirs = SourceDirectoryProbe(preferring: "src").directories(in: root)
         guard SourceFilePresence(extensions: ["py"]).exist(inAnyOf: sourceDirs) else { return [] }
-        return [SourceSpec(language: .python, sourceDirs: sourceDirs)]
+        return [SourceSpec(language: .python, sourceDirs: sourceDirs, root: root)]
     }
 }

@@ -14,6 +14,6 @@ public struct SwiftPackageManagerDetector: BuildSystemDetector {
     ) -> [SourceSpec] {
         guard LanguageRequest(requestedLanguages).wants(.swift) else { return [] }
         let sourceDirs = SourceDirectoryProbe(preferring: "Sources").directories(in: root)
-        return [SourceSpec(language: .swift, sourceDirs: sourceDirs)]
+        return [SourceSpec(language: .swift, sourceDirs: sourceDirs, root: root)]
     }
 }

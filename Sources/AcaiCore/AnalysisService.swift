@@ -33,7 +33,8 @@ public struct AnalysisService: Sendable {
         self.parsers = parsers
         self.projectDiscovery = projectDiscovery ?? ProjectDiscovery(
             detectors: [],
-            fallback: FallbackDetector(parsers: parsers)
+            fallback: FallbackDetector(parsers: parsers),
+            excludedDirectories: LanguageRegistry(parsers: parsers).excludedDirectories
         )
         self.fileParsingConcurrencyLimit = fileParsingConcurrencyLimit
     }
@@ -79,9 +80,10 @@ public struct AnalysisService: Sendable {
             }
         }
 
-        guard let result = combinedArtifact else {
+        guard var result = combinedArtifact else {
             throw ValidationError("No source files could be parsed in \(rootURL.path).")
         }
+        result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
         // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
         // per-language-group before specs are merged, so it can't see cross-spec call receivers.
         return result.resolvingCallSiteReceivers()

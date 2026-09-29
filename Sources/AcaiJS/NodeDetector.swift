@@ -26,10 +26,10 @@ public struct NodeDetector: BuildSystemDetector {
         var specs: [SourceSpec] = []
 
         if hasTS, request.wants(.typeScript) {
-            specs.append(SourceSpec(language: .typeScript, sourceDirs: searchDirs))
+            specs.append(SourceSpec(language: .typeScript, sourceDirs: searchDirs, root: root))
         }
         if hasJS, request.wants(.javaScript), !hasTS || request.explicitlyWants(.javaScript) {
-            specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs))
+            specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs, root: root))
         }
 
         return specs

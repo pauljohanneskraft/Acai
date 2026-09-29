@@ -27,7 +27,7 @@ public struct FallbackDetector: BuildSystemDetector {
             guard !FileManager.default.fileURLs(
                 in: root, withExtensions: exts, excludingDirectories: excludedDirectories
             ).isEmpty else { return nil }
-            return SourceSpec(language: lang, sourceDirs: [root])
+            return SourceSpec(language: lang, sourceDirs: [root], root: root)
         }
     }
 }

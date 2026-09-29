@@ -32,15 +32,15 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
         var specs: [SourceSpec] = []
 
         if !kotlinDirs.isEmpty, request.wants(.kotlin) {
-            specs.append(SourceSpec(language: .kotlin, sourceDirs: kotlinDirs))
+            specs.append(SourceSpec(language: .kotlin, sourceDirs: kotlinDirs, root: root))
         } else if request.wants(.kotlin), SourceFilePresence(extensions: ["kt", "kts"]).exist(in: root) {
-            specs.append(SourceSpec(language: .kotlin, sourceDirs: [root]))
+            specs.append(SourceSpec(language: .kotlin, sourceDirs: [root], root: root))
         }
 
         if !javaDirs.isEmpty, request.wants(.java) {
-            specs.append(SourceSpec(language: .java, sourceDirs: javaDirs))
+            specs.append(SourceSpec(language: .java, sourceDirs: javaDirs, root: root))
         } else if request.wants(.java), SourceFilePresence(extensions: ["java"]).exist(in: root) {
-            specs.append(SourceSpec(language: .java, sourceDirs: [root]))
+            specs.append(SourceSpec(language: .java, sourceDirs: [root], root: root))
         }
 
         return specs
