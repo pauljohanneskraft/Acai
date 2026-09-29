@@ -17,8 +17,13 @@ struct CallSiteCollector {
     /// static calls.
     let knownTypeNames: Set<String>
 
-    private let sourceLocations = SourceLocationResolver()
+    private let sourceLocations: SourceLocationResolver
     private let values = SwiftValueClassifier()
+
+    init(knownTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
+        self.knownTypeNames = knownTypeNames
+        self.sourceLocations = sourceLocations
+    }
 
     /// A resolvable call site (`receiver.method()`), or `nil` when the receiver can't be resolved and
     /// the call should be dropped. `propertyMap` maps the current type's stored properties to their
@@ -26,7 +31,7 @@ struct CallSiteCollector {
     /// unprovable type), so such a local isn't mistaken for an unresolved own-property receiver.
     func callSite(
         from node: FunctionCallExprSyntax, propertyMap: [String: String],
-        enclosingTypeName: String?, knownLocalNames: Set<String> = [], fileName: String
+        enclosingTypeName: String?, knownLocalNames: Set<String> = []
     ) -> CallSite? {
         let callee = unwrappedCallee(node.calledExpression)
         if let memberAccess = callee.as(MemberAccessExprSyntax.self) {
@@ -37,11 +42,11 @@ struct CallSiteCollector {
             return CallSite(
                 receiver: resolved.receiver,
                 methodName: methodName,
-                location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+                location: sourceLocations.sourceLocation(of: node)
             )
         }
         if let declRef = callee.as(DeclReferenceExprSyntax.self) {
-            return implicitCall(named: declRef.baseName.text, node: node, propertyMap: propertyMap, fileName: fileName)
+            return implicitCall(named: declRef.baseName.text, node: node, propertyMap: propertyMap)
         }
         return nil
     }
@@ -50,7 +55,7 @@ struct CallSiteCollector {
     /// `CallReceiver` (`localReceiverOriginMap`) because its type couldn't be proven in this file.
     /// Tried only after normal `callSite(from:)` resolution misses.
     func deferredCallSite(
-        from node: FunctionCallExprSyntax, localReceiverOriginMap: [String: CallReceiver], fileName: String
+        from node: FunctionCallExprSyntax, localReceiverOriginMap: [String: CallReceiver]
     ) -> CallSite? {
         guard !localReceiverOriginMap.isEmpty,
               let memberAccess = unwrappedCallee(node.calledExpression).as(MemberAccessExprSyntax.self),
@@ -59,7 +64,7 @@ struct CallSiteCollector {
         else { return nil }
         return CallSite(
             receiver: origin, methodName: memberAccess.declName.baseName.text,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
@@ -68,13 +73,13 @@ struct CallSiteCollector {
     /// the caller's own methods first, then free functions. A construction or closure-property call
     /// isn't a resolvable target, so it's dropped.
     private func implicitCall(
-        named name: String, node: FunctionCallExprSyntax, propertyMap: [String: String], fileName: String
+        named name: String, node: FunctionCallExprSyntax, propertyMap: [String: String]
     ) -> CallSite? {
         guard !isTypeName(name), propertyMap[name] == nil else { return nil }
         return CallSite(
             receiver: .selfDispatch,
             methodName: name,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
@@ -113,7 +118,7 @@ struct CallSiteCollector {
     /// A variable assignment recovered from a `SequenceExprSyntax`, or `nil` if it isn't one. The file
     /// is parsed without operator folding, so `x = expr` surfaces as `[target, AssignmentExpr, value…]`,
     /// and compound assignments as `[target, BinaryOperatorExpr(+=), value…]`.
-    func assignment(from node: SequenceExprSyntax, fileName: String) -> VariableAssignment? {
+    func assignment(from node: SequenceExprSyntax) -> VariableAssignment? {
         let elements = Array(node.elements)
         guard elements.count >= 3, let target = values.target(of: elements[0]) else { return nil }
 
@@ -146,7 +151,7 @@ struct CallSiteCollector {
             targetReceiver: target.receiver,
             op: op,
             value: value,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
@@ -154,14 +159,14 @@ struct CallSiteCollector {
     /// Bare identifiers and the member of a `self.x` access both surface as `DeclReferenceExprSyntax`,
     /// so this records them with `receiver == nil`; consumers filter by name (issue #111).
     func fieldRead(
-        from node: DeclReferenceExprSyntax, propertyMap: [String: String], fileName: String
+        from node: DeclReferenceExprSyntax, propertyMap: [String: String]
     ) -> FieldAccess? {
         let name = node.baseName.text
         guard propertyMap[name] != nil else { return nil }
         return FieldAccess(
             name: name,
             receiver: nil,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
@@ -171,15 +176,14 @@ struct CallSiteCollector {
     /// Callers guard with `isBareReferenceUse` first. `methodNames` is the enclosing type's own
     /// method-name set from a raw pre-pass, so a forward-declared method is still recognised.
     func methodReference(
-        from node: DeclReferenceExprSyntax, propertyMap: [String: String], methodNames: Set<String>,
-        fileName: String
+        from node: DeclReferenceExprSyntax, propertyMap: [String: String], methodNames: Set<String>
     ) -> CallSite? {
         let name = node.baseName.text
         guard propertyMap[name] == nil, methodNames.contains(name) else { return nil }
         return CallSite(
             receiver: .selfDispatch,
             methodName: name,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
