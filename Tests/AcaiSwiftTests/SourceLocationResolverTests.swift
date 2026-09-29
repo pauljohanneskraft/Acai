@@ -66,8 +66,8 @@ struct SourceLocationResolverTests {
 
     @Test func parsingAMalformedFileReusesThatOneConverterForItsDiagnostics() {
         var built = 0
-        let artifact = SwiftCodeParser().parse(source: "struct Broken { func m( {", fileName: "Bad.swift") {
-            fileName, tree in
+        let malformed = "struct Broken { func m( {"
+        let artifact = SwiftCodeParser().parse(source: malformed, fileName: "Bad.swift") { fileName, tree in
             built += 1
             return SourceLocationConverter(fileName: fileName, tree: tree)
         }
