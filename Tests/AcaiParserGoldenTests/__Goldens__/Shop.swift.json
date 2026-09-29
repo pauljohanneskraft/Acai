@@ -12,6 +12,7 @@
         {
           "location" : {
             "column" : 5,
+            "endLine" : 85,
             "filePath" : "Shop.swift",
             "line" : 85
           },
@@ -34,6 +35,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 86,
         "filePath" : "Shop.swift",
         "line" : 84
       },
@@ -97,6 +99,7 @@
       "kind" : "property",
       "location" : {
         "column" : 1,
+        "endLine" : 88,
         "filePath" : "Shop.swift",
         "line" : 88
       },
@@ -161,6 +164,7 @@
       "kind" : "protocol",
       "location" : {
         "column" : 1,
+        "endLine" : 5,
         "filePath" : "Shop.swift",
         "line" : 3
       },
@@ -186,6 +190,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 4,
             "filePath" : "Shop.swift",
             "line" : 4
           },
@@ -233,6 +238,7 @@
           ],
           "location" : {
             "column" : 5,
+            "endLine" : 8,
             "filePath" : "Shop.swift",
             "line" : 8
           },
@@ -244,6 +250,7 @@
           ],
           "location" : {
             "column" : 5,
+            "endLine" : 9,
             "filePath" : "Shop.swift",
             "line" : 9
           },
@@ -267,6 +274,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 10,
         "filePath" : "Shop.swift",
         "line" : 7
       },
@@ -303,6 +311,7 @@
       "kind" : "struct",
       "location" : {
         "column" : 1,
+        "endLine" : 15,
         "filePath" : "Shop.swift",
         "line" : 12
       },
@@ -328,6 +337,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 13,
             "filePath" : "Shop.swift",
             "line" : 13
           },
@@ -375,6 +385,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 14,
             "filePath" : "Shop.swift",
             "line" : 14
           },
@@ -428,6 +439,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 19,
         "filePath" : "Shop.swift",
         "line" : 17
       },
@@ -454,6 +466,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 18,
             "filePath" : "Shop.swift",
             "line" : 18
           },
@@ -520,6 +533,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 32,
         "filePath" : "Shop.swift",
         "line" : 21
       },
@@ -545,6 +559,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 23,
             "filePath" : "Shop.swift",
             "line" : 23
           },
@@ -576,6 +591,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 26,
                 "filePath" : "Shop.swift",
                 "line" : 26
               },
@@ -595,6 +611,7 @@
             {
               "location" : {
                 "column" : 14,
+                "endLine" : 26,
                 "filePath" : "Shop.swift",
                 "line" : 26
               },
@@ -603,6 +620,7 @@
             {
               "location" : {
                 "column" : 21,
+                "endLine" : 26,
                 "filePath" : "Shop.swift",
                 "line" : 26
               },
@@ -616,6 +634,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 27,
             "filePath" : "Shop.swift",
             "line" : 25
           },
@@ -667,6 +686,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 29,
             "filePath" : "Shop.swift",
             "line" : 29
           },
@@ -705,6 +725,7 @@
             {
               "location" : {
                 "column" : 33,
+                "endLine" : 31,
                 "filePath" : "Shop.swift",
                 "line" : 31
               },
@@ -718,6 +739,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 31,
             "filePath" : "Shop.swift",
             "line" : 31
           },
@@ -778,6 +800,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 78,
         "filePath" : "Shop.swift",
         "line" : 34
       },
@@ -807,6 +830,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 41,
             "filePath" : "Shop.swift",
             "line" : 41
           },
@@ -850,6 +874,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 42,
             "filePath" : "Shop.swift",
             "line" : 42
           },
@@ -897,6 +922,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 43,
             "filePath" : "Shop.swift",
             "line" : 43
           },
@@ -944,6 +970,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 44,
             "filePath" : "Shop.swift",
             "line" : 44
           },
@@ -999,6 +1026,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 45,
             "filePath" : "Shop.swift",
             "line" : 45
           },
@@ -1022,6 +1050,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 48,
                 "filePath" : "Shop.swift",
                 "line" : 48
               },
@@ -1041,6 +1070,7 @@
             {
               "location" : {
                 "column" : 14,
+                "endLine" : 48,
                 "filePath" : "Shop.swift",
                 "line" : 48
               },
@@ -1049,6 +1079,7 @@
             {
               "location" : {
                 "column" : 21,
+                "endLine" : 48,
                 "filePath" : "Shop.swift",
                 "line" : 48
               },
@@ -1062,6 +1093,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 50,
             "filePath" : "Shop.swift",
             "line" : 47
           },
@@ -1119,6 +1151,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 53,
                 "filePath" : "Shop.swift",
                 "line" : 53
               },
@@ -1135,6 +1168,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 53,
                 "filePath" : "Shop.swift",
                 "line" : 53
               },
@@ -1143,6 +1177,7 @@
             {
               "location" : {
                 "column" : 16,
+                "endLine" : 54,
                 "filePath" : "Shop.swift",
                 "line" : 54
               },
@@ -1151,6 +1186,7 @@
             {
               "location" : {
                 "column" : 23,
+                "endLine" : 54,
                 "filePath" : "Shop.swift",
                 "line" : 54
               },
@@ -1164,6 +1200,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 55,
             "filePath" : "Shop.swift",
             "line" : 52
           },
@@ -1198,6 +1235,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 59,
                 "filePath" : "Shop.swift",
                 "line" : 59
               },
@@ -1220,6 +1258,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 61,
             "filePath" : "Shop.swift",
             "line" : 57
           },
@@ -1251,6 +1290,7 @@
             {
               "location" : {
                 "column" : 13,
+                "endLine" : 70,
                 "filePath" : "Shop.swift",
                 "line" : 70
               },
@@ -1270,6 +1310,7 @@
             {
               "location" : {
                 "column" : 13,
+                "endLine" : 70,
                 "filePath" : "Shop.swift",
                 "line" : 70
               },
@@ -1283,6 +1324,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 73,
             "filePath" : "Shop.swift",
             "line" : 63
           },
@@ -1341,6 +1383,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 75,
             "filePath" : "Shop.swift",
             "line" : 75
           },
@@ -1390,6 +1433,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 77,
             "filePath" : "Shop.swift",
             "line" : 77
           },
@@ -1453,6 +1497,7 @@
           "kind" : "struct",
           "location" : {
             "column" : 5,
+            "endLine" : 39,
             "filePath" : "Shop.swift",
             "line" : 36
           },
@@ -1482,6 +1527,7 @@
               "kind" : "property",
               "location" : {
                 "column" : 9,
+                "endLine" : 37,
                 "filePath" : "Shop.swift",
                 "line" : 37
               },
@@ -1520,6 +1566,7 @@
                 {
                   "location" : {
                     "column" : 49,
+                    "endLine" : 38,
                     "filePath" : "Shop.swift",
                     "line" : 38
                   },
@@ -1533,6 +1580,7 @@
               "kind" : "method",
               "location" : {
                 "column" : 9,
+                "endLine" : 38,
                 "filePath" : "Shop.swift",
                 "line" : 38
               },
@@ -1591,6 +1639,7 @@
       "kind" : "extension",
       "location" : {
         "column" : 1,
+        "endLine" : 82,
         "filePath" : "Shop.swift",
         "line" : 80
       },
@@ -1607,6 +1656,7 @@
             {
               "location" : {
                 "column" : 35,
+                "endLine" : 81,
                 "filePath" : "Shop.swift",
                 "line" : 81
               },
@@ -1629,6 +1679,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 81,
             "filePath" : "Shop.swift",
             "line" : 81
           },

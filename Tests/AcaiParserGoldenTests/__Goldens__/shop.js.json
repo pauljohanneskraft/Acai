@@ -21,6 +21,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 49,
         "filePath" : "shop.js",
         "line" : 47
       },
@@ -62,6 +63,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 57,
         "filePath" : "shop.js",
         "line" : 55
       },
@@ -109,6 +111,7 @@
       "kind" : "property",
       "location" : {
         "column" : 13,
+        "endLine" : 59,
         "filePath" : "shop.js",
         "line" : 59
       },
@@ -163,6 +166,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 3,
         "filePath" : "shop.js",
         "line" : 1
       },
@@ -189,6 +193,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 2,
             "filePath" : "shop.js",
             "line" : 2
           },
@@ -240,6 +245,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 13,
         "filePath" : "shop.js",
         "line" : 5
       },
@@ -253,6 +259,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 7,
                 "filePath" : "shop.js",
                 "line" : 7
               },
@@ -278,6 +285,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 8,
             "filePath" : "shop.js",
             "line" : 6
           },
@@ -320,6 +328,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 12,
             "filePath" : "shop.js",
             "line" : 10
           },
@@ -372,6 +381,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 45,
         "filePath" : "shop.js",
         "line" : 15
       },
@@ -385,6 +395,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 18,
                 "filePath" : "shop.js",
                 "line" : 18
               },
@@ -398,6 +409,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 19,
                 "filePath" : "shop.js",
                 "line" : 19
               },
@@ -411,6 +423,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 20,
                 "filePath" : "shop.js",
                 "line" : 20
               },
@@ -436,6 +449,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 21,
             "filePath" : "shop.js",
             "line" : 16
           },
@@ -489,6 +503,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 26,
             "filePath" : "shop.js",
             "line" : 23
           },
@@ -518,6 +533,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 30,
                 "filePath" : "shop.js",
                 "line" : 30
               },
@@ -540,6 +556,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 32,
             "filePath" : "shop.js",
             "line" : 28
           },
@@ -566,6 +583,7 @@
             {
               "location" : {
                 "column" : 87,
+                "endLine" : 40,
                 "filePath" : "shop.js",
                 "line" : 40
               },
@@ -579,6 +597,7 @@
             {
               "location" : {
                 "column" : 25,
+                "endLine" : 41,
                 "filePath" : "shop.js",
                 "line" : 41
               },
@@ -604,6 +623,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 44,
             "filePath" : "shop.js",
             "line" : 34
           },

@@ -14,7 +14,8 @@ struct SourceLocationResolver {
         return AcaiCore.SourceLocation(
             filePath: fileName,
             line: location.line,
-            column: location.column
+            column: location.column,
+            endLine: converter.location(for: node.endPositionBeforeTrailingTrivia).line
         )
     }
 }

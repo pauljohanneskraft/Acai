@@ -19,7 +19,7 @@ against your build.
 - [Install](#Install)
 - [The mental model](#The-mental-model)
 - [Shared options](#Shared-options)
-- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`dependents`](#dependents) · [`diff`](#diff)
+- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`hotspots`](#hotspots) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`dependents`](#dependents) · [`diff`](#diff)
 - [Recipes](#Recipes)
 - [Platform differences](#Platform-differences)
 
@@ -297,12 +297,43 @@ acai image --source-old ./before --source ./after --output delta.png
 | `--sort <metric>` | Ranking for the human tables. Default `fanOut`. |
 | `--top <n>` | Limit the human type table. |
 
-`--sort` accepts: `fanOut`, `fanIn`, `weightedMethods`, `depthOfInheritance`, `numberOfChildren`, `responseForClass`, `publicMemberCount`, `publicMemberRatio`, `mutablePublicState`, `maxParameters`, `meanParameters`, `dataClassScore`, `overrideCount`, `nestingDepth`, `deepAndWide`, `lackOfCohesion`, `featureEnvyMethods`.
+`--sort` accepts: `fanOut`, `fanIn`, `weightedMethods`, `depthOfInheritance`, `numberOfChildren`, `responseForClass`, `publicMemberCount`, `publicMemberRatio`, `mutablePublicState`, `maxParameters`, `meanParameters`, `dataClassScore`, `overrideCount`, `nestingDepth`, `deepAndWide`, `lackOfCohesion`, `featureEnvyMethods`, `linesOfCode`.
+
+**`linesOfCode`** is *physical* lines — every line from a declaration's first to its last, blanks and comments included. It is counted as a union of line ranges per file rather than a sum, so a nested type's lines are not charged again to the type that encloses it, and a type whose behaviour lives in extensions in other files is credited with those lines too. Module totals attribute each declaration to the file it was written in, so a cross-module extension counts toward the module that declares it. Per type it appears as the `loc` column and `TypeMetric.linesOfCode`; per module as the module table's `loc` and `ModuleCoupling.linesOfCode`; across the codebase as the summary's `Lines:` and `Counts.linesOfCode`, which also covers free functions, module-scope variables, and files in modules that declare no type of their own — so it can exceed the sum of the module rows.
 
 `--format json` output: `{ "metrics": <CodeMetrics>, "health": <HealthCheck.Summary> }`.
 
 ```sh
 acai metrics --from myproj --format human --sort weightedMethods --top 20
+```
+
+### `hotspots`
+
+> Rank files by churn × complexity — where a refactoring budget buys the most (**macOS only**).
+
+The classic hotspot technique: how often a file changes, against how complex its types are. A file
+above both medians is a hotspot; the report ranks those by churn × complexity. Churn is a git-history
+walk, so `--source` must point inside a git checkout — a plain folder is an error, not an empty list.
+
+| Flag | Notes |
+| --- | --- |
+| `--source <path>` | **Required.** A directory inside a git checkout; may be a subdirectory of the repository root. |
+| `--language <lang>` | Repeatable, as elsewhere. |
+| `--include-generated` | |
+| `--commits <n>` | How many commits of history to walk for churn. Default `50`. |
+| `--top <n>` | Limit the ranked list. |
+| `--format` | `human` (default), `json` |
+| `--output <path>` | |
+
+`--format json` output: `{ "churnThreshold": <median>, "complexityThreshold": <median>,
+"commitWindow": <n>, "filesScored": <n>, "hotspotCount": <n>, "hotspots": [{ "path", "type",
+"churn", "complexity", "score", "isHotspot" }] }`, ranked highest score first. `type` is the declared
+type whose most complex method sets `complexity`, omitted for a file that declares none.
+`hotspotCount` counts every file above both medians, even when `--top` lists fewer.
+
+```sh
+acai hotspots --source . --top 10
+acai hotspots --source . --commits 200 --format json --output hotspots.json
 ```
 
 ### `quality`
@@ -348,7 +379,7 @@ movements:
     metric: distance         # no minImprovement: must simply not regress
 ```
 
-**Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`.
+**Budgetable metrics.** Module-scoped: `instability`, `abstractness`, `distance`, `publicApiSurface`. Type-scoped: `fanIn`, `fanOut`, `depthOfInheritance`, `weightedMethods`, `numberOfChildren`, `numberOfProperties`, `rfc`, `maxParameters`, `mutablePublicState`, `lcom`, `featureEnvyMethods`, `dataClassScore`, `nestingDepth`, `maxCyclomaticComplexity`, `linesOfCode` (see [`metrics`](#metrics) for what it counts).
 
 **Scoping a budget to one language.** A type-scoped budget's `target` may carry a `language` (e.g. `swift`, `c`, `kotlin` — the same values as `--language`), so it only matches types parsed from that language. Omitted, the budget applies to every language, as before. This matters most for a metric a language without encapsulation can't mean the same thing by — C gives every struct field `.public` since it has no access-control keywords, so an unscoped `mutablePublicState` budget in a codebase with any C is set by C's meaningless maximum rather than the OO languages it's meant to protect. `acai rules` seeds one `mutablePublicState` hint per language present when the codebase has more than one, each `target`-scoped to it.
 
@@ -574,9 +605,9 @@ Mermaid renders natively on GitHub — paste the output into a ` ```mermaid ` fe
 
 ## Platform differences
 
-The CLI runs on macOS and Linux. **One difference:** `image` is macOS-only, because it renders through SwiftUI's `ImageRenderer`, which needs a window-server session.
+The CLI runs on macOS and Linux. **Two differences:** `image` is macOS-only because it renders through SwiftUI's `ImageRenderer`, which needs a window-server session; `hotspots` is macOS-only because its churn walk goes through libgit2, which Açaí builds against SecureTransport/CommonCrypto and so links on Apple platforms only.
 
-On Linux the subcommand is **absent** — `acai --help` lists eleven subcommands rather than twelve. Every other command and flag is identical. For images there, emit DOT and render with Graphviz:
+On Linux both subcommands are **absent** — `acai --help` lists eleven subcommands rather than thirteen. Every other command and flag is identical. For images there, emit DOT and render with Graphviz:
 
 ```sh
 acai diagram --source . --output arch.dot

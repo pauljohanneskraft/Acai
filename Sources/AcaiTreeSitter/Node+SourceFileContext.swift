@@ -22,7 +22,8 @@ extension Node {
         return SourceLocation(
             filePath: context.fileName,
             line: Int(point.row) + 1,
-            column: Int(point.column) + 1
+            column: Int(point.column) + 1,
+            endLine: Int(pointRange.upperBound.row) + 1
         )
     }
 

@@ -35,7 +35,7 @@ struct MainSequenceZoneTests {
     @Test("A module's zone agrees with its own metrics")
     func moduleCouplingDerivesItsZone() throws {
         let json = """
-        {"name":"Core","typeCount":3,"afferentCoupling":2,"efferentCoupling":0,
+        {"name":"Core","typeCount":3,"linesOfCode":0,"afferentCoupling":2,"efferentCoupling":0,
          "instability":0.0,"abstractness":0.33,"distanceFromMainSequence":0.67,
          "publicMemberCount":0,"stableDependencyViolations":[]}
         """

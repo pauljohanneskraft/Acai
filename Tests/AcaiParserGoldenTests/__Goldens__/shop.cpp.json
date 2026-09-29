@@ -12,6 +12,7 @@
         {
           "location" : {
             "column" : 23,
+            "endLine" : 80,
             "filePath" : "shop.cpp",
             "line" : 80
           },
@@ -33,6 +34,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 81,
         "filePath" : "shop.cpp",
         "line" : 79
       },
@@ -111,6 +113,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 7,
             "filePath" : "shop.cpp",
             "line" : 7
           },
@@ -122,6 +125,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 8,
             "filePath" : "shop.cpp",
             "line" : 8
           },
@@ -138,6 +142,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 9,
         "filePath" : "shop.cpp",
         "line" : 6
       },
@@ -175,6 +180,7 @@
       "kind" : "struct",
       "location" : {
         "column" : 1,
+        "endLine" : 14,
         "filePath" : "shop.cpp",
         "line" : 11
       },
@@ -200,6 +206,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 12,
             "filePath" : "shop.cpp",
             "line" : 12
           },
@@ -243,6 +250,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 13,
             "filePath" : "shop.cpp",
             "line" : 13
           },
@@ -297,6 +305,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 19,
         "filePath" : "shop.cpp",
         "line" : 16
       },
@@ -322,6 +331,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 18,
             "filePath" : "shop.cpp",
             "line" : 18
           },
@@ -390,6 +400,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 25,
         "filePath" : "shop.cpp",
         "line" : 21
       },
@@ -415,6 +426,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 23,
             "filePath" : "shop.cpp",
             "line" : 23
           },
@@ -458,6 +470,7 @@
           "kind" : "deinitializer",
           "location" : {
             "column" : 9,
+            "endLine" : 24,
             "filePath" : "shop.cpp",
             "line" : 24
           },
@@ -511,6 +524,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 34,
         "filePath" : "shop.cpp",
         "line" : 27
       },
@@ -536,6 +550,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 29,
             "filePath" : "shop.cpp",
             "line" : 29
           },
@@ -579,6 +594,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 32,
             "filePath" : "shop.cpp",
             "line" : 32
           },
@@ -628,6 +644,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 33,
             "filePath" : "shop.cpp",
             "line" : 33
           },
@@ -689,6 +706,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 77,
         "filePath" : "shop.cpp",
         "line" : 36
       },
@@ -714,6 +732,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 38,
             "filePath" : "shop.cpp",
             "line" : 38
           },
@@ -757,6 +776,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 39,
             "filePath" : "shop.cpp",
             "line" : 39
           },
@@ -800,6 +820,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 40,
             "filePath" : "shop.cpp",
             "line" : 40
           },
@@ -850,6 +871,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 43,
             "filePath" : "shop.cpp",
             "line" : 43
           },
@@ -893,6 +915,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 44,
             "filePath" : "shop.cpp",
             "line" : 44
           },
@@ -937,6 +960,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 51,
             "filePath" : "shop.cpp",
             "line" : 51
           },
@@ -996,6 +1020,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 54,
                 "filePath" : "shop.cpp",
                 "line" : 54
               },
@@ -1004,6 +1029,7 @@
             {
               "location" : {
                 "column" : 45,
+                "endLine" : 54,
                 "filePath" : "shop.cpp",
                 "line" : 54
               },
@@ -1017,6 +1043,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 55,
             "filePath" : "shop.cpp",
             "line" : 53
           },
@@ -1062,6 +1089,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 59,
             "filePath" : "shop.cpp",
             "line" : 57
           },
@@ -1093,6 +1121,7 @@
             {
               "location" : {
                 "column" : 87,
+                "endLine" : 67,
                 "filePath" : "shop.cpp",
                 "line" : 67
               },
@@ -1106,6 +1135,7 @@
             {
               "location" : {
                 "column" : 25,
+                "endLine" : 68,
                 "filePath" : "shop.cpp",
                 "line" : 68
               },
@@ -1125,6 +1155,7 @@
             {
               "location" : {
                 "column" : 25,
+                "endLine" : 68,
                 "filePath" : "shop.cpp",
                 "line" : 68
               },
@@ -1138,6 +1169,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 71,
             "filePath" : "shop.cpp",
             "line" : 61
           },
@@ -1202,6 +1234,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 76,
             "filePath" : "shop.cpp",
             "line" : 74
           },
@@ -1266,6 +1299,7 @@
           "kind" : "class",
           "location" : {
             "column" : 9,
+            "endLine" : 49,
             "filePath" : "shop.cpp",
             "line" : 46
           },
@@ -1291,6 +1325,7 @@
               "kind" : "method",
               "location" : {
                 "column" : 17,
+                "endLine" : 48,
                 "filePath" : "shop.cpp",
                 "line" : 48
               },
