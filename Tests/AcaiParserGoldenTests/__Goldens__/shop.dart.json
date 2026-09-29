@@ -21,6 +21,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 83,
         "filePath" : "shop.dart",
         "line" : 83
       },
@@ -84,6 +85,7 @@
       "kind" : "property",
       "location" : {
         "column" : 27,
+        "endLine" : 85,
         "filePath" : "shop.dart",
         "line" : 85
       },
@@ -157,6 +159,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 5,
         "filePath" : "shop.dart",
         "line" : 3
       },
@@ -182,6 +185,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 4,
             "filePath" : "shop.dart",
             "line" : 4
           },
@@ -230,6 +234,7 @@
           ],
           "location" : {
             "column" : 33,
+            "endLine" : 7,
             "filePath" : "shop.dart",
             "line" : 7
           },
@@ -241,6 +246,7 @@
           ],
           "location" : {
             "column" : 45,
+            "endLine" : 7,
             "filePath" : "shop.dart",
             "line" : 7
           },
@@ -257,6 +263,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 7,
         "filePath" : "shop.dart",
         "line" : 7
       },
@@ -294,6 +301,7 @@
       "kind" : "mixin",
       "location" : {
         "column" : 1,
+        "endLine" : 11,
         "filePath" : "shop.dart",
         "line" : 9
       },
@@ -320,6 +328,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 10,
             "filePath" : "shop.dart",
             "line" : 10
           },
@@ -388,6 +397,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 15,
         "filePath" : "shop.dart",
         "line" : 13
       },
@@ -414,6 +424,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 14,
             "filePath" : "shop.dart",
             "line" : 14
           },
@@ -482,6 +493,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 20,
         "filePath" : "shop.dart",
         "line" : 17
       },
@@ -511,6 +523,7 @@
           "kind" : "property",
           "location" : {
             "column" : 27,
+            "endLine" : 18,
             "filePath" : "shop.dart",
             "line" : 18
           },
@@ -557,6 +570,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 19,
             "filePath" : "shop.dart",
             "line" : 19
           },
@@ -632,6 +646,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 31,
         "filePath" : "shop.dart",
         "line" : 22
       },
@@ -657,6 +672,7 @@
           "kind" : "property",
           "location" : {
             "column" : 31,
+            "endLine" : 23,
             "filePath" : "shop.dart",
             "line" : 23
           },
@@ -700,6 +716,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 25,
             "filePath" : "shop.dart",
             "line" : 25
           },
@@ -749,6 +766,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 28,
             "filePath" : "shop.dart",
             "line" : 28
           },
@@ -788,6 +806,7 @@
             {
               "location" : {
                 "column" : 47,
+                "endLine" : 30,
                 "filePath" : "shop.dart",
                 "line" : 30
               },
@@ -801,6 +820,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 30,
             "filePath" : "shop.dart",
             "line" : 30
           },
@@ -870,6 +890,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 77,
         "filePath" : "shop.dart",
         "line" : 33
       },
@@ -899,6 +920,7 @@
           "kind" : "property",
           "location" : {
             "column" : 31,
+            "endLine" : 34,
             "filePath" : "shop.dart",
             "line" : 34
           },
@@ -944,6 +966,7 @@
           "kind" : "property",
           "location" : {
             "column" : 19,
+            "endLine" : 35,
             "filePath" : "shop.dart",
             "line" : 35
           },
@@ -991,6 +1014,7 @@
           "kind" : "property",
           "location" : {
             "column" : 19,
+            "endLine" : 36,
             "filePath" : "shop.dart",
             "line" : 36
           },
@@ -1039,6 +1063,7 @@
           "kind" : "property",
           "location" : {
             "column" : 45,
+            "endLine" : 37,
             "filePath" : "shop.dart",
             "line" : 37
           },
@@ -1084,6 +1109,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 39,
             "filePath" : "shop.dart",
             "line" : 39
           },
@@ -1139,6 +1165,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 45,
                 "filePath" : "shop.dart",
                 "line" : 45
               },
@@ -1152,6 +1179,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 46,
                 "filePath" : "shop.dart",
                 "line" : 46
               },
@@ -1168,6 +1196,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 47,
                 "filePath" : "shop.dart",
                 "line" : 47
               },
@@ -1184,6 +1213,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 45,
                 "filePath" : "shop.dart",
                 "line" : 45
               },
@@ -1192,6 +1222,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 46,
                 "filePath" : "shop.dart",
                 "line" : 46
               },
@@ -1200,6 +1231,7 @@
             {
               "location" : {
                 "column" : 19,
+                "endLine" : 47,
                 "filePath" : "shop.dart",
                 "line" : 47
               },
@@ -1208,6 +1240,7 @@
             {
               "location" : {
                 "column" : 23,
+                "endLine" : 48,
                 "filePath" : "shop.dart",
                 "line" : 48
               },
@@ -1216,6 +1249,7 @@
             {
               "location" : {
                 "column" : 37,
+                "endLine" : 48,
                 "filePath" : "shop.dart",
                 "line" : 48
               },
@@ -1229,6 +1263,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 44,
             "filePath" : "shop.dart",
             "line" : 44
           },
@@ -1268,6 +1303,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 54,
                 "filePath" : "shop.dart",
                 "line" : 54
               },
@@ -1290,6 +1326,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 52,
             "filePath" : "shop.dart",
             "line" : 52
           },
@@ -1324,6 +1361,7 @@
             {
               "location" : {
                 "column" : 79,
+                "endLine" : 64,
                 "filePath" : "shop.dart",
                 "line" : 64
               },
@@ -1337,6 +1375,7 @@
             {
               "location" : {
                 "column" : 13,
+                "endLine" : 65,
                 "filePath" : "shop.dart",
                 "line" : 65
               },
@@ -1356,6 +1395,7 @@
             {
               "location" : {
                 "column" : 13,
+                "endLine" : 65,
                 "filePath" : "shop.dart",
                 "line" : 65
               },
@@ -1369,6 +1409,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 58,
             "filePath" : "shop.dart",
             "line" : 58
           },
@@ -1426,6 +1467,7 @@
             {
               "location" : {
                 "column" : 43,
+                "endLine" : 70,
                 "filePath" : "shop.dart",
                 "line" : 70
               },
@@ -1439,6 +1481,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 70,
             "filePath" : "shop.dart",
             "line" : 70
           },
@@ -1470,6 +1513,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 73,
                 "filePath" : "shop.dart",
                 "line" : 73
               },
@@ -1489,6 +1533,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 73,
                 "filePath" : "shop.dart",
                 "line" : 73
               },
@@ -1502,6 +1547,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 72,
             "filePath" : "shop.dart",
             "line" : 72
           },
@@ -1552,6 +1598,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 76,
             "filePath" : "shop.dart",
             "line" : 76
           },
@@ -1621,6 +1668,7 @@
       "kind" : "extension",
       "location" : {
         "column" : 1,
+        "endLine" : 81,
         "filePath" : "shop.dart",
         "line" : 79
       },
@@ -1637,6 +1685,7 @@
             {
               "location" : {
                 "column" : 45,
+                "endLine" : 80,
                 "filePath" : "shop.dart",
                 "line" : 80
               },
@@ -1659,6 +1708,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 80,
             "filePath" : "shop.dart",
             "line" : 80
           },

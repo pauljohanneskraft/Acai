@@ -49,6 +49,7 @@
       "kind" : "interface",
       "location" : {
         "column" : 1,
+        "endLine" : 8,
         "filePath" : "Shop.java",
         "line" : 6
       },
@@ -74,6 +75,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 7,
             "filePath" : "Shop.java",
             "line" : 7
           },
@@ -122,6 +124,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 11,
             "filePath" : "Shop.java",
             "line" : 11
           },
@@ -133,6 +136,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 12,
             "filePath" : "Shop.java",
             "line" : 12
           },
@@ -149,6 +153,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 17,
         "filePath" : "Shop.java",
         "line" : 10
       },
@@ -165,6 +170,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 15,
                 "filePath" : "Shop.java",
                 "line" : 15
               },
@@ -187,6 +193,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 16,
             "filePath" : "Shop.java",
             "line" : 14
           },
@@ -242,6 +249,7 @@
       "kind" : "record",
       "location" : {
         "column" : 1,
+        "endLine" : 20,
         "filePath" : "Shop.java",
         "line" : 19
       },
@@ -267,6 +275,7 @@
           "kind" : "property",
           "location" : {
             "column" : 1,
+            "endLine" : 20,
             "filePath" : "Shop.java",
             "line" : 19
           },
@@ -310,6 +319,7 @@
           "kind" : "property",
           "location" : {
             "column" : 1,
+            "endLine" : 20,
             "filePath" : "Shop.java",
             "line" : 19
           },
@@ -371,6 +381,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 35,
         "filePath" : "Shop.java",
         "line" : 22
       },
@@ -396,6 +407,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 24,
             "filePath" : "Shop.java",
             "line" : 24
           },
@@ -427,6 +439,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 27,
                 "filePath" : "Shop.java",
                 "line" : 27
               },
@@ -446,6 +459,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 27,
                 "filePath" : "Shop.java",
                 "line" : 27
               },
@@ -454,6 +468,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 27,
                 "filePath" : "Shop.java",
                 "line" : 27
               },
@@ -467,6 +482,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 28,
             "filePath" : "Shop.java",
             "line" : 26
           },
@@ -516,6 +532,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 30,
             "filePath" : "Shop.java",
             "line" : 30
           },
@@ -554,6 +571,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 33,
                 "filePath" : "Shop.java",
                 "line" : 33
               },
@@ -567,6 +585,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 34,
             "filePath" : "Shop.java",
             "line" : 32
           },
@@ -628,6 +647,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 85,
         "filePath" : "Shop.java",
         "line" : 37
       },
@@ -657,6 +677,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 39,
             "filePath" : "Shop.java",
             "line" : 39
           },
@@ -700,6 +721,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 40,
             "filePath" : "Shop.java",
             "line" : 40
           },
@@ -743,6 +765,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 41,
             "filePath" : "Shop.java",
             "line" : 41
           },
@@ -790,6 +813,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 42,
             "filePath" : "Shop.java",
             "line" : 42
           },
@@ -828,6 +852,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 54,
                 "filePath" : "Shop.java",
                 "line" : 54
               },
@@ -847,6 +872,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 54,
                 "filePath" : "Shop.java",
                 "line" : 54
               },
@@ -855,6 +881,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 54,
                 "filePath" : "Shop.java",
                 "line" : 54
               },
@@ -868,6 +895,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 55,
             "filePath" : "Shop.java",
             "line" : 52
           },
@@ -924,6 +952,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 59,
                 "filePath" : "Shop.java",
                 "line" : 59
               },
@@ -940,6 +969,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 59,
                 "filePath" : "Shop.java",
                 "line" : 59
               },
@@ -948,6 +978,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 60,
                 "filePath" : "Shop.java",
                 "line" : 60
               },
@@ -956,6 +987,7 @@
             {
               "location" : {
                 "column" : 65,
+                "endLine" : 60,
                 "filePath" : "Shop.java",
                 "line" : 60
               },
@@ -969,6 +1001,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 61,
             "filePath" : "Shop.java",
             "line" : 57
           },
@@ -1006,6 +1039,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 66,
                 "filePath" : "Shop.java",
                 "line" : 66
               },
@@ -1028,6 +1062,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 68,
             "filePath" : "Shop.java",
             "line" : 63
           },
@@ -1062,6 +1097,7 @@
             {
               "location" : {
                 "column" : 87,
+                "endLine" : 76,
                 "filePath" : "Shop.java",
                 "line" : 76
               },
@@ -1075,6 +1111,7 @@
             {
               "location" : {
                 "column" : 25,
+                "endLine" : 77,
                 "filePath" : "Shop.java",
                 "line" : 77
               },
@@ -1094,6 +1131,7 @@
             {
               "location" : {
                 "column" : 35,
+                "endLine" : 77,
                 "filePath" : "Shop.java",
                 "line" : 77
               },
@@ -1107,6 +1145,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 80,
             "filePath" : "Shop.java",
             "line" : 70
           },
@@ -1175,6 +1214,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 84,
             "filePath" : "Shop.java",
             "line" : 82
           },
@@ -1239,6 +1279,7 @@
           "kind" : "class",
           "location" : {
             "column" : 9,
+            "endLine" : 50,
             "filePath" : "Shop.java",
             "line" : 44
           },
@@ -1268,6 +1309,7 @@
               "kind" : "property",
               "location" : {
                 "column" : 17,
+                "endLine" : 45,
                 "filePath" : "Shop.java",
                 "line" : 45
               },
@@ -1306,6 +1348,7 @@
                 {
                   "location" : {
                     "column" : 73,
+                    "endLine" : 48,
                     "filePath" : "Shop.java",
                     "line" : 48
                   },
@@ -1319,6 +1362,7 @@
               "kind" : "method",
               "location" : {
                 "column" : 17,
+                "endLine" : 49,
                 "filePath" : "Shop.java",
                 "line" : 47
               },
@@ -1377,6 +1421,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 90,
         "filePath" : "Shop.java",
         "line" : 87
       },
@@ -1403,6 +1448,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 89,
             "filePath" : "Shop.java",
             "line" : 88
           },

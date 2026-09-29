@@ -72,4 +72,47 @@ struct MetricsCommandTests {
             #expect(!contents.contains("\"score\" : 1"))
         }
     }
+
+    /// `Sample.swift` declares `Service` on lines 1–6 and `Repository` on lines 8–10, with a blank
+    /// line 7 between them — so the pinned codebase total is 9, not the file's 10 lines (#330).
+    @Test func jsonCarriesLinesOfCodeAtEveryScope() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("metrics.json")
+            var cmd = try CLITestSupport.parseMetrics(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let root = try JSONSerialization.jsonObject(
+                with: Data(contentsOf: output)) as? [String: Any]
+            let metrics = root?["metrics"] as? [String: Any]
+            #expect((metrics?["counts"] as? [String: Any])?["linesOfCode"] as? Int == 9)
+            let types = metrics?["types"] as? [[String: Any]]
+            #expect(types?.first { $0["name"] as? String == "Service" }?["linesOfCode"] as? Int == 6)
+            #expect(types?.first { $0["name"] as? String == "Repository" }?["linesOfCode"] as? Int == 3)
+            let modules = metrics?["modules"] as? [[String: Any]]
+            #expect(modules?.compactMap { $0["linesOfCode"] as? Int }.reduce(0, +) == 9)
+        }
+    }
+
+    @Test func humanReportPrintsTheLinesColumnAndTotal() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeSampleSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("metrics.txt")
+            var cmd = try CLITestSupport.parseMetrics(
+                ["--source", dir.path, "--language", "swift", "--format", "human",
+                 "--sort", "linesOfCode", "--output", output.path])
+            try await cmd.run()
+            let lines = try String(contentsOf: output, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+            #expect(lines.first?.contains("Lines: 9") == true)
+            let header = try #require(lines.first { $0.hasPrefix("TYPE") })
+            #expect(header.contains("loc"))
+            // Ranked by linesOfCode, so the 6-line `Service` precedes the 3-line `Repository`.
+            let ranked = lines.filter { $0.hasPrefix("Service") || $0.hasPrefix("Repository") }
+            #expect(ranked.first?.hasPrefix("Service") == true)
+            #expect(try #require(ranked.first { $0.hasPrefix("Service") }).hasSuffix("6"))
+            // No row may exceed the report's 120-column budget now that a column was added.
+            #expect(lines.allSatisfy { $0.count <= 120 })
+        }
+    }
 }

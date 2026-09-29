@@ -1,14 +1,12 @@
 import AcaiCore
 import AcaiGit
+import AcaiQuality
 import Foundation
 
-/// Loads the churn data off the main actor (this is a git-history walk, real filesystem/
-/// object-store work) and joins it with already-computed complexity into
-/// `HotspotChartData`. `artifact` is captured once at construction (not recomputed on every
-/// render); only the churn half is asynchronous.
+/// Walks churn off the main actor and scores it with the same `Hotspots` the CLI and MCP report.
 @MainActor
 final class HotspotViewModel: ObservableObject {
-    @Published private(set) var chartData: HotspotChartData?
+    @Published private(set) var hotspots: Hotspots?
     @Published private(set) var isLoading = false
     @Published private(set) var loadError: String?
     /// `false` once loading finishes and no git history could be found at all (as opposed to a real
@@ -37,13 +35,13 @@ final class HotspotViewModel: ObservableObject {
             }.value
             guard let churn else {
                 hasGitHistory = false
-                chartData = nil
+                hotspots = nil
                 return
             }
             hasGitHistory = true
-            chartData = HotspotChartData(artifact: artifact, churnByFile: churn)
+            hotspots = Hotspots(artifact: artifact, churnByFile: churn)
         } catch is HistoryNotFetched {
-            chartData = nil
+            hotspots = nil
             isHistoryNotFetched = true
         } catch {
             loadError = error.localizedDescription

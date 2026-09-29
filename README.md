@@ -69,7 +69,7 @@ Açaí ships a Claude Code plugin that wires up the MCP server and a code-audit 
 /plugin install code-quality@acai
 ```
 
-Your agent gets nine read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
+Your agent gets ten read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
 
 No config file required for any of the three.
 
@@ -149,13 +149,14 @@ Generated diagrams are the fast path; the app is where you go when you want to *
 
 ### ⌨️ The `acai` CLI
 
-Twelve commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
+Thirteen commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
 
 ```sh
 # Look around
 acai analyze --source ./MyProject --health          # can I trust this parse?
 acai inspect --source . --kind class --min-members 20
 acai dependents --source . Playlist                 # what breaks if I change this?
+acai hotspots   --source . --top 10                 # where does refactoring pay off? (macOS)
 
 # Draw
 acai diagram --source . --format mermaid --output arch.mmd
@@ -173,7 +174,7 @@ The interesting one is `acai quality`: a declarative `quality.yml` turns your ar
 
 ### 🤖 The `acai-mcp` server
 
-An [MCP](https://modelcontextprotocol.io) server exposing the read-only engine as nine tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_dependents`, `acai_diff`, `acai_diagram`, and `acai_image` (macOS only). One parse is cached per project path and reused across every call.
+An [MCP](https://modelcontextprotocol.io) server exposing the read-only engine as ten tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_dependents`, `acai_diff`, `acai_diagram`, plus `acai_image` and `acai_hotspots` (macOS only). One parse is cached per project path and reused across every call.
 
 ```json
 {
@@ -264,7 +265,7 @@ Sources/
   AcaiCLI/          the `acai` executable
   AcaiMCP/          the `acai-mcp` executable
   AcaiApp/          the SwiftUI app, shared by macOS and iOS    (Apple only)
-  AcaiGit/          libgit2 wrapper — internal to the app       (Apple only)
+  AcaiGit/          libgit2 wrapper — history, churn, checkouts  (Apple only)
 App/                XcodeGen project, entry points, UI tests + golden screenshots
 Examples/           one sample per diagram type, per language, with checked-in exports
 Scripts/            build, install, docs, verify, audit
@@ -282,7 +283,7 @@ Every public module has full API docs. Follow a link for the complete surface:
 | **AcaiCore** | The vocabulary everything speaks: `CodeArtifact`, `TypeDeclaration`, `Member`, `Relationship`, the `CodeParser` protocol, project discovery, and the metric/impact/cohesion analyses. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaicore/) |
 | **AcaiDiagram** | Five diagram families × two text formats (DOT, Mermaid), plus call-graph metrics, method cycles and dead-code scanning. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaidiagram/) |
 | **AcaiDiff** | Structural deltas: what types, members, relationships and metrics changed between two revisions — and the renderable union behind coloured delta diagrams. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaidiff/) |
-| **AcaiQuality** | Selectors, metric budgets, forbidden dependencies, layering, stereotype contracts, cycle detection, baseline-driven metric movements. Powers `acai quality` and the app's rule editor. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaiquality/) |
+| **AcaiQuality** | Selectors, metric budgets, forbidden dependencies, layering, stereotype contracts, cycle detection, baseline-driven metric movements, churn × complexity hotspot scoring. Powers `acai quality`, `acai hotspots` and the app's rule editor. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaiquality/) |
 | **AcaiRender** | Sugiyama hierarchical layout, the shared SwiftUI node views, and PNG/PDF output. Apple platforms only. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acairender/) |
 | **AcaiTreeSitter** | Traversal, call-site, assignment and field-read helpers shared by the grammar-based parsers. Depend on it only when writing a plugin. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaitreesitter/) |
 | **AcaiSwift** | Swift, via SwiftSyntax. SPM + Xcode detectors. | [→](https://pauljohanneskraft.github.io/Acai/documentation/acaiswift/) |
