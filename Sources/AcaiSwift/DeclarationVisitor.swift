@@ -2,7 +2,7 @@ import SwiftSyntax
 import AcaiCore
 
 final class DeclarationVisitor: SyntaxVisitor {
-    let sourceLocations: SourceLocationResolver
+    private let sourceLocations: SourceLocationResolver
     /// The file's completed declarations; a type still being walked lives on `typeStack` until its
     /// `visitPost`, so nesting is derived from the stack rather than the builder's namespace.
     var declarations = DeclarationBuilder()

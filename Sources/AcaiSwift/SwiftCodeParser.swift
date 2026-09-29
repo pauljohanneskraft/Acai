@@ -11,7 +11,7 @@ public struct SwiftCodeParser: CodeParser {
     public init() {}
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
-        parse(source: source, fileName: fileName, makeConverter: SourceLocationConverter.init(fileName:tree:))
+        parse(source: source, fileName: fileName) { SourceLocationConverter(fileName: $0, tree: $1) }
     }
 
     /// `makeConverter` is the seam a test counts through: building a converter walks the whole tree,
