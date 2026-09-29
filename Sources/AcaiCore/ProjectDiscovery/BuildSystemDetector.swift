@@ -6,9 +6,19 @@ public struct SourceSpec {
     public var language: CodeArtifact.SourceLanguage
     public var sourceDirs: [URL]
 
-    public init(language: CodeArtifact.SourceLanguage, sourceDirs: [URL]) {
+    /// Problems found while discovering this spec — a manifest whose layout could not be read in
+    /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
+    /// ``HealthCheck`` reflects them.
+    public var diagnostics: [ParseDiagnostic]
+
+    public init(
+        language: CodeArtifact.SourceLanguage,
+        sourceDirs: [URL],
+        diagnostics: [ParseDiagnostic] = []
+    ) {
         self.language = language
         self.sourceDirs = sourceDirs
+        self.diagnostics = diagnostics
     }
 }
 

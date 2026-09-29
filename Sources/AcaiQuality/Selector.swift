@@ -94,37 +94,6 @@ public struct Selector: Codable, Hashable, Sendable {
     }
 }
 
-/// A compiled `*`/`?` glob pattern, anchored to the whole string. Kept in-target (no regex
-/// dependency) so a malformed pattern can never throw at evaluation time. Public so any module
-/// wanting the same glob vocabulary (e.g. `AcaiApp`'s file allow/blocklist) reuses this instead of a
-/// second, incompatible pattern matcher.
-public struct Glob: Sendable {
-    private let pattern: [Character]
-
-    public init(_ pattern: String) {
-        self.pattern = Array(pattern)
-    }
-
-    public func matches(_ value: String) -> Bool {
-        let v = Array(value)
-        var pi = 0, vi = 0
-        var star = -1, mark = 0
-        while vi < v.count {
-            if pi < pattern.count, pattern[pi] == "?" || pattern[pi] == v[vi] {
-                pi += 1; vi += 1
-            } else if pi < pattern.count, pattern[pi] == "*" {
-                star = pi; mark = vi; pi += 1
-            } else if star != -1 {
-                pi = star + 1; mark += 1; vi = mark
-            } else {
-                return false
-            }
-        }
-        while pi < pattern.count, pattern[pi] == "*" { pi += 1 }
-        return pi == pattern.count
-    }
-}
-
 extension String {
     /// Reduces an annotation marker to its bare comparable name, matching the normalization used by
     /// `TypeDeclaration.stereotype` (`@Entity`, `jakarta.persistence.Entity` → `entity`).

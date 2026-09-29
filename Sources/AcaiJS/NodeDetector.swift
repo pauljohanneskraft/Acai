@@ -3,13 +3,17 @@ import AcaiCore
 
 /// Detects Node.js projects (`package.json`) and locates TypeScript / JavaScript sources.
 ///
-/// Reads `tsconfig.json` (when present) to find configured source directories;
-/// falls back to a `src/` subdirectory or the project root.
+/// Source directories come from the manifests where they say anything: `package.json`'s `workspaces`
+/// globs name a monorepo's packages, and each package's `tsconfig.json` — with its `extends` chain
+/// merged and its project `references` followed — names that package's directories. Only a package
+/// that declares none falls back to probing for a `src/` subdirectory.
 public struct NodeDetector: BuildSystemDetector {
+    private let manifestName = "package.json"
+
     public init() {}
 
     public func isPresent(at root: URL) -> Bool {
-        IndicatorFiles(["package.json"]).present(at: root)
+        IndicatorFiles([manifestName]).present(at: root)
     }
 
     public func discoverSourceSpecs(
@@ -17,8 +21,20 @@ public struct NodeDetector: BuildSystemDetector {
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
         let request = LanguageRequest(requestedLanguages)
-        let searchDirs = tsConfigSourceDirs(in: root)
-            ?? SourceDirectoryProbe(preferring: "src").directories(in: root)
+        var reader = TypeScriptProjectReader(notAbove: root)
+        let workspaces = NodeWorkspaces(
+            manifestAt: root.appendingPathComponent(manifestName), excludingDirectories: excludedDirectories)
+        let packageRoots = workspaces?.packageRoots(in: root) ?? []
+
+        // A workspace root's own sources are whatever it declares — falling back to the root itself
+        // would swallow every package and make reading the globs pointless.
+        var searchDirs = reader.sourceDirs(ofProjectIn: root)
+            ?? (workspaces == nil ? SourceDirectoryProbe(preferring: "src").directories(in: root) : [])
+        for packageRoot in packageRoots {
+            searchDirs += reader.sourceDirs(ofProjectIn: packageRoot)
+                ?? SourceDirectoryProbe(preferring: "src").directories(in: packageRoot)
+        }
+        searchDirs = searchDirs.removingDuplicates { $0.path }
 
         let hasTS = SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: searchDirs)
         let hasJS = SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: searchDirs)
@@ -32,41 +48,17 @@ public struct NodeDetector: BuildSystemDetector {
             specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs))
         }
 
+        // A broken `tsconfig` graph is one fact about the project, not one per language, so it is
+        // recorded once rather than surfacing the same finding under every spec.
+        if !specs.isEmpty {
+            specs[0].diagnostics = reader.diagnostics
+        }
         return specs
     }
 
-    // MARK: - tsconfig.json Parsing
-
-    private func tsConfigSourceDirs(in rootURL: URL) -> [URL]? {
-        let tsconfigURL = rootURL.appendingPathComponent("tsconfig.json")
-        guard
-            let data = try? Data(contentsOf: tsconfigURL),
-            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { return nil }
-
-        var dirs: [URL] = []
-        var seen: Set<URL> = []
-
-        func addIfNew(_ url: URL) {
-            let std = url.standardizedFileURL
-            if seen.insert(std).inserted { dirs.append(std) }
-        }
-
-        if let compilerOpts = json["compilerOptions"] as? [String: Any],
-           let rootDir = compilerOpts["rootDir"] as? String {
-            addIfNew(rootURL.appendingPathComponent(rootDir))
-        }
-
-        if let includes = json["include"] as? [String] {
-            for pattern in includes {
-                let dirParts = pattern.components(separatedBy: "/")
-                    .prefix(while: { !$0.contains("*") && !$0.contains("?") && !$0.isEmpty })
-                if !dirParts.isEmpty {
-                    addIfNew(rootURL.appendingPathComponent(dirParts.joined(separator: "/")))
-                }
-            }
-        }
-
-        return dirs.isEmpty ? nil : dirs
+    /// Never walked while expanding a workspace glob — the same directories the parser itself skips.
+    private var excludedDirectories: Set<String> {
+        JSCodeParser().configuration.excludedDirectories
+            .union(AcaiConstants.standard.defaultExcludedSourceDirectories)
     }
 }
