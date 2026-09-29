@@ -7,9 +7,13 @@ struct TypeDeclarationExtractor {
 
     private let signatures = DeclarationSignatureExtractor()
     private let typeReferences = TypeReferenceExtractor()
-    private let sourceLocations = SourceLocationResolver()
+    private let sourceLocations: SourceLocationResolver
 
-    func extractClass(from node: ClassDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    init(sourceLocations: SourceLocationResolver) {
+        self.sourceLocations = sourceLocations
+    }
+
+    func extractClass(from node: ClassDeclSyntax, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -24,11 +28,11 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
-    func extractStruct(from node: StructDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    func extractStruct(from node: StructDeclSyntax, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -43,11 +47,11 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
-    func extractEnum(from node: EnumDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    func extractEnum(from node: EnumDeclSyntax, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -62,12 +66,12 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
     func extractProtocol(
-        from node: ProtocolDeclSyntax, fileName: String, namespace: String?
+        from node: ProtocolDeclSyntax, namespace: String?
     ) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
@@ -84,12 +88,12 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
     func extractExtension(
-        from node: ExtensionDeclSyntax, fileName: String, namespace: String?
+        from node: ExtensionDeclSyntax, namespace: String?
     ) -> TypeDeclaration {
         let extendedName = node.extendedType.trimmedDescription
         let name = extendedName
@@ -105,12 +109,12 @@ struct TypeDeclarationExtractor {
             annotations: signatures.extractAttributes(from: node.attributes),
             extensionOf: extendedName,
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
     func extractTypeAlias(
-        from node: TypeAliasDeclSyntax, fileName: String, namespace: String?
+        from node: TypeAliasDeclSyntax, namespace: String?
     ) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
@@ -126,11 +130,11 @@ struct TypeDeclarationExtractor {
             inheritedTypes: [typeReferences.extractTypeReference(from: node.initializer.value)],
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
-    func extractActor(from node: ActorDeclSyntax, fileName: String, namespace: String?) -> TypeDeclaration {
+    func extractActor(from node: ActorDeclSyntax, namespace: String?) -> TypeDeclaration {
         let name = node.name.text
         let qualifiedName = namespace.map { "\($0).\(name)" } ?? name
         return TypeDeclaration(
@@ -145,7 +149,7 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 }
