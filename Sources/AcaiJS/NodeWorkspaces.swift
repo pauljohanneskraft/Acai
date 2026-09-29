@@ -17,9 +17,12 @@ struct NodeWorkspaces {
 
         let patterns: [String]
         switch json["workspaces"] {
-        case let values as [String]: patterns = values
-        case let object as [String: Any]: patterns = object["packages"] as? [String] ?? []
-        default: patterns = []
+        case let values as [String]:
+            patterns = values
+        case let object as [String: Any]:
+            patterns = object["packages"] as? [String] ?? []
+        default:
+            patterns = []
         }
         guard !patterns.isEmpty else { return nil }
 

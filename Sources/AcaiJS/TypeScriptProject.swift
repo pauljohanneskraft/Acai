@@ -39,9 +39,12 @@ extension TypeScriptConfiguration {
 
         let extendsValues: [String]
         switch json["extends"] {
-        case let value as String: extendsValues = [value]
-        case let values as [String]: extendsValues = values
-        default: extendsValues = []
+        case let value as String:
+            extendsValues = [value]
+        case let values as [String]:
+            extendsValues = values
+        default:
+            extendsValues = []
         }
         extendedConfigurations = extendsValues.compactMap {
             TypeScriptConfigurationPath($0, referredToBy: url, notAbove: ceiling).url
@@ -53,10 +56,11 @@ extension TypeScriptConfiguration {
         }
 
         if let includes = json["include"] as? [String] {
-            includeDirs = includes.compactMap { pattern in
+            // Only the leading literal components can name a directory; `src/**/*.ts` is `src`, and a
+            // pattern that starts with a wildcard (`**/*.ts`) is the config's own folder.
+            includeDirs = includes.map { pattern in
                 let literalPrefix = pattern.components(separatedBy: "/")
                     .prefix { !$0.contains("*") && !$0.contains("?") && !$0.isEmpty }
-                guard !literalPrefix.isEmpty else { return nil }
                 return directory.appendingPathComponent(literalPrefix.joined(separator: "/")).standardizedFileURL
             }
         }
@@ -108,7 +112,7 @@ struct TypeScriptConfigurationPath {
         while true {
             let candidate = directory.appendingPathComponent("node_modules").appendingPathComponent(value)
             if let url = configuration(at: candidate) { return url }
-            guard directory.path != ceiling.path, directory.path.hasPrefix(ceiling.path) else { return nil }
+            guard directory.path.hasPrefix(ceiling.path + "/") else { return nil }
             directory = directory.deletingLastPathComponent().standardizedFileURL
         }
     }
@@ -138,7 +142,7 @@ struct TypeScriptConfigurationPath {
 /// walk stops there and records a diagnostic, so a `tsconfig` that extends or references itself round
 /// a loop ends the read instead of hanging. A file reached twice by separate paths — one base shared
 /// by several projects — is not a cycle and is read each time it is extended.
-struct TypeScriptProjectReader {
+final class TypeScriptProjectReader {
     private let ceiling: URL
     /// Projects whose directories are already in the result, so a references diamond contributes once.
     private var resolvedProjects: Set<String> = []
@@ -150,14 +154,14 @@ struct TypeScriptProjectReader {
 
     /// The directories the project in `directory` declares, or nil when it has no `tsconfig.json` that
     /// names any — the signal to fall back to probing the filesystem.
-    mutating func sourceDirs(ofProjectIn directory: URL) -> [URL]? {
+    func sourceDirs(ofProjectIn directory: URL) -> [URL]? {
         let url = directory.appendingPathComponent("tsconfig.json").standardizedFileURL
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         let dirs = sourceDirs(ofProjectAt: url, referencedBy: []).removingDuplicates { $0.path }
         return dirs.isEmpty ? nil : dirs
     }
 
-    private mutating func sourceDirs(ofProjectAt url: URL, referencedBy chain: Set<String>) -> [URL] {
+    private func sourceDirs(ofProjectAt url: URL, referencedBy chain: Set<String>) -> [URL] {
         guard !chain.contains(url.path) else {
             record(cycleAt: url, through: "references")
             return []
@@ -173,7 +177,7 @@ struct TypeScriptProjectReader {
 
     /// One configuration with its `extends` chain applied beneath it. A later `extends` entry wins
     /// over an earlier one, and the file's own fields win over all of them.
-    private mutating func flattened(
+    private func flattened(
         configurationAt url: URL, extendedBy chain: Set<String>
     ) -> TypeScriptConfiguration? {
         guard !chain.contains(url.path) else {
@@ -190,7 +194,7 @@ struct TypeScriptProjectReader {
         return configuration.overriding(inherited)
     }
 
-    private mutating func record(cycleAt url: URL, through relation: String) {
+    private func record(cycleAt url: URL, through relation: String) {
         let path = url.path.hasPrefix(ceiling.path + "/")
             ? String(url.path.dropFirst(ceiling.path.count + 1))
             : url.lastPathComponent
