@@ -71,6 +71,11 @@ optionalTargets.append(
         ]
     )
 )
+// `hotspots`/`acai_hotspots` weigh complexity by churn, which is a history walk: the same macOS-only
+// linkage `AcaiRender` gets above, for the same reason — SwiftGitX's libgit2 builds against
+// SecureTransport/CommonCrypto, so it exists on Apple platforms only.
+cliOptionalDependencies.append(.target(name: "AcaiGit", condition: .when(platforms: [.macOS])))
+mcpOptionalDependencies.append(.target(name: "AcaiGit", condition: .when(platforms: [.macOS])))
 
 // A library (not an executable): the real app entry points live in the XcodeGen-generated
 // project under `App/`, one per platform, each owning its own Info.plist/entitlements/asset

@@ -6,8 +6,8 @@ struct MetricsTool: AnalysisTool {
     let name = "acai_metrics"
     let description = """
         Compute static-analysis metrics: per-module coupling and instability, and per-type fan-in/out, \
-        weighted methods, inheritance depth, cohesion (LCOM) and data-class scores. Use to find god \
-        classes and coupling hotspots when planning a refactor.
+        weighted methods, inheritance depth, cohesion (LCOM), data-class scores and physical lines of \
+        code. Use to find god classes and coupling hotspots when planning a refactor.
         """
 
     var inputSchema: Value { objectSchema(extraProperties: generatedScopeProperty) }

@@ -22,6 +22,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 139,
         "filePath" : "classes.py",
         "line" : 138
       },
@@ -56,6 +57,7 @@
         {
           "location" : {
             "column" : 9,
+            "endLine" : 8,
             "filePath" : "classes.py",
             "line" : 8
           },
@@ -113,6 +115,7 @@
       "kind" : "property",
       "location" : {
         "column" : 1,
+        "endLine" : 8,
         "filePath" : "classes.py",
         "line" : 8
       },
@@ -171,6 +174,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 12,
             "filePath" : "classes.py",
             "line" : 12
           },
@@ -183,6 +187,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 13,
             "filePath" : "classes.py",
             "line" : 13
           },
@@ -195,6 +200,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 14,
             "filePath" : "classes.py",
             "line" : 14
           },
@@ -212,6 +218,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 14,
         "filePath" : "classes.py",
         "line" : 11
       },
@@ -242,6 +249,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 18,
             "filePath" : "classes.py",
             "line" : 18
           },
@@ -254,6 +262,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 19,
             "filePath" : "classes.py",
             "line" : 19
           },
@@ -271,6 +280,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 19,
         "filePath" : "classes.py",
         "line" : 17
       },
@@ -307,6 +317,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 28,
         "filePath" : "classes.py",
         "line" : 23
       },
@@ -332,6 +343,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 24,
             "filePath" : "classes.py",
             "line" : 24
           },
@@ -379,6 +391,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 25,
             "filePath" : "classes.py",
             "line" : 25
           },
@@ -413,6 +426,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 28,
                 "filePath" : "classes.py",
                 "line" : 28
               },
@@ -429,6 +443,7 @@
             {
               "location" : {
                 "column" : 53,
+                "endLine" : 28,
                 "filePath" : "classes.py",
                 "line" : 28
               },
@@ -437,6 +452,7 @@
             {
               "location" : {
                 "column" : 87,
+                "endLine" : 28,
                 "filePath" : "classes.py",
                 "line" : 28
               },
@@ -450,6 +466,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 28,
             "filePath" : "classes.py",
             "line" : 27
           },
@@ -506,6 +523,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 39,
         "filePath" : "classes.py",
         "line" : 31
       },
@@ -532,6 +550,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 35,
             "filePath" : "classes.py",
             "line" : 34
           },
@@ -576,6 +595,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 39,
             "filePath" : "classes.py",
             "line" : 38
           },
@@ -636,6 +656,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 65,
         "filePath" : "classes.py",
         "line" : 42
       },
@@ -661,6 +682,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 45,
             "filePath" : "classes.py",
             "line" : 45
           },
@@ -696,6 +718,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 46,
             "filePath" : "classes.py",
             "line" : 46
           },
@@ -731,6 +754,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 47,
             "filePath" : "classes.py",
             "line" : 47
           },
@@ -754,6 +778,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 45,
                 "filePath" : "classes.py",
                 "line" : 45
               },
@@ -767,6 +792,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 46,
                 "filePath" : "classes.py",
                 "line" : 46
               },
@@ -780,6 +806,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 47,
                 "filePath" : "classes.py",
                 "line" : 47
               },
@@ -799,6 +826,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 45,
                 "filePath" : "classes.py",
                 "line" : 45
               },
@@ -807,6 +835,7 @@
             {
               "location" : {
                 "column" : 43,
+                "endLine" : 45,
                 "filePath" : "classes.py",
                 "line" : 45
               },
@@ -815,6 +844,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 46,
                 "filePath" : "classes.py",
                 "line" : 46
               },
@@ -823,6 +853,7 @@
             {
               "location" : {
                 "column" : 45,
+                "endLine" : 46,
                 "filePath" : "classes.py",
                 "line" : 46
               },
@@ -831,6 +862,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 47,
                 "filePath" : "classes.py",
                 "line" : 47
               },
@@ -844,6 +876,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 47,
             "filePath" : "classes.py",
             "line" : 44
           },
@@ -906,6 +939,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 50,
                 "filePath" : "classes.py",
                 "line" : 50
               },
@@ -914,6 +948,7 @@
             {
               "location" : {
                 "column" : 67,
+                "endLine" : 50,
                 "filePath" : "classes.py",
                 "line" : 50
               },
@@ -927,6 +962,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 50,
             "filePath" : "classes.py",
             "line" : 49
           },
@@ -967,6 +1003,7 @@
             {
               "location" : {
                 "column" : 51,
+                "endLine" : 53,
                 "filePath" : "classes.py",
                 "line" : 53
               },
@@ -975,6 +1012,7 @@
             {
               "location" : {
                 "column" : 77,
+                "endLine" : 53,
                 "filePath" : "classes.py",
                 "line" : 53
               },
@@ -988,6 +1026,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 53,
             "filePath" : "classes.py",
             "line" : 52
           },
@@ -1028,6 +1067,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 57,
                 "filePath" : "classes.py",
                 "line" : 57
               },
@@ -1036,6 +1076,7 @@
             {
               "location" : {
                 "column" : 69,
+                "endLine" : 57,
                 "filePath" : "classes.py",
                 "line" : 57
               },
@@ -1049,6 +1090,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 57,
             "filePath" : "classes.py",
             "line" : 56
           },
@@ -1085,6 +1127,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 61,
                 "filePath" : "classes.py",
                 "line" : 61
               },
@@ -1107,6 +1150,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 61,
             "filePath" : "classes.py",
             "line" : 60
           },
@@ -1141,6 +1185,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 65,
                 "filePath" : "classes.py",
                 "line" : 65
               },
@@ -1163,6 +1208,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 65,
             "filePath" : "classes.py",
             "line" : 64
           },
@@ -1236,6 +1282,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 74,
         "filePath" : "classes.py",
         "line" : 68
       },
@@ -1261,6 +1308,7 @@
           "kind" : "property",
           "location" : {
             "column" : 17,
+            "endLine" : 71,
             "filePath" : "classes.py",
             "line" : 71
           },
@@ -1284,6 +1332,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 71,
                 "filePath" : "classes.py",
                 "line" : 71
               },
@@ -1303,6 +1352,7 @@
             {
               "location" : {
                 "column" : 27,
+                "endLine" : 71,
                 "filePath" : "classes.py",
                 "line" : 71
               },
@@ -1311,6 +1361,7 @@
             {
               "location" : {
                 "column" : 43,
+                "endLine" : 71,
                 "filePath" : "classes.py",
                 "line" : 71
               },
@@ -1324,6 +1375,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
+            "endLine" : 71,
             "filePath" : "classes.py",
             "line" : 70
           },
@@ -1369,6 +1421,7 @@
             {
               "location" : {
                 "column" : 41,
+                "endLine" : 74,
                 "filePath" : "classes.py",
                 "line" : 74
               },
@@ -1382,6 +1435,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 74,
             "filePath" : "classes.py",
             "line" : 73
           },
@@ -1436,6 +1490,7 @@
       "kind" : "protocol",
       "location" : {
         "column" : 1,
+        "endLine" : 80,
         "filePath" : "classes.py",
         "line" : 77
       },
@@ -1462,6 +1517,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 80,
             "filePath" : "classes.py",
             "line" : 79
           },
@@ -1515,6 +1571,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 96,
         "filePath" : "classes.py",
         "line" : 83
       },
@@ -1541,6 +1598,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 96,
             "filePath" : "classes.py",
             "line" : 95
           },
@@ -1590,6 +1648,7 @@
           "kind" : "class",
           "location" : {
             "column" : 9,
+            "endLine" : 93,
             "filePath" : "classes.py",
             "line" : 85
           },
@@ -1616,6 +1675,7 @@
               "kind" : "method",
               "location" : {
                 "column" : 17,
+                "endLine" : 93,
                 "filePath" : "classes.py",
                 "line" : 92
               },
@@ -1665,6 +1725,7 @@
               "kind" : "class",
               "location" : {
                 "column" : 17,
+                "endLine" : 90,
                 "filePath" : "classes.py",
                 "line" : 87
               },
@@ -1691,6 +1752,7 @@
                   "kind" : "method",
                   "location" : {
                     "column" : 25,
+                    "endLine" : 90,
                     "filePath" : "classes.py",
                     "line" : 89
                   },
@@ -1750,6 +1812,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 111,
         "filePath" : "classes.py",
         "line" : 99
       },
@@ -1776,6 +1839,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 102,
             "filePath" : "classes.py",
             "line" : 101
           },
@@ -1820,6 +1884,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 105,
             "filePath" : "classes.py",
             "line" : 104
           },
@@ -1864,6 +1929,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 108,
             "filePath" : "classes.py",
             "line" : 107
           },
@@ -1908,6 +1974,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 111,
             "filePath" : "classes.py",
             "line" : 110
           },
@@ -1976,6 +2043,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 117,
         "filePath" : "classes.py",
         "line" : 114
       },
@@ -2002,6 +2070,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 117,
             "filePath" : "classes.py",
             "line" : 116
           },
@@ -2055,6 +2124,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 129,
         "filePath" : "classes.py",
         "line" : 120
       },
@@ -2081,6 +2151,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 123,
             "filePath" : "classes.py",
             "line" : 122
           },
@@ -2176,6 +2247,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 126,
             "filePath" : "classes.py",
             "line" : 125
           },
@@ -2249,6 +2321,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 129,
             "filePath" : "classes.py",
             "line" : 128
           },
@@ -2337,6 +2410,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 135,
         "filePath" : "classes.py",
         "line" : 132
       },
@@ -2363,6 +2437,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 135,
             "filePath" : "classes.py",
             "line" : 134
           },
@@ -2430,6 +2505,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 148,
         "filePath" : "classes.py",
         "line" : 142
       },
@@ -2456,6 +2532,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 145,
             "filePath" : "classes.py",
             "line" : 144
           },
@@ -2514,6 +2591,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 148,
             "filePath" : "classes.py",
             "line" : 147
           },

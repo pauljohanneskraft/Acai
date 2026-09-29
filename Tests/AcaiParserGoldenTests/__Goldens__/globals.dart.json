@@ -21,6 +21,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 20,
         "filePath" : "globals.dart",
         "line" : 20
       },
@@ -64,6 +65,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 22,
         "filePath" : "globals.dart",
         "line" : 22
       },
@@ -107,6 +109,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 29,
         "filePath" : "globals.dart",
         "line" : 29
       },
@@ -150,6 +153,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 33,
         "filePath" : "globals.dart",
         "line" : 33
       },
@@ -193,6 +197,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 37,
         "filePath" : "globals.dart",
         "line" : 37
       },
@@ -250,6 +255,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 39,
         "filePath" : "globals.dart",
         "line" : 39
       },
@@ -299,6 +305,7 @@
       "kind" : "property",
       "location" : {
         "column" : 21,
+        "endLine" : 6,
         "filePath" : "globals.dart",
         "line" : 6
       },
@@ -347,6 +354,7 @@
       "kind" : "property",
       "location" : {
         "column" : 27,
+        "endLine" : 7,
         "filePath" : "globals.dart",
         "line" : 7
       },
@@ -391,6 +399,7 @@
       "kind" : "property",
       "location" : {
         "column" : 25,
+        "endLine" : 8,
         "filePath" : "globals.dart",
         "line" : 8
       },
@@ -438,6 +447,7 @@
       "kind" : "property",
       "location" : {
         "column" : 9,
+        "endLine" : 9,
         "filePath" : "globals.dart",
         "line" : 9
       },
@@ -478,6 +488,7 @@
       "kind" : "property",
       "location" : {
         "column" : 15,
+        "endLine" : 10,
         "filePath" : "globals.dart",
         "line" : 10
       },
@@ -526,6 +537,7 @@
       "kind" : "property",
       "location" : {
         "column" : 41,
+        "endLine" : 10,
         "filePath" : "globals.dart",
         "line" : 10
       },
@@ -570,6 +582,7 @@
       "kind" : "property",
       "location" : {
         "column" : 29,
+        "endLine" : 11,
         "filePath" : "globals.dart",
         "line" : 11
       },
@@ -624,6 +637,7 @@
       "kind" : "property",
       "location" : {
         "column" : 35,
+        "endLine" : 12,
         "filePath" : "globals.dart",
         "line" : 12
       },
@@ -687,6 +701,7 @@
       "kind" : "property",
       "location" : {
         "column" : 31,
+        "endLine" : 13,
         "filePath" : "globals.dart",
         "line" : 13
       },
@@ -736,6 +751,7 @@
       "kind" : "property",
       "location" : {
         "column" : 31,
+        "endLine" : 14,
         "filePath" : "globals.dart",
         "line" : 14
       },
@@ -796,6 +812,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 18,
         "filePath" : "globals.dart",
         "line" : 16
       },
@@ -825,6 +842,7 @@
           "kind" : "property",
           "location" : {
             "column" : 13,
+            "endLine" : 17,
             "filePath" : "globals.dart",
             "line" : 17
           },

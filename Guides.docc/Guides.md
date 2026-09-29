@@ -76,7 +76,8 @@ Higher-level questions asked of a parsed model.
   members, relationships and metrics changed. Also produces the renderable union behind
   colour-coded delta diagrams.
 - **[AcaiQuality](/documentation/acaiquality/)** — the architecture fitness function: selectors, metric
-  budgets, forbidden dependencies, layering, stereotype contracts and cycle detection.
+  budgets, forbidden dependencies, layering, stereotype contracts, cycle detection, and the
+  churn × complexity hotspot scoring the app, `acai hotspots` and `acai_hotspots` share.
 
 ### Applications
 
@@ -85,7 +86,7 @@ just its API.
 
 - **[AcaiCLI](/documentation/acaicli/)** — the `acai` command-line tool: every command and flag,
   plus recipes for CI gating, drift checks and dead-code sweeps.
-- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server: all nine
+- **[AcaiMCP](/documentation/acaimcp/)** — the `acai-mcp` Model Context Protocol server: all ten
   tools with their input schemas, the snapshot-cache contract, and how to wire it into a client.
 - **[AcaiApp](/documentation/acaiapp/)** — the SwiftUI application shared by the macOS and iOS apps:
   what it does, and how the pieces fit.
@@ -98,8 +99,8 @@ so nothing in the package is a blank spot.
 - **[AcaiAppModel](/documentation/acaiappmodel/)** — the app's UI-free models: the state and rules
   its screens render, with no SwiftUI or git dependency, so they build and are tested on Linux too.
 - **[AcaiGit](/documentation/acaigit/)** — a libgit2 wrapper (clone, fetch, checkout, worktrees, diff,
-  churn) used by the app for repository cloning, revision comparison and hotspot charts. Built only
-  on Apple platforms, and not a package product.
+  churn) behind the app's repository cloning and revision comparison, and behind the churn half of
+  `acai hotspots` / `acai_hotspots`. Built only on Apple platforms, and not a package product.
 - **[CPythonScanner](/documentation/cpythonscanner/)** — vendors the Python grammar's external C
   scanner; see `Package.swift` for why it must be pinned to the grammar version.
 - **[AcaiPNGComparison](/documentation/acaipngcomparison/)** — golden-image comparison maths shared by

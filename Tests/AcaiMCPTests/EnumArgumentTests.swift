@@ -70,7 +70,9 @@ struct EnumArgumentTests {
             }
             // Guards the sweep itself: a schema that stopped advertising its enums would pass vacuously.
             #if os(macOS)
-            let platformSpecific: Set<String> = ["acai_image.theme", "acai_atlas.theme"]
+            let platformSpecific: Set<String> = [
+                "acai_image.theme", "acai_atlas.theme", "acai_hotspots.languages"
+            ]
             #else
             let platformSpecific: Set<String> = []
             #endif
