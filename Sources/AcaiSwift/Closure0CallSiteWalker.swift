@@ -6,13 +6,12 @@ import AcaiCore
 /// this walker only binds it inside the closure body.
 final class Closure0CallSiteWalker: SyntaxVisitor {
     private let elementReceiver: CallReceiver
-    private let fileName: String
-    private let sourceLocations = SourceLocationResolver()
+    private let sourceLocations: SourceLocationResolver
     private(set) var collected: [CallSite] = []
 
-    init(elementReceiver: CallReceiver, fileName: String) {
+    init(elementReceiver: CallReceiver, sourceLocations: SourceLocationResolver) {
         self.elementReceiver = elementReceiver
-        self.fileName = fileName
+        self.sourceLocations = sourceLocations
         super.init(viewMode: .sourceAccurate)
     }
 
@@ -23,7 +22,7 @@ final class Closure0CallSiteWalker: SyntaxVisitor {
         collected.append(CallSite(
             receiver: elementReceiver,
             methodName: memberAccess.declName.baseName.text,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         ))
         return .visitChildren
     }

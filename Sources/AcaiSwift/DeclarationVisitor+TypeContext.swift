@@ -85,8 +85,8 @@ extension DeclarationVisitor {
         let propertyMap = buildPropertyMap()
         let enclosingTypeName = typeStack.last?.name
         return scope.accessorCallSites(
-            from: node, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName, fileName: fileName)
+            from: node, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
             + scope.initializerCallSites(
-                from: node, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName, fileName: fileName)
+                from: node, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
     }
 }

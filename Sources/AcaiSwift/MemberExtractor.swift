@@ -7,19 +7,19 @@ struct MemberExtractor {
 
     private let signatures = DeclarationSignatureExtractor()
     private let typeReferences = TypeReferenceExtractor()
-    private let sourceLocations = SourceLocationResolver()
+    private let sourceLocations: SourceLocationResolver
     /// Simple names of every type declared in the file — the same recognition set
     /// `CallSiteCollector.knownTypeNames` uses, kept identical so a property's inferred type
     /// (below) and a call's resolved receiver type agree on what counts as a construction.
     private let knownTypeNames: Set<String>
 
-    init(knownTypeNames: Set<String> = []) {
+    init(knownTypeNames: Set<String> = [], sourceLocations: SourceLocationResolver) {
         self.knownTypeNames = knownTypeNames
+        self.sourceLocations = sourceLocations
     }
 
     func extractFunction(
         from node: FunctionDeclSyntax,
-        fileName: String,
         callSites: [CallSite] = [],
         assignments: [VariableAssignment] = [],
         fieldReads: [FieldAccess] = []
@@ -49,7 +49,7 @@ struct MemberExtractor {
             parameters: parameters,
             genericParameters: genericParams,
             annotations: annotations,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName),
+            location: sourceLocations.sourceLocation(of: node),
             callSites: callSites,
             assignments: assignments,
             fieldReads: fieldReads,
@@ -57,13 +57,13 @@ struct MemberExtractor {
         )
     }
 
-    func extractVariable(from node: VariableDeclSyntax, fileName: String) -> [Member] {
+    func extractVariable(from node: VariableDeclSyntax) -> [Member] {
         let attributes = PropertyAttributes(
             accessLevel: signatures.extractAccessLevel(from: node.modifiers),
             setAccessLevel: signatures.extractSetAccessLevel(from: node.modifiers),
             modifiers: signatures.extractModifiers(from: node.modifiers),
             annotations: signatures.extractAttributes(from: node.attributes),
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
         let bindings = Array(node.bindings)
 
@@ -174,7 +174,6 @@ struct MemberExtractor {
 
     func extractInitializer(
         from node: InitializerDeclSyntax,
-        fileName: String,
         callSites: [CallSite] = [],
         assignments: [VariableAssignment] = [],
         fieldReads: [FieldAccess] = []
@@ -201,7 +200,7 @@ struct MemberExtractor {
             parameters: parameters,
             genericParameters: genericParams,
             annotations: annotations,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName),
+            location: sourceLocations.sourceLocation(of: node),
             callSites: callSites,
             assignments: assignments,
             fieldReads: fieldReads,
@@ -209,7 +208,7 @@ struct MemberExtractor {
         )
     }
 
-    func extractDeinitializer(from node: DeinitializerDeclSyntax, fileName: String) -> Member {
+    func extractDeinitializer(from node: DeinitializerDeclSyntax) -> Member {
         let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
         let modifiers = signatures.extractModifiers(from: node.modifiers)
 
@@ -218,11 +217,11 @@ struct MemberExtractor {
             kind: .deinitializer,
             accessLevel: accessLevel,
             modifiers: modifiers,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
-    func extractSubscript(from node: SubscriptDeclSyntax, fileName: String) -> Member {
+    func extractSubscript(from node: SubscriptDeclSyntax) -> Member {
         let accessLevel = signatures.extractAccessLevel(from: node.modifiers)
         let modifiers = signatures.extractModifiers(from: node.modifiers)
         let annotations = signatures.extractAttributes(from: node.attributes)
@@ -244,11 +243,11 @@ struct MemberExtractor {
             parameters: parameters,
             genericParameters: genericParams,
             annotations: annotations,
-            location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+            location: sourceLocations.sourceLocation(of: node)
         )
     }
 
-    func extractEnumCases(from node: EnumCaseDeclSyntax, fileName: String) -> [EnumCase] {
+    func extractEnumCases(from node: EnumCaseDeclSyntax) -> [EnumCase] {
         node.elements.map { element in
             let associatedValues: [Parameter] = element.parameterClause.map { clause in
                 clause.parameters.map { param in
@@ -271,7 +270,7 @@ struct MemberExtractor {
                 name: element.name.text,
                 rawValue: rawValue,
                 associatedValues: associatedValues,
-                location: sourceLocations.sourceLocation(of: node, fileName: fileName)
+                location: sourceLocations.sourceLocation(of: node)
             )
         }
     }
