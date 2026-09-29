@@ -40,8 +40,10 @@ struct HotspotsTool: AnalysisTool {
               isDirectory.boolValue else {
             throw MCPError.invalidParams("Hotspots need a source directory inside a git checkout: \(path)")
         }
-        let churn = try churnByFile(at: url, limit: commits)
+        // Resolved before the churn walk so an unrecognised `languages` value is rejected as such,
+        // rather than masked by whatever the git history has to say about the directory.
         let artifact = try await analysisArtifact(arguments, cache)
+        let churn = try churnByFile(at: url, limit: commits)
         let report = Hotspots.Report(
             hotspots: Hotspots(artifact: artifact, churnByFile: churn), commitWindow: commits, top: top)
         return .json(try Value(report))

@@ -98,6 +98,24 @@ struct HotspotsToolTests {
         }
     }
 
+    @Test func anUnknownLanguageIsRejectedAsSuchRatherThanAsMissingHistory() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeSampleSwiftSource(in: dir)
+            let error = await #expect(throws: MCPError.self) {
+                try await MCPTestSupport.call(
+                    "acai_hotspots", on: MCPTestSupport.testRegistry, path: dir,
+                    ["languages": .array([.string("swfit")])])
+            }
+            guard case .invalidParams(let detail) = error else {
+                Issue.record("expected invalidParams, got \(String(describing: error))")
+                return
+            }
+            let message = try #require(detail)
+            #expect(message.contains("'languages'"))
+            #expect(message.contains("'swfit'"))
+        }
+    }
+
     @Test func aNonPositiveCommitWindowIsRejected() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try buildRepository(in: dir)
