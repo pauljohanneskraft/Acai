@@ -65,6 +65,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 1,
         "filePath" : "Sources\/SampleSwiftPackage\/Added.swift",
         "line" : 1
       },
@@ -102,6 +103,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 15,
         "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
         "line" : 1
       },
@@ -131,6 +133,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 2,
             "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
             "line" : 2
           },
@@ -175,6 +178,7 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
+            "endLine" : 4,
             "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
             "line" : 4
           },
@@ -198,6 +202,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 7,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 7
               },
@@ -211,6 +216,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 8,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 8
               },
@@ -224,6 +230,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 9,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 9
               },
@@ -243,6 +250,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 7,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 7
               },
@@ -251,6 +259,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 8,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 8
               },
@@ -259,6 +268,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 9,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 9
               },
@@ -272,6 +282,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 10,
             "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
             "line" : 6
           },
@@ -295,6 +306,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 13,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 13
               },
@@ -314,6 +326,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 13,
                 "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
                 "line" : 13
               },
@@ -327,6 +340,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 14,
             "filePath" : "Sources\/SampleSwiftPackage\/Base.swift",
             "line" : 12
           },
@@ -380,6 +394,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 7,
         "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
         "line" : 1
       },
@@ -409,6 +424,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 2,
             "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
             "line" : 2
           },
@@ -443,6 +459,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 5,
                 "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
                 "line" : 5
               },
@@ -459,6 +476,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 5,
                 "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
                 "line" : 5
               },
@@ -472,6 +490,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 6,
             "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
             "line" : 4
           },
@@ -518,6 +537,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 7,
         "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
         "line" : 1
       },
@@ -547,6 +567,7 @@
           "kind" : "property",
           "location" : {
             "column" : 5,
+            "endLine" : 2,
             "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
             "line" : 2
           },
@@ -581,6 +602,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 5,
                 "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
                 "line" : 5
               },
@@ -597,6 +619,7 @@
             {
               "location" : {
                 "column" : 9,
+                "endLine" : 5,
                 "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
                 "line" : 5
               },
@@ -610,6 +633,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 6,
             "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
             "line" : 4
           },
@@ -656,6 +680,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 3,
         "filePath" : "Sources\/SampleSwiftPackage\/Worker.swift",
         "line" : 1
       },
@@ -682,6 +707,7 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
+            "endLine" : 2,
             "filePath" : "Sources\/SampleSwiftPackage\/Worker.swift",
             "line" : 2
           },

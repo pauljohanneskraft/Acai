@@ -12,6 +12,7 @@
         {
           "location" : {
             "column" : 99,
+            "endLine" : 66,
             "filePath" : "shop.kt",
             "line" : 66
           },
@@ -34,6 +35,7 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
+        "endLine" : 66,
         "filePath" : "shop.kt",
         "line" : 66
       },
@@ -98,6 +100,7 @@
       "kind" : "property",
       "location" : {
         "column" : 1,
+        "endLine" : 68,
         "filePath" : "shop.kt",
         "line" : 68
       },
@@ -165,6 +168,7 @@
       "kind" : "interface",
       "location" : {
         "column" : 1,
+        "endLine" : 5,
         "filePath" : "shop.kt",
         "line" : 3
       },
@@ -190,6 +194,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 4,
             "filePath" : "shop.kt",
             "line" : 4
           },
@@ -251,6 +256,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 10,
         "filePath" : "shop.kt",
         "line" : 7
       },
@@ -358,6 +364,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 8,
             "filePath" : "shop.kt",
             "line" : 8
           },
@@ -397,6 +404,7 @@
             {
               "location" : {
                 "column" : 69,
+                "endLine" : 9,
                 "filePath" : "shop.kt",
                 "line" : 9
               },
@@ -410,6 +418,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 9,
             "filePath" : "shop.kt",
             "line" : 9
           },
@@ -458,6 +467,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 13,
             "filePath" : "shop.kt",
             "line" : 13
           },
@@ -470,6 +480,7 @@
           ],
           "location" : {
             "column" : 9,
+            "endLine" : 14,
             "filePath" : "shop.kt",
             "line" : 14
           },
@@ -487,6 +498,7 @@
       "kind" : "enum",
       "location" : {
         "column" : 1,
+        "endLine" : 15,
         "filePath" : "shop.kt",
         "line" : 12
       },
@@ -524,6 +536,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 17,
         "filePath" : "shop.kt",
         "line" : 17
       },
@@ -703,6 +716,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 55,
         "filePath" : "shop.kt",
         "line" : 19
       },
@@ -829,6 +843,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 21,
             "filePath" : "shop.kt",
             "line" : 21
           },
@@ -876,6 +891,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 22,
             "filePath" : "shop.kt",
             "line" : 22
           },
@@ -910,6 +926,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 34,
                 "filePath" : "shop.kt",
                 "line" : 34
               },
@@ -923,6 +940,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 35,
                 "filePath" : "shop.kt",
                 "line" : 35
               },
@@ -942,6 +960,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 34,
                 "filePath" : "shop.kt",
                 "line" : 34
               },
@@ -950,6 +969,7 @@
             {
               "location" : {
                 "column" : 17,
+                "endLine" : 35,
                 "filePath" : "shop.kt",
                 "line" : 35
               },
@@ -958,6 +978,7 @@
             {
               "location" : {
                 "column" : 31,
+                "endLine" : 36,
                 "filePath" : "shop.kt",
                 "line" : 36
               },
@@ -966,6 +987,7 @@
             {
               "location" : {
                 "column" : 45,
+                "endLine" : 36,
                 "filePath" : "shop.kt",
                 "line" : 36
               },
@@ -979,6 +1001,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 37,
             "filePath" : "shop.kt",
             "line" : 33
           },
@@ -1018,6 +1041,7 @@
             {
               "location" : {
                 "column" : 53,
+                "endLine" : 40,
                 "filePath" : "shop.kt",
                 "line" : 40
               },
@@ -1040,6 +1064,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 42,
             "filePath" : "shop.kt",
             "line" : 39
           },
@@ -1075,6 +1100,7 @@
             {
               "location" : {
                 "column" : 25,
+                "endLine" : 51,
                 "filePath" : "shop.kt",
                 "line" : 51
               },
@@ -1094,6 +1120,7 @@
             {
               "location" : {
                 "column" : 25,
+                "endLine" : 51,
                 "filePath" : "shop.kt",
                 "line" : 51
               },
@@ -1107,6 +1134,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 54,
             "filePath" : "shop.kt",
             "line" : 44
           },
@@ -1177,6 +1205,7 @@
           "kind" : "class",
           "location" : {
             "column" : 9,
+            "endLine" : 27,
             "filePath" : "shop.kt",
             "line" : 24
           },
@@ -1206,6 +1235,7 @@
               "kind" : "property",
               "location" : {
                 "column" : 17,
+                "endLine" : 25,
                 "filePath" : "shop.kt",
                 "line" : 25
               },
@@ -1244,6 +1274,7 @@
                 {
                   "location" : {
                     "column" : 79,
+                    "endLine" : 26,
                     "filePath" : "shop.kt",
                     "line" : 26
                   },
@@ -1257,6 +1288,7 @@
               "kind" : "method",
               "location" : {
                 "column" : 17,
+                "endLine" : 26,
                 "filePath" : "shop.kt",
                 "line" : 26
               },
@@ -1312,6 +1344,7 @@
           "kind" : "object",
           "location" : {
             "column" : 9,
+            "endLine" : 31,
             "filePath" : "shop.kt",
             "line" : 29
           },
@@ -1338,6 +1371,7 @@
               "kind" : "method",
               "location" : {
                 "column" : 17,
+                "endLine" : 30,
                 "filePath" : "shop.kt",
                 "line" : 30
               },
@@ -1395,6 +1429,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 60,
         "filePath" : "shop.kt",
         "line" : 57
       },
@@ -1424,6 +1459,7 @@
           "kind" : "property",
           "location" : {
             "column" : 9,
+            "endLine" : 58,
             "filePath" : "shop.kt",
             "line" : 58
           },
@@ -1468,6 +1504,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 59,
             "filePath" : "shop.kt",
             "line" : 59
           },
@@ -1528,6 +1565,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
+        "endLine" : 64,
         "filePath" : "shop.kt",
         "line" : 62
       },
@@ -1554,6 +1592,7 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
+            "endLine" : 63,
             "filePath" : "shop.kt",
             "line" : 63
           },

@@ -18,7 +18,7 @@ struct ModuleCouplingChartDataTests {
         name: String, instability: Double, abstractness: Double, distance: Double
     ) throws -> CodeMetrics.ModuleCoupling {
         let json = """
-        {"name":"\(name)","typeCount":1,"afferentCoupling":0,"efferentCoupling":0,
+        {"name":"\(name)","typeCount":1,"linesOfCode":0,"afferentCoupling":0,"efferentCoupling":0,
          "instability":\(instability),"abstractness":\(abstractness),"distanceFromMainSequence":\(distance),
          "publicMemberCount":0,"stableDependencyViolations":[]}
         """

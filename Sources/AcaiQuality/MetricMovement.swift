@@ -74,7 +74,8 @@ extension MetricBudget.Metric {
             return false
         case .distance, .publicApiSurface, .fanIn, .fanOut, .depthOfInheritance, .weightedMethods,
              .numberOfChildren, .numberOfProperties, .rfc, .maxParameters, .mutablePublicState, .lcom,
-             .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity:
+             .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity,
+             .linesOfCode:
             return true
         }
     }

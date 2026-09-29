@@ -18,9 +18,10 @@ enum MetricsSortKey: String, CaseIterable {
     case deepAndWide
     case lackOfCohesion
     case featureEnvyMethods
+    case linesOfCode
 
     // `Double` so ratio/mean/score metrics sort alongside integer ones. A lookup table keeps this
-    // within the cyclomatic-complexity budget instead of a 15-case switch.
+    // within the cyclomatic-complexity budget instead of a case-per-metric switch.
     fileprivate func value(_ metric: CodeMetrics.TypeMetric) -> Double {
         Self.accessors[self]?(metric) ?? 0
     }
@@ -42,7 +43,8 @@ enum MetricsSortKey: String, CaseIterable {
         .nestingDepth: { Double($0.nestingDepth) },
         .deepAndWide: { Double($0.deepAndWide) },
         .lackOfCohesion: { Double($0.lackOfCohesion) },
-        .featureEnvyMethods: { Double($0.featureEnvyMethods) }
+        .featureEnvyMethods: { Double($0.featureEnvyMethods) },
+        .linesOfCode: { Double($0.linesOfCode) }
     ]
 }
 
@@ -59,13 +61,14 @@ struct MetricsTextReport {
         let c = metrics.counts
         let publicMembers = metrics.modules.reduce(0) { $0 + $1.publicMemberCount }
         return "Types: \(c.totalTypes)  Protocols: \(c.protocols)  Methods: \(c.methods)  "
-            + "Properties: \(c.properties)  Relationships: \(c.relationships)  Public API: \(publicMembers)"
+            + "Properties: \(c.properties)  Relationships: \(c.relationships)  Public API: \(publicMembers)  "
+            + "Lines: \(c.linesOfCode)"
     }
 
     private func moduleTable() -> String {
         let header = "MODULE".paddedTrailing(to: 18) + "types".paddedLeading(to: 6)
             + "I".paddedLeading(to: 7) + "A".paddedLeading(to: 7) + "D".paddedLeading(to: 7)
-            + "  Ca".paddedLeading(to: 6) + "  Ce".paddedLeading(to: 6)
+            + "  Ca".paddedLeading(to: 6) + "  Ce".paddedLeading(to: 6) + "loc".paddedLeading(to: 8)
         let rows = metrics.modules
             .sorted { $0.distanceFromMainSequence > $1.distanceFromMainSequence }
             .map { module in
@@ -76,6 +79,7 @@ struct MetricsTextReport {
                     + ratio(module.distanceFromMainSequence).paddedLeading(to: 7)
                     + String(module.afferentCoupling).paddedLeading(to: 6)
                     + String(module.efferentCoupling).paddedLeading(to: 6)
+                    + String(module.linesOfCode).paddedLeading(to: 8)
             }
         return (["Modules (by distance from main sequence):", header] + rows).joined(separator: "\n")
     }
@@ -89,7 +93,7 @@ struct MetricsTextReport {
     private func typeTable() -> String {
         let header = "TYPE".paddedTrailing(to: 34) + "MODULE".paddedTrailing(to: 16)
             + "out".paddedLeading(to: 5) + "in".paddedLeading(to: 5) + "wmc".paddedLeading(to: 5)
-            + "dit".paddedLeading(to: 5) + "noc".paddedLeading(to: 5)
+            + "dit".paddedLeading(to: 5) + "noc".paddedLeading(to: 5) + "loc".paddedLeading(to: 7)
         let limited = rankedTypes
         let rows = limited.map { metric in
             metric.name.paddedTrailing(to: 34) + metric.module.paddedTrailing(to: 16)
@@ -97,6 +101,7 @@ struct MetricsTextReport {
                 + String(metric.weightedMethods).paddedLeading(to: 5)
                 + String(metric.depthOfInheritance).paddedLeading(to: 5)
                 + String(metric.numberOfChildren).paddedLeading(to: 5)
+                + String(metric.linesOfCode).paddedLeading(to: 7)
         }
         return (["Types (by \(sort.rawValue), top \(limited.count)):", header] + rows).joined(separator: "\n")
     }

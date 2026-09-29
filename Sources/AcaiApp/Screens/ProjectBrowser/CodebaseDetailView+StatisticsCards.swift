@@ -149,6 +149,11 @@ extension CodebaseDetailView {
                          icon: "arrow.triangle.pull", family: .structural,
                          blurb: Self.numberOfChildrenBlurb),
             by: \.numberOfChildren, descriptor: .app("View.CodebaseDetailView.MostSubclassed"), types: metrics.types)
+        typeMetricCard(
+            MetricVisual(title: .app("View.CodebaseDetailView.LinesOfCode"),
+                         icon: "text.alignleft", family: .structural,
+                         blurb: Self.linesOfCodeBlurb, threshold: MetricThreshold(amber: 200, red: 400)),
+            by: \.linesOfCode, descriptor: .app("View.CodebaseDetailView.Largest"), types: metrics.types)
     }
 
     /// Bundled so the card builders stay within the parameter limit.

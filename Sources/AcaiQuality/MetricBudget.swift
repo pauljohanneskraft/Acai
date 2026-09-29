@@ -31,6 +31,8 @@ public struct MetricBudget: Codable, Equatable, Sendable {
         case nestingDepth
         /// Highest cyclomatic complexity of any single method — the one gnarly method WMC hides.
         case maxCyclomaticComplexity
+        /// Physical lines of code the type and its members occupy — caps outright type size.
+        case linesOfCode
 
         /// Module-scoped metrics are matched against module names; type-scoped against type nodes.
         public var isModuleScoped: Bool {
@@ -39,7 +41,8 @@ public struct MetricBudget: Codable, Equatable, Sendable {
                 return true
             case .fanIn, .fanOut, .depthOfInheritance, .weightedMethods, .numberOfChildren,
                  .numberOfProperties, .rfc, .maxParameters, .mutablePublicState, .lcom,
-                 .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity:
+                 .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity,
+                 .linesOfCode:
                 return false
             }
         }
@@ -115,7 +118,8 @@ extension MetricBudget.Metric {
         .featureEnvyMethods: { Double($0.featureEnvyMethods) },
         .dataClassScore: { $0.dataClassScore },
         .nestingDepth: { Double($0.nestingDepth) },
-        .maxCyclomaticComplexity: { Double($0.maxCyclomaticComplexity) }
+        .maxCyclomaticComplexity: { Double($0.maxCyclomaticComplexity) },
+        .linesOfCode: { Double($0.linesOfCode) }
     ]
 
     private static let moduleAccessors: [MetricBudget.Metric: @Sendable (CodeMetrics.ModuleCoupling) -> Double] = [
@@ -148,6 +152,8 @@ extension MetricBudget.Metric {
             return "group related fields into a value type"
         case .maxCyclomaticComplexity:
             return "extract the branchy method — split its decision paths"
+        case .linesOfCode:
+            return "split the type — extract collaborators until each fits in a screenful"
         case .fanIn, .fanOut, .depthOfInheritance, .numberOfChildren,
              .instability, .abstractness, .distance, .publicApiSurface:
             return "review this coupling metric"
