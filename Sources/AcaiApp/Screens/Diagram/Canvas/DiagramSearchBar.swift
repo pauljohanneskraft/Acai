@@ -36,6 +36,14 @@ struct DiagramSearchBar: View {
                 Text(.app("View.DiagramSearchBar.FindByName"))
             }
             .textFieldStyle(.plain)
+            // Type names aren't prose: a capitalised or "corrected" query finds the wrong node.
+            .autocorrectionDisabled()
+            #if os(iOS)
+            .textInputAutocapitalization(.never)
+            // SwiftUI's tint overrides `AcaiRootScene`'s caret hiding, and a blinking caret is per-run
+            // content in a UI-test screenshot. Inert in release, where no fixture is set.
+            .tint(UITestFixtureResolver().resolveBaseDir() != nil ? .clear : nil)
+            #endif
             .frame(minWidth: 140)
             .focused(isFocused)
             // Setting this from the toolbar action that reveals the bar races the field's own
