@@ -98,7 +98,7 @@ On macOS the app can generate this for you: **Settings → Connect via MCP** loc
 
 ## The tools
 
-Nine tools on macOS, **eight on Linux** — `acai_image` links the SwiftUI renderer and is compiled out elsewhere.
+Ten tools on macOS, **eight on Linux** — `acai_image` links the SwiftUI renderer and `acai_hotspots` links libgit2; both are compiled out elsewhere.
 
 Every tool takes `path` (required), and most also accept:
 
@@ -287,6 +287,21 @@ and labelled `(SDP)`. Use it to audit layering; use `kind: package` for the plai
 Returns raw text with no structured content, except a leading text block warning of low parse health
 (see [The tools](#The-tools)) when the score is below `HealthCheck.trustThreshold`.
 
+### `acai_hotspots` — macOS only
+
+Rank files by churn × complexity: how often a file changes, against how complex its types are. Use it to decide where a refactoring budget pays off most, or which files a risky change is likeliest to touch.
+
+Churn is a git-history walk, so `path` must be inside a git checkout — a plain folder is `invalidParams` naming the missing history, never an empty list. A shallow clone is refused rather than counted.
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `commits` | integer | How many commits of history to walk. Default `50`. |
+| `top` | integer | Limit the ranked list. |
+
+Plus `path` *, `languages`, `refresh`, `includeGenerated`.
+
+Result shape: `{ "churnThreshold": <median>, "complexityThreshold": <median>, "commitWindow": <n>, "filesScored": <n>, "hotspotCount": <n>, "hotspots": [{ "path", "type", "churn", "complexity", "score", "isHotspot" }] }`, ranked highest score first. `type` is the declared type whose most complex method sets `complexity`, omitted for a file that declares none. `hotspotCount` counts every file above both medians, even when `top` returns fewer.
+
 ### `acai_image` — macOS only
 
 The same diagram families rendered to a PNG the agent can actually see. Use it when a visual beats text: hairballs, layout, hot nodes.
@@ -359,6 +374,7 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 | `acai_diff` | Both sides must be filesystem paths. No delta-diagram rendering. |
 | `acai_diagram` | Defaults to `mermaid` where the CLI defaults to `dot`. Exposes none of the class-diagram flags, no theme, no config file, no focus direction/relationship control. |
 | `acai_image` | No `--grouping`, `--hide-members`, `--min-access`, or delta-image inputs. |
+| `acai_hotspots` | JSON only — no human table. |
 
 `acai_inspect` and `acai_dependents` are at full parity.
 
