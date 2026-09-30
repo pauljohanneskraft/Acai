@@ -19,7 +19,7 @@ against your build.
 - [Install](#Install)
 - [The mental model](#The-mental-model)
 - [Shared options](#Shared-options)
-- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`hotspots`](#hotspots) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`dependents`](#dependents) · [`diff`](#diff)
+- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`atlas`](#atlas) · [`metrics`](#metrics) · [`hotspots`](#hotspots) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`dependents`](#dependents) · [`diff`](#diff)
 - [Recipes](#Recipes)
 - [Platform differences](#Platform-differences)
 
@@ -286,6 +286,29 @@ acai image --source . --grouping directory --output arch.png
 acai image --from myproj --min-access public --scale 3 --output api.png
 acai image --source-old ./before --source ./after --output delta.png
 ```
+
+### `atlas`
+
+> Bundle a codebase's diagrams, statistics and findings into one PDF (**macOS only**).
+
+The same document format as the app's Codebase Atlas export: a title page, one page per diagram, the statistics the codebase detail pane shows, and every quality violation, dead-code candidate and parse diagnostic. The diagram section is the default class diagram, package graph and call graph; a diagram that cannot be rendered gets a page saying so (and a warning on stderr) rather than failing the export.
+
+| Flag | Notes |
+| --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--output <output>` | **Required.** Output PDF file path. |
+| `--name <name>` | Name for the title page. Defaults to the analyzed directory's name. |
+| `--rules <rules>` | Path to the YAML rules file the findings section is judged by. Defaults to the built-in curated smell budgets. |
+| `--scale <scale>` | Output resolution scale factor for the embedded diagrams (default `2.0`). |
+| `--theme <theme>` | Colour theme for the embedded diagrams: `light` (default), `dark`. |
+| `--max-nodes <max-nodes>` | Maximum node count before a graph diagram's page reports it could not render (default `2000`). |
+
+```sh
+acai atlas --source . --output atlas.pdf
+acai atlas --source . --output atlas.pdf --rules quality.yml --theme dark
+```
+
+The PDF carries a format marker (`Acai Codebase Atlas — Format 1`) on the title page and in its PDF metadata.
 
 ### `metrics`
 
@@ -605,9 +628,9 @@ Mermaid renders natively on GitHub — paste the output into a ` ```mermaid ` fe
 
 ## Platform differences
 
-The CLI runs on macOS and Linux. **Two differences:** `image` is macOS-only because it renders through SwiftUI's `ImageRenderer`, which needs a window-server session; `hotspots` is macOS-only because its churn walk goes through libgit2, which Açaí builds against SecureTransport/CommonCrypto and so links on Apple platforms only.
+The CLI runs on macOS and Linux. **Two differences:** `image` and `atlas` are macOS-only because they render through SwiftUI's `ImageRenderer`, which needs a window-server session; `hotspots` is macOS-only because its churn walk goes through libgit2, which Açaí builds against SecureTransport/CommonCrypto and so links on Apple platforms only.
 
-On Linux both subcommands are **absent** — `acai --help` lists eleven subcommands rather than thirteen. Every other command and flag is identical. For images there, emit DOT and render with Graphviz:
+On Linux all three subcommands are **absent** — `acai --help` lists eleven subcommands rather than fourteen. Every other command and flag is identical. For images there, emit DOT and render with Graphviz:
 
 ```sh
 acai diagram --source . --output arch.dot
