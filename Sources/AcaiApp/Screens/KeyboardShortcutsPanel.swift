@@ -39,31 +39,26 @@ struct KeyboardShortcutsPanel: View {
     }
 }
 
-/// Adds a "Keyboard Shortcuts" item to the Help menu (replacing macOS's default, which otherwise
-/// just points at a nonexistent Help Book). macOS opens the panel as its own window; iPad/iPhone
-/// present it as `ProjectBrowserView`'s sheet.
+#if os(macOS)
+/// Replaces macOS's default Help item, which otherwise just points at a nonexistent Help Book, and
+/// opens the panel as its own window. Off macOS the same item comes from `HelpMenuCommands`, which
+/// owns the one Help group iPadOS builds, and the panel is `ProjectBrowserView`'s sheet.
 struct KeyboardShortcutCommands: Commands {
-    /// The `WindowGroup(id:)` this command opens on macOS — declared once here so the command and the
-    /// scene registration in `AcaiRootScene` can't drift apart.
+    /// The `WindowGroup(id:)` this command opens — declared once here so the command and the scene
+    /// registration in `AcaiRootScene` can't drift apart.
     static let windowID = "keyboardShortcuts"
 
     @EnvironmentObject private var presenter: KeyboardShortcutsPresenter
 
     var body: some Commands {
-        #if os(macOS)
         CommandGroup(replacing: .help) {
             KeyboardShortcutsHelpMenuButton(presenter: presenter)
         }
-        #else
-        // iPadOS keeps its own Help items, so this goes beside them rather than replacing them.
-        CommandGroup(after: .help) {
-            KeyboardShortcutsHelpMenuButton(presenter: presenter)
-        }
-        #endif
     }
 }
+#endif
 
-private struct KeyboardShortcutsHelpMenuButton: View {
+struct KeyboardShortcutsHelpMenuButton: View {
     let presenter: KeyboardShortcutsPresenter
     @Environment(\.openWindow) private var openWindow
 

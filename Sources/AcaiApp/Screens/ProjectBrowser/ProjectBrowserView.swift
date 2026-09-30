@@ -28,7 +28,7 @@ public struct ProjectBrowserView: View {
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
-    // Scene-level, because ⌘/ comes from `KeyboardShortcutCommands` — a menu command sits outside this
+    // Scene-level, because ⌘/ comes from `HelpMenuCommands` — a menu command sits outside this
     // view hierarchy, so it cannot reach a `@State` here. Settings has its own route to the same panel.
     @EnvironmentObject private var keyboardShortcutsPresenter: KeyboardShortcutsPresenter
     @State var windowToken = UUID()
