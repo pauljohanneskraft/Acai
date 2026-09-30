@@ -17,8 +17,8 @@ extension AcaiCommand {
         @Option(name: .long, help: "Output file path for the diagram. Prints to stdout if omitted.")
         var output: String?
 
-        @Option(name: .long, help: "Output format: dot (default), mermaid.")
-        var format: FormatOption?
+        @Option(name: .long, help: "Output format: dot, mermaid.")
+        var format: FormatOption = .mermaid
 
         @Option(name: .long, help: "Color theme: light, dark.")
         var theme: ThemeOption?
@@ -38,7 +38,7 @@ extension AcaiCommand {
         mutating func run() async throws {
             let artifact = try await artifactSource.resolve()
 
-            let diagramFormat = format?.diagramFormat ?? .dot
+            let diagramFormat = format.diagramFormat
             let selectedTheme = theme?.diagramTheme
             let export: DiagramExport
             if let sequenceFrom = shape.sequenceFrom {

@@ -1,6 +1,6 @@
 public enum DiagramFormat: String, Sendable, CaseIterable {
-    /// The default.
     case dot
+    /// The default on every surface that renders a diagram.
     case mermaid
 }
 
