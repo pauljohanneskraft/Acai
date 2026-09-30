@@ -117,7 +117,7 @@ struct TOMLReaderTests {
         ("name =", "expected a value"),
         ("where = [\"a\"", "expected ',' or ']' in an array"),
         ("dir = {\"\" = \"lib\"", "expected ',' or '}' in an inline table"),
-        ("= \"value\"", "expected a key"),
+        ("= \"value\"", "expected a key")
     ])
     func rejectsMalformedInput(source: String, message: String) throws {
         do {

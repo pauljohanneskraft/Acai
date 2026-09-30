@@ -72,10 +72,14 @@ struct TOMLScanner {
         skipSpaces()
         guard let character = peek() else { throw failure("expected a value") }
         switch character {
-        case "\"", "'": return .string(try stringLiteral())
-        case "[": return try array()
-        case "{": return try inlineTable()
-        default: return .scalar(try scalar())
+        case "\"", "'":
+            return .string(try stringLiteral())
+        case "[":
+            return try array()
+        case "{":
+            return try inlineTable()
+        default:
+            return .scalar(try scalar())
         }
     }
 
@@ -170,11 +174,16 @@ struct TOMLScanner {
         guard let character = peek() else { throw failure("unterminated escape sequence") }
         advance()
         switch character {
-        case "n": return "\n"
-        case "t": return "\t"
-        case "r": return "\r"
-        case "\"", "'", "\\", "/": return character
-        default: throw failure("unsupported escape '\\\(character)'")
+        case "n":
+            return "\n"
+        case "t":
+            return "\t"
+        case "r":
+            return "\r"
+        case "\"", "'", "\\", "/":
+            return character
+        default:
+            throw failure("unsupported escape '\\\(character)'")
         }
     }
 
