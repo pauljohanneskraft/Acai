@@ -55,6 +55,23 @@ struct DirectoryBlameTests {
         #expect(resolved["Nested.swift"]?[1]?.authorName == "Test")
     }
 
+    @Test("A ref other than HEAD is blamed as of that revision, not the checked-out one")
+    func blameAtAnotherRef() throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        // `make()` leaves the working tree on `main`; `Feature.swift` exists only on `feature`.
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).make()
+        let blame = DirectoryBlame(directory: source)
+
+        let onMain = try #require(try blame.lines(byFile: ["Feature.swift": [1]], ref: "main"))
+        #expect(onMain["Feature.swift"] == nil)
+
+        let onFeature = try #require(try blame.lines(byFile: ["Feature.swift": [1]], ref: "feature"))
+        #expect(onFeature["Feature.swift"]?[1]?.authorName == "Test")
+    }
+
     @Test("A line past the end of the file is absent rather than attributed to the last one")
     func lineBeyondTheFileIsAbsent() throws {
         let root = try scratchDirectory()

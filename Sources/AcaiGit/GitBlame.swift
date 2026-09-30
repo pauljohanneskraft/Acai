@@ -47,28 +47,49 @@ public struct GitBlame: Sendable {
     /// scattered through the file, so a window spanning the first to the last saves little, and it
     /// is one more thing to get wrong when a stale index names a line past the file's end.
     ///
+    /// Blames as of `ref` — a codebase pinned to one revision must not read the shared clone's HEAD,
+    /// which belongs to whichever codebase checked it out last. `nil` means the repository's own HEAD.
+    ///
     /// Throws `HistoryNotFetched` for a shallow clone, where blame charges every line older than the
     /// graft to the boundary commit — an answer that looks real and isn't.
-    public func lines(byFile linesByFile: [String: Set<Int>]) throws -> [String: [Int: Line]] {
+    public func lines(byFile linesByFile: [String: Set<Int>], ref: String? = nil) throws -> [String: [Int: Line]] {
         let wanted = linesByFile.filter { !$0.value.isEmpty }
         guard !wanted.isEmpty else { return [:] }
         try GitHistoryAvailability(directory: directory).requireFullHistory()
+        // Resolved before the raw handle is opened, so `SwiftGitX.Repository`'s own runtime
+        // init/shutdown pair doesn't nest inside `withRepositoryPointer`'s.
+        let newestCommit = try ref.map { try commitSHA(for: $0) }
 
         return try withRepositoryPointer { repositoryPointer in
             wanted.reduce(into: [String: [Int: Line]]()) { result, entry in
-                guard let blamed = try? blame(entry.value, inFile: entry.key, in: repositoryPointer),
-                    !blamed.isEmpty else { return }
+                let blamed = try? blame(
+                    entry.value, inFile: entry.key, newestCommit: newestCommit, in: repositoryPointer)
+                guard let blamed, !blamed.isEmpty else { return }
                 result[entry.key] = blamed
             }
         }
     }
 
+    /// The ref's commit, through the same revision grammar the rest of `AcaiGit` accepts — branch,
+    /// tag, SHA or a `HEAD~N` chain — rather than libgit2's own `rev-parse`.
+    private func commitSHA(for ref: String) throws -> String {
+        let repository = try Repository(at: directory, createIfNotExists: false)
+        return try GitReference(name: ref).resolve(in: repository).id.hex
+    }
+
     private func blame(
-        _ lines: Set<Int>, inFile path: String, in repositoryPointer: OpaquePointer
+        _ lines: Set<Int>, inFile path: String, newestCommit: String?, in repositoryPointer: OpaquePointer
     ) throws -> [Int: Line] {
         var options = git_blame_options()
         guard git_blame_options_init(&options, UInt32(GIT_BLAME_OPTIONS_VERSION)) == 0 else {
             throw Failure.libgit2(Self.lastErrorMessage("Couldn't initialize blame options"))
+        }
+        if let newestCommit {
+            var oid = git_oid()
+            guard git_oid_fromstr(&oid, newestCommit) == 0 else {
+                throw Failure.libgit2(Self.lastErrorMessage("Couldn't read commit \"\(newestCommit)\""))
+            }
+            options.newest_commit = oid
         }
 
         var blamePointer: OpaquePointer?

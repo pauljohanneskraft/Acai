@@ -24,7 +24,8 @@ struct FindingBlameResolver {
         let hub = GitRepository(remoteURL: reference.remoteURL, storeDirectory: gitRepositoriesDir)
         guard hub.isCloned else { return nil }
         let subpath = RepositorySubpath(prefix: reference.subpath ?? "")
-        return subpath.offsetting(try hub.blame(byFile: subpath.prefixing(linesByFile)))
+        return subpath.offsetting(
+            try hub.blame(byFile: subpath.prefixing(linesByFile), ref: reference.ref))
     }
 
     private func localLastTouched(
@@ -32,7 +33,8 @@ struct FindingBlameResolver {
     ) throws -> [String: [Int: GitBlame.Line]]? {
         try ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
             .withResolvedURL { url -> [String: [Int: GitBlame.Line]]? in
-                try DirectoryBlame(directory: url).lines(byFile: linesByFile)
+                try DirectoryBlame(directory: url).lines(
+                    byFile: linesByFile, ref: codebase.pinnedRevision)
             }
     }
 }
