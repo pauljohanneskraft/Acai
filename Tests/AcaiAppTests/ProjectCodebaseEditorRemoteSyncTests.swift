@@ -187,8 +187,10 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         await service.mayFinish.open()
         await clone.value
 
-        #expect(store.projects.map(\.id) == [survivingProjectID])
-        #expect(store.projects.allSatisfy(\.codebases.isEmpty))
+        let remainingProjectIDs = store.projects.map(\.id)
+        let codebasesLeft = store.projects.flatMap(\.codebases)
+        #expect(remainingProjectIDs == [survivingProjectID])
+        #expect(codebasesLeft.isEmpty)
         // Told, not silently dropped.
         #expect(store.lastError != nil)
         // The orphaned worktree, and the hub clone left holding nothing, are both gone.
