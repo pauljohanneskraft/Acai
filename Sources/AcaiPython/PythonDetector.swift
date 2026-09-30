@@ -7,7 +7,8 @@ public struct PythonDetector: BuildSystemDetector {
     public init() {}
 
     public func isPresent(at root: URL) -> Bool {
-        IndicatorFiles(["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"]).present(at: root)
+        IndicatorFiles([PythonManifest.fileName, "setup.py", "setup.cfg", "requirements.txt"])
+            .present(at: root)
     }
 
     public func discoverSourceSpecs(
@@ -16,8 +17,13 @@ public struct PythonDetector: BuildSystemDetector {
     ) -> [SourceSpec] {
         guard LanguageRequest(requestedLanguages).wants(.python) else { return [] }
 
-        let sourceDirs = SourceDirectoryProbe(preferring: "src").directories(in: root)
+        let manifest = PythonManifest(root: root).sourceDirectories()
+        let sourceDirs = manifest.directories.isEmpty
+            ? SourceDirectoryProbe(preferring: "src").directories(in: root)
+            : manifest.directories
         guard SourceFilePresence(extensions: ["py"]).exist(inAnyOf: sourceDirs) else { return [] }
-        return [SourceSpec(language: .python, sourceDirs: sourceDirs)]
+        return [
+            SourceSpec(language: .python, sourceDirs: sourceDirs, diagnostics: manifest.diagnostics)
+        ]
     }
 }

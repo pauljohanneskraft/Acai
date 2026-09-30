@@ -5,10 +5,18 @@ import Foundation
 public struct SourceSpec {
     public var language: CodeArtifact.SourceLanguage
     public var sourceDirs: [URL]
+    /// Problems a detector hit while reading the build system's own manifest. Carried here so a
+    /// detector can fall back rather than fail, and still have the reason reach the artifact.
+    public var diagnostics: [ParseDiagnostic]
 
-    public init(language: CodeArtifact.SourceLanguage, sourceDirs: [URL]) {
+    public init(
+        language: CodeArtifact.SourceLanguage,
+        sourceDirs: [URL],
+        diagnostics: [ParseDiagnostic] = []
+    ) {
         self.language = language
         self.sourceDirs = sourceDirs
+        self.diagnostics = diagnostics
     }
 }
 
