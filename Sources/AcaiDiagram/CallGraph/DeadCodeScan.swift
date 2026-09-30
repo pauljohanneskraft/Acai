@@ -91,7 +91,8 @@ public struct DeadCodeScan: Sendable {
         if member.isVisible(atLeast: .public) { return true }
         if member.modifiers.contains(.abstract) { return true }
         if member.modifiers.contains(.override) { return true }
-        if requirements.contains(.init(kind: member.kind, name: member.name)) { return true }
+        let signature = ProtocolWitnessIndex.Requirement(kind: member.kind, name: member.name)
+        if requirements.contains(signature) { return true }
         return markers.marks(member)
     }
 }
@@ -102,8 +103,8 @@ public struct DeadCodeScan: Sendable {
 /// Protocols defined outside the analysed sources can't be inspected, so their witnesses stay
 /// best-effort (surfaced as the usual coverage caveat).
 private struct ProtocolWitnessIndex {
-    /// A requirement as a witness is matched: an initializer requirement is satisfied by an
-    /// initializer, so a method sharing its name is not mistaken for the witness.
+    /// Keyed on kind as well as name: an initializer requirement is witnessed by an initializer, so a
+    /// method that happens to share the name isn't mistaken for it.
     struct Requirement: Hashable {
         let kind: MemberKind
         let name: String

@@ -43,9 +43,9 @@ struct DeadCodeScanTests {
             languages: scanning(kinds)).report
     }
 
-    private func widget(_ members: [Member], kind: TypeKind = .class) -> TypeDeclaration {
+    private func widget(_ members: [Member]) -> TypeDeclaration {
         TypeDeclaration(
-            id: "Widget", name: "Widget", qualifiedName: "Widget", kind: kind, accessLevel: .public,
+            id: "Widget", name: "Widget", qualifiedName: "Widget", kind: .class, accessLevel: .public,
             members: members, location: SourceLocation(filePath: "Widget.swift", line: 1, column: 1))
     }
 
