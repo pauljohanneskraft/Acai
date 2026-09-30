@@ -232,9 +232,11 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
 | `--format` | `dot` (default), `mermaid` |
 | `--theme` | `light`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
+| `--output` | file or stdout |
 | *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency`, `--color-by`, `--rules` |
 | *focus flags* | `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections` |
 | `--sequence-from <entry>` | Sequence diagram from `"Type.method"`, or `"function"` for a top-level function. |
@@ -293,9 +295,12 @@ acai image --source-old ./before --source ./after --output delta.png
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--format` | `json` (default), `human` |
 | `--sort <metric>` | Ranking for the human tables. Default `fanOut`. |
 | `--top <n>` | Limit the human type table. |
+| `--output` | file or stdout |
 
 `--sort` accepts: `fanOut`, `fanIn`, `weightedMethods`, `depthOfInheritance`, `numberOfChildren`, `responseForClass`, `publicMemberCount`, `publicMemberRatio`, `mutablePublicState`, `maxParameters`, `meanParameters`, `dataClassScore`, `overrideCount`, `nestingDepth`, `deepAndWide`, `lackOfCohesion`, `featureEnvyMethods`, `linesOfCode`.
 
@@ -344,11 +349,13 @@ acai hotspots --source . --commits 200 --format json --output hotspots.json
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
 | `--rules <yaml>` | Rules file. Defaults to the built-in smell budgets. |
 | `--explore` | Report findings but **always exit 0**, and additionally list dependency cycles. |
 | `--scope` | `modules`, `types`, `all` (default) — cycle scope in explore mode. |
 | `--baseline <name-or-path>` | Also report architectural drift since that baseline, and evaluate the rules file's `movements` (required if the rules file declares any). |
 | `--format` | `human` (default), `json` |
+| `--output` | file or stdout |
 
 ```sh
 acai quality --source . --rules quality.yml              # gate: fails the build
@@ -420,6 +427,11 @@ module-scoped metric, or one with no such budget, is a validation error.
 
 Seeds budgets from your current worst-case metrics, so adopting `quality` is "review and edit a draft" rather than "author from a blank page" — and the thresholds ratchet against regression from day one.
 
+| Flag | Notes |
+| --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--output` | file or stdout |
+
 ```sh
 acai rules --source . --output quality.yml
 ```
@@ -436,11 +448,15 @@ Takes all [selector facets](#Selector-facets), plus member-level ones:
 
 | Flag | Meaning |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--member-kind` | `property`, `method`, `initializer`, `deinitializer`, `subscript` |
 | `--min-parameters <n>` | Members with at least *n* parameters. |
 | `--public-vars` | Only publicly-settable stored properties. |
 | `--overrides` | Only members overriding an inherited member. |
 | `--enums` | List enum cases with raw and associated values instead. |
+| `--format` | `json` (default), `human` |
+| `--output` | file or stdout |
 
 ```sh
 acai inspect --from myproj --kind class --min-members 30 --format human
@@ -457,10 +473,14 @@ acai inspect --from myproj --enums
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--mode` | `metrics` (default), `cycles`, `deadcode` |
 | `--scope` | `type:Name` or `module:Name` — metrics/cycles only. |
+| `--format` | `json` (default), `human` |
 | `--top <n>` | Limit the human metrics table to the hottest methods. |
 | `--no-fail` | In `cycles` mode, exit 0 even when cycles are found. |
+| `--output` | file or stdout |
 
 ```sh
 acai callgraph --from myproj --mode metrics --format human --top 15
@@ -484,8 +504,11 @@ acai dependents [options] <type>
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--depth <n>` | Limit reverse reachability to *n* hops. Unlimited if omitted. |
 | `--format` | `json` (default), `human` |
+| `--output` | file or stdout |
 
 ```sh
 acai dependents --from myproj Playlist
@@ -509,10 +532,14 @@ Each side is a positional stored-analysis name or `.json` path, **or** a directo
 | Flag | Notes |
 | --- | --- |
 | `--source-old` / `--source-new` | Analyze a directory as that side. |
+| `--language` | Restrict analysis to one or more languages. Repeatable. Applied to **both** sides analysed on the fly. |
 | `--format` | `human` (default), `json` |
 | `--diagram` | `dot` or `mermaid` — render a colour-coded delta diagram instead of a report. |
 | `--sequence-from`, `--state-from`, `--package`, `--module-coupling`, `--call-graph`, `--call-graph-scope` | Pick the diagram family for `--diagram`. |
+| `--max-depth <n>` | Sequence call depth (default `5`). |
+| `--max-states <n>` | Fail beyond this many distinct states (default `20`). |
 | `--include-generated` | Include machine-generated types in the analysis (default: they are excluded). Applied to **both** sides before diffing, so a generated type is never reported as added or removed by the filtering itself. |
+| `--output` | file or stdout |
 
 ```sh
 acai diff main-baseline --source-new ./                    # drift since a baseline
