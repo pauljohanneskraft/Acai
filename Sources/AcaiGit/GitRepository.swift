@@ -114,10 +114,10 @@ public struct GitRepository: Sendable {
         try GitChurn(directory: localPath).byFile(ref: ref, limit: limit)
     }
 
-    /// `path` is relative to the repository root, so a codebase pinned to a subpath offsets its own
-    /// paths through `RepositorySubpath` first.
-    public func blame(_ lines: Set<Int>, inFile path: String) throws -> [Int: GitBlame.Line] {
-        try GitBlame(directory: localPath).lines(lines, inFile: path)
+    /// Paths are relative to the repository root, so a codebase pinned to a subpath offsets its own
+    /// through `RepositorySubpath` first.
+    public func blame(byFile linesByFile: [String: Set<Int>]) throws -> [String: [Int: GitBlame.Line]] {
+        try GitBlame(directory: localPath).lines(byFile: linesByFile)
     }
 
     /// Normalizes away userinfo, host case, and a trailing `.git`, then hashes the result so

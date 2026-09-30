@@ -8,10 +8,12 @@ public struct DirectoryBlame: Sendable {
         self.directory = directory
     }
 
-    /// `nil` outside a git working tree; throws `HistoryNotFetched` for a shallow clone.
-    public func lines(_ lines: Set<Int>, inFile path: String) throws -> [Int: GitBlame.Line]? {
+    /// `nil` outside a git working tree; throws `HistoryNotFetched` for a shallow clone. Keys come
+    /// back named relative to `directory`, exactly as they went in.
+    public func lines(byFile linesByFile: [String: Set<Int>]) throws -> [String: [Int: GitBlame.Line]]? {
         guard let root = GitRepositoryRoot(directory: directory).find() else { return nil }
         let subpath = RepositorySubpath(root: root, directory: directory)
-        return try GitBlame(directory: root).lines(lines, inFile: subpath.repositoryPath(path))
+        return subpath.offsetting(
+            try GitBlame(directory: root).lines(byFile: subpath.prefixing(linesByFile)))
     }
 }

@@ -12,6 +12,7 @@ struct FindingsView: View {
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
+    @StateObject private var blame = FindingsBlameViewModel()
     @State private var list = FindingsListState()
     @State private var isLoadingSuppression = true
     @State private var suppressionError: String?
@@ -132,7 +133,8 @@ struct FindingsView: View {
                         // risking a suppress/un-suppress tap racing the in-flight load and having
                         // its result silently overwritten once that load completes.
                         onToggleSuppressed: isLoadingSuppression ? nil : { toggleSuppressed(finding) },
-                        onOpenCycle: { openCycle(finding) }
+                        onOpenCycle: { openCycle(finding) },
+                        lastTouched: blame.lastTouchedByFindingID[finding.id]
                     )
                     .listRowSeparator(.hidden)
                 }
@@ -140,6 +142,12 @@ struct FindingsView: View {
                 #if os(iOS)
                 .listStyle(.plain)
                 #endif
+                .task(id: allFindings.map(\.id)) {
+                    await blame.load(
+                        findings: allFindings,
+                        codebases: Dictionary(uniqueKeysWithValues: project.codebases.map { ($0.id, $0) }),
+                        gitRepositoriesDir: model.store.gitRepositoriesDir)
+                }
             }
         }
     }

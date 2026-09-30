@@ -20,20 +20,21 @@ public struct RepositorySubpath: Sendable {
     }
 
     /// Strips `prefix` off every key, dropping the entries outside it.
-    public func offsetting(_ raw: [String: Int]) -> [String: Int] {
+    public func offsetting<Value>(_ raw: [String: Value]) -> [String: Value] {
         guard !prefix.isEmpty else { return raw }
         let normalized = normalizedPrefix
-        return Dictionary(uniqueKeysWithValues: raw.compactMap { key, value -> (String, Int)? in
+        return Dictionary(uniqueKeysWithValues: raw.compactMap { key, value -> (String, Value)? in
             guard key.hasPrefix(normalized) else { return nil }
             return (String(key.dropFirst(normalized.count)), value)
         })
     }
 
-    /// The inverse of `offsetting(_:)` for a single path: what git calls a file the directory knows
-    /// as `path`.
-    public func repositoryPath(_ path: String) -> String {
-        guard !prefix.isEmpty else { return path }
-        return normalizedPrefix + path
+    /// The inverse: names every key the way git does, so a directory's own paths can be handed to a
+    /// repository-wide operation and the result offset straight back.
+    public func prefixing<Value>(_ raw: [String: Value]) -> [String: Value] {
+        guard !prefix.isEmpty else { return raw }
+        let normalized = normalizedPrefix
+        return Dictionary(uniqueKeysWithValues: raw.map { (normalized + $0.key, $0.value) })
     }
 
     private var normalizedPrefix: String {

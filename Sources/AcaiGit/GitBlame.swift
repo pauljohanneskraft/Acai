@@ -37,40 +37,52 @@ public struct GitBlame: Sendable {
         }
     }
 
-    /// Blames `path` — relative to the repository root — once and answers every line in `lines`, so
-    /// a file carrying many findings costs one walk rather than one per line. A line libgit2 can't
-    /// attribute (past the end of the file, or never committed) is absent from the result rather
-    /// than guessed at, and an empty `lines` reads nothing at all.
+    /// Blames each file once, under a single repository handle, so a list of findings spread over
+    /// many files costs one open and one walk per file rather than one of each per finding. A line
+    /// libgit2 can't attribute (past the end of the file, or never committed) is absent from the
+    /// result rather than guessed at, and so is a file it can't read at all — untracked, or renamed
+    /// out from under a stale index — rather than that one file failing the rest.
     ///
-    /// The whole file is blamed rather than `git_blame_options`' line window: the callers' lines are
-    /// scattered through the file, so a window spanning the first to the last saves nothing, and a
-    /// window is one more thing to get wrong when a stale index names a line past the file's end.
+    /// Whole files are blamed rather than `git_blame_options`' line window: a caller's lines are
+    /// scattered through the file, so a window spanning the first to the last saves little, and it
+    /// is one more thing to get wrong when a stale index names a line past the file's end.
     ///
     /// Throws `HistoryNotFetched` for a shallow clone, where blame charges every line older than the
     /// graft to the boundary commit — an answer that looks real and isn't.
-    public func lines(_ lines: Set<Int>, inFile path: String) throws -> [Int: Line] {
-        guard !lines.isEmpty else { return [:] }
+    public func lines(byFile linesByFile: [String: Set<Int>]) throws -> [String: [Int: Line]] {
+        let wanted = linesByFile.filter { !$0.value.isEmpty }
+        guard !wanted.isEmpty else { return [:] }
         try GitHistoryAvailability(directory: directory).requireFullHistory()
 
         return try withRepositoryPointer { repositoryPointer in
-            var options = git_blame_options()
-            guard git_blame_options_init(&options, UInt32(GIT_BLAME_OPTIONS_VERSION)) == 0 else {
-                throw Failure.libgit2(Self.lastErrorMessage("Couldn't initialize blame options"))
+            wanted.reduce(into: [String: [Int: Line]]()) { result, entry in
+                guard let blamed = try? blame(entry.value, inFile: entry.key, in: repositoryPointer),
+                    !blamed.isEmpty else { return }
+                result[entry.key] = blamed
             }
+        }
+    }
 
-            var blamePointer: OpaquePointer?
-            guard git_blame_file(&blamePointer, repositoryPointer, path, &options) == 0,
-                let blamePointer else {
-                throw Failure.libgit2(Self.lastErrorMessage("Couldn't blame \"\(path)\""))
-            }
-            defer { git_blame_free(blamePointer) }
+    private func blame(
+        _ lines: Set<Int>, inFile path: String, in repositoryPointer: OpaquePointer
+    ) throws -> [Int: Line] {
+        var options = git_blame_options()
+        guard git_blame_options_init(&options, UInt32(GIT_BLAME_OPTIONS_VERSION)) == 0 else {
+            throw Failure.libgit2(Self.lastErrorMessage("Couldn't initialize blame options"))
+        }
 
-            return lines.reduce(into: [Int: Line]()) { result, line in
-                guard line > 0,
-                    let hunk = git_blame_hunk_byline(blamePointer, line),
-                    let blamed = Line(hunk.pointee) else { return }
-                result[line] = blamed
-            }
+        var blamePointer: OpaquePointer?
+        guard git_blame_file(&blamePointer, repositoryPointer, path, &options) == 0,
+            let blamePointer else {
+            throw Failure.libgit2(Self.lastErrorMessage("Couldn't blame \"\(path)\""))
+        }
+        defer { git_blame_free(blamePointer) }
+
+        return lines.reduce(into: [Int: Line]()) { result, line in
+            guard line > 0,
+                let hunk = git_blame_hunk_byline(blamePointer, line),
+                let blamed = Line(hunk.pointee) else { return }
+            result[line] = blamed
         }
     }
 

@@ -11665,6 +11665,28 @@
         }
       }
     },
+    "View.FindingRow.LastChangedBy %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt geändert von %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last changed by %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernière modification par %@"
+          }
+        }
+      }
+    },
     "View.FindingRow.ViewDiagram" : {
       "localizations" : {
         "de" : {

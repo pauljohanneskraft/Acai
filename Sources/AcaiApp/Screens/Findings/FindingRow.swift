@@ -1,3 +1,4 @@
+import AcaiGit
 import SwiftUI
 
 /// One row in the project-level Findings list — kind/severity badges, the "Open in…" resolution,
@@ -13,6 +14,9 @@ struct FindingRow: View {
     /// somewhere with no project context to create a diagram in — mirrors
     /// `ViolationRowView.onViewAsDiagram`'s rationale.
     var onOpenCycle: (() -> Void)?
+    /// `nil` whenever the codebase's history can't answer for this line — no repository, none
+    /// cloned yet, or only a shallow cut of one — in which case the row simply omits authorship.
+    var lastTouched: GitBlame.Line?
 
     var body: some View {
         VStack(alignment: .leading, spacing: .spacingL) {
@@ -73,9 +77,29 @@ struct FindingRow: View {
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
+            if let lastTouched {
+                authorship(lastTouched)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+    }
+
+    /// Who last changed the flagged line and how long it has stood — the signal for whether this is
+    /// live code someone is working in or something nobody has opened in years. `.relative` rather
+    /// than any arithmetic here, so every language phrases the age its own way.
+    private func authorship(_ lastTouched: GitBlame.Line) -> some View {
+        HStack(spacing: .spacingXS) {
+            Image(systemName: "person.crop.circle")
+            Text(.app("View.FindingRow.LastChangedBy \(lastTouched.authorName)"))
+            Text(verbatim: "·")
+            Text(lastTouched.changedAt, format: .relative(presentation: .named))
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("findings.row.lastTouched")
     }
 
     private var severityTint: Color {
