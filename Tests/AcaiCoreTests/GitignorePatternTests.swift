@@ -16,9 +16,12 @@ struct GitignorePatternTests {
 
     private func problem(_ line: String) -> String? {
         switch GitignoreLine(text: line).outcome {
-        case .rule(_, let problem): problem
-        case .refused(let reason): reason
-        case .none: nil
+        case .rule(_, let problem):
+            problem
+        case .refused(let reason):
+            reason
+        case .noRule:
+            nil
         }
     }
 
@@ -93,7 +96,10 @@ struct GitignorePatternTests {
         #expect(try matches("a*c.fx", "abbbc.fx"))
         #expect(try matches("a?c.fx", "abc.fx"))
         #expect(try matches("a?c.fx", "abbc.fx") == false)
-        #expect(try matches("*.fx", "a/b.fx") == false, "a `*` must not cross a separator")
+        // An unanchored rule is matched one component at a time, so a separator only comes into
+        // play once the rule is anchored.
+        #expect(try matches("src/*.fx", "src/b.fx"))
+        #expect(try matches("src/*.fx", "src/a/b.fx") == false, "a `*` must not cross a separator")
     }
 
     @Test("character classes match sets, ranges and negations")
@@ -137,7 +143,7 @@ struct GitignorePatternTests {
 
 extension GitignoreLine.Outcome {
     fileprivate var isNone: Bool {
-        if case .none = self { return true }
+        if case .noRule = self { return true }
         return false
     }
 }

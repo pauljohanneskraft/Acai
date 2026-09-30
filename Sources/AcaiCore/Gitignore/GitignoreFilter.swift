@@ -111,7 +111,7 @@ extension GitignoreFilter {
             for (offset, line) in lines.prefix(GitignoreFilter.maximumLinesPerFile).enumerated() {
                 let text = line.hasSuffix("\r") ? String(line.dropLast()) : String(line)
                 switch GitignoreLine(text: text).outcome {
-                case .none:
+                case .noRule:
                     continue
                 case .rule(let pattern, let problem):
                     patterns.append(pattern)

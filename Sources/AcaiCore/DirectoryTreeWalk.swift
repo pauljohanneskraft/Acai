@@ -10,12 +10,20 @@ import Foundation
 ///
 /// Subdirectories are visited in sorted order, so which of two aliasing paths a file is reported
 /// under does not depend on the order the filesystem happens to list them in.
-struct DirectoryTreeWalk: Sendable {
+struct DirectoryTreeWalk {
 
     private enum Entry {
         case directory
         case file
         case missing
+    }
+
+    /// A directory entry under both the path the walk reached it by and the path it actually lives
+    /// at. The two differ as soon as a link is involved, and both are needed: the real one to list
+    /// and to stat, the logical one so a file keeps the path the caller pointed at.
+    private struct Child {
+        let logical: URL
+        let real: URL
     }
 
     let excludedDirectories: Set<String>
@@ -28,14 +36,18 @@ struct DirectoryTreeWalk: Sendable {
         var visited: Set<String> = []
         var stack = [root]
         while let current = stack.popLast() {
-            guard visited.insert(current.resolvingSymlinksInPath().path).inserted else { continue }
+            let resolved = current.resolvingSymlinksInPath()
+            guard visited.insert(resolved.path).inserted else { continue }
             var directories: [URL] = []
             var files: [URL] = []
-            for entry in sortedContents(of: current) {
-                switch kind(of: entry) {
-                case .directory where isDescendable(entry): directories.append(entry)
-                case .file: files.append(entry)
-                case .directory, .missing: continue
+            for child in sortedChildren(of: current, at: resolved) {
+                switch kind(of: child.real) {
+                case .directory where isDescendable(child.logical):
+                    directories.append(child.logical)
+                case .file:
+                    files.append(child.logical)
+                case .directory, .missing:
+                    continue
                 }
             }
             body(current, files)
@@ -48,11 +60,20 @@ struct DirectoryTreeWalk: Sendable {
         return !name.hasPrefix(".") && !excludedDirectories.contains(name)
     }
 
-    private func sortedContents(of directory: URL) -> [URL] {
+    /// Listing goes through the resolved path: handed a symlinked directory, `contentsOfDirectory`
+    /// reports it as empty rather than as an error, which is how a linked-in source directory used
+    /// to disappear without a diagnostic. Each child is then re-expressed under the path the walk
+    /// arrived by, so the link's own spelling — and therefore every relative path derived from it —
+    /// survives.
+    private func sortedChildren(of directory: URL, at resolved: URL) -> [Child] {
         let contents = try? fileManager.contentsOfDirectory(
-            at: directory, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey], options: []
+            at: resolved,
+            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+            options: []
         )
-        return (contents ?? []).sorted { $0.lastPathComponent < $1.lastPathComponent }
+        return (contents ?? [])
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .map { Child(logical: directory.appendingPathComponent($0.lastPathComponent), real: $0) }
     }
 
     /// A symbolic link is classified by what it resolves to, so a link to a directory is descended

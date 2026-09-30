@@ -15,10 +15,14 @@ struct GitignoreSegment: Sendable {
 
         func matches(_ character: Character) -> Bool {
             switch self {
-            case .literal(let expected): expected == character
-            case .anyCharacter: true
-            case .anyRun: false
-            case .characterClass(let characters): characters.contains(character)
+            case .literal(let expected):
+                expected == character
+            case .anyCharacter:
+                true
+            case .anyRun:
+                false
+            case .characterClass(let characters):
+                characters.contains(character)
             }
         }
     }
@@ -39,7 +43,7 @@ struct GitignoreSegment: Sendable {
                 tokens.append(.anyCharacter)
                 index += 1
             case "[":
-                let parsed = GitignoreCharacterClass.Parse(pattern: pattern, openingBracket: index)
+                let parsed = GitignoreCharacterClassParse(pattern: pattern, openingBracket: index)
                 if let characters = parsed.characters {
                     tokens.append(.characterClass(characters))
                 } else {

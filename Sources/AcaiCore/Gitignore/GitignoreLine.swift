@@ -6,7 +6,7 @@ struct GitignoreLine: Sendable {
 
     enum Outcome: Sendable {
         /// Blank, or a comment — git reads no rule from it and neither do we.
-        case none
+        case noRule
         /// A usable rule. `problem` describes something git tolerates but is worth telling the user
         /// about, such as a `[` that is never closed and so matches literally.
         case rule(GitignorePattern, problem: String?)
@@ -25,15 +25,21 @@ struct GitignoreLine: Sendable {
             return .refused("pattern is longer than \(Self.maximumLength) characters")
         }
         var characters = trimmingUnescapedTrailingWhitespace(Array(text))
-        guard let first = characters.first, first != "#" else { return .none }
-
+        guard let first = characters.first, first != "#" else { return .noRule }
         let isNegated = first == "!"
-        // `\#` and `\!` are how git spells a pattern that starts with a character it would
-        // otherwise read as a comment marker or a negation.
-        let isEscapedMarker = first == "\\" && (characters.dropFirst().first.map { $0 == "#" || $0 == "!" } ?? false)
-        if isNegated || isEscapedMarker { characters.removeFirst() }
-        guard !characters.isEmpty else { return .refused("pattern is empty") }
+        if isNegated || isEscapedMarker(characters) { characters.removeFirst() }
+        return rule(from: characters, isNegated: isNegated)
+    }
 
+    /// `\#` and `\!` are how git spells a pattern that starts with a character it would otherwise
+    /// read as a comment marker or a negation.
+    private func isEscapedMarker(_ characters: [Character]) -> Bool {
+        guard characters.first == "\\", let next = characters.dropFirst().first else { return false }
+        return next == "#" || next == "!"
+    }
+
+    private func rule(from characters: [Character], isNegated: Bool) -> Outcome {
+        var characters = characters
         let matchesDirectoriesOnly = characters.last == "/"
         if matchesDirectoriesOnly { characters.removeLast() }
         let isRooted = characters.first == "/"
@@ -65,7 +71,10 @@ struct GitignoreLine: Sendable {
         }
         let pattern = GitignorePattern(
             isNegated: isNegated, matchesDirectoriesOnly: matchesDirectoriesOnly,
-            isAnchored: isAnchored, segments: segments
+            // A bare `**` carries no slash and so would read as an unanchored single component,
+            // which matches nothing. Any `**` at all means the rule is about paths.
+            isAnchored: isAnchored || segments.contains(where: { $0.isAnyComponents }),
+            segments: segments
         )
         return .rule(pattern, problem: problems.first)
     }

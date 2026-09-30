@@ -70,7 +70,7 @@ struct GitignoreFilterTests {
     @Test("a nested .gitignore overrides the root's rules for its own subtree")
     func nestedFileWins() throws {
         let (filter, root) = try filter([
-            ".gitignore": "*.gx\n", "pkg/.gitignore": "!*.gx\n", "pkg/Kept.gx": "", "Dropped.gx": "",
+            ".gitignore": "*.gx\n", "pkg/.gitignore": "!*.gx\n", "pkg/Kept.gx": "", "Dropped.gx": ""
         ])
         defer { try? manager.removeItem(at: root) }
         #expect(filter.includes("pkg/Kept.gx"))
@@ -80,7 +80,7 @@ struct GitignoreFilterTests {
     @Test("a negation cannot re-include a file inside an ignored directory")
     func negationCannotEscapeAnIgnoredDirectory() throws {
         let (filter, root) = try filter([
-            ".gitignore": "vendor/\n!vendor/Keep.gx\n", "vendor/Keep.gx": "",
+            ".gitignore": "vendor/\n!vendor/Keep.gx\n", "vendor/Keep.gx": ""
         ])
         defer { try? manager.removeItem(at: root) }
         #expect(filter.includes("vendor/Keep.gx") == false)
@@ -121,7 +121,7 @@ struct GitignoreFilterTests {
             ".gitignore": "Generated/\n*.gen.gx\na[b\n",
             "Generated/Machine.gx": "",
             "src/Hand.gx": "",
-            "src/Machine.gen.gx": "",
+            "src/Machine.gen.gx": ""
         ])
         defer { try? manager.removeItem(at: root) }
 

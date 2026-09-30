@@ -82,10 +82,6 @@ public struct AnalysisService: Sendable {
         let gitignore = respectingGitignore
             ? GitignoreFilter(root: rootURL, excludingDirectories: excludedDirectories)
             : nil
-        let included: (String) -> Bool = { path in
-            gitignore?.includes(path) != false && includingFile(path)
-        }
-
         let specs = projectDiscovery.discoverSourceSpecs(in: rootURL, requestedLanguages: allowedLanguages)
 
         guard !specs.isEmpty else {
@@ -98,7 +94,9 @@ public struct AnalysisService: Sendable {
         var combinedArtifact: CodeArtifact?
 
         for spec in specs {
-            if let artifact = try await parseSpec(spec, rootURL: rootURL, includingFile: included) {
+            if let artifact = try await parseSpec(
+                spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
+            ) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -116,6 +114,7 @@ public struct AnalysisService: Sendable {
     private func parseSpec(
         _ spec: SourceSpec,
         rootURL: URL,
+        gitignore: GitignoreFilter?,
         includingFile: (String) -> Bool
     ) async throws -> CodeArtifact? {
         guard let codeParser = parser(for: spec.language) else {
@@ -124,7 +123,9 @@ public struct AnalysisService: Sendable {
             )
             return nil
         }
-        let files = collectFiles(for: codeParser, in: spec, rootURL: rootURL, includingFile: includingFile)
+        let files = collectFiles(
+            for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
+        )
         guard !files.isEmpty else { return nil }
 
         let parsed = try await parseFiles(files, using: codeParser, rootURL: rootURL)
@@ -140,18 +141,23 @@ public struct AnalysisService: Sendable {
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
     /// dir), not just `codeParser`'s own, before applying `includingFile`.
     private func collectFiles(
-        for codeParser: any CodeParser, in spec: SourceSpec, rootURL: URL, includingFile: (String) -> Bool
+        for codeParser: any CodeParser,
+        in spec: SourceSpec,
+        rootURL: URL,
+        gitignore: GitignoreFilter?,
+        includingFile: (String) -> Bool
     ) -> [URL] {
         let exts = Set(codeParser.fileExtensions)
-        let excludedDirectories = excludedDirectories
+        let excluded = excludedDirectories
         return spec.sourceDirs
             .flatMap {
-                FileManager.default.fileURLs(
-                    in: $0, withExtensions: exts, excludingDirectories: excludedDirectories
-                )
+                FileManager.default.fileURLs(in: $0, withExtensions: exts, excludingDirectories: excluded)
             }
             .removingDuplicates { $0 }
-            .filter { includingFile($0.relativePath(from: rootURL)) }
+            .filter { url in
+                let path = url.relativePath(from: rootURL)
+                return (gitignore?.includes(path) ?? true) && includingFile(path)
+            }
     }
 
     /// Parses every file concurrently (bounded by `fileParsingConcurrencyLimit`, or the processor
@@ -218,8 +224,8 @@ public struct AnalysisService: Sendable {
     /// rather than failing the whole batch, matching the serial loop's per-file failure isolation.
     private func parseFile(_ file: URL, using codeParser: any CodeParser, rootURL: URL) -> ParseOutcome {
         let relativePath = file.relativePath(from: rootURL)
-        let size = (try? FileManager.default.attributesOfItem(atPath: file.path)[.size] as? Int) ?? nil
-        if let size, size > maximumSourceFileBytes {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: file.path)
+        if let size = (attributes?[.size] as? NSNumber)?.intValue, size > maximumSourceFileBytes {
             return .diagnostic(ParseDiagnostic(
                 location: SourceLocation(filePath: relativePath, line: 0, column: 0),
                 kind: .skipped,

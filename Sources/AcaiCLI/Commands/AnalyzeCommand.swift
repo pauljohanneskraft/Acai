@@ -12,7 +12,8 @@ extension AcaiCommand {
 
                   * Files the repository ignores. The root .gitignore and every nested one are \
                 read, negation rules included, and a file they exclude is never parsed.
-                  * Files over \(AcaiConstants.standard.maximumSourceFileBytes) bytes. Each is \
+                  * Files over \(AcaiConstants.standard.maximumSourceFileBytes) bytes \
+                (\(AcaiConstants.standard.maximumSourceFileBytes / (1024 * 1024)) MiB). Each is \
                 skipped and reported as a `skipped` parse diagnostic carrying its size, so \
                 --health accounts for it rather than leaving it silently absent.
                   * Each language's build-output and dependency directories, and the .git directory.
