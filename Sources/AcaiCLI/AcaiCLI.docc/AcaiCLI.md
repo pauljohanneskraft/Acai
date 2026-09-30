@@ -125,7 +125,7 @@ understands reports the found and expected version numbers rather than misreadin
 | Flag | Values | Notes |
 | --- | --- | --- |
 | `--output <path>` | — | Writes to a file; prints to stdout if omitted. |
-| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `dependents`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`, defaulting to **`mermaid`**. |
+| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `dependents`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`, inferred from `--output`'s extension and otherwise **`mermaid`**. |
 | `--include-generated` | flag | Machine-generated types are **excluded by default**; this includes them. |
 
 ### Selector facets
@@ -237,10 +237,10 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | Flag | Notes |
 | --- | --- |
 | `--from`, `--source`, `--language` | artifact source |
-| `--format` | `dot`, `mermaid` (default) |
+| `--format` | `dot`, `mermaid`. If omitted, inferred from `--output`'s extension (`.dot`/`.gv`: `dot`; `.mmd`/`.md`/`.mermaid`: `mermaid`); `mermaid` for any other extension or stdout. |
 | `--theme` | `light`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
-| `--output` | file or stdout |
+| `--output` | Output file path; prints to stdout if omitted. |
 | *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency`, `--color-by`, `--rules` |
 | *focus flags* | `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections` |
 | `--sequence-from <entry>` | Sequence diagram from `"Type.method"`, or `"function"` for a top-level function. |
@@ -256,7 +256,8 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 
 ```sh
 acai diagram --source . --output arch.mmd
-acai diagram --from myproj --format dot --output arch.dot
+acai diagram --from myproj --output arch.dot
+acai diagram --from myproj --format dot | dot -Tsvg -o arch.svg
 acai diagram --from myproj --focus Playlist --focus-depth 2 --output playlist.mmd
 acai diagram --from myproj --sequence-from "Checkout.placeOrder" --output checkout.mmd
 acai diagram --from myproj --state-from "Download.state" --output states.mmd
@@ -265,12 +266,9 @@ acai diagram --from myproj --module-coupling --output coupling.mmd
 ```
 
 Mermaid embeds directly in Markdown — GitHub, most documentation sites and every Markdown preview
-render it without anything installed. Pass `--format dot` for Graphviz, and render it anywhere Graphviz
-runs: `dot -Tpng arch.dot -o arch.png`.
-
-> **The default changed to `mermaid`.** It was `dot`. A script that pipes `acai diagram` straight into
-> `dot` needs an explicit `--format dot`. `acai_diagram` has always defaulted to Mermaid, so the two
-> surfaces now agree.
+render it without anything installed. For Graphviz, write to a `.dot` file or pass `--format dot`,
+which stdout needs, and render it anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`. The
+default matches `acai_diagram`'s on the MCP server.
 
 > **`--theme default` still works**, on `diagram` and `image` alike. It is a deprecated spelling of
 > `light` — accepted, hidden from `--help`, and due for removal in a later major release. The `theme:`
