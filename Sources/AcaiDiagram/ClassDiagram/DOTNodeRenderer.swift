@@ -55,7 +55,10 @@ struct DOTNodeRenderer {
         html += "<B>\(fontOpen(font))"
         html += type.name.dotHTMLEscaped
         if options.showGenericParameters && !type.genericParameters.isEmpty {
-            html += "&lt;\(type.genericParameters.map(\.name).joined(separator: ", "))&gt;"
+            let parameters = type.genericParameters
+                .map { $0.umlDisplayString(varianceKeywords: config.varianceKeywords) }
+                .joined(separator: ", ")
+            html += "&lt;\(parameters.dotHTMLEscaped)&gt;"
         }
         html += "\(fontClose(font))</B>"
         html += "</TD></TR>"
