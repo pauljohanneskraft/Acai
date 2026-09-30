@@ -24,6 +24,13 @@ struct DeadCodeMemberKindAuditTests {
         return member.callSites
     }
 
+    private func memberKinds(_ source: String, of parser: any CodeParser,
+                             fileName: String) throws -> [String: MemberKind] {
+        let members = parser.parse(source: source, fileName: fileName).flattened().flatMap(\.members)
+        try #require(!members.isEmpty)
+        return Dictionary(members.map { ($0.name, $0.kind) }) { first, _ in first }
+    }
+
     /// Why Swift declines `.initializer`: the dominant `Thing()` spelling is read as a construction and
     /// dropped, so only the explicit `Thing.init(…)` form leaves an edge behind.
     @Test func swiftRecordsAnExplicitInitCallButNotAConstruction() throws {
@@ -73,6 +80,122 @@ struct DeadCodeMemberKindAuditTests {
         """, in: "use", of: KotlinCodeParser(), fileName: "Thing.kt")
 
         #expect(sites.isEmpty)
+    }
+
+    @Test func kotlinExtractsAnOperatorGetAsAMethod() throws {
+        let kinds = try memberKinds("""
+        class Grid {
+            operator fun get(i: Int): Int = i
+        }
+        """, of: KotlinCodeParser(), fileName: "Grid.kt")
+        #expect(kinds["get"] == .method)
+    }
+
+    @Test func javaRecordsNoConstructorCall() throws {
+        let sites = try callSites("""
+        class Thing {
+            Thing() {}
+            Thing(int x) {}
+            void use() {
+                Thing made = new Thing();
+                Thing other = new Thing(1);
+            }
+        }
+        """, in: "use", of: JavaCodeParser(), fileName: "Thing.java")
+
+        #expect(sites.isEmpty)
+    }
+
+    @Test(arguments: [true, false])
+    func jsRecordsNoConstructorCall(isTypeScript: Bool) throws {
+        let sites = try callSites("""
+        class Thing {
+            constructor(x) {}
+            use() {
+                const made = new Thing(1);
+            }
+        }
+        """, in: "use", of: JSCodeParser(isTypeScript: isTypeScript),
+           fileName: isTypeScript ? "Thing.ts" : "Thing.js")
+
+        #expect(sites.isEmpty)
+    }
+
+    @Test func dartRecordsNoConstructorCall() throws {
+        let sites = try callSites("""
+        class Thing {
+          Thing();
+          Thing.named();
+          void use() {
+            final made = Thing();
+            final other = Thing.named();
+          }
+        }
+        """, in: "use", of: DartCodeParser(), fileName: "thing.dart")
+
+        #expect(sites.isEmpty)
+    }
+
+    @Test func dartExtractsAnIndexOperatorAsAMethod() throws {
+        let kinds = try memberKinds("""
+        class Grid {
+          int operator [](int i) => i;
+        }
+        """, of: DartCodeParser(), fileName: "grid.dart")
+        #expect(kinds.values.contains(.method))
+        #expect(!kinds.values.contains(.subscript))
+    }
+
+    /// Why Python declines `.initializer`: a construction is recorded, but as a free call named after
+    /// the class, which no `Thing.__init__` edge can come from.
+    @Test func pythonRecordsAConstructionAsAFreeCallNamedAfterTheClass() throws {
+        let sites = try callSites("""
+        class Thing:
+            def __init__(self):
+                pass
+
+            def use(self):
+                made = Thing()
+        """, in: "use", of: PythonCodeParser(), fileName: "thing.py")
+
+        #expect(sites.map(\.receiver) == [.free])
+        #expect(sites.map(\.methodName) == ["Thing"])
+    }
+
+    @Test func pythonExtractsGetItemAsAMethod() throws {
+        let kinds = try memberKinds("""
+        class Grid:
+            def __getitem__(self, i):
+                return i
+        """, of: PythonCodeParser(), fileName: "grid.py")
+        #expect(kinds["__getitem__"] == .method)
+    }
+
+    @Test func cppRecordsNoConstructorCall() throws {
+        let sites = try callSites("""
+        class Thing {
+        public:
+            Thing() {}
+            Thing(int x) {}
+            void use() {
+                Thing made;
+                Thing other(1);
+            }
+        };
+        """, in: "use", of: CppCodeParser(), fileName: "Thing.cpp")
+
+        #expect(sites.isEmpty)
+    }
+
+    @Test func cppExtractsAnIndexOperatorAsAMethod() throws {
+        let kinds = try memberKinds("""
+        class Grid {
+        public:
+            int operator[](int i) { return i; }
+        };
+        """, of: CppCodeParser(), fileName: "Grid.cpp")
+        #expect(kinds.values.contains(.method))
+        #expect(!kinds.values.contains(.subscript))
     }
 
     /// The end-to-end consequence, through the real registry rather than a fixture configuration: an
