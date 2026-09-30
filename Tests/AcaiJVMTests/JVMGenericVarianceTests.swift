@@ -50,6 +50,31 @@ struct JVMGenericVarianceTests {
         #expect(parameter?.constraints.first?.type.name == "Comparable")
     }
 
+    @Test func kotlinVarianceSurvivesAnAnnotation() {
+        let source = """
+        interface Source<@Suppress("x") out T> {
+            fun next(): T
+        }
+
+        interface Sink<@Suppress("x") in T> {
+            fun accept(value: T)
+        }
+        """
+        let artifact = kotlin.parse(source: source, fileName: "Annotated.kt")
+        #expect(artifact.types.first { $0.name == "Source" }?.genericParameters.first?.variance == .covariant)
+        #expect(artifact.types.first { $0.name == "Sink" }?.genericParameters.first?.variance == .contravariant)
+    }
+
+    @Test func kotlinConflictingProjectionRecordsNoVariance() {
+        let source = """
+        interface Conflicted<in out T>
+        """
+        let artifact = kotlin.parse(source: source, fileName: "Conflicted.kt")
+        let parameter = artifact.types.first { $0.name == "Conflicted" }?.genericParameters.first
+        #expect(parameter?.name == "T")
+        #expect(parameter?.variance == nil)
+    }
+
     @Test func kotlinSpellsVarianceWithItsOwnKeywords() {
         let keywords = kotlin.configuration.varianceKeywords
         #expect(GenericParameter(name: "T", variance: .covariant)
