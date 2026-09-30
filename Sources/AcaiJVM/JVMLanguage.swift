@@ -51,7 +51,10 @@ extension JavaCodeParser {
             ],
             annotationStereotypes: jvmAnnotationStereotypes,
             excludedDirectories: jvmExcludedDirectories,
-            entryPointMarkers: jvmEntryPointMarkers
+            entryPointMarkers: jvmEntryPointMarkers,
+            // `JavaCallSiteSyntax` matches `method_invocation` only: `new Thing()` is read for a
+            // local's type but never recorded as a call, so a constructor has no caller edge.
+            deadCodeMemberKinds: [.method]
         )
     }
 }
@@ -72,7 +75,11 @@ extension KotlinCodeParser {
             ],
             annotationStereotypes: jvmAnnotationStereotypes,
             excludedDirectories: jvmExcludedDirectories,
-            entryPointMarkers: jvmEntryPointMarkers
+            entryPointMarkers: jvmEntryPointMarkers,
+            // `Thing(1)` reaches `CallSiteScope.bareCall`, which drops a known type name as a
+            // construction, so a constructor has no caller edge. An `operator fun get` is extracted
+            // as a method and is scanned as one.
+            deadCodeMemberKinds: [.method]
         )
     }
 }

@@ -9,8 +9,10 @@ struct CallGraphTool: AnalysisTool {
     let description = """
         Analyze the static call graph, three ways via 'mode': metrics (per-method fan-in/out, \
         recursion, resolution coverage — find hot methods), cycles (method-level mutual recursion / \
-        tangled clusters), deadcode (uncalled methods not reachable by contract — public API, \
-        overrides, protocol requirements, entry points; coverage is the false-positive floor). \
+        tangled clusters), deadcode (uncalled members not reachable by contract — public API, \
+        overrides, protocol requirements, entry points; methods in every language, plus a \
+        language's initializers and subscripts where its parser records calls to them; coverage is \
+        the false-positive floor). \
         metrics/cycles optionally scope with 'type:Name' or 'module:Name'.
         """
 

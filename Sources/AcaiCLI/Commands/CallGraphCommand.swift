@@ -6,7 +6,17 @@ extension AcaiCommand {
     struct CallGraph: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "callgraph",
-            abstract: "Call-graph analysis: metrics, method cycles, or dead-code candidates"
+            abstract: "Call-graph analysis: metrics, method cycles, or dead-code candidates",
+            discussion: """
+                deadcode reports members that no resolved call edge targets and that aren't \
+                reachable by contract — public API, an override, a protocol requirement, or one of \
+                the language's entry-point markers.
+
+                It scans methods in every language. A language's initializers and subscripts are \
+                scanned only where its parser records calls to them: a kind whose callers are never \
+                recorded has no edge to be found by, so scanning it would report every declaration \
+                of it as uncalled.
+                """
         )
 
         enum Mode: String, ExpressibleByArgument, CaseIterable {
@@ -134,14 +144,21 @@ extension AcaiCommand {
             try rendered.writeOutput(to: output, label: "dead code")
         }
 
+        /// Named in the header so "no candidates" can't be read as "nothing of this kind is dead":
+        /// which kinds were scanned is the language's call (see `LanguageConfiguration`).
+        private let deadCodeScope =
+            "Scanned: methods, plus a language's initializers and subscripts where its parser records "
+            + "calls to them."
+
         private func deadCodeHuman(_ report: DeadCodeScan.Report) -> String {
             let coverage = Int((report.coverage.fraction * 100).rounded())
             guard !report.candidates.isEmpty else {
-                return "No dead-code candidates (call-graph coverage \(coverage)%).\n"
+                return "No dead-code candidates (call-graph coverage \(coverage)%).\n\(deadCodeScope)\n"
             }
             var lines = [
                 "\(report.candidates.count) dead-code candidate(s) "
-                + "— call-graph coverage \(coverage)% (candidates below this floor may be false positives):"
+                + "— call-graph coverage \(coverage)% (candidates below this floor may be false positives):",
+                deadCodeScope
             ]
             for candidate in report.candidates {
                 lines.append("  \(candidate.id)\(candidate.location.suffix)")

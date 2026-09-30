@@ -51,7 +51,11 @@ enum CFamilyDialect: Sendable {
                     typeNamePatterns: []
                 ),
                 excludedDirectories: Self.excludedDirectories,
-                entryPointMarkers: EntryPointMarkers(methodNames: ["main"])
+                entryPointMarkers: EntryPointMarkers(methodNames: ["main"]),
+                // A constructor call is a declaration (`Thing t;`, `Thing t(1);`), not a
+                // `call_expression`, so it is never recorded and a constructor has no caller edge.
+                // An `operator[]` is extracted as a method and is scanned as one.
+                deadCodeMemberKinds: [.method]
             )
         case .cpp:
             LanguageConfiguration(
@@ -68,7 +72,11 @@ enum CFamilyDialect: Sendable {
                     typeNamePatterns: []
                 ),
                 excludedDirectories: Self.excludedDirectories,
-                entryPointMarkers: EntryPointMarkers(methodNames: ["main"])
+                entryPointMarkers: EntryPointMarkers(methodNames: ["main"]),
+                // A constructor call is a declaration (`Thing t;`, `Thing t(1);`), not a
+                // `call_expression`, so it is never recorded and a constructor has no caller edge.
+                // An `operator[]` is extracted as a method and is scanned as one.
+                deadCodeMemberKinds: [.method]
             )
         }
     }
