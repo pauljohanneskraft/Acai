@@ -205,6 +205,10 @@ acai analyze --source . --output model.json
 acai store <name> <source-dir> [--language <language> ...]
 ```
 
+| Flag | Notes |
+| --- | --- |
+| `--language` | Restrict analysis to one or more languages. Repeatable. |
+
 Both arguments are positional. Writes `<name>.json` into the shared analysis store and prints the path.
 The store also records the source directory's resolved path, so the same analysis is found — no
 re-parsing needed — by an MCP session or the app pointed at that directory, and by `--from <source-dir>`
@@ -274,6 +278,7 @@ Same diagram families as `diagram`, rendered natively through SwiftUI instead of
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
 | `--output <path>` | **Required.** |
 | `--grouping` | `none`, `directory`, `product` (default `product`) — note this differs from `diagram`'s `--group-by`. |
 | `--min-access <level>` | Hides members *and whole types* below the level. |
@@ -281,7 +286,7 @@ Same diagram families as `diagram`, rendered natively through SwiftUI instead of
 | `--scale <n>` | Resolution factor, default `2.0`. |
 | `--theme` | `light` (default), `dark` |
 | `--source-old` / `--from-old` | Render a **delta image** against this older side. |
-| *diagram-kind + focus flags* | as `diagram` |
+| *diagram-kind + focus flags* | `--sequence-from`, `--map`, `--max-depth`, `--state-from`, `--max-states`, `--package`, `--module-coupling`, `--call-graph`, `--call-graph-scope`, `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections`, `--max-nodes` — as `diagram` |
 
 ```sh
 acai image --source . --grouping directory --output arch.png
@@ -444,7 +449,7 @@ Review and tighten before committing.
 
 Structured search — the answer to *"which public classes in module X have a method with four or more parameters?"* without grepping. Every row carries a `file:line`.
 
-Takes all [selector facets](#Selector-facets), plus member-level ones:
+Takes all [selector facets](#Selector-facets) — `--module`, `--type`, `--kind`, `--min-access`, `--stereotype`, `--annotation`, `--min-members`, `--min-nesting` — plus member-level ones:
 
 | Flag | Meaning |
 | --- | --- |
