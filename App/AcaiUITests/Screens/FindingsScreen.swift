@@ -18,6 +18,7 @@ final class FindingsScreen {
     /// Not a `.buttons` query — `.toggleStyle(.button)` still renders as a native `Switch` in this
     /// accessibility tree (confirmed via a live UI-test run).
     var showSuppressedToggle: XCUIElement { app.descendants(matching: .any)["findings.showSuppressedToggle"] }
+    var authorshipOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "findings.authorship") }
     var suppressionSaveLoadedIndicator: XCUIElement {
         app.descendants(matching: .any)["findings.suppressionSave.loaded"]
     }

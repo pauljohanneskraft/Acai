@@ -19,8 +19,9 @@ struct DirectoryBlameTests {
         try GitFixture(directory: source).makeWithRepeatedTouches()
 
         let resolved = try #require(
-            try DirectoryBlame(directory: source).lines(byFile: ["README.md": [1]]))
-        let line = try #require(resolved["README.md"]?[1])
+            try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["README.md": [1...1]], source: .revision("HEAD")))
+        let line = try #require(resolved["README.md"]?[1...1])
 
         #expect(line.authorName == "Test")
         #expect(line.changedAt.timeIntervalSince1970 > 0)
@@ -35,10 +36,11 @@ struct DirectoryBlameTests {
         try GitFixture(directory: source).makeWithRepeatedTouches()
 
         let resolved = try #require(
-            try DirectoryBlame(directory: source).lines(byFile: ["README.md": [1], "Other.swift": [1]]))
+            try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["README.md": [1...1], "Other.swift": [1...1]], source: .workingTree))
 
         #expect(Set(resolved.keys) == ["README.md", "Other.swift"])
-        #expect(resolved["Other.swift"]?[1]?.authorName == "Test")
+        #expect(resolved["Other.swift"]?[1...1]?.authorName == "Test")
     }
 
     @Test("A subdirectory's own paths are answered, without naming the repository root")
@@ -51,9 +53,9 @@ struct DirectoryBlameTests {
 
         let resolved = try #require(
             try DirectoryBlame(directory: source.appendingPathComponent("Sub", isDirectory: true))
-                .lines(byFile: ["Nested.swift": [1]]))
+                .lastTouched(inRangesByFile: ["Nested.swift": [1...1]], source: .workingTree))
 
-        #expect(resolved["Nested.swift"]?[1]?.authorName == "Test")
+        #expect(resolved["Nested.swift"]?[1...1]?.authorName == "Test")
     }
 
     @Test("A ref other than HEAD is blamed as of that revision, not the checked-out one")
@@ -66,26 +68,115 @@ struct DirectoryBlameTests {
         try GitFixture(directory: source).make()
         let blame = DirectoryBlame(directory: source)
 
-        let onMain = try #require(try blame.lines(byFile: ["Feature.swift": [1]], ref: "main"))
+        let onMain = try #require(
+            try blame.lastTouched(inRangesByFile: ["Feature.swift": [1...1]], source: .revision("main")))
         #expect(onMain["Feature.swift"] == nil)
 
-        let onFeature = try #require(try blame.lines(byFile: ["Feature.swift": [1]], ref: "feature"))
-        #expect(onFeature["Feature.swift"]?[1]?.authorName == "Test")
+        let onFeature = try #require(
+            try blame.lastTouched(inRangesByFile: ["Feature.swift": [1...1]], source: .revision("feature")))
+        #expect(onFeature["Feature.swift"]?[1...1]?.authorName == "Test")
     }
 
-    @Test("A line past the end of the file is absent rather than attributed to the last one")
-    func lineBeyondTheFileIsAbsent() throws {
+    @Test("A range past the end of the file is absent, and one running past it is cut at the end")
+    func rangeBeyondTheFile() throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).makeWithLayeredEdits()
+
+        let resolved = try #require(
+            try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["Layered.swift": [10...12, 3...99]], source: .revision("HEAD")))
+
+        #expect(resolved["Layered.swift"]?[10...12] == nil)
+        #expect(resolved["Layered.swift"]?[3...99]?.changedAt == GitFixture.layeredCommitDate)
+    }
+
+    @Test("A range reports the most recent change anywhere inside it, not only on its first line")
+    func rangeReportsItsMostRecentChange() throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).makeWithLayeredEdits()
+
+        let resolved = try #require(
+            try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["Layered.swift": [1...2, 1...4]], source: .revision("HEAD")))
+
+        #expect(resolved["Layered.swift"]?[1...2]?.changedAt == GitFixture.layeredOriginalDate)
+        #expect(resolved["Layered.swift"]?[1...4]?.changedAt == GitFixture.layeredCommitDate)
+    }
+
+    @Test("A line's age is when its change was committed, not when it was first authored")
+    func ageIsTheCommitterDate() throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).makeWithLayeredEdits()
+
+        let resolved = try #require(
+            try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["Layered.swift": [3...3]], source: .revision("HEAD")))
+
+        #expect(resolved["Layered.swift"]?[3...3]?.changedAt == GitFixture.layeredCommitDate)
+    }
+
+    @Test("Authors are named as the repository's mailmap canonicalises them")
+    func authorsFollowTheMailmap() throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).makeWithLayeredEdits()
+
+        let resolved = try #require(
+            try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["Layered.swift": [1...1]], source: .workingTree))
+
+        #expect(resolved["Layered.swift"]?[1...1]?.authorName == "Canonical Test")
+    }
+
+    @Test("Uncommitted edits shift the working tree's lines without moving their authorship")
+    func workingTreeEditsKeepTheirLinesAttributed() throws {
+        let root = try scratchDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try GitFixture(directory: source).makeWithLayeredEdits()
+        try "inserted\na\nb\nC\nd\n".write(
+            to: source.appendingPathComponent("Layered.swift"), atomically: true, encoding: .utf8)
+        let blame = DirectoryBlame(directory: source)
+
+        let workingTree = try #require(
+            try blame.lastTouched(inRangesByFile: ["Layered.swift": [1...1, 2...2, 4...4]], source: .workingTree))
+        #expect(workingTree["Layered.swift"]?[1...1] == nil)
+        #expect(workingTree["Layered.swift"]?[2...2]?.changedAt == GitFixture.layeredOriginalDate)
+        #expect(workingTree["Layered.swift"]?[4...4]?.changedAt == GitFixture.layeredCommitDate)
+
+        let atHead = try #require(
+            try blame.lastTouched(inRangesByFile: ["Layered.swift": [1...1]], source: .revision("HEAD")))
+        #expect(atHead["Layered.swift"]?[1...1]?.changedAt == GitFixture.layeredOriginalDate)
+    }
+
+    @Test("A cancelled caller stops the walk rather than blaming every remaining file")
+    func cancellationStopsTheWalk() async throws {
         let root = try scratchDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
 
         let source = root.appendingPathComponent("source", isDirectory: true)
         try GitFixture(directory: source).makeWithRepeatedTouches()
 
-        let resolved = try #require(
-            try DirectoryBlame(directory: source).lines(byFile: ["README.md": [1, 99]]))
-
-        #expect(resolved["README.md"]?[99] == nil)
-        #expect(resolved["README.md"]?[1] != nil)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["README.md": [1...1]], source: .workingTree)
+        }
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
     }
 
     @Test("A file git doesn't know drops out without costing the files it does")
@@ -97,10 +188,11 @@ struct DirectoryBlameTests {
         try GitFixture(directory: source).makeWithRepeatedTouches()
 
         let resolved = try #require(
-            try DirectoryBlame(directory: source).lines(byFile: ["README.md": [1], "Missing.swift": [1]]))
+            try DirectoryBlame(directory: source).lastTouched(
+                inRangesByFile: ["README.md": [1...1], "Missing.swift": [1...1]], source: .workingTree))
 
         #expect(resolved["Missing.swift"] == nil)
-        #expect(resolved["README.md"]?[1] != nil)
+        #expect(resolved["README.md"]?[1...1] != nil)
     }
 
     @Test("Asking about nothing reads no history at all")
@@ -111,7 +203,9 @@ struct DirectoryBlameTests {
         let source = root.appendingPathComponent("source", isDirectory: true)
         try GitFixture(directory: source).makeWithRepeatedTouches()
 
-        #expect(try DirectoryBlame(directory: source).lines(byFile: ["README.md": []])?.isEmpty == true)
+        #expect(
+            try DirectoryBlame(directory: source)
+                .lastTouched(inRangesByFile: ["README.md": []], source: .workingTree)?.isEmpty == true)
     }
 
     @Test("A directory outside any repository has no authorship at all, rather than an empty map")
@@ -119,7 +213,9 @@ struct DirectoryBlameTests {
         let root = try scratchDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
 
-        #expect(try DirectoryBlame(directory: root).lines(byFile: ["README.md": [1]]) == nil)
+        #expect(
+            try DirectoryBlame(directory: root)
+                .lastTouched(inRangesByFile: ["README.md": [1...1]], source: .workingTree) == nil)
     }
 
     @Test("A shallow clone refuses rather than charging every older line to the graft")
@@ -133,7 +229,8 @@ struct DirectoryBlameTests {
         try GitFixture(directory: shallow).makeShallowClone(of: source)
 
         #expect(throws: HistoryNotFetched.self) {
-            try DirectoryBlame(directory: shallow).lines(byFile: ["README.md": [1]])
+            try DirectoryBlame(directory: shallow)
+                .lastTouched(inRangesByFile: ["README.md": [1...1]], source: .workingTree)
         }
     }
 }

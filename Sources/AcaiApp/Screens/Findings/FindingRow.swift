@@ -85,7 +85,7 @@ struct FindingRow: View {
         .contentShape(Rectangle())
     }
 
-    /// Who last changed the flagged line and how long it has stood — the signal for whether this is
+    /// Who last changed the flagged declaration and how long it has stood — the signal for whether this is
     /// live code someone is working in or something nobody has opened in years. `.relative` rather
     /// than any arithmetic here, so every language phrases the age its own way.
     private func authorship(_ lastTouched: GitBlame.Line) -> some View {

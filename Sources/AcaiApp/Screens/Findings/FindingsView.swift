@@ -17,6 +17,8 @@ struct FindingsView: View {
     @State private var isLoadingSuppression = true
     @State private var suppressionError: String?
     @State private var suppressionSavePhase: AsyncOperationPhase = .idle
+    @State private var authorshipAttempt = 0
+    @State private var fullHistoryPhases: [URL: AsyncOperationPhase] = [:]
 
     private var project: Project? {
         model.store.projects.first { $0.id == projectID }
@@ -113,6 +115,7 @@ struct FindingsView: View {
         VStack(alignment: .leading, spacing: .zero) {
             filterBar(project: project)
             AsyncOperationStatusView(identifierPrefix: "findings.suppressionSave", phase: suppressionSavePhase)
+            authorshipStatus(project: project)
             if !stillAnalyzing.isEmpty || !notIndexed.isEmpty {
                 statusNote(stillAnalyzing: stillAnalyzing, notIndexed: notIndexed)
             }
@@ -142,14 +145,75 @@ struct FindingsView: View {
                 #if os(iOS)
                 .listStyle(.plain)
                 #endif
-                .task(id: allFindings.map(\.id)) {
-                    await blame.load(
-                        findings: allFindings,
-                        codebases: Dictionary(uniqueKeysWithValues: project.codebases.map { ($0.id, $0) }),
-                        gitRepositoriesDir: model.store.gitRepositoriesDir)
+            }
+        }
+        .task(id: AuthorshipLoad(findingIDs: allFindings.map(\.id), attempt: authorshipAttempt)) {
+            await blame.load(
+                findings: allFindings,
+                codebases: Dictionary(uniqueKeysWithValues: project.codebases.map { ($0.id, $0) }),
+                gitRepositoriesDir: model.store.gitRepositoriesDir)
+        }
+    }
+
+    private struct AuthorshipLoad: Equatable {
+        let findingIDs: [String]
+        let attempt: Int
+    }
+
+    private func reloadAuthorship() {
+        blame.invalidate()
+        authorshipAttempt += 1
+    }
+
+    @ViewBuilder
+    private func authorshipStatus(project: Project) -> some View {
+        HStack(spacing: .spacingS) {
+            AsyncOperationStatusView(identifierPrefix: "findings.authorship", phase: blame.phase)
+            if case .failed = blame.phase {
+                Button(action: reloadAuthorship) {
+                    Label(.app("View.FindingsView.RetryAuthorship"), systemImage: "arrow.clockwise")
+                }
+                .font(.caption)
+                .accessibilityIdentifier("findings.authorship.retryButton")
+                .contextMenu {
+                    Button(action: reloadAuthorship) {
+                        Label(.app("View.FindingsView.RetryAuthorship"), systemImage: "arrow.clockwise")
+                    }
                 }
             }
         }
+        .padding(.horizontal)
+        let shallow = project.codebases.filter { blame.historyNotFetchedCodebaseIDs.contains($0.id) }
+        if !shallow.isEmpty {
+            authorshipNeedsFullHistoryBanner(shallow)
+        }
+    }
+
+    /// Only an app-managed clone offers to fetch more: deepening a local folder's own repository
+    /// would change the user's checkout, which the app never does.
+    private func authorshipNeedsFullHistoryBanner(_ shallow: [Codebase]) -> some View {
+        let remoteURLs = Set(shallow.compactMap { $0.managedCheckout != nil ? $0.repository?.remoteURL : nil })
+        return VStack(alignment: .leading, spacing: .spacingXS) {
+            Label(
+                .app("View.FindingsView.AuthorshipNeedsFullHistory \(shallow.count)"),
+                systemImage: "clock.badge.exclamationmark")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(remoteURLs.sorted { $0.absoluteString < $1.absoluteString }, id: \.self) { remoteURL in
+                FetchFullHistoryButton(
+                    remoteURL: remoteURL,
+                    phase: Binding(
+                        get: { fullHistoryPhases[remoteURL] ?? .idle },
+                        set: { fullHistoryPhases[remoteURL] = $0 }),
+                    identifierPrefix: "findings.fullHistory",
+                    onFetched: reloadAuthorship)
+                .font(.caption)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, .spacingXS)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("findings.authorshipNeedsFullHistory")
     }
 
     private func statusNote(stillAnalyzing: [Codebase], notIndexed: [Codebase]) -> some View {
