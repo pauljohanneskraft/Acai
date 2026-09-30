@@ -49,6 +49,10 @@ struct KeyboardShortcutReferenceTests {
     /// A shortcut bound only in a menu command that is attached on macOS alone is silently missing from
     /// an iPad's hardware keyboard. That is fine when the feature itself is macOS-only (the reference
     /// declares it as `Group.isMacOSOnly`) or when a view binds the same shortcut outside `#if os(macOS)`.
+    ///
+    /// Reaching the platform is all this proves. Whether the platform then *delivers* the key is a
+    /// property of the placement, not of the source, and only a journey that presses it can show that —
+    /// today ⌘/ and ⇧⌘O, and no other shortcut.
     @Test("A macOS-only menu command binds nothing an iPad keyboard would miss")
     func shortcutCommandsAreAttachedOnEveryPlatform() throws {
         let sources = try swiftFiles().map { try String(contentsOf: $0, encoding: .utf8) }
@@ -72,6 +76,29 @@ struct KeyboardShortcutReferenceTests {
             }
         }
         #expect(checkedTypes > 0)
+    }
+
+    /// `MacOSOnlyRegions` recognises `os(macOS)` and `!os(macOS)` and nothing else, so any other
+    /// platform condition around a binding reads as "not macOS-only" and would pass the checks above
+    /// without being true. Reject one rather than guess at it.
+    @Test("Every platform condition around a binding is one the region walk understands")
+    func platformConditionsAroundBindingsAreRecognized() throws {
+        let recognized: Set<String> = ["os(macOS)", "!os(macOS)"]
+        for file in try swiftFiles() {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            for line in MacOSOnlyRegions(source: source).lines(containing: ".keyboardShortcut(") {
+                for condition in line.conditions {
+                    #expect(
+                        recognized.contains(condition),
+                        """
+                        \(file.lastPathComponent): `#if \(condition)` encloses a `.keyboardShortcut(` \
+                        binding. The macOS-only walk does not understand that condition and would read \
+                        the binding as reaching an iPad keyboard — bind it under `os(macOS)`/`!os(macOS)`, \
+                        or teach `MacOSOnlyRegions` this condition.
+                        """)
+                }
+            }
+        }
     }
 
     private func isBoundOutsideMacOS(_ id: String, in sources: [String]) -> Bool {
@@ -151,6 +178,9 @@ struct KeyboardShortcutReferenceTests {
         struct Line {
             let text: String
             let isMacOSOnly: Bool
+            /// The raw `#if` conditions enclosing this line, so a caller can reject one this walk
+            /// would silently read as "not macOS-only".
+            let conditions: [String]
         }
 
         let source: String
@@ -172,7 +202,8 @@ struct KeyboardShortcutReferenceTests {
                     let isMacOSOnly = branches.contains { branch in
                         branch.isElse ? branch.condition == "!os(macOS)" : branch.condition == "os(macOS)"
                     }
-                    result.append(Line(text: line, isMacOSOnly: isMacOSOnly))
+                    result.append(
+                        Line(text: line, isMacOSOnly: isMacOSOnly, conditions: branches.map(\.condition)))
                 }
             }
             return result
