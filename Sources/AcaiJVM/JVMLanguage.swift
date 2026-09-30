@@ -21,7 +21,9 @@ private let jvmAnnotationStereotypes: [String: String] = [
     "component": "component"
 ]
 
-private let jvmExcludedDirectories: Set<String> = ["build", "target", "bin", "out", ".gradle", ".idea"]
+/// Shared with `JVMBuildSystemDetector` and `GradleModule`, so the detector skips exactly what the
+/// language configuration declares rather than keeping a copy of it.
+let jvmExcludedDirectories: Set<String> = ["build", "target", "bin", "out", ".gradle", ".idea"]
 
 /// JVM entry points invoked by frameworks rather than resolvable call sites: JUnit test methods and
 /// lifecycle callbacks, Spring bean lifecycle hooks, and `@Override` methods (handled agnostically);
