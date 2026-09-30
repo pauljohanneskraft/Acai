@@ -18,8 +18,9 @@ struct DirectoryBlameTests {
         let source = root.appendingPathComponent("source", isDirectory: true)
         try GitFixture(directory: source).makeWithRepeatedTouches()
 
-        let resolved = try DirectoryBlame(directory: source).lines(byFile: ["README.md": [1]])
-        let line = try #require(try #require(resolved)["README.md"]?[1])
+        let resolved = try #require(
+            try DirectoryBlame(directory: source).lines(byFile: ["README.md": [1]]))
+        let line = try #require(resolved["README.md"]?[1])
 
         #expect(line.authorName == "Test")
         #expect(line.changedAt.timeIntervalSince1970 > 0)

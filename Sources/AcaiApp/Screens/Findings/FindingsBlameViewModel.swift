@@ -77,11 +77,11 @@ final class FindingsBlameViewModel: ObservableObject {
         }.value
         guard !Task.isCancelled else { return }
 
-        lastTouchedByFindingID = request.findingIDsByLine.reduce(into: [String: GitBlame.Line]()) {
-            result, entry in
-            guard let authorship = resolved[entry.key] else { return }
-            for id in entry.value { result[id] = authorship }
-        }
+        lastTouchedByFindingID = request.findingIDsByLine
+            .reduce(into: [String: GitBlame.Line]()) { result, entry in
+                guard let authorship = resolved[entry.key] else { return }
+                for id in entry.value { result[id] = authorship }
+            }
         loadedRequest = request
     }
 }
