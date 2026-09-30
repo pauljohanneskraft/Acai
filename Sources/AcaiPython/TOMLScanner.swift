@@ -56,9 +56,9 @@ struct TOMLScanner {
 
     private mutating func keySegment() throws -> String {
         guard let character = peek() else { throw failure("expected a key") }
-        if character == "\"" || character == "'" { return try stringLiteral() }
+        if character.isTOMLQuote { return try stringLiteral() }
         var segment = ""
-        while let next = peek(), next.isLetter || next.isNumber || next == "_" || next == "-" {
+        while let next = peek(), next.isTOMLBareKey {
             segment.append(next)
             advance()
         }
@@ -181,29 +181,31 @@ struct TOMLScanner {
     // MARK: - Trivia
 
     private mutating func skipSpaces() {
-        while let character = peek(), character == " " || character == "\t" { advance() }
+        while let character = peek(), character.isTOMLSpace { advance() }
     }
 
     /// Whitespace, newlines and comments — everything that carries no meaning between tokens.
     mutating func skipInsignificant() {
         while let character = peek() {
-            if character == " " || character == "\t" || character == "\n" || character == "\r" {
+            if character.isTOMLWhitespace {
                 advance()
             } else if character == "#" {
-                while let next = peek(), next != "\n" { advance() }
+                skipComment()
             } else {
                 return
             }
         }
     }
 
+    private mutating func skipComment() {
+        while let character = peek(), character != "\n" { advance() }
+    }
+
     private mutating func endOfLine() throws {
         skipSpaces()
-        if peek() == "#" {
-            while let next = peek(), next != "\n" { advance() }
-        }
+        if peek() == "#" { skipComment() }
         guard let character = peek() else { return }
-        guard character == "\n" || character == "\r" else {
+        guard character.isTOMLNewline else {
             throw failure("unexpected '\(character)' after a value")
         }
         advance()
@@ -262,4 +264,12 @@ extension [String: TOMLValue] {
         child.assign(value, at: Array(path.dropFirst()))
         self[head] = .table(child)
     }
+}
+
+extension Character {
+    var isTOMLQuote: Bool { self == "\"" || self == "'" }
+    var isTOMLNewline: Bool { self == "\n" || self == "\r" }
+    var isTOMLSpace: Bool { self == " " || self == "\t" }
+    var isTOMLWhitespace: Bool { isTOMLSpace || isTOMLNewline }
+    var isTOMLBareKey: Bool { isLetter || isNumber || self == "_" || self == "-" }
 }

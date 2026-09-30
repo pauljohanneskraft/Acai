@@ -7,8 +7,7 @@ public struct PythonDetector: BuildSystemDetector {
     public init() {}
 
     public func isPresent(at root: URL) -> Bool {
-        IndicatorFiles([PythonManifest.fileName, "setup.py", "setup.cfg", "requirements.txt"])
-            .present(at: root)
+        IndicatorFiles(["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"]).present(at: root)
     }
 
     public func discoverSourceSpecs(

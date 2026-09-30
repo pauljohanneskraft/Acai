@@ -6,8 +6,7 @@ import AcaiCore
 /// conventional `src` probe. A malformed manifest yields none plus a diagnostic — discovery must not
 /// fail because a file it merely consults does not parse.
 struct PythonManifest: Sendable {
-    static let fileName = "pyproject.toml"
-
+    private let fileName = "pyproject.toml"
     private let root: URL
 
     init(root: URL) {
@@ -15,7 +14,7 @@ struct PythonManifest: Sendable {
     }
 
     func sourceDirectories() -> (directories: [URL], diagnostics: [ParseDiagnostic]) {
-        let manifest = root.appendingPathComponent(Self.fileName)
+        let manifest = root.appendingPathComponent(fileName)
         guard let contents = try? String(contentsOf: manifest, encoding: .utf8) else { return ([], []) }
         do {
             let declared = try PythonPackageLayout(TOMLReader(contents).parse()).declaredDirectories
@@ -42,9 +41,9 @@ struct PythonManifest: Sendable {
         let detail = failure?.message ?? "\(error)"
         return ParseDiagnostic(
             location: SourceLocation(
-                filePath: Self.fileName, line: failure?.line ?? 1, column: failure?.column ?? 1),
+                filePath: fileName, line: failure?.line ?? 1, column: failure?.column ?? 1),
             kind: .error,
-            message: "\(Self.fileName) could not be read (\(detail)); "
+            message: "\(fileName) could not be read (\(detail)); "
                 + "falling back to the conventional source layout."
         )
     }
