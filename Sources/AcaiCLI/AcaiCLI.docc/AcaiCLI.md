@@ -125,7 +125,7 @@ understands reports the found and expected version numbers rather than misreadin
 | Flag | Values | Notes |
 | --- | --- | --- |
 | `--output <path>` | — | Writes to a file; prints to stdout if omitted. |
-| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `dependents`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`. |
+| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `dependents`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`, defaulting to **`mermaid`**. |
 | `--include-generated` | flag | Machine-generated types are **excluded by default**; this includes them. |
 
 ### Selector facets
@@ -237,7 +237,7 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | Flag | Notes |
 | --- | --- |
 | `--from`, `--source`, `--language` | artifact source |
-| `--format` | `dot` (default), `mermaid` |
+| `--format` | `dot`, `mermaid` (default) |
 | `--theme` | `light`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
 | `--output` | file or stdout |
@@ -255,16 +255,22 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | `--max-nodes <n>` | Fail a class, package or coupling diagram beyond this many nodes, naming the count (default `2000`). Narrow with `--focus` instead of raising it. |
 
 ```sh
-acai diagram --source . --output arch.dot
-acai diagram --from myproj --format mermaid --output arch.mmd
-acai diagram --from myproj --focus Playlist --focus-depth 2 --output playlist.dot
-acai diagram --from myproj --sequence-from "Checkout.placeOrder" --output checkout.dot
-acai diagram --from myproj --state-from "Download.state" --output states.dot
-acai diagram --from myproj --package --output modules.dot
-acai diagram --from myproj --module-coupling --output coupling.dot
+acai diagram --source . --output arch.mmd
+acai diagram --from myproj --format dot --output arch.dot
+acai diagram --from myproj --focus Playlist --focus-depth 2 --output playlist.mmd
+acai diagram --from myproj --sequence-from "Checkout.placeOrder" --output checkout.mmd
+acai diagram --from myproj --state-from "Download.state" --output states.mmd
+acai diagram --from myproj --package --output modules.mmd
+acai diagram --from myproj --module-coupling --output coupling.mmd
 ```
 
-Render DOT anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`.
+Mermaid embeds directly in Markdown — GitHub, most documentation sites and every Markdown preview
+render it without anything installed. Pass `--format dot` for Graphviz, and render it anywhere Graphviz
+runs: `dot -Tpng arch.dot -o arch.png`.
+
+> **The default changed to `mermaid`.** It was `dot`. A script that pipes `acai diagram` straight into
+> `dot` needs an explicit `--format dot`. `acai_diagram` has always defaulted to Mermaid, so the two
+> surfaces now agree.
 
 > **`--theme default` still works**, on `diagram` and `image` alike. It is a deprecated spelling of
 > `light` — accepted, hidden from `--help`, and due for removal in a later major release. The `theme:`

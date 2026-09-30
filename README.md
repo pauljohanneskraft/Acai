@@ -40,7 +40,7 @@ brew tap pauljohanneskraft/acai https://github.com/pauljohanneskraft/Acai
 brew install acai
 
 acai image --source ~/path/to/project --output project.png     # PNG, macOS
-acai diagram --source ~/path/to/project --output project.dot   # DOT, everywhere
+acai diagram --source ~/path/to/project --output project.mmd   # Mermaid, everywhere
 ```
 
 `brew install acai` puts both `acai` and `acai-mcp` on your `PATH`, for macOS (arm64 / x86_64) and
@@ -159,7 +159,7 @@ acai dependents --source . Playlist                 # what breaks if I change th
 acai hotspots   --source . --top 10                 # where does refactoring pay off? (macOS)
 
 # Draw
-acai diagram --source . --format mermaid --output arch.mmd
+acai diagram --source . --output arch.mmd
 acai image   --source . --grouping directory --output arch.png
 
 # Gate
@@ -241,7 +241,7 @@ Adding a language is a self-contained plugin — see [Contributing](#contributin
 
 No tool is magic. Worth knowing up front:
 
-- **PNG rendering is Apple-only.** `acai image`, `acai atlas` and the app's Export Image all go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux neither command exists at all — emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`), which runs everywhere.
+- **PNG rendering is Apple-only.** `acai image`, `acai atlas` and the app's Export Image all go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux neither command exists at all — emit DOT with `acai diagram --format dot` and render it with Graphviz (`dot -Tpng`), which runs everywhere.
 - **It's static analysis.** Açaí reads source text. It does not run your build, resolve your package graph, or execute anything. Relationships are inferred from what the code *says*, not from a compiler's resolved symbol table — so dynamic dispatch, reflection and code generation are invisible to it.
 - **Plain JavaScript is thin.** With no type annotations to read, a JS-only diagram shows little beyond inheritance. TypeScript gives the full picture.
 - **C reads differently.** C has no classes, so its domain appears as structs plus composition, and free functions are attributed to the type they mutate by pointer. Faithful, but its abstractions are concrete structs — they don't count toward abstractness the way a C++ pure-virtual class does.
