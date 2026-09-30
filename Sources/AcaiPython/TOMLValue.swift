@@ -24,12 +24,11 @@ extension TOMLValue {
         return table
     }
 
-    /// The value at a dotted path, e.g. `["tool", "poetry", "packages"]`. Descends into the last
-    /// element of an array of tables, so `[[tool.poetry.packages]]` reads the same as the inline form.
+    /// The value at a dotted path through tables, e.g. `["tool", "poetry", "packages"]`. An array
+    /// only ever ends a path: which of its elements a further key would mean is ambiguous.
     func value(at path: [String]) -> TOMLValue? {
         var current = self
         for key in path {
-            if case .array(let values) = current, let last = values.last { current = last }
             guard let next = current.tableValue?[key] else { return nil }
             current = next
         }

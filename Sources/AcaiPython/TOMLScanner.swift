@@ -1,9 +1,10 @@
 import Foundation
 
-/// Character-level scanner for the TOML subset ``TOMLReader`` accepts. It is strict about structure
-/// — quotes, brackets, braces and `=` must balance — and lenient about scalar content, which it
-/// captures verbatim rather than validating, so a valid file is never rejected over a number or date
-/// shape nothing reads.
+/// Scanner for the TOML subset ``TOMLReader`` accepts. It is strict about structure — quotes,
+/// brackets, braces and `=` must balance — and lenient about scalar content, which it captures
+/// verbatim rather than validating, so a valid file is never rejected over a number or date shape
+/// nothing reads. It works on unicode scalars rather than `Character`s, because a grapheme cluster
+/// fuses `\r\n`, or a combining mark with the quote before it, into one unit no token matches.
 struct TOMLScanner {
     enum Statement: Equatable {
         case table([String])
@@ -11,21 +12,21 @@ struct TOMLScanner {
         case assignment([String], TOMLValue)
     }
 
-    private let characters: [Character]
+    private let scalars: [Unicode.Scalar]
     private var index: Int = 0
     private var line: Int = 1
     private var column: Int = 1
 
     init(_ source: String) {
-        characters = Array(source)
+        scalars = Array(source.unicodeScalars)
     }
 
     // MARK: - Statements
 
     mutating func nextStatement() throws -> Statement? {
         skipInsignificant()
-        guard let character = peek() else { return nil }
-        if character == "[" { return try tableHeader() }
+        guard let scalar = peek() else { return nil }
+        if scalar == "[" { return try tableHeader() }
         let key = try keyPath()
         try expect("=")
         let value = try value()
@@ -55,23 +56,23 @@ struct TOMLScanner {
     }
 
     private mutating func keySegment() throws -> String {
-        guard let character = peek() else { throw failure("expected a key") }
-        if character.isTOMLQuote { return try stringLiteral() }
-        var segment = ""
+        guard let scalar = peek() else { throw failure("expected a key") }
+        if scalar.isTOMLQuote { return try stringLiteral() }
+        var segment = String.UnicodeScalarView()
         while let next = peek(), next.isTOMLBareKey {
             segment.append(next)
             advance()
         }
-        guard !segment.isEmpty else { throw failure("expected a key, found '\(character)'") }
-        return segment
+        guard !segment.isEmpty else { throw failure("expected a key, found '\(scalar.tomlDescription)'") }
+        return String(segment)
     }
 
     // MARK: - Values
 
     mutating func value() throws -> TOMLValue {
         skipSpaces()
-        guard let character = peek() else { throw failure("expected a value") }
-        switch character {
+        guard let scalar = peek() else { throw failure("expected a value") }
+        switch scalar {
         case "\"", "'":
             return .string(try stringLiteral())
         case "[":
@@ -79,7 +80,7 @@ struct TOMLScanner {
         case "{":
             return try inlineTable()
         default:
-            return .scalar(try scalar())
+            return .scalar(try scalarValue())
         }
     }
 
@@ -117,13 +118,13 @@ struct TOMLScanner {
     }
 
     /// Everything up to the value's terminator, kept verbatim — see ``TOMLValue/scalar(_:)``.
-    private mutating func scalar() throws -> String {
-        var raw = ""
-        while let character = peek(), !",]}#\n".contains(character) {
-            raw.append(character)
+    private mutating func scalarValue() throws -> String {
+        var raw = String.UnicodeScalarView()
+        while let scalar = peek(), !scalar.isTOMLNewline, !",]}#".unicodeScalars.contains(scalar) {
+            raw.append(scalar)
             advance()
         }
-        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+        let trimmed = String(raw).trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { throw failure("expected a value") }
         return trimmed
     }
@@ -132,73 +133,86 @@ struct TOMLScanner {
 
     private mutating func stringLiteral() throws -> String {
         guard let quote = peek() else { throw failure("expected a string") }
-        if matches(String(repeating: quote, count: 3)) {
+        if matches([quote, quote, quote]) {
             return try multilineString(quote: quote)
         }
         advance()
-        var contents = ""
-        while let character = peek() {
-            if character == quote { advance(); return contents }
-            if character == "\n" { throw failure("unterminated string") }
-            if quote == "\"" && character == "\\" {
+        var contents = String.UnicodeScalarView()
+        while let scalar = peek() {
+            if scalar == quote { advance(); return String(contents) }
+            if scalar.isTOMLNewline { throw failure("unterminated string") }
+            if quote == "\"" && scalar == "\\" {
                 advance()
                 contents.append(try escape())
                 continue
             }
-            contents.append(character)
+            contents.append(scalar)
             advance()
         }
         throw failure("unterminated string")
     }
 
-    private mutating func multilineString(quote: Character) throws -> String {
-        let delimiter = String(repeating: quote, count: 3)
-        for _ in 0..<3 { advance() }
+    /// Kept verbatim, escapes included: no layout key is written as a multi-line string.
+    private mutating func multilineString(quote: Unicode.Scalar) throws -> String {
+        let delimiter = [quote, quote, quote]
+        for _ in delimiter { advance() }
+        if peek() == "\r" { advance() }
         if peek() == "\n" { advance() }
-        var contents = ""
-        while peek() != nil {
+        var contents = String.UnicodeScalarView()
+        while let scalar = peek() {
             if matches(delimiter) {
-                for _ in 0..<3 { advance() }
-                return contents
+                for _ in delimiter { advance() }
+                return String(contents)
             }
-            guard let character = peek() else { break }
-            contents.append(character)
+            contents.append(scalar)
             advance()
         }
         throw failure("unterminated multi-line string")
     }
 
-    /// Only the escapes a package-layout value can plausibly carry; `\uXXXX` and friends are left to
-    /// the strict-structure rule, since a path containing one is not a shape this reader serves.
-    private mutating func escape() throws -> Character {
-        guard let character = peek() else { throw failure("unterminated escape sequence") }
+    private mutating func escape() throws -> Unicode.Scalar {
+        guard let scalar = peek() else { throw failure("unterminated escape sequence") }
         advance()
-        switch character {
-        case "n":
-            return "\n"
-        case "t":
-            return "\t"
-        case "r":
-            return "\r"
-        case "\"", "'", "\\", "/":
-            return character
+        if let simple = scalar.tomlSimpleEscape { return simple }
+        switch scalar {
+        case "x":
+            return try hexEscape(digits: 2)
+        case "u":
+            return try hexEscape(digits: 4)
+        case "U":
+            return try hexEscape(digits: 8)
         default:
-            throw failure("unsupported escape '\\\(character)'")
+            throw failure("invalid escape '\\\(scalar.tomlDescription)'")
         }
+    }
+
+    private mutating func hexEscape(digits: Int) throws -> Unicode.Scalar {
+        var hex = ""
+        for _ in 0..<digits {
+            guard let digit = peek(), digit.properties.isASCIIHexDigit else {
+                throw failure("expected \(digits) hexadecimal digits in an escape")
+            }
+            hex.unicodeScalars.append(digit)
+            advance()
+        }
+        guard let value = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(value) else {
+            throw failure("escape '\(hex)' is not a unicode scalar value")
+        }
+        return scalar
     }
 
     // MARK: - Trivia
 
     private mutating func skipSpaces() {
-        while let character = peek(), character.isTOMLSpace { advance() }
+        while let scalar = peek(), scalar.isTOMLSpace { advance() }
     }
 
     /// Whitespace, newlines and comments — everything that carries no meaning between tokens.
     mutating func skipInsignificant() {
-        while let character = peek() {
-            if character.isTOMLWhitespace {
+        while let scalar = peek() {
+            if scalar.isTOMLWhitespace {
                 advance()
-            } else if character == "#" {
+            } else if scalar == "#" {
                 skipComment()
             } else {
                 return
@@ -207,34 +221,35 @@ struct TOMLScanner {
     }
 
     private mutating func skipComment() {
-        while let character = peek(), character != "\n" { advance() }
+        while let scalar = peek(), !scalar.isTOMLNewline { advance() }
     }
 
     private mutating func endOfLine() throws {
         skipSpaces()
         if peek() == "#" { skipComment() }
-        guard let character = peek() else { return }
-        guard character.isTOMLNewline else {
-            throw failure("unexpected '\(character)' after a value")
+        guard let scalar = peek() else { return }
+        guard scalar.isTOMLNewline else {
+            throw failure("unexpected '\(scalar.tomlDescription)' after a value")
         }
         advance()
+        if scalar == "\r" && peek() == "\n" { advance() }
     }
 
     // MARK: - Primitives
 
-    private func peek() -> Character? {
-        index < characters.count ? characters[index] : nil
+    private func peek(offset: Int = 0) -> Unicode.Scalar? {
+        index + offset < scalars.count ? scalars[index + offset] : nil
     }
 
-    private func matches(_ text: String) -> Bool {
-        let expected = Array(text)
-        guard index + expected.count <= characters.count else { return false }
-        return Array(characters[index..<(index + expected.count)]) == expected
+    private func matches(_ expected: [Unicode.Scalar]) -> Bool {
+        guard index + expected.count <= scalars.count else { return false }
+        return scalars[index..<(index + expected.count)].elementsEqual(expected)
     }
 
+    /// A `\r\n` pair counts as one line break, on its `\n`.
     private mutating func advance() {
-        guard index < characters.count else { return }
-        if characters[index] == "\n" {
+        guard let scalar = peek() else { return }
+        if scalar == "\n" || (scalar == "\r" && peek(offset: 1) != "\n") {
             line += 1
             column = 1
         } else {
@@ -243,16 +258,16 @@ struct TOMLScanner {
         index += 1
     }
 
-    private mutating func match(_ character: Character) -> Bool {
+    private mutating func match(_ scalar: Unicode.Scalar) -> Bool {
         skipSpaces()
-        guard peek() == character else { return false }
+        guard peek() == scalar else { return false }
         advance()
         return true
     }
 
-    private mutating func expect(_ character: Character) throws {
-        guard match(character) else {
-            throw failure("expected '\(character)'")
+    private mutating func expect(_ scalar: Unicode.Scalar) throws {
+        guard match(scalar) else {
+            throw failure("expected '\(scalar)'")
         }
     }
 
@@ -275,10 +290,36 @@ extension [String: TOMLValue] {
     }
 }
 
-extension Character {
+extension Unicode.Scalar {
     var isTOMLQuote: Bool { self == "\"" || self == "'" }
     var isTOMLNewline: Bool { self == "\n" || self == "\r" }
     var isTOMLSpace: Bool { self == " " || self == "\t" }
     var isTOMLWhitespace: Bool { isTOMLSpace || isTOMLNewline }
-    var isTOMLBareKey: Bool { isLetter || isNumber || self == "_" || self == "-" }
+    var isTOMLBareKey: Bool {
+        properties.isAlphabetic || properties.numericType != nil || self == "_" || self == "-"
+    }
+
+    var tomlDescription: String { escaped(asASCII: false) }
+
+    /// The escapes that stand for a fixed scalar, as opposed to the hex forms.
+    var tomlSimpleEscape: Unicode.Scalar? {
+        switch self {
+        case "n":
+            "\n"
+        case "t":
+            "\t"
+        case "r":
+            "\r"
+        case "b":
+            "\u{08}"
+        case "f":
+            "\u{0C}"
+        case "e":
+            "\u{1B}"
+        case "\"", "\\", "/":
+            self
+        default:
+            nil
+        }
+    }
 }

@@ -107,6 +107,92 @@ struct TOMLReaderTests {
         #expect(try parse("# nothing but a comment\n") == .table([:]))
     }
 
+    // MARK: - CRLF line endings
+
+    private func crlf(_ lines: String...) -> String {
+        lines.joined(separator: "\r\n") + "\r\n"
+    }
+
+    @Test func readsCRLFTerminatedLines() throws {
+        let document = try parse(crlf(
+            "# a comment",
+            "[project]  # trailing",
+            "name = \"demo\"",
+            "version = 1.2",
+            "[tool.setuptools.packages.find]",
+            "where = [",
+            "    \"python\",  # the real root",
+            "]"
+        ))
+        #expect(document.value(at: ["project", "name"])?.stringValue == "demo")
+        #expect(document.value(at: ["project", "version"]) == .scalar("1.2"))
+        #expect(document.value(at: ["tool", "setuptools", "packages", "find", "where"])
+            == .array([.string("python")]))
+    }
+
+    @Test func trimsTheCRLFAfterAMultiLineStringsOpeningDelimiter() throws {
+        let document = try parse(crlf("block = \"\"\"", "line one", "\"\"\""))
+        #expect(document.value(at: ["block"])?.stringValue == "line one\r\n")
+    }
+
+    @Test func countsCRLFAsOneLine() throws {
+        do {
+            _ = try parse(crlf("[project]", "name = \"demo\"", "broken = \"unterminated"))
+            Issue.record("expected the manifest to be rejected")
+        } catch let error as TOMLParseError {
+            #expect(error.line == 3)
+        }
+    }
+
+    @Test func aSingleLineStringMayNotSpanACRLF() {
+        #expect(throws: TOMLParseError.self) { try parse(crlf("name = \"one", "two\"")) }
+    }
+
+    @Test func aCombiningMarkAfterAQuoteDoesNotHideTheQuote() throws {
+        let document = try parse("name = \"\u{301}x\"")
+        #expect(document.value(at: ["name"])?.stringValue?.unicodeScalars.elementsEqual("\u{301}x".unicodeScalars)
+            == true)
+    }
+
+    // MARK: - Escapes
+
+    @Test func decodesEveryTOMLEscape() throws {
+        let document = try parse(#"""
+        text = "\b\t\n\f\r\"\\\e\x41é\U0001F600"
+        """#)
+        #expect(document.value(at: ["text"])?.stringValue
+            == "\u{08}\t\n\u{0C}\r\"\\\u{1B}A\u{E9}\u{1F600}")
+    }
+
+    @Test(arguments: [
+        (#"text = "\q""#, "invalid escape"),
+        (#"text = "\u12""#, "hexadecimal digits"),
+        (#"text = "\uD800""#, "not a unicode scalar value"),
+        (#"text = "\U00110000""#, "not a unicode scalar value")
+    ])
+    func rejectsInvalidEscapes(source: String, message: String) throws {
+        do {
+            _ = try parse(source)
+            Issue.record("expected \(source) to be rejected")
+        } catch let error as TOMLParseError {
+            #expect(error.message.contains(message))
+        }
+    }
+
+    // MARK: - Paths
+
+    @Test func aPathDoesNotDescendThroughAnArray() throws {
+        let document = try parse("""
+        [[tool.poetry.packages]]
+        include = "first"
+
+        [[tool.poetry.packages]]
+        include = "second"
+        """)
+        #expect(document.value(at: ["tool", "poetry", "packages"])?.arrayValue?.count == 2)
+        #expect(document.value(at: ["tool", "poetry", "packages", "include"]) == nil)
+    }
+
     // MARK: - The shapes it rejects
 
     @Test(arguments: [
