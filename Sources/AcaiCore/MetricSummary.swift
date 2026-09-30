@@ -1,12 +1,10 @@
-import AcaiCore
+public struct MetricSummary<Element> {
+    public let average: Double
+    public let maximum: Double
+    /// Every element achieving `maximum`, so ties are all named.
+    public let exemplars: [Element]
 
-struct MetricSummary<Element> {
-    let average: Double
-    let maximum: Double
-    /// Every element achieving `maximum`, so ties are all named on the card.
-    let exemplars: [Element]
-
-    init(_ elements: [Element], value: (Element) -> Double) {
+    public init(_ elements: [Element], value: (Element) -> Double) {
         guard !elements.isEmpty else {
             average = 0
             maximum = 0

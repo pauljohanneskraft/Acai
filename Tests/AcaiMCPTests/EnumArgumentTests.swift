@@ -14,6 +14,8 @@ struct EnumArgumentTests {
             ["pathOld": .string(path.path), "pathNew": .string(path.path)]
         case "acai_dependents":
             ["path": .string(path.path), "type": .string("Service")]
+        case "acai_atlas":
+            ["path": .string(path.path), "output": .string(path.appendingPathComponent("atlas.pdf").path)]
         default:
             ["path": .string(path.path)]
         }
@@ -68,7 +70,9 @@ struct EnumArgumentTests {
             }
             // Guards the sweep itself: a schema that stopped advertising its enums would pass vacuously.
             #if os(macOS)
-            let platformSpecific: Set<String> = ["acai_image.theme", "acai_hotspots.languages"]
+            let platformSpecific: Set<String> = [
+                "acai_image.theme", "acai_atlas.theme", "acai_hotspots.languages"
+            ]
             #else
             let platformSpecific: Set<String> = []
             #endif

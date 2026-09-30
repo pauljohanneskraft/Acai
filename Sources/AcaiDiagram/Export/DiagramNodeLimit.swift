@@ -5,6 +5,8 @@
 public struct DiagramNodeLimit: Sendable {
     /// Applied by every front end unless the caller overrides it.
     public static let defaultMaximum = 2000
+    /// The maximums a caller may request; capped to prevent a runaway traversal.
+    public static let allowedMaximums = 1...1_000_000
 
     public var maximum: Int?
 
