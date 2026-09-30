@@ -27,8 +27,7 @@ extension JSCodeParser {
                 methodNames: [
                     "main", "componentdidmount", "componentwillunmount", "componentdidupdate",
                     "render", "ngoninit", "ngondestroy", "ngonchanges"
-                ]),
-            varianceKeywords: [.covariant: "out", .contravariant: "in"]
+                ])
         )
     }
 }

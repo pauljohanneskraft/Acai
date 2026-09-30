@@ -133,22 +133,9 @@ struct JSTypeReferenceResolver {
                 let constraintType = extractTypeReference(constraintNode)
                 constraints.append(GenericConstraint(kind: .conformance, type: constraintType))
             }
-            params.append(
-                GenericParameter(name: name, constraints: constraints, variance: variance(of: child))
-            )
+            params.append(GenericParameter(name: name, constraints: constraints))
         }
         return params
-    }
-
-    /// TypeScript's `in`/`out` parameter modifiers. Both together mark the parameter invariant.
-    private func variance(of typeParameter: Node) -> Variance? {
-        switch (typeParameter.hasDirectChildText("out", in: context),
-                typeParameter.hasDirectChildText("in", in: context)) {
-        case (true, false): return .covariant
-        case (false, true): return .contravariant
-        case (true, true): return .invariant
-        case (false, false): return nil
-        }
     }
 
     // MARK: - Accessibility Modifier
