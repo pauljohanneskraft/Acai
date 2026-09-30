@@ -3,7 +3,18 @@ import Foundation
 public struct AcaiConstants: Sendable {
     public static let standard = AcaiConstants()
 
-    public init() {}
+    /// Ceiling, in bytes, on a source file the analyzer will read. A larger file is skipped and
+    /// recorded as a `.skipped` ``ParseDiagnostic`` carrying its size, so it shows up in the health
+    /// report rather than silently costing memory and parse time.
+    ///
+    /// The default is generous — an ordinary hand-written source file is orders of magnitude
+    /// smaller — and exists to bound the pathological case: a bundled `.js`, a vendored single-file
+    /// library or a generated file that escaped every exclusion, read whole into a `String`.
+    public let maximumSourceFileBytes: Int
+
+    public init(maximumSourceFileBytes: Int = 2 * 1024 * 1024) {
+        self.maximumSourceFileBytes = maximumSourceFileBytes
+    }
 
     private var baseDirectory: URL {
         #if os(macOS)

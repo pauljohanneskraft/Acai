@@ -8,30 +8,16 @@ extension FileManager {
         excludingDirectories excludedDirectories: Set<String> = AcaiConstants.standard.defaultExcludedSourceDirectories
     ) -> [URL] {
         var result: [URL] = []
-        guard let enumerator = enumerator(
-            at: directory,
-            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey, .nameKey],
-            options: [.skipsHiddenFiles]
-        ) else { return result }
-
-        for case let fileURL as URL in enumerator {
-            let values = try? fileURL.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-            if values?.isSymbolicLink == true {
-                continue
-            }
-            if values?.isDirectory == true {
-                if excludedDirectories.contains(fileURL.lastPathComponent) {
-                    enumerator.skipDescendants()
+        DirectoryTreeWalk(excludedDirectories: excludedDirectories, fileManager: self)
+            .walk(from: directory) { _, files in
+                for file in files where extensions.contains(file.pathExtension.lowercased()) {
+                    guard !file.lastPathComponent.hasPrefix(".") else { continue }
+                    result.append(file)
                 }
-                continue
             }
-            if extensions.contains(fileURL.pathExtension.lowercased()) {
-                result.append(fileURL)
-            }
-        }
-        // `enumerator` yields files in a filesystem-dependent order. Sort by path so
-        // parse order — and therefore the order types appear in generated DOT — is
-        // stable across machines, which the golden-file regression tests rely on.
+        // The walk yields files in a filesystem-dependent order within each directory. Sort by path
+        // so parse order — and therefore the order types appear in generated DOT — is stable across
+        // machines, which the golden-file regression tests rely on.
         return result.sorted { $0.path < $1.path }
     }
 }

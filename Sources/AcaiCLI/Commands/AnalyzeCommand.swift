@@ -6,7 +6,21 @@ import AcaiLibrary
 extension AcaiCommand {
     struct Analyze: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Analyze source code and output the code model as JSON, or its parse health"
+            abstract: "Analyze source code and output the code model as JSON, or its parse health",
+            discussion: """
+                What --source parses, and what it leaves out:
+
+                  * Files the repository ignores. The root .gitignore and every nested one are \
+                read, negation rules included, and a file they exclude is never parsed.
+                  * Files over \(AcaiConstants.standard.maximumSourceFileBytes) bytes. Each is \
+                skipped and reported as a `skipped` parse diagnostic carrying its size, so \
+                --health accounts for it rather than leaving it silently absent.
+                  * Each language's build-output and dependency directories, and the .git directory.
+
+                Symbolic links are followed, so a source directory linked into the project is \
+                analyzed rather than dropped. Each directory is entered once however many links \
+                point at it, so a link to an ancestor terminates instead of looping.
+                """
         )
 
         @Option(name: .long, help: "Name of a stored analysis or path to a .json file.")
