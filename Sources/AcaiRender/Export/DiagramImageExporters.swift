@@ -204,15 +204,19 @@ public struct CallGraphImageExporter: Sendable {
     public let scale: Double
     public let palette: DiagramPalette
     public let scope: CallGraphScopeOption
+    /// `nil` means unlimited.
+    public let maxNodes: Int?
 
-    public init(scale: Double, palette: DiagramPalette, scope: CallGraphScopeOption) {
+    public init(scale: Double, palette: DiagramPalette, scope: CallGraphScopeOption, maxNodes: Int? = nil) {
         self.scale = scale
         self.palette = palette
         self.scope = scope
+        self.maxNodes = maxNodes
     }
 
     public func render(artifact: CodeArtifact) async throws -> Data {
         let graph = try CallGraphRequest(scope: scope).buildWithEdges(from: artifact)
+        try DiagramNodeLimit(maximum: maxNodes).validate(nodeCount: graph.nodes.count)
         let (scale, palette) = (scale, palette)
         return try await MainActor.run {
             try CallGraphImageRenderer().renderPNG(

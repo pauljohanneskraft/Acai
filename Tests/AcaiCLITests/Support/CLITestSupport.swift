@@ -36,6 +36,12 @@ enum CLITestSupport {
         return try #require(root as? AcaiCommand.Image)
     }
 
+    /// macOS-only for the same reason as `image`: the Atlas embeds rendered diagrams.
+    static func parseAtlas(_ arguments: [String]) throws -> AcaiCommand.Atlas {
+        let root = try AcaiCommand.parseAsRoot(["atlas"] + arguments)
+        return try #require(root as? AcaiCommand.Atlas)
+    }
+
     /// macOS-only: the `hotspots` subcommand needs `AcaiGit`'s libgit2 history walk.
     static func parseHotspots(_ arguments: [String]) throws -> AcaiCommand.Hotspots {
         let root = try AcaiCommand.parseAsRoot(["hotspots"] + arguments)

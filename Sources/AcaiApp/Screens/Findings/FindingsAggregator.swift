@@ -2,6 +2,7 @@ import Foundation
 import AcaiCore
 import AcaiQuality
 import AcaiDiagram
+import AcaiRender
 
 /// Aggregates the unified Findings list for one project: every quality violation, dead-code
 /// candidate, and parse diagnostic across every codebase, normalized to `Finding`. Callers own
@@ -56,18 +57,9 @@ struct FindingsAggregator {
     ) -> [Finding] {
         report.violations.map { violation in
             Finding(
-                id: "violation-\(codebase.id)-\(violation.findingIdentity)",
-                kind: .violation,
-                // A dependency cycle is a structural problem, not just a style nit — ranked above
-                // an ordinary rule breach (e.g. a budget or naming-convention violation).
-                severity: violation.ruleKind == "cycle" ? .critical : .warning,
-                codebaseID: codebase.id,
-                codebaseName: codebase.name,
-                title: violation.subject,
-                message: violation.message,
-                location: violation.source,
+                AtlasFinding(violation: violation),
+                codebase: codebase,
                 reference: artifact.flatMap { violation.codeElementReference(in: $0) },
-                indexedAt: codebase.lastIndexed,
                 cycle: violation.ruleKind == "cycle"
                     ? Finding.CycleReference(
                         scope: violation.detail["scope"] ?? CycleFinder.Scope.types.rawValue,
@@ -79,40 +71,21 @@ struct FindingsAggregator {
     private func deadCodeFindings(
         _ report: DeadCodeScan.Report, codebase: Codebase, artifact: CodeArtifact?
     ) -> [Finding] {
-        let coverage = Int((report.coverage.fraction * 100).rounded())
-        return report.candidates.map { candidate in
+        report.candidates.map { candidate in
             Finding(
-                id: "deadCode-\(codebase.id)-\(candidate.id)",
-                kind: .deadCode,
-                // A best-effort lead, not a verdict (see `DeadCodeScan`'s own doc comment on
-                // `coverage`) — ranked below an actual rule breach or parse error.
-                severity: .info,
-                codebaseID: codebase.id,
-                codebaseName: codebase.name,
-                title: candidate.id,
-                message: "No resolved caller found (call-graph coverage \(coverage)% — may be a false positive).",
-                location: candidate.location,
+                AtlasFinding(deadCode: candidate, coverage: report.coverage),
+                codebase: codebase,
                 reference: artifact.flatMap { candidate.codeElementReference(in: $0) },
-                indexedAt: codebase.lastIndexed,
                 cycle: nil)
         }
     }
 
     private func healthFindings(_ report: HealthCheck.Report, codebase: Codebase) -> [Finding] {
         report.diagnostics.map { diagnostic in
-            let location = diagnostic.location
-            return Finding(
-                id: "health-\(codebase.id)-\(location.filePath)-\(location.line)-\(location.column)"
-                    + "-\(diagnostic.kind.rawValue)-\(diagnostic.message)",
-                kind: .health,
-                severity: diagnostic.kind == .error ? .critical : .warning,
-                codebaseID: codebase.id,
-                codebaseName: codebase.name,
-                title: diagnostic.message,
-                message: diagnostic.kind.rawValue,
-                location: diagnostic.location,
+            Finding(
+                AtlasFinding(diagnostic: diagnostic),
+                codebase: codebase,
                 reference: nil,
-                indexedAt: codebase.lastIndexed,
                 cycle: nil)
         }
     }
