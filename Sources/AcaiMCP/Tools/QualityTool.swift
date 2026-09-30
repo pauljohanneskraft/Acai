@@ -1,7 +1,6 @@
 import Foundation
 import MCP
 import AcaiLibrary
-import Yams
 
 /// `acai_quality` — validates the codebase against a declarative code-quality rules file and returns
 /// the pass/fail verdict with each violation's file:line. Mirrors `acai quality --format json`.
@@ -18,11 +17,7 @@ struct QualityTool: AnalysisTool {
         """
 
     var inputSchema: Value {
-        var properties: [String: Value] = [
-            "rules": [
-                "type": "string",
-                "description": "Path to the YAML rules file. Omit for the built-in curated smell budgets."
-            ],
+        var properties = rulesProperty.merging([
             "explore": [
                 "type": "boolean",
                 "description": "Rank findings and additionally list dependency cycles at 'scope' (no gate)."
@@ -35,7 +30,7 @@ struct QualityTool: AnalysisTool {
                     + " 'path'). Evaluates the rules' 'movements' and adds the structural drift since it."
                     + " Required when the rules declare any movement.")
             ]
-        ]
+        ]) { $1 }
         properties.merge(EnumArgument<CycleScope>.scope.property) { $1 }
         return objectSchema(extraProperties: properties)
     }
@@ -43,7 +38,7 @@ struct QualityTool: AnalysisTool {
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let scope = try EnumArgument<CycleScope>.scope.value(in: arguments, or: .all)
         let artifact = try await resolveArtifact(arguments, cache)
-        let ruleSet = try loadRules(arguments)
+        let ruleSet = try qualityRules(arguments)
         let baseline = try await baselineArtifact(arguments, cache, rules: ruleSet)
         var report = QualityEvaluator(
             rules: ruleSet,
@@ -88,18 +83,6 @@ struct QualityTool: AnalysisTool {
             path: path,
             languageNames: try LanguageListArgument.languages.values(in: arguments),
             refresh: try arguments.bool("refresh") ?? false)
-    }
-
-    /// Decodes the YAML directly since the CLI's `.load` helper is AcaiCLI-internal.
-    private func loadRules(_ arguments: ToolArguments) throws -> QualityRules {
-        guard let rulesPath = arguments.string("rules") else { return .defaultQuality }
-        do {
-            let yaml = try String(contentsOf: URL(fileURLWithPath: rulesPath), encoding: .utf8)
-            return try YAMLDecoder().decode(QualityRules.self, from: yaml)
-        } catch {
-            throw MCPError.invalidParams(
-                "Could not read quality rules from \(rulesPath): \(error.localizedDescription)")
-        }
     }
 
     private func cycleFindings(_ artifact: CodeArtifact, scope: CycleScope) -> [Violation] {

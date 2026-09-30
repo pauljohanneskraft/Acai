@@ -98,7 +98,7 @@ On macOS the app can generate this for you: **Settings → Connect via MCP** loc
 
 ## The tools
 
-Ten tools on macOS, **eight on Linux** — `acai_image` links the SwiftUI renderer and `acai_hotspots` links libgit2; both are compiled out elsewhere.
+Eleven tools on macOS, **eight on Linux** — `acai_image` and `acai_atlas` link the SwiftUI renderer and `acai_hotspots` links libgit2; all three are compiled out elsewhere.
 
 Every tool takes `path` (required), and most also accept:
 
@@ -316,6 +316,21 @@ Identical to `acai_diagram`, minus `format`, plus:
 
 Returns base64 PNG image content.
 
+### `acai_atlas` — macOS only
+
+The whole picture as one PDF, for when someone wants a document rather than an answer: a page per diagram, the statistics, and every quality violation, dead-code candidate and parse diagnostic. The same document `acai atlas` writes, in the same document format as the app's Codebase Atlas export; the diagram section is the default class diagram, package graph and call graph.
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `output` | string | **Required.** Path to write the PDF to. A relative path resolves against the server's working directory. |
+| `name` | string | Title-page name. Defaults to the analyzed directory's name. |
+| `rules` | string | YAML rules file the findings section is judged by. Omit for the built-in smell budgets. An unreadable file is `invalidParams`. |
+| `scale` | number | Diagram resolution factor, greater than `0` (default `2`). |
+| `theme` | `light` \| `dark` | Default light. |
+| `maxNodes` | integer | Node ceiling per graph diagram before its page reports it could not render, `1`–`1000000` (default `2000`). |
+
+Returns `{ path, formatVersion, diagramCount, findingCount, byteCount, unrenderedDiagrams }` — the only tool that writes a file rather than answering in the response. `path` is the absolute path written. `unrenderedDiagrams` lists `"<diagram>: <reason>"` for each diagram page that could not be rendered (that page still appears in the PDF, saying so); it is empty when every diagram rendered.
+
 ---
 
 ## The snapshot cache
@@ -374,6 +389,7 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 | `acai_diff` | Both sides must be filesystem paths. No delta-diagram rendering. |
 | `acai_diagram` | Defaults to `mermaid` where the CLI defaults to `dot`. Exposes none of the class-diagram flags, no theme, no config file, no focus direction/relationship control. |
 | `acai_image` | No `--grouping`, `--hide-members`, `--min-access`, or delta-image inputs. |
+| `acai_atlas` | At parity with `acai atlas`, including its `scale`/`maxNodes` limits. Unrendered diagrams are listed in `unrenderedDiagrams` where the CLI warns on stderr. |
 | `acai_hotspots` | JSON only — no human table. |
 
 `acai_inspect` and `acai_dependents` are at full parity.
