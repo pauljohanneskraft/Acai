@@ -42,14 +42,11 @@ struct DOTNodeRenderer {
         return tag + ">"
     }
 
-    private func buildHTMLLabel(for type: TypeDeclaration, config: LanguageConfiguration) -> String {
+    private func titleRow(for type: TypeDeclaration, config: LanguageConfiguration) -> String {
         let font = options.theme?.fontColor
-        let fontSize = options.fontSize
-        var html = tableOpenTag(for: type)
-
-        html += "<TR><TD ALIGN=\"CENTER\">"
+        var html = "<TR><TD ALIGN=\"CENTER\">"
         if let stereotype = stereotypeString(for: type, config: config) {
-            html += "<FONT POINT-SIZE=\"\(fontSize - 2)\"\(colorAttr(font))>"
+            html += "<FONT POINT-SIZE=\"\(options.fontSize - 2)\"\(colorAttr(font))>"
             html += "&lt;&lt;\(stereotype)&gt;&gt;</FONT><BR/>"
         }
         html += "<B>\(fontOpen(font))"
@@ -61,7 +58,15 @@ struct DOTNodeRenderer {
             html += "&lt;\(parameters.dotHTMLEscaped)&gt;"
         }
         html += "\(fontClose(font))</B>"
-        html += "</TD></TR>"
+        return html + "</TD></TR>"
+    }
+
+    private func buildHTMLLabel(for type: TypeDeclaration, config: LanguageConfiguration) -> String {
+        let font = options.theme?.fontColor
+        let fontSize = options.fontSize
+        var html = tableOpenTag(for: type)
+
+        html += titleRow(for: type, config: config)
 
         if let annotation = options.nodeAnnotation?(type) {
             html += "<TR><TD ALIGN=\"CENTER\">"

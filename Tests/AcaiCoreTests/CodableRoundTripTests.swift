@@ -292,7 +292,8 @@ struct CodableRoundTripTests {
     @Test func absentVarianceIsNotEncoded() throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        let encoded = String(decoding: try encoder.encode(GenericParameter(name: "T")), as: UTF8.self)
+        let data = try encoder.encode(GenericParameter(name: "T"))
+        let encoded = try #require(String(bytes: data, encoding: .utf8))
         #expect(!encoded.contains("variance"))
     }
 

@@ -137,12 +137,17 @@ struct KotlinTypeReferenceResolver {
 
     /// The `out`/`in` projection written before the parameter's name.
     private func variance(of typeParameter: Node) -> Variance? {
-        switch (typeParameter.hasDirectChildText("out", in: context),
-                typeParameter.hasDirectChildText("in", in: context)) {
-        case (true, false): return .covariant
-        case (false, true): return .contravariant
-        case (true, true): return .invariant
-        case (false, false): return nil
+        let isOut = typeParameter.hasDirectChildText("out", in: context)
+        let isIn = typeParameter.hasDirectChildText("in", in: context)
+        switch (isOut, isIn) {
+        case (true, false):
+            return .covariant
+        case (false, true):
+            return .contravariant
+        case (true, true):
+            return .invariant
+        case (false, false):
+            return nil
         }
     }
 }
