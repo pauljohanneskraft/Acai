@@ -1,7 +1,8 @@
 public enum DiagramFormat: String, Sendable, CaseIterable {
     case dot
-    /// The default on every surface that renders a diagram.
     case mermaid
+
+    public static let standard: DiagramFormat = .mermaid
 }
 
 /// A built diagram paired with both of its renderers, so callers dispatch on
