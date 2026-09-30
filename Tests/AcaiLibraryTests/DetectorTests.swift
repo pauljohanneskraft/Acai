@@ -152,6 +152,75 @@ struct DetectorTests {
         }
     }
 
+    /// `path` comes from the manifest, which is external input: a target that resolves outside the
+    /// package is refused rather than followed.
+    @Test func spmProbesWhenATargetPathEscapesThePackage() throws {
+        let detector = SwiftPackageManagerDetector()
+        try withTempDir { root in
+            try write("Package.swift", in: root, contents: """
+            let package = Package(name: "Demo", targets: [.target(name: "Core", path: "../Elsewhere")])
+            """)
+            try write("Sources/Core/Core.swift", in: root)
+
+            let spec = try #require(
+                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
+            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Sources"])
+            #expect(spec.diagnostics.map(\.kind) == [.incompleteDiscovery])
+            #expect(spec.diagnostics.first?.message.contains("outside the package") == true)
+        }
+    }
+
+    /// A `sources:` entry that leaves the target would widen it into a sibling, so it is dropped.
+    @Test func spmIgnoresASourcesEntryOutsideItsTarget() throws {
+        let detector = SwiftPackageManagerDetector()
+        try withTempDir { root in
+            try write("Package.swift", in: root, contents: """
+            let package = Package(
+                name: "Demo",
+                targets: [
+                    .target(name: "Core"),
+                    .target(name: "Narrow", sources: ["Public", "../Core"]),
+                ]
+            )
+            """)
+            try write("Sources/Core/Core.swift", in: root)
+            try write("Sources/Narrow/Public/API.swift", in: root)
+
+            let spec = try #require(
+                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
+            #expect(spec.diagnostics.isEmpty)
+            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Core", "Public"])
+        }
+    }
+
+    /// SwiftPM copies resources rather than compiling them, so a fixture package declared as a
+    /// resource is not part of the target's source — the usual way a test fixture is declared.
+    @Test func spmSkipsSwiftFilesUnderADeclaredResource() throws {
+        let detector = SwiftPackageManagerDetector()
+        try withTempDir { root in
+            try write("Package.swift", in: root, contents: """
+            let package = Package(
+                name: "Demo",
+                targets: [
+                    .target(name: "Core"),
+                    .testTarget(name: "CoreTests", resources: [.copy("Fixtures")]),
+                ]
+            )
+            """)
+            try write("Sources/Core/Core.swift", in: root)
+            try write("Tests/CoreTests/CoreTests.swift", in: root)
+            try write("Tests/CoreTests/Fixtures/Package.swift", in: root)
+            try write("Tests/CoreTests/Fixtures/Sources/Fixture/Fixture.swift", in: root)
+
+            let spec = try #require(
+                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
+            let fixtureSource = "Tests/CoreTests/Fixtures/Sources/Fixture/Fixture.swift"
+            #expect(spec.diagnostics.isEmpty)
+            #expect(spec.excludes(root.appendingPathComponent(fixtureSource)))
+            #expect(!spec.excludes(root.appendingPathComponent("Tests/CoreTests/CoreTests.swift")))
+        }
+    }
+
     @Test func spmProbesRatherThanDroppingATargetWhoseDirectoryIsMissing() throws {
         let detector = SwiftPackageManagerDetector()
         try withTempDir { root in

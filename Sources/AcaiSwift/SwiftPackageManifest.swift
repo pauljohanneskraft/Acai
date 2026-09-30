@@ -13,7 +13,6 @@ struct SwiftPackageManifest {
         enum Kind {
             case regular
             case test
-            case plugin
 
             /// SwiftPM's predefined directories for the kind, searched in order when the target
             /// declares no `path`.
@@ -23,8 +22,6 @@ struct SwiftPackageManifest {
                     ["Sources", "Source", "src", "srcs"]
                 case .test:
                     ["Tests", "Sources", "Source", "src", "srcs"]
-                case .plugin:
-                    ["Plugins"]
                 }
             }
 
@@ -39,10 +36,17 @@ struct SwiftPackageManifest {
         var exclude: [String]
         /// Subpaths the target restricts itself to; `nil` means the whole target directory.
         var sources: [String]?
+        /// Paths declared as `resources:`. SwiftPM copies or processes these rather than compiling
+        /// them, so any source file below one belongs to no target.
+        var resources: [String]
     }
 
     private(set) var targets: [Target] = []
     private(set) var incompleteReason: String?
+
+    /// Target kinds that contribute no Swift source of the package's own: prebuilt binaries, system
+    /// libraries, and build-tool plugins. Skipping them is not a reason to distrust the manifest.
+    private let sourcelessFactories: Set<String> = ["binaryTarget", "systemLibrary", "plugin"]
 
     init(source: String) {
         read(Parser.parse(source: source))
@@ -65,12 +69,12 @@ struct SwiftPackageManifest {
             incompleteReason = "the Package(...) initializer declares no targets"
             return
         }
-        guard let elements = argument.as(ArrayExprSyntax.self)?.elements else {
+        guard let elements = finder.targetElements(of: argument) else {
             incompleteReason = "`targets:` is not a literal array"
             return
         }
         for element in elements {
-            read(element.expression)
+            read(element)
             if incompleteReason != nil { return }
         }
     }
@@ -84,8 +88,7 @@ struct SwiftPackageManifest {
         }
         let name = callee.declName.baseName.text
         guard let kind = Target.Kind(targetFactory: name) else {
-            // `binaryTarget` and `systemLibrary` have no sources of their own to parse.
-            if name != "binaryTarget", name != "systemLibrary" {
+            if !sourcelessFactories.contains(name) {
                 incompleteReason = "unrecognised target kind `.\(name)`"
             }
             return
@@ -107,8 +110,6 @@ extension SwiftPackageManifest.Target.Kind {
             self = .regular
         case "testTarget":
             self = .test
-        case "plugin":
-            self = .plugin
         default:
             return nil
         }
@@ -124,8 +125,12 @@ extension SwiftPackageManifest.Target {
         let path = arguments.string("path")
         let exclude = arguments.strings("exclude")
         let sources = arguments.strings("sources")
+        let resources = arguments.resourcePaths("resources")
         guard !arguments.sawComputedValue, let name else { return nil }
-        self.init(name: name, kind: kind, path: path, exclude: exclude ?? [], sources: sources)
+        self.init(
+            name: name, kind: kind, path: path,
+            exclude: exclude ?? [], sources: sources, resources: resources ?? []
+        )
     }
 }
 
@@ -166,6 +171,23 @@ private struct LiteralArguments {
         }
         return values
     }
+
+    /// The paths of a `resources:` array of `.copy`/`.process`/`.embedInCode` rules.
+    mutating func resourcePaths(_ label: String) -> [String]? {
+        guard let expression = arguments.first(where: { $0.label?.text == label })?.expression else {
+            return nil
+        }
+        guard let elements = expression.as(ArrayExprSyntax.self)?.elements else {
+            sawComputedValue = true
+            return nil
+        }
+        let values = elements.compactMap { $0.expression.resourceRulePath }
+        guard values.count == elements.count else {
+            sawComputedValue = true
+            return nil
+        }
+        return values
+    }
 }
 
 extension StringLiteralExprSyntax {
@@ -181,12 +203,25 @@ extension StringLiteralExprSyntax {
 private final class PackageCallFinder: SyntaxVisitor {
     private(set) var targetsArgument: ExprSyntax?
     private(set) var callCount = 0
+    /// Immutable file-scope bindings, so `targets: base + extras` can be followed to `let extras = […]`.
+    /// `let` only: a `var` may be appended to out of sight of ``changesLayoutAfterInitializer``.
+    private(set) var constants: [String: ExprSyntax] = [:]
     /// Set by `package.targets += […]`, `package.targets.append(…)`, `target.path = …` and the like —
     /// but not by `target.swiftSettings = …`, which leaves the layout alone.
     private(set) var changesLayoutAfterInitializer = false
 
     private let layoutMembers: Set<String> = ["targets", "path", "exclude", "sources"]
     private let mutatingCalls: Set<String> = ["append", "insert", "remove", "removeAll", "removeFirst", "removeLast"]
+
+    override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
+        guard node.bindingSpecifier.tokenKind == .keyword(.let) else { return .visitChildren }
+        for binding in node.bindings {
+            guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+                  let value = binding.initializer?.value else { continue }
+            constants[name] = value
+        }
+        return .visitChildren
+    }
 
     override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
         let elements = Array(node.elements)
@@ -212,6 +247,35 @@ private final class PackageCallFinder: SyntaxVisitor {
 }
 
 extension PackageCallFinder {
+    /// The target expressions a `targets:` argument stands for: a literal array, a `+` chain of
+    /// them, or a same-file `let` bound to either. Nil when any link in the chain is something else,
+    /// which leaves the manifest incomplete rather than half-read.
+    fileprivate func targetElements(of expression: ExprSyntax, resolved: Set<String> = []) -> [ExprSyntax]? {
+        if let array = expression.as(ArrayExprSyntax.self) {
+            return array.elements.map(\.expression)
+        }
+        if let sequence = expression.as(SequenceExprSyntax.self) {
+            return concatenation(of: sequence, resolved: resolved)
+        }
+        guard let name = expression.as(DeclReferenceExprSyntax.self)?.baseName.text,
+              !resolved.contains(name), let bound = constants[name] else { return nil }
+        return targetElements(of: bound, resolved: resolved.union([name]))
+    }
+
+    /// An unfolded `a + b + c`: operands at the even positions, `+` at the odd ones.
+    private func concatenation(of sequence: SequenceExprSyntax, resolved: Set<String>) -> [ExprSyntax]? {
+        var elements: [ExprSyntax] = []
+        for (index, element) in sequence.elements.enumerated() {
+            guard index.isMultiple(of: 2) else {
+                guard element.as(BinaryOperatorExprSyntax.self)?.operator.text == "+" else { return nil }
+                continue
+            }
+            guard let operand = targetElements(of: element, resolved: resolved) else { return nil }
+            elements.append(contentsOf: operand)
+        }
+        return sequence.elements.count.isMultiple(of: 2) ? nil : elements
+    }
+
     fileprivate func isLayoutMember(_ expression: ExprSyntax) -> Bool {
         guard let access = expression.as(MemberAccessExprSyntax.self), access.base != nil else { return false }
         return layoutMembers.contains(access.declName.baseName.text)
@@ -224,5 +288,15 @@ extension ExprSyntax {
         if self.is(AssignmentExprSyntax.self) { return true }
         guard let text = self.as(BinaryOperatorExprSyntax.self)?.operator.text else { return false }
         return text.hasSuffix("=") && !["==", "!=", "<=", ">=", "==="].contains(text)
+    }
+
+    /// The literal path of a `.copy("…")`, `.process("…")` or `.embedInCode("…")` resource rule.
+    fileprivate var resourceRulePath: String? {
+        guard let call = self.as(FunctionCallExprSyntax.self),
+              let callee = call.calledExpression.as(MemberAccessExprSyntax.self),
+              callee.base == nil,
+              ["copy", "process", "embedInCode"].contains(callee.declName.baseName.text),
+              let first = call.arguments.first, first.label == nil else { return nil }
+        return first.expression.as(StringLiteralExprSyntax.self)?.literalValue
     }
 }
