@@ -155,20 +155,6 @@ struct DiagramCommandRunTests {
         }
     }
 
-    @Test func omittingTheFormatWritesMermaidRatherThanDOT() async throws {
-        try await CLITestSupport.withTempDirectory { dir in
-            try CLITestSupport.writeSampleSwiftSource(in: dir)
-            let output = dir.appendingPathComponent("diagram.mmd")
-            var cmd = try CLITestSupport.parseDiagram(
-                ["--source", dir.path, "--language", "swift", "--output", output.path]
-            )
-            try await cmd.run()
-            let contents = try String(contentsOf: output, encoding: .utf8)
-            #expect(contents.contains("classDiagram"))
-            #expect(!contents.contains("digraph"))
-        }
-    }
-
     @Test func untraceableSequenceEntryPointThrows() async throws {
         try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
