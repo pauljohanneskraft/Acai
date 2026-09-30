@@ -3,13 +3,19 @@ import CoreText
 import Foundation
 import ImageIO
 
-/// Draws into an already-flipped (top-left origin, y-down) `CGContext`. Knows nothing about
-/// `Finding`/`CodeMetrics`/`GeneratedDiagram` — `CodebaseAtlasBuilder` owns turning those into the
-/// strings and images handed here.
+/// Draws into an already-flipped (top-left origin, y-down) `CGContext`.
 struct AtlasPageCanvas {
     let context: CGContext
     let bounds: CGRect
     private var cursorY: CGFloat
+
+    /// Mirrors the app's spacing scale.
+    static let tightSpacing: CGFloat = 2
+    static let lineSpacing: CGFloat = 4
+    static let entrySpacing: CGFloat = 8
+    static let headingSpacing: CGFloat = 12
+    static let sectionSpacing: CGFloat = 16
+    static let titleSpacing: CGFloat = 24
 
     init(context: CGContext, bounds: CGRect) {
         self.context = context
@@ -19,9 +25,10 @@ struct AtlasPageCanvas {
 
     var remainingHeight: CGFloat { bounds.maxY - cursorY }
 
-    /// Truncates to the page width with an ellipsis rather than wrapping — the Atlas's findings/stats
-    /// entries are one line each by design.
-    mutating func drawLine(_ text: String, fontSize: CGFloat, bold: Bool = false, spacing: CGFloat = .spacingXS) {
+    /// Truncates to the page width with an ellipsis rather than wrapping.
+    mutating func drawLine(
+        _ text: String, fontSize: CGFloat, bold: Bool = false, spacing: CGFloat = Self.lineSpacing
+    ) {
         let font = CTFontCreateWithName((bold ? "Helvetica-Bold" : "Helvetica") as CFString, fontSize, nil)
         let fontKey = kCTFontAttributeName as NSAttributedString.Key
         let attributed = NSAttributedString(string: text, attributes: [fontKey: font])
@@ -33,15 +40,13 @@ struct AtlasPageCanvas {
         var ascent: CGFloat = 0, descent: CGFloat = 0, leading: CGFloat = 0
         CTLineGetTypographicBounds(fitted, &ascent, &descent, &leading)
         let lineHeight = ascent + descent + leading
-        // A line that would run past the bottom margin is dropped rather than drawn off-page;
-        // pagination itself is CodebaseAtlasBuilder's job, not this canvas's.
+        // Dropped rather than drawn off-page; pagination is AtlasDocument's job.
         guard lineHeight <= remainingHeight else { return }
 
         context.saveGState()
         context.setFillColor(CGColor(gray: 0, alpha: 1))
         context.textMatrix = .identity
-        // CTLineDraw expects bottom-up text space; translate to the baseline and flip locally so
-        // glyphs paint right-side up in this y-down page context.
+        // CTLineDraw expects bottom-up text space; flip locally at the baseline.
         context.translateBy(x: bounds.minX, y: cursorY + ascent)
         context.scaleBy(x: 1, y: -1)
         context.textPosition = .zero
