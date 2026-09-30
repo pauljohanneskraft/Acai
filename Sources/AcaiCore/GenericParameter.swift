@@ -1,9 +1,8 @@
 public struct GenericParameter: Codable, Equatable, Hashable, Sendable {
     public var name: String
     public var constraints: [GenericConstraint]
-    /// Declaration-site variance, where the language marks it on the parameter itself (Kotlin's
-    /// `out`/`in`, TypeScript's `in`/`out`). `nil` where the language has no such concept, or where
-    /// the declaration left it unwritten.
+    /// Declaration-site variance, where the language marks it on the parameter. `nil` where the language
+    /// has no such concept, or where the declaration left it unwritten.
     public var variance: Variance?
 
     public init(name: String, constraints: [GenericConstraint] = [], variance: Variance? = nil) {
