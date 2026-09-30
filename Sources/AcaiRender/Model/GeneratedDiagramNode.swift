@@ -21,7 +21,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         configuration: ClassDiagramConfiguration? = nil,
         annotationStereotypes: [String: String] = [:],
         collectionTypeNames: Set<String> = [],
-        varianceKeywords: [Variance: String] = [:]
+        varianceKeywords: [Variance: String]
     ) {
         let config = configuration ?? .init()
 

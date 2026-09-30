@@ -61,7 +61,7 @@ extension TypeReference {
 extension GenericParameter {
     /// The parameter as its own language writes it — `out T` where variance is marked and the
     /// language spells it, the bare name otherwise. The keywords are injected, never hardcoded here.
-    public func umlDisplayString(varianceKeywords: [Variance: String] = [:]) -> String {
+    public func umlDisplayString(varianceKeywords: [Variance: String]) -> String {
         guard let variance, let keyword = varianceKeywords[variance] else { return name }
         return "\(keyword) \(name)"
     }
