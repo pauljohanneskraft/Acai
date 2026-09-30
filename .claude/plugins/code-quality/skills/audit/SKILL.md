@@ -51,6 +51,9 @@ the default path for the interactive audit. Call **`acai_analyze <path>` with `h
   diagram source as text you can embed; **`acai_image`** (macOS) returns a PNG you can *see*. Read the
   package/class diagram for hairballs, lopsided layouts, edges pointing "up" the layer stack, orphans;
   `focus` a type to zoom its neighbourhood.
+- **`acai_atlas`** (`output`, macOS) — the only tool that writes: one PDF carrying the diagrams, the
+  statistics and every finding. Reach for it at the *end* of an audit, when a person wants the whole
+  picture as a document — never as a way to read the numbers, which the tools above answer directly.
 
 ## When to drop to the CLI
 

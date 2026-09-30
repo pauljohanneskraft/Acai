@@ -1,10 +1,11 @@
+import AcaiDiagram
 import ArgumentParser
 
 /// Shared by the `diagram` and `image` commands; capped to prevent a runaway traversal.
 struct DiagramLimits {
     var depthRange = 1...100
     var statesRange = 1...1000
-    var nodesRange = 1...1_000_000
+    var nodesRange = DiagramNodeLimit.allowedMaximums
 
     func validate(maxDepth: Int, maxStates: Int) throws {
         guard depthRange.contains(maxDepth) else {
