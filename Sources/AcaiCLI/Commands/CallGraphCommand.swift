@@ -15,7 +15,8 @@ extension AcaiCommand {
                 It scans methods in every language. A language's initializers and subscripts are \
                 scanned only where its parser records calls to them: a kind whose callers are never \
                 recorded has no edge to be found by, so scanning it would report every declaration \
-                of it as uncalled.
+                of it as uncalled. The report names the kinds it actually scanned: a "Scanned:" line \
+                in human output, "scannedKinds" in JSON.
                 """
         )
 
@@ -144,21 +145,15 @@ extension AcaiCommand {
             try rendered.writeOutput(to: output, label: "dead code")
         }
 
-        /// Named in the header so "no candidates" can't be read as "nothing of this kind is dead":
-        /// which kinds were scanned is the language's call (see `LanguageConfiguration`).
-        private let deadCodeScope =
-            "Scanned: methods, plus a language's initializers and subscripts where its parser records "
-            + "calls to them."
-
         private func deadCodeHuman(_ report: DeadCodeScan.Report) -> String {
             let coverage = Int((report.coverage.fraction * 100).rounded())
             guard !report.candidates.isEmpty else {
-                return "No dead-code candidates (call-graph coverage \(coverage)%).\n\(deadCodeScope)\n"
+                return "No dead-code candidates (call-graph coverage \(coverage)%).\n\(report.scopeLine)\n"
             }
             var lines = [
                 "\(report.candidates.count) dead-code candidate(s) "
                 + "— call-graph coverage \(coverage)% (candidates below this floor may be false positives):",
-                deadCodeScope
+                report.scopeLine
             ]
             for candidate in report.candidates {
                 lines.append("  \(candidate.id)\(candidate.location.suffix)")
@@ -183,4 +178,29 @@ private struct CallGraphCyclesPayload: Encodable {
 private struct CallGraphDeadCodePayload: Encodable {
     var deadCode: DeadCodeScan.Report
     var health: HealthCheck.Summary
+}
+
+private extension DeadCodeScan.Report {
+    /// Named in the header so "no candidates" can't be read as covering a kind no language scanned.
+    var scopeLine: String {
+        let kinds = scannedKinds.map(\.pluralName)
+        return "Scanned: \(kinds.isEmpty ? "nothing" : kinds.joined(separator: ", "))."
+    }
+}
+
+private extension MemberKind {
+    var pluralName: String {
+        switch self {
+        case .property:
+            "properties"
+        case .method:
+            "methods"
+        case .initializer:
+            "initializers"
+        case .deinitializer:
+            "deinitializers"
+        case .subscript:
+            "subscripts"
+        }
+    }
 }

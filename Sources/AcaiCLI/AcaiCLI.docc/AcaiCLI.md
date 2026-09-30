@@ -503,7 +503,8 @@ acai inspect --from myproj --enums
 public API, an override, a protocol requirement, or one of the language's entry-point markers. It scans
 methods in every language; a language's initializers and subscripts are scanned only where its parser
 records calls to them, since a kind whose callers are never recorded has no edge to be found by and
-would report every declaration of it as uncalled.
+would report every declaration of it as uncalled. The report names the kinds it actually scanned: a
+`Scanned:` line in human output, `scannedKinds` in JSON.
 
 | Flag | Notes |
 | --- | --- |

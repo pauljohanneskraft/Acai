@@ -23,6 +23,9 @@ public struct DeadCodeScan: Sendable {
     public struct Report: Codable, Hashable, Sendable {
         /// The call graph's resolution coverage — the false-positive floor for `candidates`.
         public var coverage: CallGraph.Coverage
+        /// The union of the kinds each language in the artifact scanned, in `MemberKind` order — what
+        /// an empty `candidates` covers.
+        public var scannedKinds: [MemberKind]
         public var candidates: [Candidate]
     }
 
@@ -48,12 +51,14 @@ public struct DeadCodeScan: Sendable {
         let nodeIdentity = CallGraphNodeIdentity(types: allTypes)
 
         var candidates: [Candidate] = []
+        var scannedKinds: Set<MemberKind> = []
         for type in allTypes {
             let isContract = type.kind.isInterfaceLike
             // Each type is judged by *its own* language's configuration, so a polyglot artifact
             // doesn't apply one language's entry-point conventions or scanned kinds to another's.
             let configuration = languages.configuration(for: type)
             let markers = configuration.entryPointMarkers
+            scannedKinds.formUnion(configuration.deadCodeMemberKinds)
             // Protocol requirements this type satisfies — reached through the conformance, so never
             // dead even without a direct call edge (the witness analogue of `override`).
             let requirements = witnesses.requirements(for: type)
@@ -67,6 +72,7 @@ public struct DeadCodeScan: Sendable {
             }
         }
         let freestandingMarkers = languages.defaultConfiguration.entryPointMarkers
+        if !artifact.freestandingFunctions.isEmpty { scannedKinds.insert(.method) }
         for function in artifact.freestandingFunctions where function.kind == .method {
             guard !targeted.contains(function.name),
                   !isEntryPoint(
@@ -76,7 +82,10 @@ public struct DeadCodeScan: Sendable {
         }
 
         candidates.sort { $0.id < $1.id }
-        return Report(coverage: graph.coverage, candidates: candidates)
+        return Report(
+            coverage: graph.coverage,
+            scannedKinds: MemberKind.allCases.filter(scannedKinds.contains),
+            candidates: candidates)
     }
 
     /// A member is reachable-by-contract when it is public API, an abstract requirement (a body-less
@@ -104,7 +113,9 @@ public struct DeadCodeScan: Sendable {
 /// best-effort (surfaced as the usual coverage caveat).
 private struct ProtocolWitnessIndex {
     /// Keyed on kind as well as name: an initializer requirement is witnessed by an initializer, so a
-    /// method that happens to share the name isn't mistaken for it.
+    /// method that happens to share the name isn't mistaken for it. So a function-typed *property*
+    /// requirement implemented as a method is not witnessed by that method; it only matters for a
+    /// language whose contract members may be private.
     struct Requirement: Hashable {
         let kind: MemberKind
         let name: String

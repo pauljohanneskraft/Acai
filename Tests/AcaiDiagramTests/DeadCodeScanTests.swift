@@ -172,6 +172,49 @@ struct DeadCodeScanTests {
         #expect(report(types, scanning: [.method, .initializer]).candidates.isEmpty)
     }
 
+    /// Overloads share the `Type.name` id, so a call to one initializer spares every overload — a known
+    /// false-negative trade-off, pinned so a change to it is deliberate.
+    @Test func aCallToOneInitializerOverloadSparesTheOther() {
+        let types = [widget([
+            method("make", access: .public, calls: [CallSite(receiver: .type("Widget"), methodName: "init")]),
+            member("init", kind: .initializer),
+            member("init", kind: .initializer)
+        ])]
+        #expect(report(types, scanning: [.method, .initializer]).candidates.isEmpty)
+    }
+
+    /// The same collapse from the other side: uncalled overloads are each reported under the one id.
+    @Test func uncalledInitializerOverloadsAreReportedUnderOneId() {
+        let types = [widget([member("init", kind: .initializer), member("init", kind: .initializer)])]
+        #expect(
+            report(types, scanning: [.method, .initializer]).candidates.map(\.id) == ["Widget.init", "Widget.init"])
+    }
+
+    @Test func theReportNamesTheKindsItScannedInDeclarationOrder() {
+        let types = [widget([method("run")])]
+        #expect(report(types).scannedKinds == [.method])
+        #expect(report(types, scanning: [.subscript, .initializer, .method]).scannedKinds
+            == [.method, .initializer, .subscript])
+    }
+
+    @Test func aPolyglotReportNamesTheUnionOfItsLanguagesKinds() {
+        let tool = TypeDeclaration(
+            id: "Tool", name: "Tool", qualifiedName: "Tool", kind: .class, accessLevel: .public,
+            members: [method("run")], location: SourceLocation(filePath: "Tool.swift", line: 1, column: 1),
+            sourceLanguage: SubscriptScanningParser().language)
+        let languages = LanguageConfigurationResolver(
+            registry: LanguageRegistry(parsers: [SubscriptScanningParser()]),
+            default: LanguageConfiguration())
+        let scan = DeadCodeScan(
+            artifact: CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [widget([]), tool]),
+            languages: languages)
+        #expect(scan.report.scannedKinds == [.method, .subscript])
+    }
+
+    @Test func anArtifactWithNothingToScanNamesNoKinds() {
+        #expect(report([]).scannedKinds.isEmpty)
+    }
+
     @Test func anUncalledSubscriptIsACandidateOnlyWhereTheLanguageScansSubscripts() {
         let types = [widget([member("subscript", kind: .subscript)])]
         #expect(report(types, scanning: [.method, .subscript]).candidates.map(\.id) == ["Widget.subscript"])
@@ -238,5 +281,15 @@ struct DeadCodeScanTests {
             members: [method("init")],
             location: SourceLocation(filePath: "Tool.swift", line: 1, column: 1))
         #expect(report([proto, tool]).candidates.map(\.id) == ["Tool.init"])
+    }
+}
+
+private struct SubscriptScanningParser: CodeParser {
+    let language = CodeArtifact.SourceLanguage(rawValue: "subscriptScanning")
+    let fileExtensions: [String] = []
+    let configuration = LanguageConfiguration(deadCodeMemberKinds: [.method, .subscript])
+
+    func parse(source: String, fileName: String) -> CodeArtifact {
+        CodeArtifact(metadata: .init(sourceLanguage: language))
     }
 }

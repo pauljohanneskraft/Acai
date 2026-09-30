@@ -70,6 +70,24 @@ struct CallGraphCommandTests {
             #expect(contents.contains("\"coverage\""))
             #expect(contents.contains("\"candidates\""))
             #expect(contents.contains("Service.helper"))
+            let json = try JSONSerialization.jsonObject(with: Data(contents.utf8)) as? [String: Any]
+            let deadCode = json?["deadCode"] as? [String: Any]
+            #expect(deadCode?["scannedKinds"] as? [String] == ["method"])
+        }
+    }
+
+    @Test func deadcodeHumanHeaderNamesTheScannedKinds() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try "public class Service {}".write(
+                to: dir.appendingPathComponent("Service.swift"), atomically: true, encoding: .utf8)
+            let output = dir.appendingPathComponent("deadcode.txt")
+            var cmd = try CLITestSupport.parseCallGraph([
+                "--source", dir.path, "--language", "swift", "--mode", "deadcode", "--format", "human",
+                "--output", output.path
+            ])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("Scanned: methods."))
         }
     }
 
