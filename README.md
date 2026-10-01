@@ -40,7 +40,7 @@ brew tap pauljohanneskraft/acai https://github.com/pauljohanneskraft/Acai
 brew install acai
 
 acai image --source ~/path/to/project --output project.png     # PNG, macOS
-acai diagram --source ~/path/to/project --output project.dot   # DOT, everywhere
+acai diagram --source ~/path/to/project --output project.mmd   # Mermaid, everywhere
 ```
 
 `brew install acai` puts both `acai` and `acai-mcp` on your `PATH`, for macOS (arm64 / x86_64) and
@@ -69,7 +69,7 @@ Açaí ships a Claude Code plugin that wires up the MCP server and a code-audit 
 /plugin install code-quality@acai
 ```
 
-Your agent gets ten read-only analysis tools — metrics, cycles, dead code, blast radius, diagrams — each answer carrying `file:line` jump targets. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
+Your agent gets ten read-only analysis tools — metrics, cycles, dead code, blast radius, hotspots, diagrams — each answer carrying `file:line` jump targets, plus `acai_atlas` to export the whole picture as a PDF. See the [`acai-mcp` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/).
 
 No config file required for any of the three.
 
@@ -149,7 +149,7 @@ Generated diagrams are the fast path; the app is where you go when you want to *
 
 ### ⌨️ The `acai` CLI
 
-Thirteen commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
+Fourteen commands over the same engine. `acai --help` (or `acai <command> --help`) has the full menu; **the [`acai` reference](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) is the complete flag-by-flag guide.**
 
 ```sh
 # Look around
@@ -159,7 +159,7 @@ acai dependents --source . Playlist                 # what breaks if I change th
 acai hotspots   --source . --top 10                 # where does refactoring pay off? (macOS)
 
 # Draw
-acai diagram --source . --format mermaid --output arch.mmd
+acai diagram --source . --output arch.mmd
 acai image   --source . --grouping directory --output arch.png
 
 # Gate
@@ -168,13 +168,16 @@ acai callgraph --source . --mode deadcode
 
 # Review a change
 acai diff --source-old ./before --source-new ./after
+
+# Hand someone the whole picture
+acai atlas --source . --output atlas.pdf             # diagrams + stats + findings, macOS
 ```
 
 The interesting one is `acai quality`: a declarative `quality.yml` turns your architecture into a fitness function — forbidden dependencies, layering, module-cycle bans, and budgets on 19 metrics. This repo gates itself with the [`quality.yml`](quality.yml) at its root.
 
 ### 🤖 The `acai-mcp` server
 
-An [MCP](https://modelcontextprotocol.io) server exposing the read-only engine as ten tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_dependents`, `acai_diff`, `acai_diagram`, plus `acai_image` and `acai_hotspots` (macOS only). One parse is cached per project path and reused across every call.
+An [MCP](https://modelcontextprotocol.io) server exposing the engine as eleven tools: `acai_analyze`, `acai_metrics`, `acai_quality`, `acai_callgraph`, `acai_inspect`, `acai_dependents`, `acai_diff`, `acai_diagram`, plus `acai_image`, `acai_atlas` and `acai_hotspots` (the last three macOS only). One parse is cached per project path and reused across every call.
 
 ```json
 {
@@ -238,7 +241,7 @@ Adding a language is a self-contained plugin — see [Contributing](#contributin
 
 No tool is magic. Worth knowing up front:
 
-- **PNG rendering is Apple-only.** `acai image` and the app's Export Image both go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux the `image` command doesn't exist at all — emit DOT with `acai diagram` and render it with Graphviz (`dot -Tpng`), which runs everywhere.
+- **PNG rendering is Apple-only.** `acai image`, `acai atlas` and the app's Export Image all go through SwiftUI's `ImageRenderer`, which needs a window-server session. On Linux neither command exists at all — emit DOT with `acai diagram --format dot` and render it with Graphviz (`dot -Tpng`), which runs everywhere.
 - **It's static analysis.** Açaí reads source text. It does not run your build, resolve your package graph, or execute anything. Relationships are inferred from what the code *says*, not from a compiler's resolved symbol table — so dynamic dispatch, reflection and code generation are invisible to it.
 - **Plain JavaScript is thin.** With no type annotations to read, a JS-only diagram shows little beyond inheritance. TypeScript gives the full picture.
 - **C reads differently.** C has no classes, so its domain appears as structs plus composition, and free functions are attributed to the type they mutate by pointer. Faithful, but its abstractions are concrete structs — they don't count toward abstractness the way a C++ pure-virtual class does.
@@ -354,7 +357,7 @@ On Apple platforms, `AcaiRender`'s `DiagramImageRenderer` takes it the rest of t
 
 - **Swift 6** toolchain.
 - **Libraries + CLI**: macOS 15+, iOS 17+, tvOS 16+, watchOS 9+, visionOS 1+, and Linux.
-- **`acai image` / PNG export**: macOS only (needs a window-server session).
+- **`acai image` / `acai atlas` / PNG export**: macOS only (needs a window-server session).
 - **The apps**: macOS 26 / iOS 26.
 - **Graphviz** (optional) — only to turn DOT into images: `brew install graphviz`.
 

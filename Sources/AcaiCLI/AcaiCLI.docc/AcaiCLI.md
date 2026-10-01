@@ -19,7 +19,7 @@ against your build.
 - [Install](#Install)
 - [The mental model](#The-mental-model)
 - [Shared options](#Shared-options)
-- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`metrics`](#metrics) · [`hotspots`](#hotspots) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`dependents`](#dependents) · [`diff`](#diff)
+- Commands: [`analyze`](#analyze) · [`store`](#store) · [`list`](#list) · [`diagram`](#diagram) · [`image`](#image) · [`atlas`](#atlas) · [`metrics`](#metrics) · [`hotspots`](#hotspots) · [`quality`](#quality) · [`rules`](#rules) · [`inspect`](#inspect) · [`callgraph`](#callgraph) · [`dependents`](#dependents) · [`diff`](#diff)
 - [Recipes](#Recipes)
 - [Platform differences](#Platform-differences)
 
@@ -120,12 +120,33 @@ under the store. An artifact written by an older Açaí version reports that it 
 rather than failing obscurely, and an artifact whose `schemaVersion` is newer than this build
 understands reports the found and expected version numbers rather than misreading it.
 
+### What gets parsed
+
+Parsing a directory reads what the repository says it contains, not every byte under the path:
+
+| Left out | Why |
+| --- | --- |
+| Anything a `.gitignore` excludes | The root file and every nested one are read, `!` negation rules included. A nested file overrides its parent for its own subtree, and — as in git — a negation cannot re-include a file inside an ignored directory. |
+| A file over the per-file size ceiling | A bundled `.js`, a vendored single-file library or a generated file that escaped every exclusion would otherwise be read whole into memory. The default ceiling is 2 MiB. |
+| Build-output and dependency directories | Each language contributes its own (`node_modules`, `Pods`, `target`, …), plus `.git` and hidden directories. |
+
+A skipped file is not a silent one: it becomes a `skipped` parse diagnostic carrying its size, and a
+`.gitignore` line that can't be read becomes an `invalidPattern` diagnostic naming the file and line.
+Both are counted by [`analyze --health`](#analyze), so a type you expected to find and can't is
+explained rather than simply absent.
+
+**Symbolic links are followed.** A workspace that symlinks a shared package into place — common in
+JavaScript monorepos and Bazel-style layouts — is analyzed rather than silently losing that
+directory. Each directory is entered at most once however many links alias it, so a link pointing at
+an ancestor terminates instead of looping, and linking a directory in yields the same artifact as
+copying it in place.
+
 ### Output and formatting
 
 | Flag | Values | Notes |
 | --- | --- | --- |
 | `--output <path>` | — | Writes to a file; prints to stdout if omitted. |
-| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `dependents`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`. |
+| `--format` | `human`, `json` | Default is `json` for `analyze --health`, `metrics`, `inspect`, `callgraph`, `dependents`; **`human`** for `quality` and `diff`. On `diagram` it means something else — `dot` or `mermaid`, inferred from `--output`'s extension and otherwise **`mermaid`**. |
 | `--include-generated` | flag | Machine-generated types are **excluded by default**; this includes them. |
 
 ### Selector facets
@@ -192,6 +213,10 @@ looking at without guessing from a decode failure; a file written before this fi
 | `--output` | file or stdout |
 | `--include-generated` | |
 
+`--health`'s diagnostics include `skipped` (a file over the size ceiling) and `invalidPattern` (a
+`.gitignore` line no rule could be read from) alongside the parser's own `error`, `missing`,
+`unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed).
+
 ```sh
 acai analyze --source . --health --format human    # run this first
 acai analyze --source . --output model.json
@@ -204,6 +229,10 @@ acai analyze --source . --output model.json
 ```
 acai store <name> <source-dir> [--language <language> ...]
 ```
+
+| Flag | Notes |
+| --- | --- |
+| `--language` | Restrict analysis to one or more languages. Repeatable. |
 
 Both arguments are positional. Writes `<name>.json` into the shared analysis store and prints the path.
 The store also records the source directory's resolved path, so the same analysis is found — no
@@ -232,9 +261,11 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 
 | Flag | Notes |
 | --- | --- |
-| `--format` | `dot` (default), `mermaid` |
+| `--from`, `--source`, `--language` | artifact source |
+| `--format` | `dot`, `mermaid`. If omitted, inferred from `--output`'s extension (`.dot`/`.gv`: `dot`; `.mmd`/`.md`/`.mermaid`: `mermaid`); `mermaid` for any other extension or stdout. |
 | `--theme` | `light`, `dark` |
 | `--config <yaml>` | Lock options down in a file for repeatable output. |
+| `--output` | Output file path; prints to stdout if omitted. |
 | *class-diagram flags* | `--direction`, `--group-by`, `--show-members`/`--no-show-members`, `--min-access`, `--show-external-types`, `--no-infer-composition`, `--no-infer-dependency`, `--color-by`, `--rules` |
 | *focus flags* | `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections` |
 | `--sequence-from <entry>` | Sequence diagram from `"Type.method"`, or `"function"` for a top-level function. |
@@ -249,16 +280,20 @@ The text-output workhorse. Renders a **class** diagram by default; one flag swit
 | `--max-nodes <n>` | Fail a class, package or coupling diagram beyond this many nodes, naming the count (default `2000`). Narrow with `--focus` instead of raising it. |
 
 ```sh
-acai diagram --source . --output arch.dot
-acai diagram --from myproj --format mermaid --output arch.mmd
-acai diagram --from myproj --focus Playlist --focus-depth 2 --output playlist.dot
-acai diagram --from myproj --sequence-from "Checkout.placeOrder" --output checkout.dot
-acai diagram --from myproj --state-from "Download.state" --output states.dot
-acai diagram --from myproj --package --output modules.dot
-acai diagram --from myproj --module-coupling --output coupling.dot
+acai diagram --source . --output arch.mmd
+acai diagram --from myproj --output arch.dot
+acai diagram --from myproj --format dot | dot -Tsvg -o arch.svg
+acai diagram --from myproj --focus Playlist --focus-depth 2 --output playlist.mmd
+acai diagram --from myproj --sequence-from "Checkout.placeOrder" --output checkout.mmd
+acai diagram --from myproj --state-from "Download.state" --output states.mmd
+acai diagram --from myproj --package --output modules.mmd
+acai diagram --from myproj --module-coupling --output coupling.mmd
 ```
 
-Render DOT anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`.
+Mermaid embeds directly in Markdown — GitHub, most documentation sites and every Markdown preview
+render it without anything installed. For Graphviz, write to a `.dot` file or pass `--format dot`,
+which stdout needs, and render it anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`. The
+default matches `acai_diagram`'s on the MCP server.
 
 > **`--theme default` still works**, on `diagram` and `image` alike. It is a deprecated spelling of
 > `light` — accepted, hidden from `--help`, and due for removal in a later major release. The `theme:`
@@ -272,6 +307,7 @@ Same diagram families as `diagram`, rendered natively through SwiftUI instead of
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
 | `--output <path>` | **Required.** |
 | `--grouping` | `none`, `directory`, `product` (default `product`) — note this differs from `diagram`'s `--group-by`. |
 | `--min-access <level>` | Hides members *and whole types* below the level. |
@@ -279,7 +315,7 @@ Same diagram families as `diagram`, rendered natively through SwiftUI instead of
 | `--scale <n>` | Resolution factor, default `2.0`. |
 | `--theme` | `light` (default), `dark` |
 | `--source-old` / `--from-old` | Render a **delta image** against this older side. |
-| *diagram-kind + focus flags* | as `diagram` |
+| *diagram-kind + focus flags* | `--sequence-from`, `--map`, `--max-depth`, `--state-from`, `--max-states`, `--package`, `--module-coupling`, `--call-graph`, `--call-graph-scope`, `--focus`, `--focus-depth`, `--focus-direction`, `--focus-relationship`, `--no-focus-interconnections`, `--max-nodes` — as `diagram` |
 
 ```sh
 acai image --source . --grouping directory --output arch.png
@@ -287,15 +323,41 @@ acai image --from myproj --min-access public --scale 3 --output api.png
 acai image --source-old ./before --source ./after --output delta.png
 ```
 
+### `atlas`
+
+> Bundle a codebase's diagrams, statistics and findings into one PDF (**macOS only**).
+
+The same document format as the app's Codebase Atlas export: a title page, one page per diagram, the statistics the codebase detail pane shows, and every quality violation, dead-code candidate and parse diagnostic. The diagram section is the default class diagram, package graph and call graph; a diagram that cannot be rendered gets a page saying so (and a warning on stderr) rather than failing the export.
+
+| Flag | Notes |
+| --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--output <output>` | **Required.** Output PDF file path. |
+| `--name <name>` | Name for the title page. Defaults to the analyzed directory's name. |
+| `--rules <rules>` | Path to the YAML rules file the findings section is judged by. Defaults to the built-in curated smell budgets. |
+| `--scale <scale>` | Output resolution scale factor for the embedded diagrams (default `2.0`). |
+| `--theme <theme>` | Colour theme for the embedded diagrams: `light` (default), `dark`. |
+| `--max-nodes <max-nodes>` | Maximum node count before a graph diagram's page reports it could not render (default `2000`). |
+
+```sh
+acai atlas --source . --output atlas.pdf
+acai atlas --source . --output atlas.pdf --rules quality.yml --theme dark
+```
+
+The PDF carries a format marker (`Acai Codebase Atlas — Format 1`) on the title page and in its PDF metadata.
+
 ### `metrics`
 
 > Compute static-analysis metrics (counts, coupling, OO metrics) as JSON.
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--format` | `json` (default), `human` |
 | `--sort <metric>` | Ranking for the human tables. Default `fanOut`. |
 | `--top <n>` | Limit the human type table. |
+| `--output` | file or stdout |
 
 `--sort` accepts: `fanOut`, `fanIn`, `weightedMethods`, `depthOfInheritance`, `numberOfChildren`, `responseForClass`, `publicMemberCount`, `publicMemberRatio`, `mutablePublicState`, `maxParameters`, `meanParameters`, `dataClassScore`, `overrideCount`, `nestingDepth`, `deepAndWide`, `lackOfCohesion`, `featureEnvyMethods`, `linesOfCode`.
 
@@ -344,11 +406,13 @@ acai hotspots --source . --commits 200 --format json --output hotspots.json
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
 | `--rules <yaml>` | Rules file. Defaults to the built-in smell budgets. |
 | `--explore` | Report findings but **always exit 0**, and additionally list dependency cycles. |
 | `--scope` | `modules`, `types`, `all` (default) — cycle scope in explore mode. |
 | `--baseline <name-or-path>` | Also report architectural drift since that baseline, and evaluate the rules file's `movements` (required if the rules file declares any). |
 | `--format` | `human` (default), `json` |
+| `--output` | file or stdout |
 
 ```sh
 acai quality --source . --rules quality.yml              # gate: fails the build
@@ -420,6 +484,11 @@ module-scoped metric, or one with no such budget, is a validation error.
 
 Seeds budgets from your current worst-case metrics, so adopting `quality` is "review and edit a draft" rather than "author from a blank page" — and the thresholds ratchet against regression from day one.
 
+| Flag | Notes |
+| --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--output` | file or stdout |
+
 ```sh
 acai rules --source . --output quality.yml
 ```
@@ -432,15 +501,19 @@ Review and tighten before committing.
 
 Structured search — the answer to *"which public classes in module X have a method with four or more parameters?"* without grepping. Every row carries a `file:line`.
 
-Takes all [selector facets](#Selector-facets), plus member-level ones:
+Takes all [selector facets](#Selector-facets) — `--module`, `--type`, `--kind`, `--min-access`, `--stereotype`, `--annotation`, `--min-members`, `--min-nesting` — plus member-level ones:
 
 | Flag | Meaning |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--member-kind` | `property`, `method`, `initializer`, `deinitializer`, `subscript` |
 | `--min-parameters <n>` | Members with at least *n* parameters. |
 | `--public-vars` | Only publicly-settable stored properties. |
 | `--overrides` | Only members overriding an inherited member. |
 | `--enums` | List enum cases with raw and associated values instead. |
+| `--format` | `json` (default), `human` |
+| `--output` | file or stdout |
 
 ```sh
 acai inspect --from myproj --kind class --min-members 30 --format human
@@ -457,10 +530,14 @@ acai inspect --from myproj --enums
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--mode` | `metrics` (default), `cycles`, `deadcode` |
 | `--scope` | `type:Name` or `module:Name` — metrics/cycles only. |
+| `--format` | `json` (default), `human` |
 | `--top <n>` | Limit the human metrics table to the hottest methods. |
 | `--no-fail` | In `cycles` mode, exit 0 even when cycles are found. |
+| `--output` | file or stdout |
 
 ```sh
 acai callgraph --from myproj --mode metrics --format human --top 15
@@ -484,8 +561,11 @@ acai dependents [options] <type>
 
 | Flag | Notes |
 | --- | --- |
+| `--from`, `--source`, `--language` | artifact source |
+| `--include-generated` | |
 | `--depth <n>` | Limit reverse reachability to *n* hops. Unlimited if omitted. |
 | `--format` | `json` (default), `human` |
+| `--output` | file or stdout |
 
 ```sh
 acai dependents --from myproj Playlist
@@ -509,10 +589,14 @@ Each side is a positional stored-analysis name or `.json` path, **or** a directo
 | Flag | Notes |
 | --- | --- |
 | `--source-old` / `--source-new` | Analyze a directory as that side. |
+| `--language` | Restrict analysis to one or more languages. Repeatable. Applied to **both** sides analysed on the fly. |
 | `--format` | `human` (default), `json` |
 | `--diagram` | `dot` or `mermaid` — render a colour-coded delta diagram instead of a report. |
 | `--sequence-from`, `--state-from`, `--package`, `--module-coupling`, `--call-graph`, `--call-graph-scope` | Pick the diagram family for `--diagram`. |
+| `--max-depth <n>` | Sequence call depth (default `5`). |
+| `--max-states <n>` | Fail beyond this many distinct states (default `20`). |
 | `--include-generated` | Include machine-generated types in the analysis (default: they are excluded). Applied to **both** sides before diffing, so a generated type is never reported as added or removed by the filtering itself. |
+| `--output` | file or stdout |
 
 ```sh
 acai diff main-baseline --source-new ./                    # drift since a baseline
@@ -605,9 +689,9 @@ Mermaid renders natively on GitHub — paste the output into a ` ```mermaid ` fe
 
 ## Platform differences
 
-The CLI runs on macOS and Linux. **Two differences:** `image` is macOS-only because it renders through SwiftUI's `ImageRenderer`, which needs a window-server session; `hotspots` is macOS-only because its churn walk goes through libgit2, which Açaí builds against SecureTransport/CommonCrypto and so links on Apple platforms only.
+The CLI runs on macOS and Linux. **Two differences:** `image` and `atlas` are macOS-only because they render through SwiftUI's `ImageRenderer`, which needs a window-server session; `hotspots` is macOS-only because its churn walk goes through libgit2, which Açaí builds against SecureTransport/CommonCrypto and so links on Apple platforms only.
 
-On Linux both subcommands are **absent** — `acai --help` lists eleven subcommands rather than thirteen. Every other command and flag is identical. For images there, emit DOT and render with Graphviz:
+On Linux all three subcommands are **absent** — `acai --help` lists eleven subcommands rather than fourteen. Every other command and flag is identical. For images there, emit DOT and render with Graphviz:
 
 ```sh
 acai diagram --source . --output arch.dot

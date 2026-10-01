@@ -1,5 +1,6 @@
 import Foundation
 import AcaiCore
+import AcaiRender
 
 /// One row in the project-level Findings view — a quality violation, a dead-code candidate,
 /// or a health-check parse diagnostic, normalized to one shape so every flaw-detection lens the
@@ -13,7 +14,6 @@ struct Finding: Identifiable, Hashable {
 
         var id: String { rawValue }
 
-        /// `displayName` stays English: it is written into the exported codebase atlas.
         var title: LocalizedStringResource {
             switch self {
             case .violation:
@@ -22,17 +22,6 @@ struct Finding: Identifiable, Hashable {
                 .app("Finding.Kind.DeadCode")
             case .health:
                 .app("Finding.Kind.ParseDiagnostic")
-            }
-        }
-
-        var displayName: String {
-            switch self {
-            case .violation:
-                "Quality Violation"
-            case .deadCode:
-                "Dead Code"
-            case .health:
-                "Parse Diagnostic"
             }
         }
 
@@ -48,9 +37,7 @@ struct Finding: Identifiable, Hashable {
         }
     }
 
-    /// The list's primary sort key (highest first). No lens carries an explicit severity field,
-    /// so this is derived structurally (see `FindingsAggregator`) — a closed, ordered vocabulary
-    /// shared across every lens rather than each lens inventing its own ranking.
+    /// The list's primary sort key (highest first), derived by the shared `AtlasFinding`.
     enum Severity: Int, Comparable, CaseIterable, Hashable {
         case info
         case warning
@@ -58,7 +45,6 @@ struct Finding: Identifiable, Hashable {
 
         static func < (lhs: Severity, rhs: Severity) -> Bool { lhs.rawValue < rhs.rawValue }
 
-        /// `label` stays English: it is written into the exported codebase atlas.
         var title: LocalizedStringResource {
             switch self {
             case .info:
@@ -67,17 +53,6 @@ struct Finding: Identifiable, Hashable {
                 .app("Finding.Severity.Warning")
             case .critical:
                 .app("Finding.Severity.Critical")
-            }
-        }
-
-        var label: String {
-            switch self {
-            case .info:
-                "Info"
-            case .warning:
-                "Warning"
-            case .critical:
-                "Critical"
             }
         }
 
@@ -129,5 +104,46 @@ extension Finding {
     struct CycleReference: Hashable {
         let scope: String
         let members: [String]
+    }
+
+    init(_ finding: AtlasFinding, codebase: Codebase, reference: CodeElementReference?, cycle: CycleReference?) {
+        self.init(
+            id: "\(finding.kind.rawValue)-\(codebase.id)-\(finding.identity)",
+            kind: Kind(finding.kind),
+            severity: Severity(finding.severity),
+            codebaseID: codebase.id,
+            codebaseName: codebase.name,
+            title: finding.title,
+            message: finding.message,
+            location: finding.location,
+            reference: reference,
+            indexedAt: codebase.lastIndexed,
+            cycle: cycle)
+    }
+}
+
+extension Finding.Kind {
+    init(_ kind: AtlasFinding.Kind) {
+        switch kind {
+        case .violation:
+            self = .violation
+        case .deadCode:
+            self = .deadCode
+        case .health:
+            self = .health
+        }
+    }
+}
+
+extension Finding.Severity {
+    init(_ severity: AtlasFinding.Severity) {
+        switch severity {
+        case .info:
+            self = .info
+        case .warning:
+            self = .warning
+        case .critical:
+            self = .critical
+        }
     }
 }

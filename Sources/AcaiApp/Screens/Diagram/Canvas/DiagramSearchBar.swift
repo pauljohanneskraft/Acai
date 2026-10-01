@@ -12,6 +12,12 @@ struct DiagramSearchBar: View {
     let onStepBackward: () -> Void
     let onDismiss: () -> Void
 
+    #if os(iOS)
+    /// Read once per process: the field re-renders on every keystroke, and the environment a fixture
+    /// is declared in cannot change while the app runs.
+    private static let hidesCaret = UITestFixtureResolver().resolveBaseDir() != nil
+    #endif
+
     var body: some View {
         HStack(spacing: .spacingS) {
             fieldSection
@@ -36,6 +42,14 @@ struct DiagramSearchBar: View {
                 Text(.app("View.DiagramSearchBar.FindByName"))
             }
             .textFieldStyle(.plain)
+            // Type names aren't prose: a capitalised or "corrected" query finds the wrong node.
+            .autocorrectionDisabled()
+            #if os(iOS)
+            .textInputAutocapitalization(.never)
+            // SwiftUI's tint overrides `AcaiRootScene`'s caret hiding, and a blinking caret is per-run
+            // content in a UI-test screenshot. Inert in release, where no fixture is set.
+            .tint(Self.hidesCaret ? .clear : nil)
+            #endif
             .frame(minWidth: 140)
             .focused(isFocused)
             #if os(iOS)

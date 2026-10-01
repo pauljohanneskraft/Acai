@@ -18,7 +18,17 @@ public struct AnalysisService: Sendable {
     /// parsing (`1`) for deterministic cancellation/ordering assertions.
     public let fileParsingConcurrencyLimit: Int?
 
+    /// Per-file byte ceiling; a larger file is skipped with a `.skipped` diagnostic rather than
+    /// read whole. Defaults to ``AcaiConstants/maximumSourceFileBytes``.
+    public let maximumSourceFileBytes: Int
+
     public var registry: LanguageRegistry { LanguageRegistry(parsers: parsers) }
+
+    /// Every registered language's build-output/dependency directories plus the universal VCS one —
+    /// the set both source collection and the `.gitignore` walk skip.
+    private var excludedDirectories: Set<String> {
+        registry.excludedDirectories.union(AcaiConstants.standard.defaultExcludedSourceDirectories)
+    }
 
     // MARK: - Initialisation
 
@@ -28,14 +38,17 @@ public struct AnalysisService: Sendable {
     public init(
         parsers: [any CodeParser],
         projectDiscovery: ProjectDiscovery? = nil,
-        fileParsingConcurrencyLimit: Int? = nil
+        fileParsingConcurrencyLimit: Int? = nil,
+        maximumSourceFileBytes: Int = AcaiConstants.standard.maximumSourceFileBytes
     ) {
         self.parsers = parsers
         self.projectDiscovery = projectDiscovery ?? ProjectDiscovery(
             detectors: [],
-            fallback: FallbackDetector(parsers: parsers)
+            fallback: FallbackDetector(parsers: parsers),
+            excludedDirectories: LanguageRegistry(parsers: parsers).excludedDirectories
         )
         self.fileParsingConcurrencyLimit = fileParsingConcurrencyLimit
+        self.maximumSourceFileBytes = maximumSourceFileBytes
     }
 
     // MARK: - Parser Registry
@@ -53,15 +66,23 @@ public struct AnalysisService: Sendable {
     /// (relative to `rootURL`), checked before a file is read/parsed — the hook a caller-owned
     /// allow/blocklist (e.g. `AcaiApp`'s per-codebase file filter) plugs into. Defaults to including
     /// everything. Kept as a plain path-string predicate so this stays language-agnostic.
+    ///
+    /// `respectingGitignore` composes the project's own `.gitignore` rules into that same predicate,
+    /// so a file the repository ignores is not analyzed. Pass `false` to analyze a tree exactly as it
+    /// sits on disk.
     public func analyzeProject(
         at rootURL: URL,
         allowedLanguages: [CodeArtifact.SourceLanguage],
+        respectingGitignore: Bool = true,
         includingFile: (String) -> Bool = { _ in true }
     ) async throws -> CodeArtifact {
         guard FileManager.default.fileExists(atPath: rootURL.path) else {
             throw ValidationError("Source directory does not exist: \(rootURL.path)")
         }
 
+        let gitignore = respectingGitignore
+            ? GitignoreFilter(root: rootURL, excludingDirectories: excludedDirectories)
+            : nil
         let specs = projectDiscovery.discoverSourceSpecs(in: rootURL, requestedLanguages: allowedLanguages)
 
         guard !specs.isEmpty else {
@@ -73,23 +94,29 @@ public struct AnalysisService: Sendable {
 
         var combinedArtifact: CodeArtifact?
 
-        for spec in specs {
-            if let artifact = try await parseSpec(spec, rootURL: rootURL, includingFile: includingFile) {
+        for spec in specs.mergedByLanguage {
+            if let artifact = try await parseSpec(
+                spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
+            ) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
 
-        guard let result = combinedArtifact else {
+        guard let combined = combinedArtifact else {
             throw ValidationError("No source files could be parsed in \(rootURL.path).")
         }
         // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
         // per-language-group before specs are merged, so it can't see cross-spec call receivers.
-        return result.resolvingCallSiteReceivers()
+        var result = combined.resolvingCallSiteReceivers()
+        result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
+        result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
+        return result
     }
 
     private func parseSpec(
         _ spec: SourceSpec,
         rootURL: URL,
+        gitignore: GitignoreFilter?,
         includingFile: (String) -> Bool
     ) async throws -> CodeArtifact? {
         guard let codeParser = parser(for: spec.language) else {
@@ -98,35 +125,62 @@ public struct AnalysisService: Sendable {
             )
             return nil
         }
-        let files = collectFiles(for: codeParser, in: spec, rootURL: rootURL, includingFile: includingFile)
-        guard !files.isEmpty else { return nil }
+        let collected = collectFiles(
+            for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
+        )
+        guard !collected.files.isEmpty else {
+            let diagnostics = spec.diagnostics + collected.diagnostics
+            guard !diagnostics.isEmpty else { return nil }
+            var result = CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
+            result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
+            return result
+        }
 
-        let parsed = try await parseFiles(files, using: codeParser, rootURL: rootURL)
+        let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL)
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )
-        guard !parsed.diagnostics.isEmpty else { return enriched }
+        let diagnostics = spec.diagnostics + collected.diagnostics + parsed.diagnostics
+        guard !diagnostics.isEmpty else { return enriched }
         var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
+        result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
         return result
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
-    /// dir), not just `codeParser`'s own, before applying `includingFile`.
+    /// dir), not just `codeParser`'s own, then the spec's own excluded paths, before applying
+    /// `includingFile`. A symbolic link the walk could not resolve (dangling, or outside the caller's
+    /// security scope) becomes a `.skipped` diagnostic rather than vanishing the way it did before
+    /// #303 — the same promise the per-file size ceiling makes for a file that exists but is too big.
     private func collectFiles(
-        for codeParser: any CodeParser, in spec: SourceSpec, rootURL: URL, includingFile: (String) -> Bool
-    ) -> [URL] {
+        for codeParser: any CodeParser,
+        in spec: SourceSpec,
+        rootURL: URL,
+        gitignore: GitignoreFilter?,
+        includingFile: (String) -> Bool
+    ) -> (files: [URL], diagnostics: [ParseDiagnostic]) {
         let exts = Set(codeParser.fileExtensions)
-        let excludedDirectories = registry.excludedDirectories
-            .union(AcaiConstants.standard.defaultExcludedSourceDirectories)
-        return spec.sourceDirs
-            .flatMap {
+        let excluded = excludedDirectories
+        var diagnostics: [ParseDiagnostic] = []
+        let files = spec.sourceDirs
+            .flatMap { sourceDir -> [URL] in
                 FileManager.default.fileURLs(
-                    in: $0, withExtensions: exts, excludingDirectories: excludedDirectories
-                )
+                    in: sourceDir, withExtensions: exts, excludingDirectories: excluded
+                ) { unresolved in
+                    diagnostics.append(ParseDiagnostic(
+                        location: SourceLocation(filePath: unresolved.relativePath(from: rootURL), line: 0, column: 0),
+                        kind: .skipped,
+                        message: "symbolic link could not be resolved"
+                    ))
+                }
             }
             .removingDuplicates { $0 }
-            .filter { includingFile($0.relativePath(from: rootURL)) }
+            .filter { !spec.excludes($0) }
+            .filter { url in
+                let path = url.relativePath(from: rootURL)
+                return (gitignore?.includes(path) ?? true) && includingFile(path)
+            }
+        return (files, diagnostics)
     }
 
     /// Parses every file concurrently (bounded by `fileParsingConcurrencyLimit`, or the processor
@@ -191,8 +245,22 @@ public struct AnalysisService: Sendable {
 
     /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic
     /// rather than failing the whole batch, matching the serial loop's per-file failure isolation.
+    ///
+    /// The size check resolves the symlink first: `attributesOfItem(atPath:)` does not traverse a
+    /// terminal symbolic link, so a link to a huge file reports the length of the *link itself* (a
+    /// handful of bytes) and sails under the ceiling. Now that links are followed on purpose, that
+    /// would silently reintroduce the unbounded read #303 asks to bound.
     private func parseFile(_ file: URL, using codeParser: any CodeParser, rootURL: URL) -> ParseOutcome {
         let relativePath = file.relativePath(from: rootURL)
+        let resolvedPath = file.resolvingSymlinksInPath().path
+        let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath)
+        if let size = (attributes?[.size] as? NSNumber)?.intValue, size > maximumSourceFileBytes {
+            return .diagnostic(ParseDiagnostic(
+                location: SourceLocation(filePath: relativePath, line: 0, column: 0),
+                kind: .skipped,
+                message: "\(size) bytes, over the \(maximumSourceFileBytes)-byte per-file ceiling"
+            ))
+        }
         do {
             let source = try String(contentsOf: file, encoding: .utf8)
             return .parsed(codeParser.parse(source: source, fileName: relativePath))
@@ -256,15 +324,25 @@ extension URL {
     /// platform where it's a symlink to `/private/var/...`). Comparing raw strings there would fail
     /// the prefix check for every file, collapsing every path to a bare filename.
     func relativePath(from base: URL) -> String {
-        let resolvedSelf = resolvingSymlinksInPath().path
-        let resolvedBasePath = base.resolvingSymlinksInPath().path
-        let basePath = resolvedBasePath.hasSuffix("/") ? String(resolvedBasePath.dropLast()) : resolvedBasePath
-        if resolvedSelf == basePath {
-            return ""
-        }
-        if resolvedSelf.hasPrefix(basePath + "/") {
-            return String(resolvedSelf.dropFirst(basePath.count + 1))
+        if let literal = path.relativeToDirectory(base.path) { return literal }
+        if let resolved = resolvingSymlinksInPath().path.relativeToDirectory(base.resolvingSymlinksInPath().path) {
+            return resolved
         }
         return lastPathComponent
+    }
+}
+
+extension String {
+    /// The receiver expressed relative to `directory`, or `nil` when it does not sit under it.
+    ///
+    /// The literal path is tried before the symlink-resolved one so a directory symlinked into the
+    /// project keeps the path the user pointed at — `Sources/Foo.swift` rather than wherever the
+    /// link happens to land — and a codebase therefore reads the same whether a directory is linked
+    /// in or copied in place.
+    fileprivate func relativeToDirectory(_ directory: String) -> String? {
+        let base = directory.hasSuffix("/") ? String(directory.dropLast()) : directory
+        if self == base { return "" }
+        guard hasPrefix(base + "/") else { return nil }
+        return String(dropFirst(base.count + 1))
     }
 }

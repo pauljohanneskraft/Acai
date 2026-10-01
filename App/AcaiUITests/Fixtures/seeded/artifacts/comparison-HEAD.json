@@ -6,6 +6,15 @@
 
   ],
   "metadata" : {
+    "discoveredRoots" : [
+      {
+        "detector" : "SwiftPackageManagerDetector",
+        "languages" : [
+          "swift"
+        ],
+        "path" : "."
+      }
+    ],
     "filePaths" : [
       "Sources\/SampleSwiftPackage\/Base.swift",
       "Sources\/SampleSwiftPackage\/Derived.swift",

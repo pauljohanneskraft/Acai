@@ -138,15 +138,11 @@ extension ProjectBrowserViewModel {
             store.report(.app("Error.ProjectBrowserViewModel.AtlasAnalysisNotReady \(codebase.name)"))
             return
         }
-        guard let projectID = projectID(for: codebaseID),
-              let project = store.projects.first(where: { $0.id == projectID })
-        else { return }
+        guard let projectID = projectID(for: codebaseID) else { return }
 
         let diagrams = generatedDiagramsForProject(projectID).filter { $0.codebaseID == codebaseID }
-        let findings = FindingsAggregator(project: project, model: self).findings(for: codebase)
-        let builder = CodebaseAtlasBuilder(
-            codebase: codebase, artifact: artifact, diagrams: diagrams,
-            metrics: analysis.metrics, findings: findings)
+        let export = CodebaseAtlasExport(
+            codebase: codebase, artifact: artifact, diagrams: diagrams, analysis: analysis)
 
         do {
             let data = try await store.activityCenter.run(
@@ -154,7 +150,7 @@ extension ProjectBrowserViewModel {
                 kind: .other(systemImage: "doc.richtext"),
                 subject: .codebase(codebaseID)
             ) {
-                try await builder.build()
+                try await export.build()
             }
             // Cancelled before finishing: don't queue a result we discarded.
             guard let data else { return }

@@ -204,8 +204,9 @@ in the *app* bundle and silently renders the identifier.
 - **Content is not chrome.** Type names, member signatures, file paths, coordinates, sizes, metric
   readouts and anything else the parser produced are never translated: write `Text(verbatim:)`, or a
   `format:` initializer for a number. So are strings that leave the app — persisted diagram names,
-  the exported codebase atlas, CLI/MCP output — which is why `DiagramType` and `Finding` keep an
-  English `displayName`/`label` alongside their localized `title`.
+  the exported codebase atlas, CLI/MCP output — which is why `DiagramType` keeps an English
+  `displayName` alongside its localized `title`, and why the app's `Finding` takes its severity and
+  wording from `AcaiRender`'s shared, English `AtlasFinding`.
 - **`AcaiCore`, `AcaiGit`, `AcaiDiagram` are not localized** — they are shared with the CLI and MCP
   server. An error thrown from them is presented in a localized frame with its own text shown
   untranslated as detail.

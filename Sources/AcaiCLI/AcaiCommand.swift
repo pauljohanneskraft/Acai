@@ -15,10 +15,11 @@ struct AcaiCommand: AsyncParsableCommand {
             Analyze.self, Store.self, List.self, Diagram.self, Metrics.self, Diff.self,
             Quality.self, Rules.self, Inspect.self, CallGraph.self, Dependents.self, Impact.self
         ]
-        // `image` renders via SwiftUI's ImageRenderer (AcaiRender) and `hotspots` walks git history
-        // via libgit2 (AcaiGit); both are linked into the CLI on macOS only.
+        // `image` and `atlas` render via SwiftUI's ImageRenderer (AcaiRender) and `hotspots` walks
+        // git history via libgit2 (AcaiGit); all three are linked into the CLI on macOS only.
         #if os(macOS)
         commands.append(Image.self)
+        commands.append(Atlas.self)
         commands.append(Hotspots.self)
         #endif
         return commands

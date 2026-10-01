@@ -139,7 +139,9 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
 
 7. **Build-system detector (optional)** — if the language has a recognisable project layout, add a
    `BuildSystemDetector` in the plugin (e.g. `Sources/Acai<Lang>/<Lang>Detector.swift`), mirroring
-   `FlutterDetector`. A `public init()` is required (it's constructed from another module).
+   `FlutterDetector`. A `public init()` is required (it's constructed from another module). Each
+   `SourceSpec` carries `root:` — the directory the detector was asked about — since `ProjectDiscovery`
+   runs every detector at every directory, not only at the top of the analysed folder.
 
 8. **Register in the composition root** — in `Sources/AcaiLibrary/`:
    - add `<Lang>CodeParser()` to `standardParsers` in `AnalysisService+Standard.swift`,
