@@ -22,8 +22,12 @@ struct PerTypeVisibilityTests {
         var config = ClassDiagramConfiguration()
         config.propertyVisibility["Hidden"] = false
 
-        let shown = GeneratedDiagramNode(from: typeWithEverything(id: "Shown"), configuration: config)
-        let hidden = GeneratedDiagramNode(from: typeWithEverything(id: "Hidden"), configuration: config)
+        let shown = GeneratedDiagramNode(
+            from: typeWithEverything(id: "Shown"), configuration: config, varianceKeywords: [:]
+        )
+        let hidden = GeneratedDiagramNode(
+            from: typeWithEverything(id: "Hidden"), configuration: config, varianceKeywords: [:]
+        )
 
         #expect(!shown.properties.isEmpty)
         #expect(hidden.properties.isEmpty)
@@ -40,8 +44,12 @@ struct PerTypeVisibilityTests {
         config.methodVisibility["Revealed"] = true
         config.enumCaseVisibility["Revealed"] = true
 
-        let revealed = GeneratedDiagramNode(from: typeWithEverything(id: "Revealed"), configuration: config)
-        let collapsed = GeneratedDiagramNode(from: typeWithEverything(id: "Collapsed"), configuration: config)
+        let revealed = GeneratedDiagramNode(
+            from: typeWithEverything(id: "Revealed"), configuration: config, varianceKeywords: [:]
+        )
+        let collapsed = GeneratedDiagramNode(
+            from: typeWithEverything(id: "Collapsed"), configuration: config, varianceKeywords: [:]
+        )
 
         #expect(!revealed.properties.isEmpty)
         #expect(!revealed.methods.isEmpty)

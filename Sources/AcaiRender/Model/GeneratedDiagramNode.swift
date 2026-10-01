@@ -20,7 +20,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         from type: TypeDeclaration,
         configuration: ClassDiagramConfiguration? = nil,
         annotationStereotypes: [String: String] = [:],
-        collectionTypeNames: Set<String> = []
+        collectionTypeNames: Set<String> = [],
+        varianceKeywords: [Variance: String]
     ) {
         let config = configuration ?? .init()
 
@@ -30,7 +31,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         self.stereotype = type.stereotype(
             annotationStereotypes: config.showAnnotationStereotypes ? annotationStereotypes : [:]
         )
-        self.genericParameters = type.genericParameters.map(\.name)
+        self.genericParameters = type.genericParameters
+            .map { $0.umlDisplayString(varianceKeywords: varianceKeywords) }
 
         let accessFilter = config.minimumAccessLevel
 

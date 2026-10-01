@@ -72,7 +72,8 @@ extension KotlinCodeParser {
             ],
             annotationStereotypes: jvmAnnotationStereotypes,
             excludedDirectories: jvmExcludedDirectories,
-            entryPointMarkers: jvmEntryPointMarkers
+            entryPointMarkers: jvmEntryPointMarkers,
+            varianceKeywords: [.covariant: "out", .contravariant: "in"]
         )
     }
 }

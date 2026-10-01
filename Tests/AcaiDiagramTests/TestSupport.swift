@@ -53,7 +53,8 @@ extension LanguageConfiguration {
             "controller": "controller",
             "restcontroller": "controller",
             "component": "component"
-        ]
+        ],
+        varianceKeywords: [.covariant: "out", .contravariant: "in"]
     )
 }
 

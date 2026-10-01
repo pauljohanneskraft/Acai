@@ -305,7 +305,7 @@ struct ProjectCodebaseEditor {
 
     /// Deregisters and deletes a codebase's linked worktree, and the shared hub clone with it once no
     /// other codebase's worktree is left on it.
-    private func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) async {
+    func removeWorktree(codebaseID: UUID, repository: CodebaseRepositoryReference?) async {
         let worktreeDirectory = store.gitWorktreeURL(for: codebaseID)
         guard let repository else {
             try? FileManager.default.removeItem(at: worktreeDirectory)

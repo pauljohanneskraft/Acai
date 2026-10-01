@@ -5,8 +5,10 @@ import Foundation
 public struct SourceSpec {
     public var language: CodeArtifact.SourceLanguage
     public var sourceDirs: [URL]
-    /// Problems a detector hit while reading the build system's own manifest. Carried here so a
-    /// detector can fall back rather than fail, and still have the reason reach the artifact.
+
+    /// Problems found while discovering this spec — a manifest whose layout could not be read in
+    /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
+    /// ``HealthCheck`` reflects them.
     public var diagnostics: [ParseDiagnostic]
 
     public init(
