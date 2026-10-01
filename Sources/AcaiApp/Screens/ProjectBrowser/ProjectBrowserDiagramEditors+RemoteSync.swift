@@ -28,9 +28,17 @@ extension ProjectCodebaseEditor {
             ) { onProgress in
                 try await remoteService.attachWorktree(target, destination: destination, onProgress: onProgress)
             }
-            guard let (headSHA, persistedRemoteURL) = cloneResult,
-                  let index = store.projects.firstIndex(where: { $0.id == projectID })
-            else { return }
+            guard let (headSHA, persistedRemoteURL) = cloneResult else { return }
+            // The clone outlived its project. Nothing references the worktree that was just
+            // attached, so take it down the same way deleting the codebase would rather than
+            // leaving it for the next sweep, and say so instead of dropping it silently.
+            guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else {
+                await removeWorktree(
+                    codebaseID: codebaseID,
+                    repository: CodebaseRepositoryReference(remoteURL: persistedRemoteURL, ref: ref))
+                store.report(.app("Error.ProjectBrowserViewModel.ProjectDeletedWhileCloning \(name)"))
+                return
+            }
             store.projects[index].codebases.append(Codebase(
                 id: codebaseID,
                 name: name,

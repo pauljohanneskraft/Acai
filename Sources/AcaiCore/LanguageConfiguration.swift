@@ -81,6 +81,9 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
     /// has no reachable edge, so every declaration of it would be reported uncalled. Every parser
     /// records method calls, hence the default.
     public var deadCodeMemberKinds: Set<MemberKind>
+    /// How this language spells each variance where it marks one, e.g. `[.covariant: "out"]`. A
+    /// renderer looks the keyword up here so a parameter shows the source language's own wording.
+    public var varianceKeywords: [Variance: String]
 
     public init(
         primitiveTypeNames: Set<String> = [],
@@ -89,7 +92,8 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
         generatedCodeFilter: GeneratedCodeFilter? = nil,
         excludedDirectories: Set<String> = [],
         entryPointMarkers: EntryPointMarkers = EntryPointMarkers(),
-        deadCodeMemberKinds: Set<MemberKind> = [.method]
+        deadCodeMemberKinds: Set<MemberKind> = [.method],
+        varianceKeywords: [Variance: String] = [:]
     ) {
         self.primitiveTypeNames = primitiveTypeNames
         self.collectionTypeNames = collectionTypeNames
@@ -98,6 +102,7 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
         self.excludedDirectories = excludedDirectories
         self.entryPointMarkers = entryPointMarkers
         self.deadCodeMemberKinds = deadCodeMemberKinds
+        self.varianceKeywords = varianceKeywords
     }
 
     public func isPrimitive(_ name: String) -> Bool { primitiveTypeNames.contains(name) }

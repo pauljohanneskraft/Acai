@@ -79,7 +79,8 @@ extension KotlinCodeParser {
             // `Thing(1)` reaches `CallSiteScope.bareCall`, which drops a known type name as a
             // construction, so a constructor has no caller edge. An `operator fun get` is extracted
             // as a method and is scanned as one.
-            deadCodeMemberKinds: [.method]
+            deadCodeMemberKinds: [.method],
+            varianceKeywords: [.covariant: "out", .contravariant: "in"]
         )
     }
 }
