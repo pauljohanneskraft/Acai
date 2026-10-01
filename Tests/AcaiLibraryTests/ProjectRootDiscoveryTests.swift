@@ -50,6 +50,25 @@ struct ProjectRootDiscoveryTests {
         })
     }
 
+    // MARK: - Merging several roots of one language
+
+    /// Two Swift packages side by side are two specs, and both roots stay visible in the metadata.
+    /// What merging them does with each field is pinned by `SourceSpecMergeTests` in `AcaiCoreTests`.
+    @Test func twoRootsOfOneLanguageAreBothDiscovered() throws {
+        try withTempDir { base in
+            try write("one/Package.swift", in: base)
+            try write("one/Sources/One.swift", in: base, contents: "class One {}")
+            try write("two/Package.swift", in: base)
+            try write("two/Sources/Two.swift", in: base, contents: "class Two {}")
+
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [])
+            let swiftSpecs = specs.filter { $0.language == .swift }
+            #expect(swiftSpecs.count == 2)
+
+            #expect(Set(specs.discoveredRoots(relativeTo: base).map(\.path)) == ["one", "two"])
+        }
+    }
+
     // MARK: - Fixture and vendored projects
 
     /// The shape this repository has: a UI-test fixture package outside the real package's

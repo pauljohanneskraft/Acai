@@ -36,8 +36,25 @@ extension [SourceSpec] {
                 merged.append(spec)
                 continue
             }
-            merged[index].sourceDirs.append(contentsOf: spec.sourceDirs)
+            merged[index] = merged[index].merging(spec)
         }
         return merged
+    }
+}
+
+extension SourceSpec {
+    /// Folds another root of the same language into this one. Every field is named here rather than
+    /// mutated in place, so a field added to ``SourceSpec`` later has to say what merging means for
+    /// it instead of being dropped from the second root onwards.
+    ///
+    /// `root` and `detector` keep the first root's: a merged spec has several roots, and the full set
+    /// is recorded separately in `metadata.discoveredRoots`.
+    func merging(_ other: SourceSpec) -> SourceSpec {
+        SourceSpec(
+            language: language,
+            sourceDirs: sourceDirs + other.sourceDirs,
+            root: root,
+            detector: detector
+        )
     }
 }
