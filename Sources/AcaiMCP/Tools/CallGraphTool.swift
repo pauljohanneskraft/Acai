@@ -12,7 +12,8 @@ struct CallGraphTool: AnalysisTool {
         tangled clusters), deadcode (uncalled members not reachable by contract — public API, \
         overrides, protocol requirements, entry points; methods in every language, plus a \
         language's initializers and subscripts where its parser records calls to them; the result's \
-        scannedKinds lists the kinds actually scanned, and coverage is the false-positive floor). \
+        scannedKinds lists the union of kinds scanned across every language in the codebase (not \
+        necessarily all of them for a given language), and coverage is the false-positive floor). \
         metrics/cycles optionally scope with 'type:Name' or 'module:Name'.
         """
 

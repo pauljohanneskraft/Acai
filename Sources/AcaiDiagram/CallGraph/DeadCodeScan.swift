@@ -23,8 +23,12 @@ public struct DeadCodeScan: Sendable {
     public struct Report: Codable, Hashable, Sendable {
         /// The call graph's resolution coverage — the false-positive floor for `candidates`.
         public var coverage: CallGraph.Coverage
-        /// The union of the kinds each language in the artifact scanned, in `MemberKind` order — what
-        /// an empty `candidates` covers.
+        /// The **union**, across every language in the artifact, of the kinds each one scanned, in
+        /// `MemberKind` order. A kind appearing here was scanned for at least one language in the
+        /// artifact, not necessarily every one — a polyglot codebase where one language scans
+        /// subscripts and another doesn't still reports `subscripts` here. Reading it as "no
+        /// candidate for this kind anywhere" is only safe when every language in the artifact agrees
+        /// on `deadCodeMemberKinds`, which every built-in language does today (all scan `[.method]`).
         public var scannedKinds: [MemberKind]
         public var candidates: [Candidate]
     }
