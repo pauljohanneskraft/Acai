@@ -52,9 +52,9 @@ enum CFamilyDialect: Sendable {
                 ),
                 excludedDirectories: Self.excludedDirectories,
                 entryPointMarkers: EntryPointMarkers(methodNames: ["main"]),
-                // A constructor call is a declaration (`Thing t;`, `Thing t(1);`), not a
-                // `call_expression`, so it is never recorded and a constructor has no caller edge.
-                // An `operator[]` is extracted as a method and is scanned as one.
+                // C has neither constructors nor subscript members, so neither kind can be declared.
+                // Everything callable arrives as a method: a `struct`'s function-pointer fields, and
+                // C's own freestanding functions.
                 deadCodeMemberKinds: [.method]
             )
         case .cpp:

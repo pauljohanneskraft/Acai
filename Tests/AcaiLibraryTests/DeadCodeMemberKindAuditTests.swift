@@ -198,6 +198,28 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!kinds.values.contains(.subscript))
     }
 
+    /// Why C declines both: the language has neither construct, so neither kind can be declared at all.
+    /// Everything callable in C reaches the scan as a method — a `struct`'s function-pointer field is
+    /// extracted as one, and C's own functions are freestanding methods.
+    @Test func cDeclaresNoInitializerOrSubscriptMember() throws {
+        let artifact = CCodeParser().parse(source: """
+        struct Grid {
+            int size;
+            int (*resize)(int);
+        };
+
+        int grid_resize(struct Grid *g, int n) { return n; }
+        """, fileName: "grid.c")
+
+        let members = artifact.flattened().flatMap(\.members)
+        try #require(!members.isEmpty)
+        let kinds = Dictionary(members.map { ($0.name, $0.kind) }) { first, _ in first }
+        #expect(kinds["size"] == .property)
+        #expect(kinds["resize"] == .method)
+        #expect(!members.contains { $0.kind == .initializer || $0.kind == .subscript })
+        #expect(artifact.freestandingFunctions.filter { $0.name == "grid_resize" }.map(\.kind) == [.method])
+    }
+
     /// The end-to-end consequence, through the real registry rather than a fixture configuration: an
     /// uncalled Swift initializer and subscript are not reported, while an uncalled method still is.
     @Test func aSwiftInitializerAndSubscriptAreNotReportedWhileAMethodIs() {
