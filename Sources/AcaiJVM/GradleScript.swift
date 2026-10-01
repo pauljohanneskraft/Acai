@@ -54,6 +54,34 @@ struct GradleScript {
         }
     }
 
+    /// Every `… { … }` block in this script, paired with the text that opens it — from the end of the
+    /// previous statement up to the brace. The opening text rather than a bare identifier, because a
+    /// source set is spelled `test { … }`, `getByName("test") { … }` and `val commonTest by getting { … }`
+    /// alike. Nested blocks belong to their own parent, so only this script's own are returned.
+    var labelledBlocks: [(label: String, body: GradleScript)] {
+        var blocks: [(label: String, body: GradleScript)] = []
+        var statementStart = 0
+        var index = 0
+        while index < characters.count {
+            if let end = skippableEnd(at: index) {
+                index = end
+            } else if characters[index] == "{" {
+                let end = min(braceEnd(from: index), characters.count)
+                blocks.append((
+                    label: String(characters[statementStart..<index]),
+                    body: GradleScript(characters: Array(characters[(index + 1)..<end]))))
+                index = min(end + 1, characters.count)
+                statementStart = index
+            } else {
+                if characters[index].endsGradleStatement || characters[index] == "}" {
+                    statementStart = index + 1
+                }
+                index += 1
+            }
+        }
+        return blocks
+    }
+
     func contains(word: String) -> Bool {
         !statements(after: word).isEmpty
     }

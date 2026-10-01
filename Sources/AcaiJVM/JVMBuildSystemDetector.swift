@@ -9,9 +9,14 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
     /// no such file — Maven's modules are still found by scanning the tree.
     public let settingsFiles: [String]
 
+    /// Taken from the language configuration rather than kept as a second list, so the detector skips
+    /// exactly what the parser declares.
+    private let excludedDirectories: Set<String>
+
     public init(indicatorFiles: [String], settingsFiles: [String] = []) {
         self.indicatorFiles = indicatorFiles
         self.settingsFiles = settingsFiles
+        excludedDirectories = KotlinCodeParser().configuration.excludedDirectories
     }
 
     public static let gradle = JVMBuildSystemDetector(
@@ -61,18 +66,26 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
                 sourceDirs: sourceDirs.removingDuplicates { $0.standardizedFileURL.path })]
         }
         let presence = SourceFilePresence(
-            extensions: extensions, excludingDirectories: jvmExcludedDirectories)
+            extensions: extensions, excludingDirectories: excludedDirectories)
         guard presence.exist(in: root) else { return [] }
         return [SourceSpec(language: language, sourceDirs: [root])]
     }
 
-    /// The root project plus every module its settings file includes; only when there is no settings
-    /// file does the directory scan stand in for one.
     private func modules(in root: URL) -> [GradleModule] {
-        let directories = settings(at: root)
-            .map { [root] + $0.moduleDirectories(relativeTo: root) }
-            ?? scannedModuleDirectories(in: root)
-        return directories.map { GradleModule(directory: $0) }
+        moduleDirectories(in: root).map {
+            GradleModule(directory: $0, excludedDirectories: excludedDirectories)
+        }
+    }
+
+    /// The root project plus every module its settings file includes. A settings file that computes
+    /// part of its module list names modules the reader cannot resolve, so there the scan is unioned
+    /// in rather than switched off; without a settings file it stands in for one entirely.
+    private func moduleDirectories(in root: URL) -> [URL] {
+        guard let settings = settings(at: root) else { return scannedModuleDirectories(in: root) }
+        let included = [root] + settings.moduleDirectories(relativeTo: root)
+        guard !settings.namesEveryModule else { return included }
+        return (included + scannedModuleDirectories(in: root))
+            .removingDuplicates { $0.standardizedFileURL.path }
     }
 
     private func settings(at root: URL) -> GradleSettings? {
@@ -94,7 +107,7 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
             let entries = (try? FileManager.default.contentsOfDirectory(
                 at: directory, includingPropertiesForKeys: [.isDirectoryKey],
                 options: [.skipsHiddenFiles])) ?? []
-            for entry in entries where !jvmExcludedDirectories.contains(entry.lastPathComponent) {
+            for entry in entries where !excludedDirectories.contains(entry.lastPathComponent) {
                 guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true,
                       indicator.present(at: entry) else { continue }
                 pending.append(entry)

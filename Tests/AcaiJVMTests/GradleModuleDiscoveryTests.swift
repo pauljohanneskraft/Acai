@@ -212,6 +212,102 @@ struct GradleModuleDiscoveryTests {
         }
     }
 
+    @Test func aComputedIncludeFallsBackToScanningRatherThanNamingNothing() throws {
+        try withTempDir { root in
+            try write("settings.gradle.kts", in: root, contents: """
+                rootDir.listFiles().forEach { include(":${it.name}") }
+                """)
+            for module in ["app", "core"] {
+                try writeKotlinModule(module, in: root)
+            }
+
+            #expect(kotlinDirs(in: root) == ["app/src/main/kotlin", "core/src/main/kotlin"])
+        }
+    }
+
+    @Test func aPartlyComputedIncludeKeepsTheModulesItDoesName() throws {
+        try withTempDir { root in
+            try write("settings.gradle.kts", in: root, contents: """
+                include(":app")
+                extraModules.forEach { include(":${it}") }
+                """)
+            for module in ["app", "legacy"] {
+                try writeKotlinModule(module, in: root)
+            }
+
+            #expect(kotlinDirs(in: root) == ["app/src/main/kotlin", "legacy/src/main/kotlin"])
+        }
+    }
+
+    @Test func aRedirectRootedAtRootDirResolvesToTheSettingsDirectory() throws {
+        try withTempDir { root in
+            try write("settings.gradle.kts", in: root, contents: """
+                include(":core")
+                project(":core").projectDir = file("$rootDir/lib/core")
+                """)
+            try writeKotlinModule("lib/core", in: root)
+
+            #expect(kotlinDirs(in: root) == ["lib/core/src/main/kotlin"])
+        }
+    }
+
+    @Test func aBracedSettingsDirRedirectResolvesTheSameWay() throws {
+        try withTempDir { root in
+            try write("settings.gradle", in: root, contents: """
+                include ':core'
+                project(':core').projectDir = file("${settingsDir}/lib/core")
+                """)
+            try writeKotlinModule("lib/core", in: root)
+
+            #expect(kotlinDirs(in: root) == ["lib/core/src/main/kotlin"])
+        }
+    }
+
+    @Test func kotlinUnderSrcMainJavaIsFoundAsAndroidCompilesIt() throws {
+        try withTempDir { root in
+            try write("settings.gradle.kts", in: root, contents: #"include(":app", ":core")"#)
+            try write("app/build.gradle.kts", in: root)
+            try write("app/src/main/java/Sample.kt", in: root, contents: "class Sample")
+            try write("app/src/main/java/Legacy.java", in: root, contents: "class Legacy {}")
+            try writeKotlinModule("core", in: root)
+
+            let specs = JVMBuildSystemDetector.gradle.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(sourceDirs(specs, for: .kotlin, relativeTo: root) == [
+                "app/src/main/java", "core/src/main/kotlin"
+            ])
+            #expect(sourceDirs(specs, for: .java, relativeTo: root) == ["app/src/main/java"])
+        }
+    }
+
+    @Test func aTargetSourceSetsJavaDirectoryIsASourceSetToo() throws {
+        try withTempDir { root in
+            try write("settings.gradle.kts", in: root, contents: #"include(":shared")"#)
+            try write("shared/build.gradle.kts", in: root)
+            try write("shared/src/jvmMain/java/Sample.java", in: root, contents: "class Sample {}")
+
+            let specs = JVMBuildSystemDetector.gradle.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(sourceDirs(specs, for: .java, relativeTo: root) == ["shared/src/jvmMain/java"])
+        }
+    }
+
+    @Test func aSrcDirDeclaredByATestSourceSetIsOutOfScope() throws {
+        try withTempDir { root in
+            try write("settings.gradle.kts", in: root, contents: #"include(":app")"#)
+            try write("app/build.gradle.kts", in: root, contents: """
+                sourceSets {
+                    main { kotlin.srcDir("src/main/generated") }
+                    test { kotlin.srcDir("src/testFixtures") }
+                    val integrationTest by creating { kotlin.srcDir("src/it") }
+                }
+                """)
+            try write("app/src/main/generated/Generated.kt", in: root, contents: "class Generated")
+            try write("app/src/testFixtures/Fixture.kt", in: root, contents: "class Fixture")
+            try write("app/src/it/Integration.kt", in: root, contents: "class Integration")
+
+            #expect(kotlinDirs(in: root) == ["app/src/main/generated"])
+        }
+    }
+
     // MARK: - Excluded directories
 
     @Test func aBuildOutputDirectoryIsNeverScannedForModules() throws {
