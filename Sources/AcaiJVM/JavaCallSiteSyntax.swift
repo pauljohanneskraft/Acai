@@ -14,8 +14,9 @@ struct JavaCallSiteSyntax: CallSiteSyntax {
     /// `object_creation_expression` nodes (`new Thing()`), resolved the same way a static
     /// `Thing.method()` call would be — the constructor's member is named after the type itself.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
-        if node.nodeType == "object_creation_expression", let typeNode = node.child(byFieldName: "type") {
-            let typeName = typeNode.text(in: context)
+        if node.nodeType == "object_creation_expression", let typeNode = node.child(byFieldName: "type"),
+           let typeName = JavaTypeReferenceResolver(context: context).extractTypeReference(typeNode)?.name,
+           !typeName.isEmpty {
             return scope.resolvedCallSite(
                 receiverName: typeName, methodName: typeName, location: node.location(in: context))
         }

@@ -147,8 +147,8 @@ struct DeadCodeMemberKindAuditTests {
           Thing();
           Thing.named();
           void use() {
-            final made = Thing();
-            final other = Thing.named();
+            Thing();
+            Thing.named();
           }
         }
         """, in: "use", of: DartCodeParser(), fileName: "thing.dart")

@@ -510,7 +510,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 27,
+                "endLine" : 18,
+                "filePath" : "shop.dart",
+                "line" : 18
+              },
+              "methodName" : "Sink",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Sink"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -907,7 +920,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 31,
+                "endLine" : 34,
+                "filePath" : "shop.dart",
+                "line" : 34
+              },
+              "methodName" : "Logger",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
