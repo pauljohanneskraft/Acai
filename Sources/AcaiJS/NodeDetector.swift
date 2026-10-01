@@ -47,14 +47,17 @@ public struct NodeDetector: BuildSystemDetector {
     private func discoverSourceDirs(at root: URL) -> (dirs: [URL], diagnostics: [ParseDiagnostic]) {
         let reader = TypeScriptProjectReader(notAbove: root)
         let probe = SourceDirectoryProbe(preferring: "src")
-        guard let workspaces = NodeWorkspaces(
-            manifestAt: root.appendingPathComponent(manifestName), excludingDirectories: excludedDirectories
-        ) else {
-            return (reader.sourceDirs(ofProjectIn: root) ?? probe.directories(in: root), reader.diagnostics)
+        let declaration = NodeWorkspaceDeclaration(in: root)
+        guard let globs = declaration.globs else {
+            return (
+                reader.sourceDirs(ofProjectIn: root) ?? probe.directories(in: root),
+                reader.diagnostics + declaration.diagnostics
+            )
         }
 
-        let packageRoots = workspaces.packageRoots(in: root)
-        var dirs = reader.sourceDirs(ofProjectIn: root) ?? conventionalSubdirectory(of: root)
+        let packageRoots = NodeWorkspaces(globs: globs, excludingDirectories: excludedDirectories)
+            .packageRoots(in: root)
+        var dirs = excludingRoot(reader.sourceDirs(ofProjectIn: root) ?? probe.directories(in: root), of: root)
         for packageRoot in packageRoots {
             dirs += reader.sourceDirs(ofProjectIn: packageRoot) ?? probe.directories(in: packageRoot)
         }
@@ -62,27 +65,27 @@ public struct NodeDetector: BuildSystemDetector {
             // Probing still beats finding nothing, so the root's own layout stands in for the packages.
             return (
                 (dirs + probe.directories(in: root)).removingDuplicates { $0.path },
-                reader.diagnostics + [unresolvedWorkspacesDiagnostic]
+                reader.diagnostics + declaration.diagnostics + [unresolvedWorkspacesDiagnostic]
             )
         }
-        return (dirs.removingDuplicates { $0.path }, reader.diagnostics)
+        return (dirs.removingDuplicates { $0.path }, reader.diagnostics + declaration.diagnostics)
     }
 
-    /// The conventional `src/` subdirectory, or nothing — never the root itself, which in a workspace
-    /// root would swallow every package and make reading the globs pointless.
-    private func conventionalSubdirectory(of root: URL) -> [URL] {
-        SourceDirectoryProbe(preferring: "src")
-            .directories(in: root)
-            .filter { $0.standardizedFileURL.path != root.standardizedFileURL.path }
+    /// A workspace root's own sources, minus the root itself. `src/` reached by probing and an
+    /// `include` with no literal prefix (`["**/*.ts"]`, which resolves to the config's own folder)
+    /// both land on the root, and admitting it would re-import every package through the back door —
+    /// the thing reading the globs is there to avoid.
+    private func excludingRoot(_ dirs: [URL], of root: URL) -> [URL] {
+        dirs.filter { $0.standardizedFileURL.path != root.standardizedFileURL.path }
     }
 
-    /// The manifest declared workspaces and not one of them named a package, so the layout on disk is
-    /// not the layout it describes. Probing is a guess, and says so.
+    /// Workspaces were declared and not one of them named a package, so the layout on disk is not the
+    /// layout they describe. Probing is a guess, and says so.
     private var unresolvedWorkspacesDiagnostic: ParseDiagnostic {
         ParseDiagnostic(
             location: SourceLocation(filePath: manifestName, line: 1, column: 1),
             kind: .incompleteDiscovery,
-            message: "\(manifestName) declares workspaces, but none of them names a directory holding a "
+            message: "This project declares workspaces, but none of them names a directory holding a "
                 + "\(manifestName) of its own. Source directories were guessed from the folder layout instead."
         )
     }

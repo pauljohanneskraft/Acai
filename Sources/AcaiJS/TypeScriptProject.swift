@@ -13,6 +13,9 @@ struct TypeScriptConfiguration {
     var referencedConfigurations: [URL]?
     /// Each `extends` entry, resolved to a file on disk, in the order `tsc` applies them.
     var extendedConfigurations: [URL] = []
+    /// Each `extends` entry that named nothing on disk — a base package that is not installed, or
+    /// one hoisted above the analysed folder. Whatever it declared is missing from this merge.
+    var unresolvedExtends: [String] = []
 
     var sourceDirs: [URL] { (rootDir.map { [$0] } ?? []) + (includeDirs ?? []) }
 
@@ -29,12 +32,10 @@ struct TypeScriptConfiguration {
 }
 
 extension TypeScriptConfiguration {
-    /// Nil when the file is missing or is not JSON at all; an unrecognised shape for one field only
-    /// leaves that field unset.
+    /// Nil when the file is missing or is not an object even once its comments and trailing commas
+    /// are gone; an unrecognised shape for one field only leaves that field unset.
     init?(contentsOf url: URL, notAbove ceiling: URL) {
-        guard let data = try? Data(contentsOf: url),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { return nil }
+        guard let json = JSONWithComments(contentsOf: url)?.object else { return nil }
         let directory = url.deletingLastPathComponent()
 
         let extendsValues: [String]
@@ -46,9 +47,11 @@ extension TypeScriptConfiguration {
         default:
             extendsValues = []
         }
-        extendedConfigurations = extendsValues.compactMap {
-            TypeScriptConfigurationPath($0, referredToBy: url, notAbove: ceiling).url
+        let resolvedExtends = extendsValues.map {
+            ($0, TypeScriptConfigurationPath($0, referredToBy: url, notAbove: ceiling).url)
         }
+        extendedConfigurations = resolvedExtends.compactMap(\.1)
+        unresolvedExtends = resolvedExtends.filter { $0.1 == nil }.map(\.0)
 
         if let compilerOptions = json["compilerOptions"] as? [String: Any],
            let declared = compilerOptions["rootDir"] as? String {
@@ -184,7 +187,13 @@ final class TypeScriptProjectReader {
             record(cycleAt: url, through: "extends")
             return nil
         }
-        guard let configuration = TypeScriptConfiguration(contentsOf: url, notAbove: ceiling) else { return nil }
+        guard let configuration = TypeScriptConfiguration(contentsOf: url, notAbove: ceiling) else {
+            record(unreadable: url)
+            return nil
+        }
+        for unresolved in configuration.unresolvedExtends {
+            record(unresolvedExtends: unresolved, in: url)
+        }
         var inherited = TypeScriptConfiguration()
         for extended in configuration.extendedConfigurations {
             guard let base = flattened(configurationAt: extended, extendedBy: chain.union([url.path]))
@@ -195,16 +204,43 @@ final class TypeScriptProjectReader {
     }
 
     private func record(cycleAt url: URL, through relation: String) {
-        let path = url.path.hasPrefix(ceiling.path + "/")
+        record(
+            at: url,
+            message: "`\(relation)` in \(relativePath(of: url)) leads back to a configuration already "
+                + "being read. The chain was not followed round again, so some configured source "
+                + "directories may be missing."
+        )
+    }
+
+    private func record(unreadable url: URL) {
+        record(
+            at: url,
+            message: "\(relativePath(of: url)) is present but could not be parsed, so the source "
+                + "directories it configures were not read."
+        )
+    }
+
+    private func record(unresolvedExtends value: String, in url: URL) {
+        record(
+            at: url,
+            message: "`extends` in \(relativePath(of: url)) names `\(value)`, which resolves to nothing "
+                + "inside the analysed folder — an uninstalled base configuration, or one hoisted above "
+                + "it. Whatever source directories it declares are missing."
+        )
+    }
+
+    private func record(at url: URL, message: String) {
+        diagnostics.append(ParseDiagnostic(
+            location: SourceLocation(filePath: relativePath(of: url), line: 1, column: 1),
+            kind: .incompleteDiscovery,
+            message: message
+        ))
+    }
+
+    private func relativePath(of url: URL) -> String {
+        url.path.hasPrefix(ceiling.path + "/")
             ? String(url.path.dropFirst(ceiling.path.count + 1))
             : url.lastPathComponent
-        diagnostics.append(ParseDiagnostic(
-            location: SourceLocation(filePath: path, line: 1, column: 1),
-            kind: .incompleteDiscovery,
-            message: "`\(relation)` in \(path) leads back to a configuration already being read. "
-                + "The chain was not followed round again, so some configured source directories may "
-                + "be missing."
-        ))
     }
 }
 
