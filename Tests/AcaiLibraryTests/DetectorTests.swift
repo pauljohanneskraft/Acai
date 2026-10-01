@@ -123,6 +123,42 @@ struct DetectorTests {
         }
     }
 
+    /// `claim(at:requestedLanguages:)` is what the walk calls, so it has to agree with the two
+    /// questions it answers at once.
+    @Test func nodeClaimAgreesWithTheSeparateQuestions() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: "{}")
+            try write("src/a.ts", in: root)
+            try write("src/b.js", in: root)
+
+            let claim = detector.claim(at: root, requestedLanguages: [])
+            #expect(claim.specs.map(\.language)
+                == detector.discoverSourceSpecs(at: root, requestedLanguages: []).map(\.language))
+            #expect(claim.withheldLanguages
+                == detector.withheldLanguages(at: root, requestedLanguages: []))
+            #expect(claim.withheldLanguages == [.javaScript])
+
+            // Asked for explicitly, JavaScript is a spec rather than withheld.
+            let explicit = detector.claim(at: root, requestedLanguages: [.javaScript])
+            #expect(explicit.withheldLanguages.isEmpty)
+            #expect(explicit.specs.map(\.language) == [.javaScript])
+        }
+    }
+
+    /// A detector that answers only the two separate questions still claims correctly through the
+    /// protocol's default.
+    @Test func detectorWithoutItsOwnClaimUsesTheDefault() throws {
+        let detector = SwiftPackageManagerDetector()
+        try withTempDir { root in
+            try write("Package.swift", in: root, contents: "// swift-tools-version:6.0")
+            try write("Sources/App/main.swift", in: root)
+            let claim = detector.claim(at: root, requestedLanguages: [])
+            #expect(claim.specs.map(\.language) == [.swift])
+            #expect(claim.withheldLanguages.isEmpty)
+        }
+    }
+
     @Test func nodePureJavaScriptProject() throws {
         let detector = NodeDetector()
         try withTempDir { root in

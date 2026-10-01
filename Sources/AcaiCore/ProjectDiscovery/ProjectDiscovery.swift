@@ -86,13 +86,11 @@ private struct DiscoveryWalk {
     private mutating func claim(at directory: URL) {
         var claimedHere: Set<CodeArtifact.SourceLanguage> = []
         for detector in discovery.detectors where detector.isPresent(at: directory) {
-            let detected = detector.discoverSourceSpecs(at: directory, requestedLanguages: requestedLanguages)
-            for spec in detected where claimedHere.insert(spec.language).inserted {
+            let claim = detector.claim(at: directory, requestedLanguages: requestedLanguages)
+            for spec in claim.specs where claimedHere.insert(spec.language).inserted {
                 record(spec.detected(by: detector), at: directory)
             }
-            withheldLanguages.formUnion(
-                detector.withheldLanguages(at: directory, requestedLanguages: requestedLanguages)
-            )
+            withheldLanguages.formUnion(claim.withheldLanguages)
         }
     }
 

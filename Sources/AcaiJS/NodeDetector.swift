@@ -16,21 +16,8 @@ public struct NodeDetector: BuildSystemDetector {
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
-        let request = LanguageRequest(requestedLanguages)
-        let searchDirs = self.searchDirs(in: root)
-        let hasTS = hasTypeScript(in: searchDirs)
-        let hasJS = SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: searchDirs)
-
-        var specs: [SourceSpec] = []
-
-        if hasTS, request.wants(.typeScript) {
-            specs.append(SourceSpec(language: .typeScript, sourceDirs: searchDirs, root: root))
-        }
-        if hasJS, request.wants(.javaScript), !hasTS || request.explicitlyWants(.javaScript) {
-            specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs, root: root))
-        }
-
-        return specs
+        Layout(root: root, searchDirs: searchDirs(in: root))
+            .specs(for: LanguageRequest(requestedLanguages))
     }
 
     /// A TypeScript project's JavaScript is config and build output, not source.
@@ -38,19 +25,63 @@ public struct NodeDetector: BuildSystemDetector {
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> Set<CodeArtifact.SourceLanguage> {
+        Layout(root: root, searchDirs: searchDirs(in: root))
+            .withheldLanguages(for: LanguageRequest(requestedLanguages))
+    }
+
+    /// Resolves the layout once and answers both halves from it. Asked separately, each would
+    /// re-read `tsconfig.json` and walk the sources again — per `package.json`, so once per workspace
+    /// in a monorepo now that detectors run at every directory.
+    public func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> DetectorClaim {
+        let layout = Layout(root: root, searchDirs: searchDirs(in: root))
         let request = LanguageRequest(requestedLanguages)
-        guard request.wants(.javaScript), !request.explicitlyWants(.javaScript),
-              hasTypeScript(in: searchDirs(in: root))
-        else { return [] }
-        return [.javaScript]
+        return DetectorClaim(
+            specs: layout.specs(for: request),
+            withheldLanguages: layout.withheldLanguages(for: request)
+        )
     }
 
     private func searchDirs(in root: URL) -> [URL] {
         tsConfigSourceDirs(in: root) ?? SourceDirectoryProbe(preferring: "src").directories(in: root)
     }
 
-    private func hasTypeScript(in searchDirs: [URL]) -> Bool {
-        SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: searchDirs)
+    // MARK: - Resolved Layout
+
+    /// One Node root's resolved layout: which directories hold its sources, and which languages those
+    /// directories actually contain.
+    private struct Layout {
+        let root: URL
+        let searchDirs: [URL]
+        /// Decides both halves of the claim, so it is resolved eagerly. JavaScript presence is not:
+        /// only `specs(for:)` needs it, and only once TypeScript has not already ruled it out.
+        let hasTypeScript: Bool
+
+        init(root: URL, searchDirs: [URL]) {
+            self.root = root
+            self.searchDirs = searchDirs
+            self.hasTypeScript = SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: searchDirs)
+        }
+
+        func specs(for request: LanguageRequest) -> [SourceSpec] {
+            var specs: [SourceSpec] = []
+            if hasTypeScript, request.wants(.typeScript) {
+                specs.append(SourceSpec(language: .typeScript, sourceDirs: searchDirs, root: root))
+            }
+            if request.wants(.javaScript), !hasTypeScript || request.explicitlyWants(.javaScript),
+               SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: searchDirs) {
+                specs.append(SourceSpec(language: .javaScript, sourceDirs: searchDirs, root: root))
+            }
+            return specs
+        }
+
+        func withheldLanguages(for request: LanguageRequest) -> Set<CodeArtifact.SourceLanguage> {
+            guard request.wants(.javaScript), !request.explicitlyWants(.javaScript), hasTypeScript
+            else { return [] }
+            return [.javaScript]
+        }
     }
 
     // MARK: - tsconfig.json Parsing

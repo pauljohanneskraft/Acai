@@ -32,6 +32,20 @@ public struct SourceSpec {
     }
 }
 
+// MARK: - Detector Claim
+
+/// Everything one detector has to say about one directory: the specs it found, and the languages it
+/// deliberately leaves out so the fallback does not add them back.
+public struct DetectorClaim {
+    public var specs: [SourceSpec]
+    public var withheldLanguages: Set<CodeArtifact.SourceLanguage>
+
+    public init(specs: [SourceSpec], withheldLanguages: Set<CodeArtifact.SourceLanguage> = []) {
+        self.specs = specs
+        self.withheldLanguages = withheldLanguages
+    }
+}
+
 // MARK: - Build System Detector Protocol
 
 public protocol BuildSystemDetector: Sendable {
@@ -48,6 +62,14 @@ public protocol BuildSystemDetector: Sendable {
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> Set<CodeArtifact.SourceLanguage>
+
+    /// Both halves of the answer in one call, which is how ``ProjectDiscovery`` asks. A detector that
+    /// derives them from the same scan of the directory overrides this to scan once; the default
+    /// composes the two separate questions.
+    func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> DetectorClaim
 }
 
 extension BuildSystemDetector {
@@ -56,5 +78,15 @@ extension BuildSystemDetector {
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> Set<CodeArtifact.SourceLanguage> {
         []
+    }
+
+    public func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> DetectorClaim {
+        DetectorClaim(
+            specs: discoverSourceSpecs(at: root, requestedLanguages: requestedLanguages),
+            withheldLanguages: withheldLanguages(at: root, requestedLanguages: requestedLanguages)
+        )
     }
 }
