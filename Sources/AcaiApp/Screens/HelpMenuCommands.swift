@@ -13,8 +13,8 @@ struct HelpMenuCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .help) {
-            KeyboardShortcutsHelpMenuButton(presenter: keyboardShortcutsPresenter)
             QuickOpenMenuButton(presenter: quickOpenPresenter)
+            KeyboardShortcutsHelpMenuButton(presenter: keyboardShortcutsPresenter)
         }
     }
 }
