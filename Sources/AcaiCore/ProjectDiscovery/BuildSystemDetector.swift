@@ -12,6 +12,9 @@ public struct SourceSpec {
     /// The claiming detector's type name, stamped by ``ProjectDiscovery`` so a spec can say where it
     /// came from without a detector having to name itself.
     public var detector: String
+    /// Paths under ``sourceDirs`` a build system's manifest declares out of the build. A path is
+    /// excluded together with everything below it.
+    public var excludedPaths: [URL]
     /// Problems found while discovering this spec — a manifest whose layout could not be read in
     /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
     /// ``HealthCheck`` reflects them.
@@ -22,12 +25,14 @@ public struct SourceSpec {
         sourceDirs: [URL],
         root: URL,
         detector: String = "",
+        excludedPaths: [URL] = [],
         diagnostics: [ParseDiagnostic] = []
     ) {
         self.language = language
         self.sourceDirs = sourceDirs
         self.root = root
         self.detector = detector
+        self.excludedPaths = excludedPaths
         self.diagnostics = diagnostics
     }
 
@@ -35,6 +40,15 @@ public struct SourceSpec {
         var copy = self
         copy.detector = String(describing: type(of: detector))
         return copy
+    }
+
+    public func excludes(_ file: URL) -> Bool {
+        guard !excludedPaths.isEmpty else { return false }
+        let path = file.standardizedFileURL.path
+        return excludedPaths.contains {
+            let excluded = $0.standardizedFileURL.path
+            return path == excluded || path.hasPrefix(excluded + "/")
+        }
     }
 }
 

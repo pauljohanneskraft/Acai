@@ -42,9 +42,17 @@ extension FileManager {
 
     /// Visits every file below `directory`, skipping hidden entries, symlinks (so a cycle can't trap
     /// the walk) and `excludedDirectories` wholesale. `visit` returning `false` ends the walk.
+    ///
+    /// A build manifest may name an individual file where a directory is expected (SwiftPM's
+    /// `sources:`), and an enumerator over a regular file yields nothing — so that case visits the
+    /// file itself directly instead of walking.
     private func walkFiles(
         in directory: URL, excludingDirectories excludedDirectories: Set<String>, visit: (URL) -> Bool
     ) {
+        if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
+            _ = visit(directory)
+            return
+        }
         guard let enumerator = enumerator(
             at: directory,
             includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey, .nameKey],
