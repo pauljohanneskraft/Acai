@@ -53,9 +53,14 @@ actor AnalysisSnapshotCache {
         if !isDirectory.boolValue && url.pathExtension == "json" {
             artifact = try decodeArtifact(at: url)
         } else {
-            artifact = try await service.analyzeProject(
-                at: url, allowedLanguages: languageResolver.resolve(names: languageNames))
+            // Most edits touch a handful of files in an otherwise-unchanged tree, so only those are
+            // actually reparsed; everything else is carried forward from the per-file cache.
+            let (analyzed, fileCache) = try await service.analyzeProject(
+                at: url, allowedLanguages: languageResolver.resolve(names: languageNames),
+                reusing: store.lookupFileCache(forResolvedPath: key))
+            artifact = analyzed
             _ = try? store.write(artifact, sourcePath: key, fingerprint: fingerprint)
+            try? store.writeFileCache(fileCache, forResolvedPath: key)
         }
         analysisCount += 1
         entries[key] = Entry(fingerprint: fingerprint, artifact: artifact)

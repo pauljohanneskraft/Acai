@@ -140,4 +140,53 @@ struct AnalysisStoreTests {
             artifact: makeArtifact(toolVersion: "0.9.0"), sourcePath: "/tmp/proj", fingerprint: fingerprint)
         #expect(!entry.isCurrent(sourcePath: "/tmp/proj", fingerprint: fingerprint, toolVersion: "1.0.0"))
     }
+
+    // MARK: - Per-file parse cache
+
+    private func makeFileCacheEntry(source: String) -> ParsedFileCache.Entry {
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Foo.swift"]))
+        return ParsedFileCache.Entry(modified: Date(timeIntervalSince1970: 500), size: 42, artifact: artifact)
+    }
+
+    @Test func fileCacheRoundTripsThroughTheStore() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = ParsedFileCache(
+            toolVersion: AcaiConstants.standard.toolVersion,
+            entriesByRelativePath: ["Foo.swift": makeFileCacheEntry(source: "foo")])
+
+        try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
+
+        let loaded = store.lookupFileCache(forResolvedPath: "/tmp/proj")
+        #expect(loaded == cache)
+    }
+
+    @Test func missingFileCacheIsEmptyNotThrown() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        #expect(store.lookupFileCache(forResolvedPath: "/no/such/path") == ParsedFileCache())
+    }
+
+    @Test func fileCacheFromAnOlderToolVersionIsDiscardedWhole() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = ParsedFileCache(
+            toolVersion: "not-\(AcaiConstants.standard.toolVersion)",
+            entriesByRelativePath: ["Foo.swift": makeFileCacheEntry(source: "foo")])
+
+        try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
+
+        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == ParsedFileCache())
+    }
+
+    @Test func fileCacheFilesAreNeverPickedUpAsWholeProjectEntries() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = ParsedFileCache(
+            toolVersion: AcaiConstants.standard.toolVersion,
+            entriesByRelativePath: ["Foo.swift": makeFileCacheEntry(source: "foo")])
+        try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
+
+        #expect(store.lookup(forResolvedPath: "/tmp/proj") == .absent)
+    }
 }
