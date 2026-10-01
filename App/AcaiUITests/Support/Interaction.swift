@@ -73,6 +73,34 @@ extension XCUIElement {
         XCTFail("\(description) never became tappable", file: file, line: line)
     }
 
+    /// A container whose content just changed size (a flexible-height list renegotiating against
+    /// sibling content that just appeared, a sheet resizing to fit it) can still move for a render
+    /// pass or two after that content first exists in the accessibility tree — see #396, where a
+    /// screenshot taken the instant a late-arriving element existed, but before the panel holding it
+    /// had finished resizing, drifted by a sub-pixel amount from run to run. Polls `frame` (exact
+    /// accessibility-tree geometry, not rendered pixels) rather than `screenshotAfterAnimationsIdle`'s
+    /// pixel diffing, so a change too small to flip a sampled pixel still extends the wait.
+    func waitUntilFrameStable(
+        _ description: String, pollInterval: TimeInterval = 0.2, stableSamplesRequired: Int = 3,
+        timeout: TimeInterval = .uiTransition, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        var previous = frame
+        var stableCount = 0
+        repeat {
+            Thread.sleep(forTimeInterval: pollInterval)
+            let current = frame
+            if current == previous {
+                stableCount += 1
+                if stableCount >= stableSamplesRequired { return }
+            } else {
+                stableCount = 0
+            }
+            previous = current
+        } while Date() < deadline
+        XCTFail("\(description) never stopped resizing", file: file, line: line)
+    }
+
     /// A control enabled by input it depends on (a typed token, a picked option) updates a render pass
     /// after that input, so an instant `isEnabled` read can still see it disabled.
     func waitUntilEnabled(

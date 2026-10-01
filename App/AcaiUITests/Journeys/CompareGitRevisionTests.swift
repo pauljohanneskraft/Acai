@@ -20,7 +20,13 @@ final class CompareGitRevisionTests: UIJourneyTestCase {
         validateScreenshot("ClassDiagram", state: "comparePanelOpen")
 
         diagram.compare(against: "HEAD")
-        diagram.compareFindingsSummary.waitOrFail("the compare panel's findings summary")
+        let findingsSummary = diagram.compareFindingsSummary.waitOrFail("the compare panel's findings summary")
+        // Existing doesn't imply settled: `isFullyLoaded` inserts this element below a ref list whose
+        // own height is a flexible 150–260pt range (`CompareGitOverlay.swift`), so the panel can still
+        // be renegotiating that range — moving this very element — for a render pass or two after it
+        // first appears (#396). A screenshot taken the instant it exists can land mid-renegotiation
+        // and drift by a sub-pixel amount from run to run; wait for its own frame to stop moving first.
+        findingsSummary.waitUntilFrameStable("the compare panel's findings summary")
         validateScreenshot("ClassDiagram", state: "deltaComparison")
 
         // Clear disables the comparison directly — there's no "None" row to pick instead.
