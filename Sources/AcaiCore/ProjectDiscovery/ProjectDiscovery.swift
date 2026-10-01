@@ -12,6 +12,9 @@ import Foundation
 /// directories are not probed again as if they were new roots, and a source directory an ancestor
 /// already claimed for a language is not claimed a second time.
 ///
+/// Fixture and vendored-project directories (``nonRootDirectories``) are not walked for roots, so a
+/// `Package.swift` sitting in a UI-test fixture is not merged into the codebase's own Swift sources.
+///
 /// The `fallback` detector runs once, at the top, for the languages no root claimed.
 public struct ProjectDiscovery: Sendable {
     public let detectors: [any BuildSystemDetector]
@@ -20,16 +23,23 @@ public struct ProjectDiscovery: Sendable {
     /// supplies each language's own (`node_modules`, `.build`, `target`, …) from the registry;
     /// the universal version-control directory is always included.
     public let excludedDirectories: Set<String>
+    /// Directory names that never carry a project root, lowercased. A manifest below one belongs to a
+    /// fixture or a vendored copy rather than to the codebase being analysed, so the walk does not
+    /// look for roots there — unlike ``excludedDirectories``, this is about discovery alone and does
+    /// not stop a root above from collecting those files as its own sources.
+    public let nonRootDirectories: Set<String>
 
     public init(
         detectors: [any BuildSystemDetector],
         fallback: any BuildSystemDetector,
-        excludedDirectories: Set<String> = []
+        excludedDirectories: Set<String> = [],
+        nonRootDirectories: Set<String> = AcaiConstants.standard.defaultNonRootDirectories
     ) {
         self.detectors = detectors
         self.fallback = fallback
         self.excludedDirectories = excludedDirectories
             .union(AcaiConstants.standard.defaultExcludedSourceDirectories)
+        self.nonRootDirectories = Set(nonRootDirectories.map { $0.lowercased() })
     }
 
     public func discoverSourceSpecs(
@@ -116,8 +126,13 @@ private struct DiscoveryWalk {
         claimedSubtrees.contains { directory.standardizedPath.isInside($0) }
     }
 
-    /// Visible, non-symlinked subdirectories in a stable order. Symlinks are skipped so the walk
-    /// can't loop, and hidden directories because a build system's indicator file never lives in one.
+    /// Visible, non-symlinked subdirectories in a stable order, minus the ones that cannot hold a
+    /// project root. Symlinks are skipped so the walk can't loop, and hidden directories because a
+    /// build system's indicator file never lives in one.
+    ///
+    /// Filtering here rather than in ``claim(at:)`` is deliberate: a manifest *below* a fixture
+    /// directory is a fixture too, so the subtree is not worth walking. The directory the caller
+    /// asked about is never filtered, so analysing a fixture package directly still works.
     private func subdirectories(of directory: URL) -> [URL] {
         let entries = (try? FileManager.default.contentsOfDirectory(
             at: directory,
@@ -126,6 +141,7 @@ private struct DiscoveryWalk {
         )) ?? []
         return entries
             .filter { !discovery.excludedDirectories.contains($0.lastPathComponent) }
+            .filter { !discovery.nonRootDirectories.contains($0.lastPathComponent.lowercased()) }
             .filter { entry in
                 let values = try? entry.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
                 return values?.isDirectory == true && values?.isSymbolicLink != true

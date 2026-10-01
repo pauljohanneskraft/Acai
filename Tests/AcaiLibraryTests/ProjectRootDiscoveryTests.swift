@@ -50,6 +50,94 @@ struct ProjectRootDiscoveryTests {
         })
     }
 
+    // MARK: - Fixture and vendored projects
+
+    /// The shape this repository has: a UI-test fixture package outside the real package's
+    /// `Sources/`. Walking every directory would otherwise merge the fixture into the codebase's own
+    /// Swift sources.
+    @Test func aManifestInAFixtureDirectoryIsNotARoot() throws {
+        try withTempDir { base in
+            try write("Package.swift", in: base)
+            try write("Sources/Acai/Real.swift", in: base, contents: "class Real {}")
+            try write(
+                "App/UITests/Fixtures/seeded/SamplePackage/Package.swift", in: base)
+            try write(
+                "App/UITests/Fixtures/seeded/SamplePackage/Sources/Sample.swift",
+                in: base, contents: "class Sample {}")
+
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [])
+
+            #expect(roots(specs, relativeTo: base) == ["./SwiftPackageManagerDetector"])
+            #expect(!specs.flatMap(\.sourceDirs).contains { $0.path.contains("Fixtures") })
+        }
+    }
+
+    @Test func vendoredAndTestDataProjectsAreNotRoots() throws {
+        try withTempDir { base in
+            try write("Package.swift", in: base)
+            try write("Sources/Acai/Real.swift", in: base, contents: "class Real {}")
+            try write("third_party/dep/package.json", in: base, contents: "{}")
+            try write("third_party/dep/src/dep.ts", in: base, contents: "export class Dep {}")
+            try write("testdata/sample/pyproject.toml", in: base, contents: "[project]")
+            try write("testdata/sample/src/s.py", in: base, contents: "class S: pass")
+
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [])
+
+            #expect(!roots(specs, relativeTo: base).contains { $0.hasPrefix("third_party") })
+            #expect(!roots(specs, relativeTo: base).contains { $0.hasPrefix("testdata") })
+        }
+    }
+
+    /// Matched on the name alone, so the convention holds whatever the repository capitalises it as.
+    @Test func theNonRootNamesAreMatchedWithoutRegardToCase() throws {
+        try withTempDir { base in
+            try write("Package.swift", in: base)
+            try write("Sources/Acai/Real.swift", in: base, contents: "class Real {}")
+            try write("TestData/sample/package.json", in: base, contents: "{}")
+            try write("TestData/sample/src/s.ts", in: base, contents: "export class S {}")
+
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [])
+            #expect(!roots(specs, relativeTo: base).contains { $0.lowercased().hasPrefix("testdata") })
+        }
+    }
+
+    /// The rule suppresses roots found *while walking a codebase*, never the folder the user pointed
+    /// at — analysing a fixture package on its own still discovers it.
+    @Test func aFixtureDirectoryAnalysedDirectlyIsStillARoot() throws {
+        try withTempDir { base in
+            let fixture = base.appendingPathComponent("Fixtures/SamplePackage", isDirectory: true)
+            try write("Fixtures/SamplePackage/Package.swift", in: base)
+            try write(
+                "Fixtures/SamplePackage/Sources/Sample.swift", in: base, contents: "class Sample {}")
+
+            let specs = discovery.discoverSourceSpecs(in: fixture, requestedLanguages: [])
+            #expect(specs.map(\.language) == [.swift])
+            #expect(roots(specs, relativeTo: fixture) == ["./SwiftPackageManagerDetector"])
+        }
+    }
+
+    /// A caller that wants every manifest claimed can ask for it; the names are injected, not fixed.
+    @Test func anEmptyNonRootSetClaimsFixtureProjectsAgain() throws {
+        let claimingEverything = ProjectDiscovery(
+            detectors: AnalysisService.standardDetectors,
+            fallback: FallbackDetector(parsers: AnalysisService.standardParsers),
+            excludedDirectories: LanguageRegistry(parsers: AnalysisService.standardParsers)
+                .excludedDirectories,
+            nonRootDirectories: []
+        )
+        try withTempDir { base in
+            try write("Package.swift", in: base)
+            try write("Sources/Acai/Real.swift", in: base, contents: "class Real {}")
+            try write("Fixtures/SamplePackage/Package.swift", in: base)
+            try write(
+                "Fixtures/SamplePackage/Sources/Sample.swift", in: base, contents: "class Sample {}")
+
+            let specs = claimingEverything.discoverSourceSpecs(in: base, requestedLanguages: [])
+            #expect(roots(specs, relativeTo: base)
+                .contains("Fixtures/SamplePackage/SwiftPackageManagerDetector"))
+        }
+    }
+
     // MARK: - Several roots below the folder
 
     @Test func eachSubdirectoryProjectIsItsOwnRoot() throws {
