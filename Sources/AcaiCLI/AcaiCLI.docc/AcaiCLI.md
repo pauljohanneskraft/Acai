@@ -120,6 +120,27 @@ under the store. An artifact written by an older Açaí version reports that it 
 rather than failing obscurely, and an artifact whose `schemaVersion` is newer than this build
 understands reports the found and expected version numbers rather than misreading it.
 
+### What gets parsed
+
+Parsing a directory reads what the repository says it contains, not every byte under the path:
+
+| Left out | Why |
+| --- | --- |
+| Anything a `.gitignore` excludes | The root file and every nested one are read, `!` negation rules included. A nested file overrides its parent for its own subtree, and — as in git — a negation cannot re-include a file inside an ignored directory. |
+| A file over the per-file size ceiling | A bundled `.js`, a vendored single-file library or a generated file that escaped every exclusion would otherwise be read whole into memory. The default ceiling is 2 MiB. |
+| Build-output and dependency directories | Each language contributes its own (`node_modules`, `Pods`, `target`, …), plus `.git` and hidden directories. |
+
+A skipped file is not a silent one: it becomes a `skipped` parse diagnostic carrying its size, and a
+`.gitignore` line that can't be read becomes an `invalidPattern` diagnostic naming the file and line.
+Both are counted by [`analyze --health`](#analyze), so a type you expected to find and can't is
+explained rather than simply absent.
+
+**Symbolic links are followed.** A workspace that symlinks a shared package into place — common in
+JavaScript monorepos and Bazel-style layouts — is analyzed rather than silently losing that
+directory. Each directory is entered at most once however many links alias it, so a link pointing at
+an ancestor terminates instead of looping, and linking a directory in yields the same artifact as
+copying it in place.
+
 ### Output and formatting
 
 | Flag | Values | Notes |
@@ -191,6 +212,10 @@ looking at without guessing from a decode failure; a file written before this fi
 | `--format` | `human` or `json` (default `json`) — health report only. |
 | `--output` | file or stdout |
 | `--include-generated` | |
+
+`--health`'s diagnostics include `skipped` (a file over the size ceiling) and `invalidPattern` (a
+`.gitignore` line no rule could be read from) alongside the parser's own `error`, `missing`,
+`unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed).
 
 ```sh
 acai analyze --source . --health --format human    # run this first

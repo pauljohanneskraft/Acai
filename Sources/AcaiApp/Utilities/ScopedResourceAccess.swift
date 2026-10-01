@@ -134,10 +134,10 @@ struct ScopedResourceAccess {
         return Scoped(url: url, isStale: isStale)
     }
 
-    /// `FileManager.fileURLs`' `enumerator(at:)` answers a denial by handing back an enumerator
-    /// that yields nothing, so the denial reaches `AnalysisService` as an empty file list and
-    /// surfaces as "no source files could be parsed". `contentsOfDirectory` throws instead, which
-    /// is the whole point of probing before handing the URL on.
+    /// `FileManager.fileURLs` swallows a directory it cannot list, so a denial reaches
+    /// `AnalysisService` as an empty file list and surfaces as "no source files could be parsed".
+    /// Letting `contentsOfDirectory` throw here is the whole point of probing before handing the
+    /// URL on.
     private func probe(_ url: URL) throws {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
