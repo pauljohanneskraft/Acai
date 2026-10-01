@@ -76,6 +76,11 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
     /// What makes a member reachable-by-contract in this language (test/framework entry points), so
     /// dead-code analysis doesn't flag them as unused.
     public var entryPointMarkers: EntryPointMarkers
+    /// The member kinds dead-code analysis may report for this language. A kind belongs here only when
+    /// the parser records the call sites that would target it: a kind whose callers are never recorded
+    /// has no reachable edge, so every declaration of it would be reported uncalled. Every parser
+    /// records method calls, hence the default.
+    public var deadCodeMemberKinds: Set<MemberKind>
     /// How this language spells each variance where it marks one, e.g. `[.covariant: "out"]`. A
     /// renderer looks the keyword up here so a parameter shows the source language's own wording.
     public var varianceKeywords: [Variance: String]
@@ -87,6 +92,7 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
         generatedCodeFilter: GeneratedCodeFilter? = nil,
         excludedDirectories: Set<String> = [],
         entryPointMarkers: EntryPointMarkers = EntryPointMarkers(),
+        deadCodeMemberKinds: Set<MemberKind> = [.method],
         varianceKeywords: [Variance: String] = [:]
     ) {
         self.primitiveTypeNames = primitiveTypeNames
@@ -95,6 +101,7 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
         self.generatedCodeFilter = generatedCodeFilter
         self.excludedDirectories = excludedDirectories
         self.entryPointMarkers = entryPointMarkers
+        self.deadCodeMemberKinds = deadCodeMemberKinds
         self.varianceKeywords = varianceKeywords
     }
 

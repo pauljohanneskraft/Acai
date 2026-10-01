@@ -35,6 +35,7 @@ final class ScreenCatalogTests: UIJourneyTestCase {
         detail.openFindings()
         let findings = FindingsScreen(app: app)
         findings.list.waitOrFail("the project's Findings list", timeout: .uiWork)
+        findings.authorshipOperation.waitUntilLoaded("reading the findings' authorship")
         validateScreenshot("Findings", state: "populated")
 
         browser.openLink("acai://diagram/\(freeformDiagramID)")

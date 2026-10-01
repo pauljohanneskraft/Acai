@@ -114,6 +114,14 @@ public struct GitRepository: Sendable {
         try GitChurn(directory: localPath).byFile(ref: ref, limit: limit)
     }
 
+    /// Paths are relative to the repository root, so a codebase pinned to a subpath offsets its own
+    /// through `RepositorySubpath` first.
+    public func blame(
+        rangesByFile: [String: Set<ClosedRange<Int>>], ref: String
+    ) throws -> [String: [ClosedRange<Int>: GitBlame.Line]] {
+        try GitBlame(directory: localPath).lastTouched(inRangesByFile: rangesByFile, source: .revision(ref))
+    }
+
     /// Normalizes away userinfo, host case, and a trailing `.git`, then hashes the result so
     /// nothing from the original URL (including any embedded token) is recoverable from the path
     /// on disk.

@@ -20,8 +20,17 @@ final class CompareGitRevisionTests: UIJourneyTestCase {
         validateScreenshot("ClassDiagram", state: "comparePanelOpen")
 
         diagram.compare(against: "HEAD")
-        diagram.compareFindingsSummary.waitOrFail("the compare panel's findings summary")
-        validateScreenshot("ClassDiagram", state: "deltaComparison")
+        let findingsSummary = diagram.compareFindingsSummary.waitOrFail("the compare panel's findings summary")
+        findingsSummary.waitUntilFrameStable("the compare panel's findings summary")
+        // This capture carries far more on-screen text than any other screenshot in the suite —
+        // section headers, counts, and disclosure chevrons for three findings groups — and #396's
+        // pixel forensics (CI artifact diffed against the golden, byte-for-byte) found the resulting
+        // drift is independent per-glyph CoreText/SF Symbols antialiasing noise between app launches:
+        // no content, layout, or color differs, and no whole- or sub-pixel shift aligns the images
+        // any better than zero offset. Observed drift across many unrelated CI runs has ranged
+        // 0.0000%–0.2823%; 0.5% clears that noise ceiling with real margin while still catching an
+        // actual regression, which would move far more than a thin glyph-edge outline.
+        validateScreenshot("ClassDiagram", state: "deltaComparison", maxChangedFraction: 0.005)
 
         // Clear disables the comparison directly — there's no "None" row to pick instead.
         diagram.compareClearButton.tapWhenReady("the compare panel's Clear button")

@@ -89,6 +89,7 @@ struct AnalysisToolsTests {
             let object = try #require(value.objectValue?["deadCode"]?.objectValue)
             #expect(object["candidates"]?.arrayValue != nil)
             #expect(object["coverage"] != nil)
+            #expect(object["scannedKinds"] == .array([.string("method")]))
             #expect(value.objectValue?["health"] != nil)
         }
     }

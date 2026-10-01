@@ -13653,6 +13653,28 @@
         }
       }
     },
+    "View.FindingRow.LastChangedBy %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt geändert von %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last changed by %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernière modification par %@"
+          }
+        }
+      }
+    },
     "View.FindingRow.ViewDiagram" : {
       "localizations" : {
         "de" : {
@@ -13755,6 +13777,64 @@
         }
       }
     },
+    "View.FindingsView.AuthorshipNeedsFullHistory %lld" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Von %lld Codebase wurde nur der neueste Stand geklont, daher fehlt bei ihren Funden, wer sie zuletzt geändert hat. Rufe die vollständige Historie ab, um es zu sehen."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Von %lld Codebases wurde nur der neueste Stand geklont, daher fehlt bei ihren Funden, wer sie zuletzt geändert hat. Rufe die vollständige Historie ab, um es zu sehen."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Only the latest snapshot of %lld codebase was cloned, so its findings can't show who last changed them. Fetch the full history to see it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Only the latest snapshot of %lld codebases was cloned, so their findings can't show who last changed them. Fetch the full history to see it."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Seul le dernier instantané de %lld codebase a été cloné : ses findings ne peuvent pas indiquer qui les a modifiés en dernier. Récupérez l'historique complet pour le voir."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Seul le dernier instantané de %lld codebases a été cloné : leurs findings ne peuvent pas indiquer qui les a modifiés en dernier. Récupérez l'historique complet pour le voir."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "View.FindingsView.Codebase" : {
       "localizations" : {
         "de" : {
@@ -13831,6 +13911,28 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "View.FindingsView.CouldNotReadAuthorship %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wer die Funde zuletzt geändert hat, konnte nicht gelesen werden: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read who last changed the findings: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de lire l'auteur des dernières modifications des findings : %@"
           }
         }
       }
@@ -14007,6 +14109,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Projet introuvable"
+          }
+        }
+      }
+    },
+    "View.FindingsView.ReadingAuthorship" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lese, wer die Funde zuletzt geändert hat…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading who last changed each finding…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecture des auteurs des dernières modifications…"
+          }
+        }
+      }
+    },
+    "View.FindingsView.RetryAuthorship" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayer"
           }
         }
       }

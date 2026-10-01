@@ -6,7 +6,18 @@ extension AcaiCommand {
     struct CallGraph: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "callgraph",
-            abstract: "Call-graph analysis: metrics, method cycles, or dead-code candidates"
+            abstract: "Call-graph analysis: metrics, method cycles, or dead-code candidates",
+            discussion: """
+                deadcode reports members that no resolved call edge targets and that aren't \
+                reachable by contract — public API, an override, a protocol requirement, or one of \
+                the language's entry-point markers.
+
+                It scans methods in every language. A language's initializers and subscripts are \
+                scanned only where its parser records calls to them: a kind whose callers are never \
+                recorded has no edge to be found by, so scanning it would report every declaration \
+                of it as uncalled. The report names the kinds it actually scanned: a "Scanned:" line \
+                in human output, "scannedKinds" in JSON.
+                """
         )
 
         enum Mode: String, ExpressibleByArgument, CaseIterable {
@@ -137,11 +148,12 @@ extension AcaiCommand {
         private func deadCodeHuman(_ report: DeadCodeScan.Report) -> String {
             let coverage = Int((report.coverage.fraction * 100).rounded())
             guard !report.candidates.isEmpty else {
-                return "No dead-code candidates (call-graph coverage \(coverage)%).\n"
+                return "No dead-code candidates (call-graph coverage \(coverage)%).\n\(report.scopeLine)\n"
             }
             var lines = [
                 "\(report.candidates.count) dead-code candidate(s) "
-                + "— call-graph coverage \(coverage)% (candidates below this floor may be false positives):"
+                + "— call-graph coverage \(coverage)% (candidates below this floor may be false positives):",
+                report.scopeLine
             ]
             for candidate in report.candidates {
                 lines.append("  \(candidate.id)\(candidate.location.suffix)")
@@ -166,4 +178,29 @@ private struct CallGraphCyclesPayload: Encodable {
 private struct CallGraphDeadCodePayload: Encodable {
     var deadCode: DeadCodeScan.Report
     var health: HealthCheck.Summary
+}
+
+private extension DeadCodeScan.Report {
+    /// Named in the header so "no candidates" can't be read as covering a kind no language scanned.
+    var scopeLine: String {
+        let kinds = scannedKinds.map(\.pluralName)
+        return "Scanned: \(kinds.isEmpty ? "nothing" : kinds.joined(separator: ", "))."
+    }
+}
+
+private extension MemberKind {
+    var pluralName: String {
+        switch self {
+        case .property:
+            "properties"
+        case .method:
+            "methods"
+        case .initializer:
+            "initializers"
+        case .deinitializer:
+            "deinitializers"
+        case .subscript:
+            "subscripts"
+        }
+    }
 }
