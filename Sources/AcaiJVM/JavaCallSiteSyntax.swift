@@ -10,8 +10,17 @@ struct JavaCallSiteSyntax: CallSiteSyntax {
     )
 
     /// Matches Java `method_invocation` nodes: `receiver.method(args)` (object is a known property or
-    /// type), `this.receiver.method(args)`, `this.method(args)`, `TypeName.method(args)`.
+    /// type), `this.receiver.method(args)`, `this.method(args)`, `TypeName.method(args)`; and
+    /// `object_creation_expression` nodes (`new Thing()`), resolved the same way a static
+    /// `Thing.method()` call would be — the constructor's member is named after the type itself.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
+        if node.nodeType == "object_creation_expression", let typeNode = node.child(byFieldName: "type"),
+           let typeName = JavaTypeReferenceResolver(context: context).extractTypeReference(typeNode)?.name,
+           !typeName.isEmpty {
+            return scope.resolvedCallSite(
+                receiverName: typeName, methodName: typeName, location: node.location(in: context))
+        }
+
         guard node.nodeType == "method_invocation",
               let nameNode = node.child(byFieldName: "name")
         else { return nil }

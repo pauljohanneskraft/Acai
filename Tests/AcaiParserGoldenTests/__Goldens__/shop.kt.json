@@ -878,7 +878,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 65,
+                "endLine" : 22,
+                "filePath" : "shop.kt",
+                "line" : 22
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -1041,6 +1054,20 @@
 
           ],
           "callSites" : [
+            {
+              "location" : {
+                "column" : 41,
+                "endLine" : 40,
+                "filePath" : "shop.kt",
+                "line" : 40
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Money"
+                }
+              }
+            },
             {
               "location" : {
                 "column" : 53,
@@ -1270,7 +1297,20 @@
 
               ],
               "callSites" : [
-
+                {
+                  "location" : {
+                    "column" : 63,
+                    "endLine" : 26,
+                    "filePath" : "shop.kt",
+                    "line" : 26
+                  },
+                  "methodName" : "init",
+                  "receiver" : {
+                    "type" : {
+                      "_0" : "Product"
+                    }
+                  }
+                }
               ],
               "cyclomaticComplexity" : 1,
               "fieldReads" : [
@@ -1361,7 +1401,20 @@
 
               ],
               "callSites" : [
-
+                {
+                  "location" : {
+                    "column" : 63,
+                    "endLine" : 30,
+                    "filePath" : "shop.kt",
+                    "line" : 30
+                  },
+                  "methodName" : "init",
+                  "receiver" : {
+                    "type" : {
+                      "_0" : "Product"
+                    }
+                  }
+                }
               ],
               "cyclomaticComplexity" : 1,
               "fieldReads" : [
@@ -1446,7 +1499,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 43,
+                "endLine" : 58,
+                "filePath" : "shop.kt",
+                "line" : 58
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Sink"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 

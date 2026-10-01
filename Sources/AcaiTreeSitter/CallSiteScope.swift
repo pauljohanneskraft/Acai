@@ -85,12 +85,25 @@ public struct CallSiteScope: Sendable {
         return merging(locals: map)
     }
 
-    /// Resolves a bare `foo()` with no explicit receiver. Skipped when `name` is a known type (it's
-    /// a construction, not a call). `implicitSelf` tags it `.selfDispatch` for languages with an
-    /// implicit receiver — resolved against the enclosing type first, then a free function;
-    /// otherwise `.free` (e.g. JS, which has no implicit `this`).
-    public func bareCall(named name: String, implicitSelf: Bool, location: SourceLocation?) -> CallSite? {
-        guard !knownTypeNames.contains(name) else { return nil }
+    /// Resolves a bare `foo()` with no explicit receiver. When `name` is a known type, it's a
+    /// construction rather than a call: dropped unless the calling language passes
+    /// `constructorMethodName`, in which case it resolves to a `.type` call site targeting whatever
+    /// member name that closure names for the constructor (Kotlin's fixed `"init"`, Dart's own type
+    /// name for a default constructor) — letting each language opt in independently rather than
+    /// hardcoding one language's naming into this shared guard. `implicitSelf` tags a
+    /// non-construction bare call `.selfDispatch` for languages with an implicit receiver — resolved
+    /// against the enclosing type first, then a free function; otherwise `.free` (e.g. JS, which has
+    /// no implicit `this`).
+    public func bareCall(
+        named name: String,
+        implicitSelf: Bool,
+        constructorMethodName: ((String) -> String)? = nil,
+        location: SourceLocation?
+    ) -> CallSite? {
+        if knownTypeNames.contains(name) {
+            guard let constructorMethodName else { return nil }
+            return CallSite(receiver: .type(name), methodName: constructorMethodName(name), location: location)
+        }
         return CallSite(receiver: implicitSelf ? .selfDispatch : .free, methodName: name, location: location)
     }
 }

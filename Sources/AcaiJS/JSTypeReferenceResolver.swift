@@ -129,9 +129,9 @@ struct JSTypeReferenceResolver {
             guard !name.isEmpty else { continue }
 
             var constraints: [GenericConstraint] = []
-            if let constraintNode = child.child(byFieldName: "constraint") {
-                let constraintType = extractTypeReference(constraintNode)
-                constraints.append(GenericConstraint(kind: .conformance, type: constraintType))
+            if let constraintNode = child.child(byFieldName: "constraint"),
+               let boundNode = constraintNode.namedChildren().first {
+                constraints.append(GenericConstraint(kind: .conformance, type: extractTypeReference(boundNode)))
             }
             params.append(GenericParameter(name: name, constraints: constraints))
         }
