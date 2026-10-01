@@ -41,4 +41,14 @@ struct HealthCheckTests {
         // Sorted by file path then line.
         #expect(report.diagnostics.map(\.location.filePath) == ["A.swift", "B.swift"])
     }
+
+    @Test func incompleteDiscoveryIsReportedButNotScored() {
+        let diagnostic = ParseDiagnostic(
+            location: SourceLocation(filePath: "manifest", line: 1, column: 1),
+            kind: .incompleteDiscovery, message: "manifest could not be read")
+        let report = HealthCheck(artifact: artifact([type("A")], diagnostics: [diagnostic])).report
+        #expect(report.score == 1)
+        #expect(report.diagnosticCount == 1)
+        #expect(report.countsByKind["incompleteDiscovery"] == 1)
+    }
 }
