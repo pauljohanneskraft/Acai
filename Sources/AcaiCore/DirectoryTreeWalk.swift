@@ -29,25 +29,39 @@ struct DirectoryTreeWalk {
     let excludedDirectories: Set<String>
     var fileManager: FileManager = .default
 
+    /// Called once per entry the walk could not resolve — a dangling link, a link out of the
+    /// caller's security scope, or a stat failure — with the path the walk reached it by. `nil`
+    /// (the default) keeps the old silent drop for callers that don't need to report it (the
+    /// `.gitignore` walk, which already has its own diagnostics for malformed rules).
+    var onUnresolvedEntry: ((URL) -> Void)?
+
     /// Calls `body` once per directory with that directory's files. Hidden entries are listed —
     /// `.gitignore` is one — but a hidden directory is never descended into, matching the source
     /// collection this shares a tree with.
+    ///
+    /// A file is reported under the first (sorted) directory path the walk reaches it by. Two
+    /// paths that alias the same file on disk — a symlink sitting next to the file it links to,
+    /// or two links to the same target — contribute it once, keyed on its symlink-resolved path,
+    /// matching the guarantee already made for aliased directories.
     func walk(from root: URL, visiting body: (_ directory: URL, _ files: [URL]) -> Void) {
-        var visited: Set<String> = []
+        var visitedDirectories: Set<String> = []
+        var visitedFiles: Set<String> = []
         var stack = [root]
         while let current = stack.popLast() {
             let resolved = current.resolvingSymlinksInPath()
-            guard visited.insert(resolved.path).inserted else { continue }
+            guard visitedDirectories.insert(resolved.path).inserted else { continue }
             var directories: [URL] = []
             var files: [URL] = []
             for child in sortedChildren(of: current, at: resolved) {
                 switch kind(of: child.real) {
                 case .directory where isDescendable(child.logical):
                     directories.append(child.logical)
-                case .file:
+                case .file where visitedFiles.insert(child.real.resolvingSymlinksInPath().path).inserted:
                     files.append(child.logical)
-                case .directory, .missing:
+                case .file, .directory:
                     continue
+                case .missing:
+                    onUnresolvedEntry?(child.logical)
                 }
             }
             body(current, files)

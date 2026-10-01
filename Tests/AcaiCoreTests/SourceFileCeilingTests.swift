@@ -82,4 +82,25 @@ struct SourceFileCeilingTests {
     func defaultCeilingIsGenerous() {
         #expect(AcaiConstants.standard.maximumSourceFileBytes >= 1024 * 1024)
     }
+
+    @Test("a symlinked file over the ceiling is skipped, not read through the link's own tiny size")
+    func symlinkedOversizedFileIsSkipped() async throws {
+        let manager = self.manager
+        let root = try makeRoot()
+        defer { try? manager.removeItem(at: root) }
+        let target = root.appendingPathComponent("RealHuge.cx")
+        try String(repeating: "x", count: 512).write(to: target, atomically: true, encoding: .utf8)
+        let linkRoot = root.appendingPathComponent("linked", isDirectory: true)
+        try manager.createDirectory(at: linkRoot, withIntermediateDirectories: true)
+        try manager.createSymbolicLink(
+            at: linkRoot.appendingPathComponent("Huge.cx"), withDestinationURL: target)
+
+        let service = AnalysisService(parsers: [CeilingFixtureParser()], maximumSourceFileBytes: 64)
+        let artifact = try await service.analyzeProject(at: linkRoot, allowedLanguages: [])
+
+        #expect(artifact.types.isEmpty)
+        let skipped = artifact.metadata.parseDiagnostics.filter { $0.kind == .skipped }
+        #expect(skipped.map(\.location.filePath) == ["Huge.cx"])
+        #expect(skipped.first?.message.contains("512 bytes") == true)
+    }
 }

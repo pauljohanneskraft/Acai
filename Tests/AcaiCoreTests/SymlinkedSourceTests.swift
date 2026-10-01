@@ -117,8 +117,8 @@ struct SymlinkedSourceTests {
         #expect(artifact.metadata.filePaths == ["Real/Epsilon.lx"])
     }
 
-    @Test("a dangling link is dropped rather than reported unreadable")
-    func danglingLinkIsDropped() async throws {
+    @Test("a dangling link is left out of the artifact, and reported rather than silently dropped")
+    func danglingLinkIsReported() async throws {
         let container = try makeContainer()
         defer { try? manager.removeItem(at: container) }
         let root = container.appendingPathComponent("root", isDirectory: true)
@@ -130,6 +130,23 @@ struct SymlinkedSourceTests {
 
         let artifact = try await analyze(root)
         #expect(artifact.types.map(\.name) == ["Zeta"])
-        #expect(artifact.metadata.parseDiagnostics.isEmpty)
+        let skipped = artifact.metadata.parseDiagnostics.filter { $0.kind == .skipped }
+        #expect(skipped.map(\.location.filePath) == ["Missing.lx"])
+    }
+
+    @Test("two links to the same file contribute it once, not twice")
+    func aliasedFileIsNotDoubleCounted() async throws {
+        let container = try makeContainer()
+        defer { try? manager.removeItem(at: container) }
+        let root = container.appendingPathComponent("root", isDirectory: true)
+        try manager.createDirectory(at: root, withIntermediateDirectories: true)
+        let target = container.appendingPathComponent("Eta.lx")
+        try "Eta".write(to: target, atomically: true, encoding: .utf8)
+        try manager.createSymbolicLink(at: root.appendingPathComponent("First.lx"), withDestinationURL: target)
+        try manager.createSymbolicLink(at: root.appendingPathComponent("Second.lx"), withDestinationURL: target)
+
+        let artifact = try await analyze(root)
+        #expect(artifact.types.map(\.name) == ["First"])
+        #expect(artifact.metadata.filePaths == ["First.lx"])
     }
 }

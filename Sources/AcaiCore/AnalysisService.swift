@@ -123,41 +123,60 @@ public struct AnalysisService: Sendable {
             )
             return nil
         }
-        let files = collectFiles(
+        let collected = collectFiles(
             for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
         )
-        guard !files.isEmpty else { return nil }
+        guard !collected.files.isEmpty else {
+            guard !collected.diagnostics.isEmpty else { return nil }
+            var result = CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
+            result.metadata.parseDiagnostics.append(contentsOf: collected.diagnostics)
+            return result
+        }
 
-        let parsed = try await parseFiles(files, using: codeParser, rootURL: rootURL)
+        let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL)
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )
-        guard !parsed.diagnostics.isEmpty else { return enriched }
+        let diagnostics = collected.diagnostics + parsed.diagnostics
+        guard !diagnostics.isEmpty else { return enriched }
         var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
+        result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
         return result
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
-    /// dir), not just `codeParser`'s own, before applying `includingFile`.
+    /// dir), not just `codeParser`'s own, before applying `includingFile`. A symbolic link the walk
+    /// could not resolve (dangling, or outside the caller's security scope) becomes a `.skipped`
+    /// diagnostic rather than vanishing the way it did before #303 — the same promise the per-file
+    /// size ceiling makes for a file that exists but is too big.
     private func collectFiles(
         for codeParser: any CodeParser,
         in spec: SourceSpec,
         rootURL: URL,
         gitignore: GitignoreFilter?,
         includingFile: (String) -> Bool
-    ) -> [URL] {
+    ) -> (files: [URL], diagnostics: [ParseDiagnostic]) {
         let exts = Set(codeParser.fileExtensions)
         let excluded = excludedDirectories
-        return spec.sourceDirs
-            .flatMap {
-                FileManager.default.fileURLs(in: $0, withExtensions: exts, excludingDirectories: excluded)
+        var diagnostics: [ParseDiagnostic] = []
+        let files = spec.sourceDirs
+            .flatMap { sourceDir -> [URL] in
+                FileManager.default.fileURLs(
+                    in: sourceDir, withExtensions: exts, excludingDirectories: excluded
+                ) { unresolved in
+                    diagnostics.append(ParseDiagnostic(
+                        location: SourceLocation(filePath: unresolved.relativePath(from: rootURL), line: 0, column: 0),
+                        kind: .skipped,
+                        message: "symbolic link could not be resolved"
+                    ))
+                }
             }
             .removingDuplicates { $0 }
             .filter { url in
                 let path = url.relativePath(from: rootURL)
                 return (gitignore?.includes(path) ?? true) && includingFile(path)
             }
+        return (files, diagnostics)
     }
 
     /// Parses every file concurrently (bounded by `fileParsingConcurrencyLimit`, or the processor
@@ -222,9 +241,15 @@ public struct AnalysisService: Sendable {
 
     /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic
     /// rather than failing the whole batch, matching the serial loop's per-file failure isolation.
+    ///
+    /// The size check resolves the symlink first: `attributesOfItem(atPath:)` does not traverse a
+    /// terminal symbolic link, so a link to a huge file reports the length of the *link itself* (a
+    /// handful of bytes) and sails under the ceiling. Now that links are followed on purpose, that
+    /// would silently reintroduce the unbounded read #303 asks to bound.
     private func parseFile(_ file: URL, using codeParser: any CodeParser, rootURL: URL) -> ParseOutcome {
         let relativePath = file.relativePath(from: rootURL)
-        let attributes = try? FileManager.default.attributesOfItem(atPath: file.path)
+        let resolvedPath = file.resolvingSymlinksInPath().path
+        let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath)
         if let size = (attributes?[.size] as? NSNumber)?.intValue, size > maximumSourceFileBytes {
             return .diagnostic(ParseDiagnostic(
                 location: SourceLocation(filePath: relativePath, line: 0, column: 0),
