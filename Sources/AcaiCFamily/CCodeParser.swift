@@ -9,7 +9,8 @@ import TreeSitterCPP
 /// routes each extension to a single parser, this parser content-sniffs every `.h` file
 /// (`CFamilyHeaderClassifier`) and, when the header is actually C++, parses it with the C++ grammar
 /// and reports `cpp` — the agnostic engine then labels and enriches that file as C++ even though a C
-/// source-spec discovered it. Plain C headers and `.c` files are parsed as C.
+/// source-spec discovered it. Plain C headers and `.c` files are parsed as C; an Objective-C header
+/// (an Xcode project's, reached by the fallback) contributes no types rather than C parse errors.
 public struct CCodeParser: CodeParser {
     public let language: CodeArtifact.SourceLanguage = .c
     public let fileExtensions: [String] = ["c", "h"]
@@ -20,8 +21,12 @@ public struct CCodeParser: CodeParser {
     public init() {}
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
-        let asCpp = fileName.hasSuffix(".h") && CFamilyHeaderClassifier(source: source).looksLikeCpp
-        return (asCpp ? cppGrammar : cGrammar).parse(source: source, fileName: fileName)
+        guard fileName.hasSuffix(".h") else { return cGrammar.parse(source: source, fileName: fileName) }
+        let header = CFamilyHeaderClassifier(source: source)
+        if header.looksLikeObjectiveC {
+            return CodeArtifact(metadata: .init(sourceLanguage: language, filePaths: [fileName]))
+        }
+        return (header.looksLikeCpp ? cppGrammar : cGrammar).parse(source: source, fileName: fileName)
     }
 }
 

@@ -13,6 +13,18 @@ public struct ParseDiagnostic: Codable, Equatable, Hashable, Sendable {
         case unresolvedReference
         /// The file itself could not be read (permissions, invalid encoding) — parsing never ran.
         case unreadable
+        /// The file was deliberately left out of the analysis — it exceeded the per-file size
+        /// ceiling (``AcaiConstants/maximumSourceFileBytes``). The message carries its size, so a
+        /// type the user expected to find and cannot is explained rather than simply absent.
+        case skipped
+        /// A pattern in a file the walker consulted — a `.gitignore` line — could not be read as a
+        /// rule. Not a parse failure: the analysis ran, but it excluded less (or more) than the
+        /// repository asked for.
+        case invalidPattern
+        /// A build manifest could not be read in full, so source discovery fell back to probing the
+        /// filesystem. Not a parse failure: the files that were found parsed fine, but the set of
+        /// files may not be the set the build system actually compiles.
+        case incompleteDiscovery
     }
 
     public var location: SourceLocation

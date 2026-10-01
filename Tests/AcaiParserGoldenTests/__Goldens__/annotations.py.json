@@ -64,6 +64,9 @@
 
   ],
   "metadata" : {
+    "discoveredRoots" : [
+
+    ],
     "filePaths" : [
       "annotations.py"
     ],

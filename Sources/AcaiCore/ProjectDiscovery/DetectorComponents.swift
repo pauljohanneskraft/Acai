@@ -71,12 +71,73 @@ public struct SourceFilePresence: Sendable {
     }
 
     public func exist(in directory: URL) -> Bool {
-        !FileManager.default.fileURLs(
-            in: directory, withExtensions: extensions, excludingDirectories: excludedDirectories
+        !FileManager.default.fileExtensionsPresent(
+            in: directory, among: extensions, excludingDirectories: excludedDirectories
         ).isEmpty
     }
 
     public func exist(inAnyOf directories: [URL]) -> Bool {
         directories.contains { exist(in: $0) }
+    }
+}
+
+/// Expands one of a manifest's directory patterns — `packages/*`, `apps/**`, `libs/*-core`, or a
+/// plain `tools/cli` — into the directories that exist under a root. `*` and `?` match within a
+/// single path component; `**` spans any number of them, including none.
+///
+/// Symlinked directories are never descended into, so a link pointing at one of its own ancestors
+/// cannot turn a `**` into an unbounded walk.
+public struct DirectoryGlob: Sendable {
+    private let segments: [String]
+    private let excludedDirectories: Set<String>
+
+    public init(
+        _ pattern: String,
+        excludingDirectories excludedDirectories: Set<String> =
+            AcaiConstants.standard.defaultExcludedSourceDirectories
+    ) {
+        segments = pattern.components(separatedBy: "/").filter { !$0.isEmpty && $0 != "." }
+        self.excludedDirectories = excludedDirectories
+    }
+
+    public func directories(in root: URL) -> [URL] {
+        matches(of: segments[...], in: root.standardizedFileURL).removingDuplicates { $0.path }
+    }
+
+    private func matches(of segments: ArraySlice<String>, in directory: URL) -> [URL] {
+        guard let segment = segments.first else { return [directory] }
+        let rest = segments.dropFirst()
+        if segment == "**" {
+            return matches(of: rest, in: directory)
+                + subdirectories(of: directory).flatMap { matches(of: segments, in: $0) }
+        }
+        guard segment.contains("*") || segment.contains("?") else {
+            let child = directory.appendingPathComponent(segment).standardizedFileURL
+            return child.isReachableDirectory ? matches(of: rest, in: child) : []
+        }
+        let glob = Glob(segment)
+        return subdirectories(of: directory)
+            .filter { glob.matches($0.lastPathComponent) }
+            .flatMap { matches(of: rest, in: $0) }
+    }
+
+    private func subdirectories(of directory: URL) -> [URL] {
+        let contents = (try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+            options: [.skipsHiddenFiles]
+        )) ?? []
+        return contents
+            .filter { !excludedDirectories.contains($0.lastPathComponent) && $0.isReachableDirectory }
+            .map(\.standardizedFileURL)
+            .sorted { $0.path < $1.path }
+    }
+}
+
+extension URL {
+    /// A directory that can be walked: a real directory, not a symlink to one.
+    fileprivate var isReachableDirectory: Bool {
+        let values = try? resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        return values?.isDirectory == true && values?.isSymbolicLink != true
     }
 }
