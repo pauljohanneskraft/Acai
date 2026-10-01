@@ -2,75 +2,65 @@ import Foundation
 
 extension FileManager {
     /// Public so language-target detectors, which live outside AcaiCore, can reuse it.
+    ///
+    /// `onUnresolvedLink`, when supplied, is called once per entry the walk could not resolve — a
+    /// dangling symbolic link, or one outside the caller's security scope — with the path it was
+    /// reached by, so a caller that cares (``AnalysisService``, which turns each into a `.skipped`
+    /// diagnostic) can report what collection silently dropped before this hook existed.
+    ///
+    /// A build manifest may name an individual file where a directory is expected (SwiftPM's
+    /// `sources:`), so that case is special-cased before the walk: `directory` itself is considered
+    /// as the one candidate file, since `DirectoryTreeWalk` only enumerates directory contents.
     public func fileURLs(
         in directory: URL,
         withExtensions extensions: Set<String>,
-        excludingDirectories excludedDirectories: Set<String> = AcaiConstants.standard.defaultExcludedSourceDirectories
+        excludingDirectories excludedDirectories: Set<String> = AcaiConstants.standard.defaultExcludedSourceDirectories,
+        reportingUnresolvedLinks onUnresolvedLink: ((URL) -> Void)? = nil
     ) -> [URL] {
-        var result: [URL] = []
-        walkFiles(in: directory, excludingDirectories: excludedDirectories) { fileURL in
-            if extensions.contains(fileURL.pathExtension.lowercased()) {
-                result.append(fileURL)
-            }
-            return true
+        if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
+            guard extensions.contains(directory.pathExtension.lowercased()),
+                  !directory.lastPathComponent.hasPrefix(".") else { return [] }
+            return [directory]
         }
-        // `enumerator` yields files in a filesystem-dependent order. Sort by path so
-        // parse order — and therefore the order types appear in generated DOT — is
-        // stable across machines, which the golden-file regression tests rely on.
+        var result: [URL] = []
+        var walk = DirectoryTreeWalk(excludedDirectories: excludedDirectories, fileManager: self)
+        walk.onUnresolvedEntry = onUnresolvedLink
+        walk.walk(from: directory) { _, files in
+            for file in files where extensions.contains(file.pathExtension.lowercased()) {
+                guard !file.lastPathComponent.hasPrefix(".") else { continue }
+                result.append(file)
+            }
+        }
+        // The walk yields files in a filesystem-dependent order within each directory. Sort by path
+        // so parse order — and therefore the order types appear in generated DOT — is stable across
+        // machines, which the golden-file regression tests rely on.
         return result.sorted { $0.path < $1.path }
     }
 
     /// Which of `extensions` at least one file under `directory` has. Answers "are there sources
-    /// here?" without collecting them: the walk stops as soon as every extension has been seen, which
-    /// matters because project discovery asks this at every directory it walks.
+    /// here?" without collecting them. Unlike `fileURLs`, this walks the whole subtree regardless of
+    /// how early every requested extension is seen: `DirectoryTreeWalk.walk`'s visitor closure has no
+    /// way to signal "stop early".
     public func fileExtensionsPresent(
         in directory: URL,
         among extensions: Set<String>,
         excludingDirectories excludedDirectories: Set<String> = AcaiConstants.standard.defaultExcludedSourceDirectories
     ) -> Set<String> {
         guard !extensions.isEmpty else { return [] }
+        if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
+            let fileExtension = directory.pathExtension.lowercased()
+            return extensions.contains(fileExtension) ? [fileExtension] : []
+        }
         var found: Set<String> = []
-        walkFiles(in: directory, excludingDirectories: excludedDirectories) { fileURL in
-            let fileExtension = fileURL.pathExtension.lowercased()
-            if extensions.contains(fileExtension) {
-                found.insert(fileExtension)
+        var walk = DirectoryTreeWalk(excludedDirectories: excludedDirectories, fileManager: self)
+        walk.walk(from: directory) { _, files in
+            for file in files {
+                let fileExtension = file.pathExtension.lowercased()
+                if extensions.contains(fileExtension) {
+                    found.insert(fileExtension)
+                }
             }
-            return found.count < extensions.count
         }
         return found
-    }
-
-    /// Visits every file below `directory`, skipping hidden entries, symlinks (so a cycle can't trap
-    /// the walk) and `excludedDirectories` wholesale. `visit` returning `false` ends the walk.
-    ///
-    /// A build manifest may name an individual file where a directory is expected (SwiftPM's
-    /// `sources:`), and an enumerator over a regular file yields nothing — so that case visits the
-    /// file itself directly instead of walking.
-    private func walkFiles(
-        in directory: URL, excludingDirectories excludedDirectories: Set<String>, visit: (URL) -> Bool
-    ) {
-        if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
-            _ = visit(directory)
-            return
-        }
-        guard let enumerator = enumerator(
-            at: directory,
-            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey, .nameKey],
-            options: [.skipsHiddenFiles]
-        ) else { return }
-
-        for case let fileURL as URL in enumerator {
-            let values = try? fileURL.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-            if values?.isSymbolicLink == true {
-                continue
-            }
-            if values?.isDirectory == true {
-                if excludedDirectories.contains(fileURL.lastPathComponent) {
-                    enumerator.skipDescendants()
-                }
-                continue
-            }
-            guard visit(fileURL) else { return }
-        }
     }
 }
