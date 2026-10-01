@@ -271,4 +271,77 @@ struct TypeScriptProjectTests {
             #expect(dirNames(reader.sourceDirs(ofProjectIn: root)) == ["src"])
         }
     }
+
+    // MARK: - JSONC
+
+    /// What `tsc --init` writes: comments throughout and a trailing comma. Rejecting it used to lose
+    /// the file silently, and in an `extends` chain the base's `include` went with it.
+    @Test func aCommentedConfigIsReadLikeTscReadsIt() throws {
+        try withTempDir { root in
+            try write("tsconfig.base.json", in: root, contents: """
+            {
+              // Where the sources live.
+              "include": ["lib",],
+            }
+            """)
+            try write("tsconfig.json", in: root, contents: """
+            {
+              /* Inherit everything. */
+              "extends": "./tsconfig.base.json" // and add nothing
+            }
+            """)
+            try write("lib/a.ts", in: root)
+
+            let reader = TypeScriptProjectReader(notAbove: root)
+            #expect(dirNames(reader.sourceDirs(ofProjectIn: root)) == ["lib"])
+            #expect(reader.diagnostics.isEmpty)
+        }
+    }
+
+    /// Present but unparseable is not the same as absent: the first is a configured layout nobody
+    /// read, and it says so rather than passing for a package that configures nothing.
+    @Test func aConfigThatWillNotParseIsReported() throws {
+        try withTempDir { root in
+            try write("tsconfig.json", in: root, contents: "<<<<<<< HEAD\n{}\n=======\n{}\n>>>>>>> x")
+            try write("src/a.ts", in: root)
+
+            let reader = TypeScriptProjectReader(notAbove: root)
+            #expect(reader.sourceDirs(ofProjectIn: root) == nil)
+            #expect(reader.diagnostics.map(\.kind) == [.incompleteDiscovery])
+            #expect(reader.diagnostics.first?.message.contains("tsconfig.json") == true)
+        }
+    }
+
+    // MARK: - extends that resolves to nothing
+
+    /// A base hoisted into a `node_modules` above the analysed folder resolves to nothing from inside
+    /// it. The directories it declares are missing from the merge, which is worth saying out loud.
+    @Test func anExtendsThatResolvesToNothingIsReported() throws {
+        try withTempDir { root in
+            let project = root.appendingPathComponent("project")
+            try write("node_modules/@tsconfig/node20/tsconfig.json", in: root, contents: #"{"include": ["x"]}"#)
+            try write("project/tsconfig.json", in: root, contents: """
+            {"extends": "@tsconfig/node20", "include": ["src"]}
+            """)
+            try write("project/src/a.ts", in: root)
+
+            let reader = TypeScriptProjectReader(notAbove: project)
+            #expect(dirNames(reader.sourceDirs(ofProjectIn: project)) == ["src"])
+            #expect(reader.diagnostics.map(\.kind) == [.incompleteDiscovery])
+            #expect(reader.diagnostics.first?.message.contains("@tsconfig/node20") == true)
+        }
+    }
+
+    /// The base is inside the analysed folder, so there is nothing to report.
+    @Test func anExtendsThatResolvesRecordsNothing() throws {
+        try withTempDir { root in
+            try write("node_modules/base/tsconfig.json", in: root, contents: #"{"include": ["../../lib"]}"#)
+            try write("tsconfig.json", in: root, contents: #"{"extends": "base"}"#)
+            try write("lib/a.ts", in: root)
+
+            let reader = TypeScriptProjectReader(notAbove: root)
+            #expect(dirNames(reader.sourceDirs(ofProjectIn: root)) == ["lib"])
+            #expect(reader.diagnostics.isEmpty)
+        }
+    }
 }
