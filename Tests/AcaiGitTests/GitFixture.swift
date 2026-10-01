@@ -12,7 +12,7 @@ struct GitFixture {
     let directory: URL
 
     @discardableResult
-    private func run(_ arguments: [String]) throws -> String {
+    private func run(_ arguments: [String], extraEnvironment: [String: String] = [:]) throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
         process.arguments = arguments
@@ -23,7 +23,7 @@ struct GitFixture {
             "GIT_AUTHOR_NAME": "Test", "GIT_AUTHOR_EMAIL": "test@example.com",
             "GIT_COMMITTER_NAME": "Test", "GIT_COMMITTER_EMAIL": "test@example.com",
             "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"
-        ]
+        ].merging(extraEnvironment) { $1 }
         let stdout = Pipe()
         let stderr = Pipe()
         process.standardOutput = stdout
@@ -99,6 +99,46 @@ struct GitFixture {
         let template = try Self.repeatedTouchesTemplate.get()
         try Self.copyTree(from: template.directory, to: directory)
         return template.headSHA
+    }
+
+    /// `Layered.swift` is four lines committed at `layeredOriginalDate`; its third line is then
+    /// rewritten in a commit authored at `layeredAuthorDate` but committed at `layeredCommitDate`. A
+    /// committed `.mailmap` names the one identity `Canonical Test`.
+    func makeWithLayeredEdits() throws {
+        let template = try Self.layeredEditsTemplate.get()
+        try Self.copyTree(from: template, to: directory)
+    }
+
+    static let layeredOriginalDate = Date(timeIntervalSince1970: 1_577_836_800)
+    static let layeredAuthorDate = Date(timeIntervalSince1970: 1_609_459_200)
+    static let layeredCommitDate = Date(timeIntervalSince1970: 1_704_067_200)
+
+    private static let layeredEditsTemplate: Result<URL, Error> = Result {
+        let directory = makeTemplateDirectory()
+        try GitFixture(directory: directory).buildLayeredEditsTemplate()
+        return directory
+    }
+
+    private func buildLayeredEditsTemplate() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try run(["init", "--initial-branch=main"])
+
+        let file = directory.appendingPathComponent("Layered.swift")
+        try "a\nb\nc\nd\n".write(to: file, atomically: true, encoding: .utf8)
+        try "Canonical Test <test@example.com>\n".write(
+            to: directory.appendingPathComponent(".mailmap"), atomically: true, encoding: .utf8)
+        try run(["add", "Layered.swift", ".mailmap"])
+        let original = "@\(Int(Self.layeredOriginalDate.timeIntervalSince1970)) +0000"
+        try run(
+            ["commit", "-m", "add layered file"],
+            extraEnvironment: ["GIT_AUTHOR_DATE": original, "GIT_COMMITTER_DATE": original])
+
+        try "a\nb\nC\nd\n".write(to: file, atomically: true, encoding: .utf8)
+        try run(["add", "Layered.swift"])
+        try run(["commit", "-m", "rewrite the third line"], extraEnvironment: [
+            "GIT_AUTHOR_DATE": "@\(Int(Self.layeredAuthorDate.timeIntervalSince1970)) +0000",
+            "GIT_COMMITTER_DATE": "@\(Int(Self.layeredCommitDate.timeIntervalSince1970)) +0000"
+        ])
     }
 
     /// A depth-1 clone of `source` at `directory`. libgit2's local transport can't fetch shallowly,

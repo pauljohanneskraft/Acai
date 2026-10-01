@@ -20,7 +20,7 @@ struct AtlasFindingsTests {
     ) -> [AtlasFinding] {
         AtlasFindings(
             quality: QualityReport(violations: violations, checkedRuleCount: violations.count),
-            deadCode: .init(coverage: coverage, candidates: candidates),
+            deadCode: .init(coverage: coverage, scannedKinds: [.method], candidates: candidates),
             health: .init(
                 score: 1, typeCount: 1, diagnosticCount: diagnostics.count, countsByKind: [:],
                 diagnostics: diagnostics)

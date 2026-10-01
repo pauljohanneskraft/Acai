@@ -528,6 +528,15 @@ acai inspect --from myproj --enums
 
 > Call-graph analysis: metrics, method cycles, or dead-code candidates.
 
+`deadcode` reports members that no resolved call edge targets and that aren't reachable by contract —
+public API, an override, a protocol requirement, or one of the language's entry-point markers. It scans
+methods in every language; a language's initializers and subscripts are scanned only where its parser
+records calls to them, since a kind whose callers are never recorded has no edge to be found by and
+would report every declaration of it as uncalled. The report names the kinds it actually scanned: a
+`Scanned:` line in human output, `scannedKinds` in JSON — the union across every language in the
+codebase, so in a polyglot codebase a kind listed there was scanned for at least one language, not
+necessarily all of them.
+
 | Flag | Notes |
 | --- | --- |
 | `--from`, `--source`, `--language` | artifact source |

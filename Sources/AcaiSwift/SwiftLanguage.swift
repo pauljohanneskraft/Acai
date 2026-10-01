@@ -35,7 +35,12 @@ extension SwiftCodeParser {
                     "makensview", "makeuiview", "makecoordinator",
                     "updatensview", "updateuiview",
                     "dismantlensview", "dismantleuiview"
-                ])
+                ]),
+            // `Thing()` is recorded as a construction rather than a call (`CallSiteCollector`
+            // drops a type-name callee), and a subscript access is not recorded at all, so an
+            // initializer or subscript here has no caller edge to be found by. Only the explicit
+            // `Thing.init(x:)` spelling resolves, which is too small a share to scan on.
+            deadCodeMemberKinds: [.method]
         )
     }
 }

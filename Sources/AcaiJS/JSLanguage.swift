@@ -27,7 +27,10 @@ extension JSCodeParser {
                 methodNames: [
                     "main", "componentdidmount", "componentwillunmount", "componentdidupdate",
                     "render", "ngoninit", "ngondestroy", "ngonchanges"
-                ])
+                ]),
+            // `new Thing()` is read for a local's type but never recorded as a call, so a
+            // `constructor` has no caller edge.
+            deadCodeMemberKinds: [.method]
         )
     }
 }
