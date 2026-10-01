@@ -48,13 +48,15 @@ extension SourceSpec {
     /// it instead of being dropped from the second root onwards.
     ///
     /// `root` and `detector` keep the first root's: a merged spec has several roots, and the full set
-    /// is recorded separately in `metadata.discoveredRoots`.
+    /// is recorded separately in `metadata.discoveredRoots`. `diagnostics` from every root survive the
+    /// merge, concatenated, so a problem found discovering the second root is never silently dropped.
     func merging(_ other: SourceSpec) -> SourceSpec {
         SourceSpec(
             language: language,
             sourceDirs: sourceDirs + other.sourceDirs,
             root: root,
-            detector: detector
+            detector: detector,
+            diagnostics: diagnostics + other.diagnostics
         )
     }
 }

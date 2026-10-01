@@ -76,6 +76,9 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
     /// What makes a member reachable-by-contract in this language (test/framework entry points), so
     /// dead-code analysis doesn't flag them as unused.
     public var entryPointMarkers: EntryPointMarkers
+    /// How this language spells each variance where it marks one, e.g. `[.covariant: "out"]`. A
+    /// renderer looks the keyword up here so a parameter shows the source language's own wording.
+    public var varianceKeywords: [Variance: String]
 
     public init(
         primitiveTypeNames: Set<String> = [],
@@ -83,7 +86,8 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
         annotationStereotypes: [String: String] = [:],
         generatedCodeFilter: GeneratedCodeFilter? = nil,
         excludedDirectories: Set<String> = [],
-        entryPointMarkers: EntryPointMarkers = EntryPointMarkers()
+        entryPointMarkers: EntryPointMarkers = EntryPointMarkers(),
+        varianceKeywords: [Variance: String] = [:]
     ) {
         self.primitiveTypeNames = primitiveTypeNames
         self.collectionTypeNames = collectionTypeNames
@@ -91,6 +95,7 @@ public struct LanguageConfiguration: Sendable, Equatable, Hashable {
         self.generatedCodeFilter = generatedCodeFilter
         self.excludedDirectories = excludedDirectories
         self.entryPointMarkers = entryPointMarkers
+        self.varianceKeywords = varianceKeywords
     }
 
     public func isPrimitive(_ name: String) -> Bool { primitiveTypeNames.contains(name) }

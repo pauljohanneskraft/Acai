@@ -107,9 +107,10 @@ public struct AnalysisService: Sendable {
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )
-        guard !parsed.diagnostics.isEmpty else { return enriched }
+        let diagnostics = spec.diagnostics + parsed.diagnostics
+        guard !diagnostics.isEmpty else { return enriched }
         var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
+        result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
         return result
     }
 

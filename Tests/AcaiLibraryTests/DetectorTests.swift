@@ -170,6 +170,118 @@ struct DetectorTests {
         }
     }
 
+    /// A monorepo declares its packages in `package.json`; each one contributes its own directories
+    /// rather than the root being parsed wholesale.
+    @Test func nodeReadsWorkspacePackages() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: #"{"workspaces": ["packages/*"]}"#)
+            try write("packages/core/package.json", in: root, contents: "{}")
+            try write("packages/core/src/core.ts", in: root)
+            try write("packages/ui/package.json", in: root, contents: "{}")
+            try write("packages/ui/src/ui.ts", in: root)
+            // A folder matching the glob but carrying no manifest is not a package.
+            try write("packages/notes/README.md", in: root)
+
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(specs.map(\.language) == [.typeScript])
+            #expect(dirNames(specs, for: .typeScript) == ["src", "src"])
+            #expect(specs.first?.sourceDirs.map { $0.pathComponents.suffix(3).joined(separator: "/") }
+                == ["packages/core/src", "packages/ui/src"])
+            #expect(specs.first?.diagnostics.isEmpty == true)
+        }
+    }
+
+    @Test func nodeReadsTheObjectFormOfWorkspacesAndItsExclusions() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: """
+            {"workspaces": {"packages": ["packages/*", "!packages/legacy"]}}
+            """)
+            try write("packages/core/package.json", in: root, contents: "{}")
+            try write("packages/core/src/core.ts", in: root)
+            try write("packages/legacy/package.json", in: root, contents: "{}")
+            try write("packages/legacy/src/old.ts", in: root)
+
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(specs.first?.sourceDirs.map { $0.pathComponents.suffix(3).joined(separator: "/") }
+                == ["packages/core/src"])
+        }
+    }
+
+    /// A package whose `tsconfig.json` only extends a base used to yield nothing and fall back to
+    /// probing; now it inherits the base's directories.
+    @Test func nodeFollowsAWorkspacePackagesExtendsChain() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: #"{"workspaces": ["packages/*"]}"#)
+            try write("tsconfig.base.json", in: root, contents: #"{"include": ["lib"]}"#)
+            try write("packages/app/package.json", in: root, contents: "{}")
+            try write("packages/app/tsconfig.json", in: root, contents: """
+            {"extends": "../../tsconfig.base.json"}
+            """)
+            // The base resolves its own relative `include`, so this is the root's `lib`, not the package's.
+            try write("lib/shared.ts", in: root)
+
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(specs.first?.sourceDirs.map { $0.pathComponents.suffix(2).joined(separator: "/") }
+                == ["\(root.lastPathComponent)/lib"])
+        }
+    }
+
+    /// A `tsconfig` graph that leads back on itself is reported once, on one spec — it is a fact about
+    /// the project, not about a language.
+    @Test func nodeRecordsADiagnosticForATsconfigCycle() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: "{}")
+            try write("tsconfig.json", in: root, contents: """
+            {"include": ["src"], "references": [{"path": "./nested"}]}
+            """)
+            try write("nested/tsconfig.json", in: root, contents: #"{"references": [{"path": ".."}]}"#)
+            try write("src/a.ts", in: root)
+            try write("src/b.js", in: root)
+
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [.typeScript, .javaScript])
+            #expect(specs.count == 2)
+            #expect(specs.map { $0.diagnostics.map(\.kind) } == [[.incompleteDiscovery], []])
+        }
+    }
+
+    /// Workspaces that name nothing on disk mean the manifest does not describe this checkout: probing
+    /// is still better than finding nothing, but it is a guess and is recorded as one.
+    @Test func nodeRecordsADiagnosticWhenNoWorkspaceResolves() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: #"{"workspaces": ["packages/*"]}"#)
+            try write("src/app.ts", in: root)
+
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(dirNames(specs, for: .typeScript) == ["src"])
+            #expect(specs.first?.diagnostics.map(\.kind) == [.incompleteDiscovery])
+            #expect(specs.first?.diagnostics.first?.location.filePath == "package.json")
+        }
+    }
+
+    /// A workspace root that also holds sources of its own keeps them, but never falls back to the root
+    /// itself — that would swallow every package.
+    @Test func nodeKeepsAWorkspaceRootsOwnConventionalSourceDir() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: #"{"workspaces": ["packages/*"]}"#)
+            try write("src/root.ts", in: root)
+            try write("packages/core/package.json", in: root, contents: "{}")
+            try write("packages/core/src/core.ts", in: root)
+            // Outside both, and only reachable if the root itself were used as a source dir.
+            try write("scratch/stray.ts", in: root)
+
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(specs.first?.sourceDirs.map { $0.pathComponents.suffix(2).joined(separator: "/") }
+                == ["\(root.lastPathComponent)/src", "core/src"])
+            #expect(specs.first?.diagnostics.isEmpty == true)
+        }
+    }
+
     // MARK: - Flutter / Dart
 
     @Test func flutterDetectsAndPrefersLibDir() throws {

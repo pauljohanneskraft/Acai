@@ -131,7 +131,24 @@ struct KotlinTypeReferenceResolver {
             } else if let nullableTypeNode = child.firstChild(withType: "nullable_type") {
                 constraints.append(GenericConstraint(kind: .conformance, type: extractNullableType(nullableTypeNode)))
             }
-            return GenericParameter(name: name, constraints: constraints)
+            return GenericParameter(name: name, constraints: constraints, variance: variance(of: child))
+        }
+    }
+
+    /// `nil` also for `in out`, which Kotlin rejects as a conflicting projection.
+    private func variance(of typeParameter: Node) -> Variance? {
+        let keywords = Set(
+            typeParameter.firstChild(withType: "type_parameter_modifiers")?
+                .allChildren(withType: "variance_modifier")
+                .map { $0.text(in: context) } ?? []
+        )
+        switch keywords {
+        case ["out"]:
+            return .covariant
+        case ["in"]:
+            return .contravariant
+        default:
+            return nil
         }
     }
 }

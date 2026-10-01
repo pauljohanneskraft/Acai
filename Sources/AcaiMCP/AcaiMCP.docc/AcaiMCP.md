@@ -267,7 +267,7 @@ Render a diagram as DOT or Mermaid text you can embed in a reply.
 | `path` * | string | |
 | `languages`, `refresh` | | |
 | `kind` | `class` \| `package` \| `moduleCoupling` \| `sequence` \| `state` \| `callgraph` | Default `class`. |
-| `format` | `dot` \| `mermaid` | **Default `mermaid`** — note the CLI defaults to `dot`. |
+| `format` | `dot` \| `mermaid` | **Default `mermaid`**, as on the CLI. |
 | `focus`, `focusDepth` | string, integer | Class diagram only. |
 | `scope` | string | Call graph: `type:Name` or `module:Name`. |
 | `sequenceFrom` | string | Required for `kind: sequence`. |
@@ -387,7 +387,7 @@ The tools mirror CLI commands closely, but not exactly. Where they diverge:
 | `acai_metrics` | No `--sort` / `--top`; rank client-side. JSON only. |
 | `acai_callgraph` | No `--top`, no `--no-fail`. JSON only. |
 | `acai_diff` | Both sides must be filesystem paths. No delta-diagram rendering. |
-| `acai_diagram` | Defaults to `mermaid` where the CLI defaults to `dot`. Exposes none of the class-diagram flags, no theme, no config file, no focus direction/relationship control. |
+| `acai_diagram` | Exposes none of the class-diagram flags, no theme, no config file, no focus direction/relationship control. |
 | `acai_image` | No `--grouping`, `--hide-members`, `--min-access`, or delta-image inputs. |
 | `acai_atlas` | At parity with `acai atlas`, including its `scale`/`maxNodes` limits. Unrendered diagrams are listed in `unrenderedDiagrams` where the CLI warns on stderr. |
 | `acai_hotspots` | JSON only — no human table. |

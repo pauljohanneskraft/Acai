@@ -71,7 +71,8 @@ public struct DiagramLayoutModel: Sendable {
             return GeneratedDiagramNode(
                 from: type, configuration: configuration,
                 annotationStereotypes: config.annotationStereotypes,
-                collectionTypeNames: config.collectionTypeNames
+                collectionTypeNames: config.collectionTypeNames,
+                varianceKeywords: config.varianceKeywords
             )
         }.removingDuplicates { $0.id }
 

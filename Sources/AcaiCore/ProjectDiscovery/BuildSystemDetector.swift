@@ -12,17 +12,23 @@ public struct SourceSpec {
     /// The claiming detector's type name, stamped by ``ProjectDiscovery`` so a spec can say where it
     /// came from without a detector having to name itself.
     public var detector: String
+    /// Problems found while discovering this spec — a manifest whose layout could not be read in
+    /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
+    /// ``HealthCheck`` reflects them.
+    public var diagnostics: [ParseDiagnostic]
 
     public init(
         language: CodeArtifact.SourceLanguage,
         sourceDirs: [URL],
         root: URL,
-        detector: String = ""
+        detector: String = "",
+        diagnostics: [ParseDiagnostic] = []
     ) {
         self.language = language
         self.sourceDirs = sourceDirs
         self.root = root
         self.detector = detector
+        self.diagnostics = diagnostics
     }
 
     func detected(by detector: any BuildSystemDetector) -> SourceSpec {

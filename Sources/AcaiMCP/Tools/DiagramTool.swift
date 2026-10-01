@@ -40,7 +40,7 @@ struct DiagramTool: AnalysisTool {
 
     func run(arguments: ToolArguments, cache: AnalysisSnapshotCache) async throws -> ToolOutput {
         let kind = try EnumArgument<DiagramKind>.kind.value(in: arguments, or: .class)
-        let format = try EnumArgument<DiagramFormat>.format.value(in: arguments, or: .mermaid)
+        let format = try EnumArgument<DiagramFormat>.format.value(in: arguments, or: .standard)
         let artifact = try await resolveArtifact(arguments, cache)
         do {
             let export = try export(kind, for: arguments, artifact: artifact)

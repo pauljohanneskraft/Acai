@@ -1,5 +1,6 @@
 #if os(macOS)
 import AcaiGit
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiApp
@@ -163,9 +164,101 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         #expect((size ?? 0) > 0)
     }
 
+    /// A clone that outlives its project: what it produced is discarded and reported, never filed
+    /// under whichever project now sits where the deleted one did.
+    @Test func aCloneFinishingAfterItsProjectIsDeletedIsDiscardedRatherThanMisfiled() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let store = ProjectStore(baseDir: root.appendingPathComponent("store"))
+        let service = GatedCloneRemoteService()
+        let editor = makeEditor(store: store, remoteService: service)
+        let doomedProjectID = editor.addProject(title: "Doomed", subtitle: "")
+        let survivingProjectID = editor.addProject(title: "Surviving", subtitle: "")
+
+        let clone = Task {
+            await editor.addRemoteCodebase(
+                to: doomedProjectID, name: "widgets", remoteURL: remote.directory, ref: "main",
+                refKind: .branch)
+        }
+        // Deleted in exactly the window the clone suspends in, with the worktree already on disk.
+        try await service.attached.wait(timeout: .seconds(30))
+        editor.removeProject(doomedProjectID)
+        await service.mayFinish.open()
+        await clone.value
+
+        let remainingProjectIDs = store.projects.map(\.id)
+        let codebasesLeft = store.projects.flatMap(\.codebases)
+        #expect(remainingProjectIDs == [survivingProjectID])
+        #expect(codebasesLeft.isEmpty)
+        // Told, not silently dropped.
+        #expect(store.lastError != nil)
+        // The orphaned worktree, and the hub clone left holding nothing, are both gone.
+        #expect(directoryNames(in: store.gitWorktreesDir).isEmpty)
+        #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
+    }
+
     private func directoryNames(in directory: URL) -> [String] {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
         return names.filter { !$0.hasPrefix(".") }
+    }
+}
+
+/// `LiveGitRemoteService`, but the clone parks once the worktree is on disk so a test can mutate
+/// the project list in the window `addRemoteCodebase` suspends in.
+private struct GatedCloneRemoteService: GitRemoteService {
+    let attached = AsyncGate()
+    let mayFinish = AsyncGate()
+    private let live = LiveGitRemoteService()
+
+    func listRemote(_ endpoint: RemoteEndpoint) async throws -> GitRemoteListing.Result {
+        try await live.listRemote(endpoint)
+    }
+
+    @discardableResult
+    func attachWorktree(
+        _ target: RemoteCheckoutTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws -> (headSHA: String, remoteURL: URL) {
+        let result = try await live.attachWorktree(target, destination: destination, onProgress: onProgress)
+        await attached.open()
+        await mayFinish.wait()
+        return result
+    }
+
+    @discardableResult
+    func resyncWorktree(
+        _ target: RemoteCheckoutTarget, destination: GitWorktreeDestination,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws -> String {
+        try await live.resyncWorktree(target, destination: destination, onProgress: onProgress)
+    }
+
+    func refs(of endpoint: RemoteEndpoint, hubStoreDirectory: URL) async throws -> [GitCheckout.Ref] {
+        try await live.refs(of: endpoint, hubStoreDirectory: hubStoreDirectory)
+    }
+
+    func fetchFullHistory(
+        _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws {
+        try await live.fetchFullHistory(
+            endpoint, hubStoreDirectory: hubStoreDirectory, locks: locks, onProgress: onProgress)
+    }
+
+    func fetch(
+        _ endpoint: RemoteEndpoint, hubStoreDirectory: URL, locks: GitRepositoryLocks,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws {
+        try await live.fetch(endpoint, hubStoreDirectory: hubStoreDirectory, locks: locks, onProgress: onProgress)
+    }
+
+    func inspectClone(_ endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> CloneInspection {
+        await live.inspectClone(endpoint, hubStoreDirectory: hubStoreDirectory)
+    }
+
+    func onDiskSize(of endpoint: RemoteEndpoint, hubStoreDirectory: URL) async -> Int64? {
+        await live.onDiskSize(of: endpoint, hubStoreDirectory: hubStoreDirectory)
     }
 }
 #endif
