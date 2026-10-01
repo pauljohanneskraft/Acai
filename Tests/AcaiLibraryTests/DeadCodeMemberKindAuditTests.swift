@@ -10,10 +10,21 @@ import AcaiDiagram
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
 
-    @Test(arguments: AnalysisService.standardParsers.map(\.language))
-    func everyBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
+    /// Java, Kotlin and Dart now also scan `.initializer` — each has its own dedicated pair of tests
+    /// below pinning the parser behaviour that justifies it. Every other built-in language still
+    /// scans methods only.
+    @Test(arguments: AnalysisService.standardParsers
+        .map(\.language)
+        .filter { $0 != .java && $0 != .kotlin && $0 != .dart })
+    func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
+    }
+
+    @Test(arguments: [CodeArtifact.SourceLanguage.java, .kotlin, .dart])
+    func javaKotlinAndDartAlsoScanInitializers(language: CodeArtifact.SourceLanguage) throws {
+        let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
+        #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer])
     }
 
     private func callSites(_ source: String, in memberName: String, of parser: any CodeParser,
@@ -66,9 +77,10 @@ struct DeadCodeMemberKindAuditTests {
         #expect(sites.isEmpty)
     }
 
-    /// Why the tree-sitter languages decline `.initializer`: a construction reaches the shared
-    /// `CallSiteScope.bareCall`, which drops a callee that names a known type.
-    @Test func kotlinRecordsNoConstructorCall() throws {
+    /// Why Kotlin now accepts `.initializer`: a bare construction reaches the shared
+    /// `CallSiteScope.bareCall`, which resolves it to the constructor's fixed `init` member instead
+    /// of dropping it, for both the primary and a secondary constructor.
+    @Test func kotlinRecordsAConstructorCall() throws {
         let sites = try callSites("""
         class Thing(val x: Int) {
             constructor() : this(0) {}
@@ -79,7 +91,8 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: KotlinCodeParser(), fileName: "Thing.kt")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 2)
+        #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "init" })
     }
 
     @Test func kotlinExtractsAnOperatorGetAsAMethod() throws {
@@ -91,7 +104,9 @@ struct DeadCodeMemberKindAuditTests {
         #expect(kinds["get"] == .method)
     }
 
-    @Test func javaRecordsNoConstructorCall() throws {
+    /// Why Java now accepts `.initializer`: `new Thing()` resolves the same way a static
+    /// `Thing.method()` call would — the constructor's member is named after the type itself.
+    @Test func javaRecordsAConstructorCall() throws {
         let sites = try callSites("""
         class Thing {
             Thing() {}
@@ -103,7 +118,8 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: JavaCodeParser(), fileName: "Thing.java")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 2)
+        #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "Thing" })
     }
 
     @Test(arguments: [true, false])
@@ -121,7 +137,11 @@ struct DeadCodeMemberKindAuditTests {
         #expect(sites.isEmpty)
     }
 
-    @Test func dartRecordsNoConstructorCall() throws {
+    /// Why Dart now accepts `.initializer`: a bare default-constructor call `Thing()` now resolves
+    /// through `CallSiteScope.bareCall`'s constructor opt-in, named after the type itself; a named
+    /// constructor call `Thing.named()` already resolved — it shares the `TypeName.method()` grammar
+    /// shape, not `bareCall`'s.
+    @Test func dartRecordsConstructorCalls() throws {
         let sites = try callSites("""
         class Thing {
           Thing();
@@ -133,7 +153,9 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: DartCodeParser(), fileName: "thing.dart")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 2)
+        #expect(sites.contains { $0.receiver == .type("Thing") && $0.methodName == "Thing" })
+        #expect(sites.contains { $0.receiver == .type("Thing") && $0.methodName == "named" })
     }
 
     @Test func dartExtractsAnIndexOperatorAsAMethod() throws {
@@ -233,5 +255,89 @@ struct DeadCodeMemberKindAuditTests {
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
         #expect(report.candidates.map(\.id) == ["Thing.unusedMethod"])
+    }
+
+    /// The end-to-end consequence for Java: a called constructor is not reported, while an uncalled
+    /// one now is. Java's package-private default keeps both out of the public-API exemption.
+    @Test func aCalledJavaConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = JavaCodeParser().parse(source: """
+        class Called {
+            Called() {}
+        }
+        class Uncalled {
+            Uncalled() {}
+        }
+        class Worker {
+            void run() {
+                new Called();
+            }
+        }
+        """, fileName: "Worker.java")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("Called.Called"))
+    }
+
+    /// The end-to-end consequence for Kotlin: a called constructor is not reported, while an
+    /// uncalled one now is. Marked `private` since Kotlin's own default is `public`, which would
+    /// otherwise exempt both as public API regardless of calls.
+    @Test func aCalledKotlinConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = KotlinCodeParser().parse(source: """
+        private class Called(val x: Int)
+        private class Uncalled(val y: Int)
+        class Worker {
+            fun run() {
+                Called(1)
+            }
+        }
+        """, fileName: "Worker.kt")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.init"))
+        #expect(!report.candidates.map(\.id).contains("Called.init"))
+    }
+
+    /// The end-to-end consequence for Dart's default constructors: a called one is not reported,
+    /// while an uncalled one now is. The class names are `_`-prefixed since Dart's own default is
+    /// public, which would otherwise exempt both as public API regardless of calls.
+    @Test func aCalledDartDefaultConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = DartCodeParser().parse(source: """
+        class _Called {
+          _Called();
+        }
+        class _Uncalled {
+          _Uncalled();
+        }
+        class Worker {
+          void run() {
+            _Called();
+          }
+        }
+        """, fileName: "worker.dart")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("_Called._Called"))
+    }
+
+    /// The end-to-end consequence for Dart's named constructors: a called one is not reported, while
+    /// an uncalled one now is.
+    @Test func aCalledDartNamedConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = DartCodeParser().parse(source: """
+        class Widget {
+          Widget._calledNamed();
+          Widget._uncalledNamed();
+        }
+        class Worker {
+          void run() {
+            Widget._calledNamed();
+          }
+        }
+        """, fileName: "worker.dart")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed"))
+        #expect(!report.candidates.map(\.id).contains("Widget._calledNamed"))
     }
 }
