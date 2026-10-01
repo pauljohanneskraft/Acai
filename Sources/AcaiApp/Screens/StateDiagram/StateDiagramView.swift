@@ -178,12 +178,12 @@ struct StateDiagramView: View {
         }
     }
 
-    // MARK: - Failure / unconfigured states
-
     private func applyFilter(_ filter: AcaiQuality.Selector?) {
         viewModel.applyFilter(filter)
         model.diagrams.updateStateFilter(diagramID: diagram.id, filter: filter)
     }
+
+    // MARK: - Empty / failure / unconfigured states
 
     /// The analysis succeeded but produced no states — either the variable has none, or the filter
     /// dropped them all.

@@ -51,6 +51,10 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
+    /// Checked against the diagram rather than `layout`, which rebuilds the whole layout on every
+    /// read — a render pass asking "is this empty?" must not pay for a second layout.
+    var isEmpty: Bool { diagram.nodes.isEmpty }
+
     /// Why the diagram has nothing to draw, so an empty canvas can say whether anything the viewer
     /// did caused it. There is no scope to narrow here — the module set comes from the build system.
     var emptyReason: DiagramEmptyReason {

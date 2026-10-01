@@ -154,7 +154,7 @@ struct PackageDiagramView: View {
             }
         )
         .overlay {
-            if viewModel.layout.nodes.isEmpty {
+            if viewModel.isEmpty {
                 DiagramEmptyScopeOverlay(
                     reason: viewModel.emptyReason, nothingOfThisKind: noModulesDescription,
                     onUndo: { filterBinding.wrappedValue = nil }

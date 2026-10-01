@@ -215,7 +215,7 @@ private struct CallGraphCanvasView: View {
             }
         )
         .overlay {
-            if viewModel.layout.nodes.isEmpty {
+            if viewModel.isEmpty {
                 DiagramEmptyScopeOverlay(
                     reason: viewModel.emptyReason, nothingOfThisKind: noCallsDescription,
                     onUndo: clearEmptyScope

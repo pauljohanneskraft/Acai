@@ -108,6 +108,8 @@ struct DiagramEmptyReasonTests {
     func callGraphFilterIsReported() {
         let viewModel = CallGraphViewModel(
             artifact: artifact(), scope: .wholeCodebase, filter: matchesNothing)
+        #expect(viewModel.isEmpty)
+        // `isEmpty` reads the graph to avoid rebuilding the layout per render pass; the two must agree.
         #expect(viewModel.layout.nodes.isEmpty)
         #expect(viewModel.emptyReason == .filter)
     }
@@ -116,7 +118,7 @@ struct DiagramEmptyReasonTests {
     func callGraphScopeOutranksFilter() {
         let viewModel = CallGraphViewModel(
             artifact: artifact(), scope: .type("ZzNoSuchType"), filter: matchesNothing)
-        #expect(viewModel.layout.nodes.isEmpty)
+        #expect(viewModel.isEmpty)
         #expect(viewModel.emptyReason == .scope)
     }
 
@@ -127,7 +129,7 @@ struct DiagramEmptyReasonTests {
         #expect(viewModel.emptyReason == .filter)
         viewModel.applyFilter(nil)
         #expect(viewModel.emptyReason == .codebase)
-        #expect(!viewModel.layout.nodes.isEmpty)
+        #expect(!viewModel.isEmpty)
     }
 
     // MARK: - Package diagram
@@ -137,7 +139,10 @@ struct DiagramEmptyReasonTests {
         let unfiltered = PackageDiagramViewModel(artifact: artifact())
         #expect(unfiltered.emptyReason == .codebase)
 
+        #expect(!unfiltered.isEmpty)
+
         let filtered = PackageDiagramViewModel(artifact: artifact(), filter: matchesNothing)
+        #expect(filtered.isEmpty)
         #expect(filtered.layout.nodes.isEmpty)
         #expect(filtered.emptyReason == .filter)
     }
