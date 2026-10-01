@@ -5,17 +5,25 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
 
     public let indicatorFiles: [String]
 
-    private static let excludedDirs: Set<String> = [
-        "build", ".gradle", ".build", "node_modules", ".git", "target", ".idea"
-    ]
+    /// The settings files whose `include` list defines the module set. Empty for a build system that has
+    /// no such file — Maven's modules are still found by scanning the tree.
+    public let settingsFiles: [String]
 
-    public init(indicatorFiles: [String]) {
+    /// Taken from the language configuration rather than kept as a second list, so the detector skips
+    /// exactly what the parser declares.
+    private let excludedDirectories: Set<String>
+
+    public init(indicatorFiles: [String], settingsFiles: [String] = []) {
         self.indicatorFiles = indicatorFiles
+        self.settingsFiles = settingsFiles
+        excludedDirectories = KotlinCodeParser().configuration.excludedDirectories
     }
 
-    public static let gradle = JVMBuildSystemDetector(indicatorFiles: [
-        "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"
-    ])
+    public static let gradle = JVMBuildSystemDetector(
+        indicatorFiles: [
+            "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"
+        ],
+        settingsFiles: ["settings.gradle", "settings.gradle.kts"])
 
     public static let maven = JVMBuildSystemDetector(indicatorFiles: ["pom.xml"])
 
@@ -28,51 +36,83 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
         let request = LanguageRequest(requestedLanguages)
-        let (kotlinDirs, javaDirs) = findSourceDirs(in: root)
+        let modules = modules(in: root)
         var specs: [SourceSpec] = []
 
-        if !kotlinDirs.isEmpty, request.wants(.kotlin) {
-            specs.append(SourceSpec(language: .kotlin, sourceDirs: kotlinDirs))
-        } else if request.wants(.kotlin), SourceFilePresence(extensions: ["kt", "kts"]).exist(in: root) {
-            specs.append(SourceSpec(language: .kotlin, sourceDirs: [root]))
+        if request.wants(.kotlin) {
+            specs += spec(
+                .kotlin, in: modules.flatMap(\.kotlinSourceDirectories), extensions: ["kt", "kts"],
+                looseSourcesAt: root)
         }
-
-        if !javaDirs.isEmpty, request.wants(.java) {
-            specs.append(SourceSpec(language: .java, sourceDirs: javaDirs))
-        } else if request.wants(.java), SourceFilePresence(extensions: ["java"]).exist(in: root) {
-            specs.append(SourceSpec(language: .java, sourceDirs: [root]))
+        if request.wants(.java) {
+            specs += spec(
+                .java, in: modules.flatMap(\.javaSourceDirectories), extensions: ["java"],
+                looseSourcesAt: root)
         }
 
         return specs
     }
 
-    private func findSourceDirs(in root: URL) -> (kotlin: [URL], java: [URL]) {
-        let fileManager = FileManager.default
+    /// The module source sets when there are any, else the root itself when it holds loose sources.
+    private func spec(
+        _ language: CodeArtifact.SourceLanguage,
+        in sourceDirs: [URL],
+        extensions: Set<String>,
+        looseSourcesAt root: URL
+    ) -> [SourceSpec] {
+        guard sourceDirs.isEmpty else {
+            return [SourceSpec(
+                language: language,
+                sourceDirs: sourceDirs.removingDuplicates { $0.standardizedFileURL.path })]
+        }
+        let presence = SourceFilePresence(
+            extensions: extensions, excludingDirectories: excludedDirectories)
+        guard presence.exist(in: root) else { return [] }
+        return [SourceSpec(language: language, sourceDirs: [root])]
+    }
+
+    private func modules(in root: URL) -> [GradleModule] {
+        moduleDirectories(in: root).map {
+            GradleModule(directory: $0, excludedDirectories: excludedDirectories)
+        }
+    }
+
+    /// The root project plus every module its settings file includes. A settings file that computes
+    /// part of its module list names modules the reader cannot resolve, so there the scan is unioned
+    /// in rather than switched off; without a settings file it stands in for one entirely.
+    private func moduleDirectories(in root: URL) -> [URL] {
+        guard let settings = settings(at: root) else { return scannedModuleDirectories(in: root) }
+        let included = [root] + settings.moduleDirectories(relativeTo: root)
+        guard !settings.namesEveryModule else { return included }
+        return (included + scannedModuleDirectories(in: root))
+            .removingDuplicates { $0.standardizedFileURL.path }
+    }
+
+    private func settings(at root: URL) -> GradleSettings? {
+        settingsFiles
+            .lazy
+            .compactMap { try? String(contentsOf: root.appending(path: $0), encoding: .utf8) }
+            .first
+            .map { GradleSettings(source: $0) }
+    }
+
+    /// Every directory carrying an indicator file — the best a build system that does not list its
+    /// modules allows. Sorted, because the filesystem's own order varies by machine.
+    private func scannedModuleDirectories(in root: URL) -> [URL] {
         let indicator = IndicatorFiles(indicatorFiles)
-        var kotlinDirs: [URL] = []
-        var javaDirs: [URL] = []
-
-        func probe(_ dir: URL) {
-            let kotlinSrc = dir.appendingPathComponent("src/main/kotlin")
-            let javaSrc   = dir.appendingPathComponent("src/main/java")
-            if fileManager.fileExists(atPath: kotlinSrc.path) { kotlinDirs.append(kotlinSrc) }
-            if fileManager.fileExists(atPath: javaSrc.path) { javaDirs.append(javaSrc) }
-
-            guard let entries = try? fileManager.contentsOfDirectory(
-                at: dir, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
-            ) else { return }
-
-            for entry in entries {
-                guard !Self.excludedDirs.contains(entry.lastPathComponent) else { continue }
-                guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
-                if indicator.present(at: entry) {
-                    probe(entry)
-                }
+        var directories: [URL] = []
+        var pending: [URL] = [root]
+        while let directory = pending.popLast() {
+            directories.append(directory)
+            let entries = (try? FileManager.default.contentsOfDirectory(
+                at: directory, includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles])) ?? []
+            for entry in entries where !excludedDirectories.contains(entry.lastPathComponent) {
+                guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true,
+                      indicator.present(at: entry) else { continue }
+                pending.append(entry)
             }
         }
-
-        probe(root)
-
-        return (kotlinDirs.removingDuplicates { $0 }, javaDirs.removingDuplicates { $0 })
+        return directories.sorted { $0.path < $1.path }
     }
 }
