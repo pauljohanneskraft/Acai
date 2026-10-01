@@ -95,6 +95,20 @@ struct HeaderRoutingTests {
         #expect(!CFamilyHeaderClassifier(source: "/* @interface */ struct S { int a; };").looksLikeObjectiveC)
     }
 
+    /// The directives are matched on token boundaries, so a `@` glued to a longer identifier — which
+    /// a macro body can produce — is not mistaken for Objective-C.
+    @Test func directiveInsideALongerTokenIsNotObjectiveC() {
+        let source = """
+        #define JOIN(a, b) a##b
+        #define PASTE_end(x) x foo@end
+        struct Handle { int fd; };
+        """
+        #expect(!CFamilyHeaderClassifier(source: source).looksLikeObjectiveC)
+        #expect(!CFamilyHeaderClassifier(source: "int x@classy;").looksLikeObjectiveC)
+        #expect(CFamilyHeaderClassifier(source: "@class Widget;").looksLikeObjectiveC)
+        #expect(parser.parse(source: source, fileName: "handle.h").metadata.sourceLanguage == .c)
+    }
+
     @Test func externCppInsideAStringLiteralStaysC() {
         // The text appears as data; its inner quotes are escaped, so it is not a linkage spec.
         let source = """
