@@ -80,6 +80,24 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
             self.parseDiagnostics = parseDiagnostics
             self.discoveredRoots = discoveredRoots
         }
+
+        private enum CodingKeys: String, CodingKey {
+            case sourceLanguage, filePaths, toolVersion, parseDiagnostics, discoveredRoots
+        }
+
+        /// Hand-written only for `discoveredRoots`: a plain synthesized decoder requires every key,
+        /// which would reject every artifact written before this field existed. `encode(to:)` stays
+        /// synthesized from the same `CodingKeys`, so it still always writes the key (see
+        /// `emptyDiscoveredRootsStillEncodesTheKey`) — only decoding needs the fallback.
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.sourceLanguage = try container.decode(SourceLanguage.self, forKey: .sourceLanguage)
+            self.filePaths = try container.decode([String].self, forKey: .filePaths)
+            self.toolVersion = try container.decodeIfPresent(String.self, forKey: .toolVersion)
+            self.parseDiagnostics = try container.decode([ParseDiagnostic].self, forKey: .parseDiagnostics)
+            self.discoveredRoots =
+                try container.decodeIfPresent([DiscoveredRoot].self, forKey: .discoveredRoots) ?? []
+        }
     }
 
     /// A project root discovery claimed: where it sits, which detector claimed it, and the languages

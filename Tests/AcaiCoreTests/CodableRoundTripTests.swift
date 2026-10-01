@@ -305,6 +305,19 @@ struct CodableRoundTripTests {
         #expect(try roundTrip(metadata) == metadata)
     }
 
+    /// An artifact written before `discoveredRoots` existed has no such key at all — not an empty
+    /// array, an absent one. It must still decode, with `discoveredRoots` reading as `[]`, exactly as
+    /// issue #336 requires; a plain synthesized decoder would reject it with `keyNotFound`.
+    @Test func metadataWithoutDiscoveredRootsKeyDecodesAsEmpty() throws {
+        let legacyJSON = """
+        {"sourceLanguage":"swift","filePaths":["A.swift"],"parseDiagnostics":[]}
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(CodeArtifact.Metadata.self, from: legacyJSON)
+        #expect(decoded.discoveredRoots.isEmpty)
+        #expect(decoded.sourceLanguage == .swift)
+        #expect(decoded.filePaths == ["A.swift"])
+    }
+
     // MARK: - Helper
 
     private func roundTrip<T: Codable & Equatable>(_ value: T) throws -> T {
