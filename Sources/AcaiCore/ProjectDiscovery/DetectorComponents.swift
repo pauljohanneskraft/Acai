@@ -71,8 +71,8 @@ public struct SourceFilePresence: Sendable {
     }
 
     public func exist(in directory: URL) -> Bool {
-        !FileManager.default.fileURLs(
-            in: directory, withExtensions: extensions, excludingDirectories: excludedDirectories
+        !FileManager.default.fileExtensionsPresent(
+            in: directory, among: extensions, excludingDirectories: excludedDirectories
         ).isEmpty
     }
 

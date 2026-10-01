@@ -22,7 +22,7 @@ public struct PythonDetector: BuildSystemDetector {
             : manifest.directories
         guard SourceFilePresence(extensions: ["py"]).exist(inAnyOf: sourceDirs) else { return [] }
         return [
-            SourceSpec(language: .python, sourceDirs: sourceDirs, diagnostics: manifest.diagnostics)
+            SourceSpec(language: .python, sourceDirs: sourceDirs, root: root, diagnostics: manifest.diagnostics)
         ]
     }
 }

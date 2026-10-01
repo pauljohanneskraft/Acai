@@ -20,27 +20,75 @@ public struct NodeDetector: BuildSystemDetector {
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
+        Layout(root: root, discovered: discoverSourceDirs(at: root))
+            .specs(for: LanguageRequest(requestedLanguages))
+    }
+
+    /// A TypeScript project's JavaScript is config and build output, not source.
+    public func withheldLanguages(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> Set<CodeArtifact.SourceLanguage> {
+        Layout(root: root, discovered: discoverSourceDirs(at: root))
+            .withheldLanguages(for: LanguageRequest(requestedLanguages))
+    }
+
+    /// Resolves the layout once and answers both halves from it. Asked separately, each would
+    /// re-read `tsconfig.json` and walk the sources again — per `package.json`, so once per workspace
+    /// in a monorepo now that detectors run at every directory.
+    public func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> DetectorClaim {
+        let layout = Layout(root: root, discovered: discoverSourceDirs(at: root))
         let request = LanguageRequest(requestedLanguages)
-        let discovered = discoverSourceDirs(at: root)
+        return DetectorClaim(
+            specs: layout.specs(for: request),
+            withheldLanguages: layout.withheldLanguages(for: request)
+        )
+    }
 
-        let hasTS = SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: discovered.dirs)
-        let hasJS = SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: discovered.dirs)
+    // MARK: - Resolved Layout
 
-        var specs: [SourceSpec] = []
+    /// One Node root's resolved layout: which directories hold its sources, whatever could not be
+    /// read while finding them, and which languages those directories actually contain.
+    private struct Layout {
+        let root: URL
+        let dirs: [URL]
+        let diagnostics: [ParseDiagnostic]
+        /// Decides both halves of the claim, so it is resolved eagerly. JavaScript presence is not:
+        /// only `specs(for:)` needs it, and only once TypeScript has not already ruled it out.
+        let hasTypeScript: Bool
 
-        if hasTS, request.wants(.typeScript) {
-            specs.append(SourceSpec(language: .typeScript, sourceDirs: discovered.dirs))
+        init(root: URL, discovered: (dirs: [URL], diagnostics: [ParseDiagnostic])) {
+            self.root = root
+            self.dirs = discovered.dirs
+            self.diagnostics = discovered.diagnostics
+            self.hasTypeScript = SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: discovered.dirs)
         }
-        if hasJS, request.wants(.javaScript), !hasTS || request.explicitlyWants(.javaScript) {
-            specs.append(SourceSpec(language: .javaScript, sourceDirs: discovered.dirs))
+
+        func specs(for request: LanguageRequest) -> [SourceSpec] {
+            var specs: [SourceSpec] = []
+            if hasTypeScript, request.wants(.typeScript) {
+                specs.append(SourceSpec(language: .typeScript, sourceDirs: dirs, root: root))
+            }
+            if request.wants(.javaScript), !hasTypeScript || request.explicitlyWants(.javaScript),
+               SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: dirs) {
+                specs.append(SourceSpec(language: .javaScript, sourceDirs: dirs, root: root))
+            }
+            // A manifest that could not be followed is one fact about the project, not one per
+            // language, so it is recorded once rather than surfacing the same finding under every spec.
+            if !specs.isEmpty {
+                specs[0].diagnostics = diagnostics
+            }
+            return specs
         }
 
-        // A manifest that could not be followed is one fact about the project, not one per language, so
-        // it is recorded once rather than surfacing the same finding under every spec.
-        if !specs.isEmpty {
-            specs[0].diagnostics = discovered.diagnostics
+        func withheldLanguages(for request: LanguageRequest) -> Set<CodeArtifact.SourceLanguage> {
+            guard request.wants(.javaScript), !request.explicitlyWants(.javaScript), hasTypeScript
+            else { return [] }
+            return [.javaScript]
         }
-        return specs
     }
 
     /// Every directory the project's manifests declare, and whatever could not be read while finding them.

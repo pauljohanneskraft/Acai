@@ -63,12 +63,13 @@ public struct JVMBuildSystemDetector: BuildSystemDetector {
         guard sourceDirs.isEmpty else {
             return [SourceSpec(
                 language: language,
-                sourceDirs: sourceDirs.removingDuplicates { $0.standardizedFileURL.path })]
+                sourceDirs: sourceDirs.removingDuplicates { $0.standardizedFileURL.path },
+                root: root)]
         }
         let presence = SourceFilePresence(
             extensions: extensions, excludingDirectories: excludedDirectories)
         guard presence.exist(in: root) else { return [] }
-        return [SourceSpec(language: language, sourceDirs: [root])]
+        return [SourceSpec(language: language, sourceDirs: [root], root: root)]
     }
 
     private func modules(in root: URL) -> [GradleModule] {

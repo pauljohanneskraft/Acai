@@ -36,7 +36,29 @@ struct CFamilyHeaderClassifier {
         return scan.codePreservingStrings.contains("extern \"C++\"")
     }
 
+    /// An Objective-C header is neither dialect; `@` is never structural C or C++.
+    var looksLikeObjectiveC: Bool {
+        let code = scanned.stripped
+        return ["@interface", "@protocol", "@class", "@import", "@end"]
+            .contains { containsDirective($0, in: code) }
+    }
+
     // MARK: - Helpers
+
+    /// Whether `directive` appears as an `@` directive rather than inside a longer token: `@` has to
+    /// start it, so `foo@end` in a macro body does not count, and the keyword has to end it.
+    private func containsDirective(_ directive: String, in text: String) -> Bool {
+        var searchStart = text.startIndex
+        while let range = text.range(of: directive, range: searchStart..<text.endIndex) {
+            searchStart = range.upperBound
+            let beforeOK = range.lowerBound == text.startIndex
+                || !isIdentifierChar(text[text.index(before: range.lowerBound)])
+            let afterOK = range.upperBound == text.endIndex
+                || !isIdentifierChar(text[range.upperBound])
+            if beforeOK && afterOK { return true }
+        }
+        return false
+    }
 
     /// Whether `word` appears as a whole identifier token (not a substring of a longer name).
     private func containsWord(_ word: String, in text: String) -> Bool {

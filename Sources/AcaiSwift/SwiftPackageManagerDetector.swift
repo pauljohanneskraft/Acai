@@ -25,7 +25,7 @@ public struct SwiftPackageManagerDetector: BuildSystemDetector {
         let sources = SwiftPackageSources(root: root, manifest: SwiftPackageManifest(source: source))
         switch sources.outcome {
         case .resolved(let sourceDirs, let excludedPaths):
-            return [SourceSpec(language: .swift, sourceDirs: sourceDirs, excludedPaths: excludedPaths)]
+            return [SourceSpec(language: .swift, sourceDirs: sourceDirs, root: root, excludedPaths: excludedPaths)]
         case .probe(let reason):
             return [probedSpec(at: root, reason: reason)]
         }
@@ -35,6 +35,7 @@ public struct SwiftPackageManagerDetector: BuildSystemDetector {
         SourceSpec(
             language: .swift,
             sourceDirs: SourceDirectoryProbe(preferring: "Sources").directories(in: root),
+            root: root,
             diagnostics: [ParseDiagnostic(
                 location: SourceLocation(filePath: manifestName, line: 1, column: 1),
                 kind: .incompleteDiscovery,

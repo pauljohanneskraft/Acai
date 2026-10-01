@@ -35,10 +35,10 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
         // `.c` files signal C; any C++-only extension signals C++. A project with only `.h` headers
         // is reported as C — `CCodeParser` still routes individual C++ headers to the C++ grammar.
         if request.wants(.c), cFiles.exist(in: root) {
-            specs.append(SourceSpec(language: .c, sourceDirs: [root]))
+            specs.append(SourceSpec(language: .c, sourceDirs: [root], root: root))
         }
         if request.wants(.cpp), cppFiles.exist(in: root) {
-            specs.append(SourceSpec(language: .cpp, sourceDirs: [root]))
+            specs.append(SourceSpec(language: .cpp, sourceDirs: [root], root: root))
         }
         return specs
     }

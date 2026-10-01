@@ -135,7 +135,10 @@ the configuration is **injected**, never hard-coded into an agnostic module.
 
 Conform to [BuildSystemDetector](/documentation/acaicore/buildsystemdetector) so
 [AnalysisService](/documentation/acaicore/analysisservice) can find your language's source roots
-(e.g. a manifest file at the project root).
+(e.g. a manifest file). The detector is tried at *every* directory of the analysed folder, not only
+at its top, so a project nested several levels down is found — report each
+[SourceSpec](/documentation/acaicore/sourcespec) against the directory you were asked about, which
+is the root it claims.
 
 ### 5. Registration in the composition root
 
