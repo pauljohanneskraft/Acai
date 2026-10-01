@@ -14,7 +14,12 @@ public struct AcaiRootScene: Scene {
     @StateObject private var projectStore = ProjectStore.app
     @StateObject private var accountStore = GitHubAccountStore()
     @StateObject private var settingsPresenter = SettingsPresenter()
+    @StateObject private var keyboardShortcutsPresenter = KeyboardShortcutsPresenter()
     @StateObject private var browserWindows = BrowserWindows()
+    #if !os(macOS)
+    // The one scene's Quick Open — see `QuickOpenPresenter` for why macOS's is per window instead.
+    @StateObject private var quickOpenPresenter = QuickOpenPresenter()
+    #endif
 
     public init() {
         #if os(iOS)
@@ -40,21 +45,32 @@ public struct AcaiRootScene: Scene {
                 .statusBarHidden(UITestFixtureResolver().resolveBaseDir() != nil)
                 #endif
         }
+        // A shortcut bound only in a macOS-only command is silently missing from an iPad's hardware
+        // keyboard. `KeyboardShortcutReferenceTests` rejects that unless the shortcut's group is
+        // `isMacOSOnly` or something outside the macOS-only region binds the same shortcut — which is
+        // how `HelpMenuCommands` covers ⌘/ and ⇧⌘O for the two commands attached on macOS alone.
         .commands {
             DiagramThemeCommands()
             #if os(macOS)
             KeyboardShortcutCommands()
             QuickOpenCommands()
             BrowserWindowCommands()
+            #else
+            HelpMenuCommands()
             #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also
-        // read these via `@EnvironmentObject` (`QuickOpenCommands` needs `quickOpenPresenter`).
+        // read these via `@EnvironmentObject` (`KeyboardShortcutCommands` on macOS, and
+        // `HelpMenuCommands` off it, need theirs).
         .environmentObject(accountStore)
         .environmentObject(projectStore)
         .environmentObject(settingsPresenter)
+        .environmentObject(keyboardShortcutsPresenter)
         .environmentObject(browserWindows)
+        #if !os(macOS)
+        .environmentObject(quickOpenPresenter)
+        #endif
         #if os(macOS)
         WindowGroup(id: BrowserWindowCommands.windowID, for: AppAddress.self) { $address in
             ProjectBrowserView(store: projectStore, windowAddress: $address)
@@ -65,7 +81,9 @@ public struct AcaiRootScene: Scene {
         // Links go to a main window, never spawn one of these.
         .handlesExternalEvents(matching: [])
         .environmentObject(accountStore)
+        .environmentObject(projectStore)
         .environmentObject(settingsPresenter)
+        .environmentObject(keyboardShortcutsPresenter)
         .environmentObject(browserWindows)
         WindowGroup(id: KeyboardShortcutCommands.windowID) {
             KeyboardShortcutsPanel()

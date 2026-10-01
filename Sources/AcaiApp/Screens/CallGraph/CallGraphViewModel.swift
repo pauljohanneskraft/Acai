@@ -13,7 +13,10 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     private let scope: CallGraphScope
     private let comparisonArtifact: CodeArtifact?
 
-    @Published private(set) var graph: CallGraph
+    @Published private(set) var graph: CallGraph {
+        didSet { callCounts = CallGraphCallCounts(graph: graph) }
+    }
+    private(set) var callCounts = CallGraphCallCounts(graph: CallGraph())
     @Published private(set) var filter: AcaiQuality.Selector?
 
     @Published var positionOverrides: [String: CGPoint] = [:]
@@ -68,6 +71,10 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     func edgeDeltaColor(from: String, to: String) -> Color? {
         guard let diff, let hex = diff.status(ofEdgeFrom: from, to: to).deltaHex else { return nil }
         return Color(hex: hex)
+    }
+
+    func edgeDeltaStatus(from: String, to: String) -> DeltaStatus? {
+        diff?.status(ofEdgeFrom: from, to: to)
     }
 
     /// Non-color complement to `nodeDeltaColor(id:)`, feeding the node's badge overlay. `nil` when

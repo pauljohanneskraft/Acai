@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// "Keyboard Shortcuts" reference panel, grouped by context. macOS: Help menu (⌘⇧/). iPad/iPhone:
-/// sidebar toolbar's overflow menu.
+/// "Keyboard Shortcuts" reference panel, grouped by context. Help menu (⌘/) everywhere; iPad/iPhone
+/// also reach it from the sidebar toolbar's overflow menu.
 struct KeyboardShortcutsPanel: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -24,10 +24,12 @@ struct KeyboardShortcutsPanel: View {
                     }
                 }
             }
+            .accessibilityIdentifier("keyboardShortcuts.panel")
             .navigationTitle(.app("View.KeyboardShortcutsPanel.KeyboardShortcuts"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(.app("View.KeyboardShortcutsPanel.Done")) { dismiss() }
+                        .accessibilityIdentifier("keyboardShortcuts.doneButton")
                 }
             }
         }
@@ -38,28 +40,36 @@ struct KeyboardShortcutsPanel: View {
 }
 
 #if os(macOS)
-/// Adds a "Keyboard Shortcuts" item to the Help menu (replacing macOS's default, which otherwise
-/// just points at a nonexistent Help Book), opening the panel as its own window.
+/// Replaces macOS's default Help item, which otherwise just points at a nonexistent Help Book, and
+/// opens the panel as its own window. Off macOS the same item comes from `HelpMenuCommands`, which
+/// owns the one Help group iPadOS builds, and the panel is `ProjectBrowserView`'s sheet.
 struct KeyboardShortcutCommands: Commands {
     /// The `WindowGroup(id:)` this command opens — declared once here so the command and the scene
     /// registration in `AcaiRootScene` can't drift apart.
     static let windowID = "keyboardShortcuts"
 
+    @EnvironmentObject private var presenter: KeyboardShortcutsPresenter
+
     var body: some Commands {
         CommandGroup(replacing: .help) {
-            KeyboardShortcutsHelpMenuButton()
+            KeyboardShortcutsHelpMenuButton(presenter: presenter)
         }
     }
 }
+#endif
 
-private struct KeyboardShortcutsHelpMenuButton: View {
+struct KeyboardShortcutsHelpMenuButton: View {
+    let presenter: KeyboardShortcutsPresenter
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Button(.app("View.KeyboardShortcutsHelpMenuButton.KeyboardShortcuts")) {
+            #if os(macOS)
             openWindow(id: KeyboardShortcutCommands.windowID)
+            #else
+            presenter.isPresented = true
+            #endif
         }
         .keyboardShortcut(.keyboardShortcuts)
     }
 }
-#endif

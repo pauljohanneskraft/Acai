@@ -52,6 +52,11 @@ struct DiagramSearchBar: View {
             #endif
             .frame(minWidth: 140)
             .focused(isFocused)
+            #if os(iOS)
+            // Type names are not sentences, and the shift key auto-engaged for one is also the only
+            // thing about this screen that differs between two runs of its journey.
+            .textInputAutocapitalization(.never)
+            #endif
             // Setting this from the toolbar action that reveals the bar races the field's own
             // creation (it doesn't exist in the hierarchy yet, so the focus request is dropped) —
             // same fix QuickOpenView's search field already uses for the same reason.

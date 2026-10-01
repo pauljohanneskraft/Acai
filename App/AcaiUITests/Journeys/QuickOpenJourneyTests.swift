@@ -6,7 +6,8 @@ import XCTest
 final class QuickOpenJourneyTests: UIJourneyTestCase {
 
     func testSearchingAndSelectingACodebaseNavigatesToIt() throws {
-        launchSeeded(analysis: .parsed).openQuickOpen()
+        let browser = launchSeeded(analysis: .parsed)
+        browser.openQuickOpen()
 
         let quickOpen = QuickOpenScreen(app: app)
         quickOpen.searchField.waitOrFail("the Quick Open search field")
@@ -19,5 +20,13 @@ final class QuickOpenJourneyTests: UIJourneyTestCase {
 
         let codebaseDetail = CodebaseDetailScreen(app: app)
         result.tap("the seeded codebase's Quick Open result", until: codebaseDetail.reindexButton)
+
+        #if os(iOS)
+        // macOS opened it with ⌘K above; an iPad's hardware keyboard must reach it with ⇧⌘O too.
+        if !SnapshotPlatform().usesCompactLayout {
+            quickOpen.searchField.waitForDisappearanceOrFail("Quick Open after selecting a result")
+            browser.openQuickOpenWithKeyboard()
+        }
+        #endif
     }
 }
