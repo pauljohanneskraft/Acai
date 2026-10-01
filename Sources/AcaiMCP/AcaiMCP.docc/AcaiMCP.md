@@ -342,6 +342,7 @@ One parse per project path, shared by every tool in the process. This is what ma
 - **`refresh: true`** forces a re-parse. Rarely needed, since the signature detects edits on its own.
 - **Lifetime is the process.** No eviction, no expiry. Cross-session baselines have to go through `acai store` on the CLI.
 - **Concurrent calls serialise safely.** Two simultaneous calls on an uncached project queue rather than parsing twice.
+- **A whole-tree signature miss doesn't mean a full reparse.** Underneath it, a per-file cache keyed on each file's own path, modification time and size lives alongside the project's entry in `~/.acai/analysis` — editing one file in a large project reparses only that file on the next call.
 - `path` may be a `.json` artifact instead of a directory — that's how `acai_diff` consumes baselines.
 
 > ⚠️ **`languages` is not part of the cache key.** Calling `acai_analyze(path: X, languages: ["swift"])` and then `acai_metrics(path: X, languages: ["kotlin"])` silently returns the **Swift-filtered** artifact — the language filter only takes effect on a cache miss. If you need to switch language filters on the same path, pass `refresh: true`. (`includeGenerated` is applied after the cache and is safe to vary freely.)

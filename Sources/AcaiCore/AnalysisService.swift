@@ -76,6 +76,44 @@ public struct AnalysisService: Sendable {
         respectingGitignore: Bool = true,
         includingFile: (String) -> Bool = { _ in true }
     ) async throws -> CodeArtifact {
+        try await analyzingProject(
+            at: rootURL, allowedLanguages: allowedLanguages, respectingGitignore: respectingGitignore,
+            fileCache: nil, includingFile: includingFile
+        ).artifact
+    }
+
+    /// Per-file-cache-aware variant: `fileCache` is consulted before reparsing each file — a hit by
+    /// `(relativePath, modified, size)` skips reading and parsing that file entirely — and the
+    /// returned cache reflects every file this analysis saw (a changed or new file freshly parsed, an
+    /// unchanged one carried forward, a removed one dropped), ready for the caller to persist for the
+    /// next analysis of the same tree.
+    ///
+    /// Enrichment and cross-file resolution (``CodeArtifact/enriched(using:)``,
+    /// ``CodeArtifact/resolvingCallSiteReceivers()``) always run over the full merged corpus, exactly
+    /// as the cache-free overload does — a cache hit only skips re-parsing a file, never any step that
+    /// needs the whole project — so the returned artifact is byte-identical to a cold analysis of the
+    /// same tree.
+    public func analyzeProject(
+        at rootURL: URL,
+        allowedLanguages: [CodeArtifact.SourceLanguage],
+        respectingGitignore: Bool = true,
+        reusing fileCache: ParsedFileCache,
+        includingFile: (String) -> Bool = { _ in true }
+    ) async throws -> (artifact: CodeArtifact, fileCache: ParsedFileCache) {
+        try await analyzingProject(
+            at: rootURL, allowedLanguages: allowedLanguages, respectingGitignore: respectingGitignore,
+            fileCache: fileCache.validated(forToolVersion: AcaiConstants.standard.toolVersion),
+            includingFile: includingFile
+        )
+    }
+
+    private func analyzingProject(
+        at rootURL: URL,
+        allowedLanguages: [CodeArtifact.SourceLanguage],
+        respectingGitignore: Bool,
+        fileCache: ParsedFileCache?,
+        includingFile: (String) -> Bool
+    ) async throws -> (artifact: CodeArtifact, fileCache: ParsedFileCache) {
         guard FileManager.default.fileExists(atPath: rootURL.path) else {
             throw ValidationError("Source directory does not exist: \(rootURL.path)")
         }
@@ -93,11 +131,14 @@ public struct AnalysisService: Sendable {
         }
 
         var combinedArtifact: CodeArtifact?
+        var combinedFileCacheEntries: [String: ParsedFileCache.Entry] = [:]
 
         for spec in specs.mergedByLanguage {
-            if let artifact = try await parseSpec(
-                spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
-            ) {
+            let parsedSpec = try await parseSpec(
+                spec, rootURL: rootURL, gitignore: gitignore, fileCache: fileCache, includingFile: includingFile
+            )
+            combinedFileCacheEntries.merge(parsedSpec.fileCacheEntries) { _, new in new }
+            if let artifact = parsedSpec.artifact {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -110,41 +151,47 @@ public struct AnalysisService: Sendable {
         var result = combined.resolvingCallSiteReceivers()
         result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
-        return result
+        let newFileCache = fileCache == nil
+            ? ParsedFileCache()
+            : ParsedFileCache(
+                toolVersion: AcaiConstants.standard.toolVersion, entriesByRelativePath: combinedFileCacheEntries
+            )
+        return (result, newFileCache)
     }
 
     private func parseSpec(
         _ spec: SourceSpec,
         rootURL: URL,
         gitignore: GitignoreFilter?,
+        fileCache: ParsedFileCache?,
         includingFile: (String) -> Bool
-    ) async throws -> CodeArtifact? {
+    ) async throws -> (artifact: CodeArtifact?, fileCacheEntries: [String: ParsedFileCache.Entry]) {
         guard let codeParser = parser(for: spec.language) else {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
             )
-            return nil
+            return (nil, [:])
         }
         let collected = collectFiles(
             for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
         )
         guard !collected.files.isEmpty else {
             let diagnostics = spec.diagnostics + collected.diagnostics
-            guard !diagnostics.isEmpty else { return nil }
+            guard !diagnostics.isEmpty else { return (nil, [:]) }
             var result = CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
             result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
-            return result
+            return (result, [:])
         }
 
-        let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL)
+        let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL, fileCache: fileCache)
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )
         let diagnostics = spec.diagnostics + collected.diagnostics + parsed.diagnostics
-        guard !diagnostics.isEmpty else { return enriched }
+        guard !diagnostics.isEmpty else { return (enriched, parsed.fileCacheEntries) }
         var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
         result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
-        return result
+        return (result, parsed.fileCacheEntries)
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
@@ -191,35 +238,76 @@ public struct AnalysisService: Sendable {
     /// `order`, which preserves first-seen order so the merged artifact's top-level language is
     /// stable — is identical to serial parsing.
     private func parseFiles(
-        _ files: [URL], using codeParser: any CodeParser, rootURL: URL
+        _ files: [URL], using codeParser: any CodeParser, rootURL: URL, fileCache: ParsedFileCache?
     ) async throws -> (
         byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact],
         order: [CodeArtifact.SourceLanguage],
-        diagnostics: [ParseDiagnostic]
+        diagnostics: [ParseDiagnostic],
+        fileCacheEntries: [String: ParsedFileCache.Entry]
     ) {
-        guard !files.isEmpty else { return ([:], [], []) }
-        let concurrency = fileParsingConcurrencyLimit ?? ProcessInfo.processInfo.activeProcessorCount
-        let limit = max(1, min(files.count, concurrency))
+        guard !files.isEmpty else { return ([:], [], [], [:]) }
 
+        // A cache hit is resolved up front, synchronously (a file stat, not a read): it needs no
+        // task of its own, so only genuine misses are scheduled below. `fingerprints` is kept so a
+        // freshly-parsed file's (already-computed) fingerprint doesn't need a second stat afterward.
         var outcomeByIndex = [ParseOutcome?](repeating: nil, count: files.count)
-        try await withThrowingTaskGroup(of: (index: Int, outcome: ParseOutcome).self) { group in
-            var nextIndex = 0
-            func scheduleNext() {
-                guard nextIndex < files.count else { return }
-                let index = nextIndex
-                nextIndex += 1
-                let file = files[index]
-                group.addTask {
-                    try Task.checkCancellation()
-                    let outcome = self.parseFile(file, using: codeParser, rootURL: rootURL)
-                    try Task.checkCancellation()
-                    return (index, outcome)
+        var fingerprints: [Int: (relativePath: String, modified: Date, size: Int)] = [:]
+        var cacheEntries: [String: ParsedFileCache.Entry] = [:]
+        var indicesNeedingParse: [Int] = []
+
+        if let fileCache {
+            for (index, file) in files.enumerated() {
+                guard let fingerprint = fileFingerprint(for: file, rootURL: rootURL) else {
+                    indicesNeedingParse.append(index)
+                    continue
+                }
+                fingerprints[index] = fingerprint
+                if let cached = fileCache.fragment(
+                    forRelativePath: fingerprint.relativePath, modified: fingerprint.modified, size: fingerprint.size
+                ) {
+                    outcomeByIndex[index] = .parsed(cached)
+                    cacheEntries[fingerprint.relativePath] = ParsedFileCache.Entry(
+                        modified: fingerprint.modified, size: fingerprint.size, artifact: cached)
+                } else {
+                    indicesNeedingParse.append(index)
                 }
             }
-            for _ in 0..<limit { scheduleNext() }
-            while let next = try await group.next() {
-                outcomeByIndex[next.index] = next.outcome
-                scheduleNext()
+        } else {
+            indicesNeedingParse = Array(files.indices)
+        }
+
+        let concurrency = fileParsingConcurrencyLimit ?? ProcessInfo.processInfo.activeProcessorCount
+        let limit = max(1, min(indicesNeedingParse.count, concurrency))
+
+        if !indicesNeedingParse.isEmpty {
+            try await withThrowingTaskGroup(of: (index: Int, outcome: ParseOutcome).self) { group in
+                var cursor = 0
+                func scheduleNext() {
+                    guard cursor < indicesNeedingParse.count else { return }
+                    let index = indicesNeedingParse[cursor]
+                    cursor += 1
+                    let file = files[index]
+                    group.addTask {
+                        try Task.checkCancellation()
+                        let outcome = self.parseFile(file, using: codeParser, rootURL: rootURL)
+                        try Task.checkCancellation()
+                        return (index, outcome)
+                    }
+                }
+                for _ in 0..<limit { scheduleNext() }
+                while let next = try await group.next() {
+                    outcomeByIndex[next.index] = next.outcome
+                    scheduleNext()
+                }
+            }
+        }
+
+        if fileCache != nil {
+            for index in indicesNeedingParse {
+                guard case .parsed(let artifact) = outcomeByIndex[index], let fingerprint = fingerprints[index]
+                else { continue }
+                cacheEntries[fingerprint.relativePath] = ParsedFileCache.Entry(
+                    modified: fingerprint.modified, size: fingerprint.size, artifact: artifact)
             }
         }
 
@@ -240,7 +328,21 @@ public struct AnalysisService: Sendable {
                 diagnostics.append(diagnostic)
             }
         }
-        return (byLanguage, order, diagnostics)
+        return (byLanguage, order, diagnostics, cacheEntries)
+    }
+
+    /// `(relativePath, modified, size)` for one file — the same fingerprint shape a per-file cache
+    /// entry carries — or `nil` when the file's attributes can't be read (it will fail to read for
+    /// parsing too, moments later, and surface as the usual `.unreadable` diagnostic there).
+    private func fileFingerprint(
+        for file: URL, rootURL: URL
+    ) -> (relativePath: String, modified: Date, size: Int)? {
+        let resolvedPath = file.resolvingSymlinksInPath().path
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath),
+              let modified = attributes[.modificationDate] as? Date,
+              let size = (attributes[.size] as? NSNumber)?.intValue
+        else { return nil }
+        return (file.relativePath(from: rootURL), modified, size)
     }
 
     /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic

@@ -115,6 +115,31 @@ public struct AnalysisStore: Sendable {
         try FileManager.default.removeItem(at: url)
     }
 
+    // MARK: - Per-file parse cache
+
+    /// The per-file parse cache for `path` — empty when nothing is stored, the stored file is
+    /// corrupt, or it was written by a format/tool version this build no longer trusts.
+    public func lookupFileCache(forResolvedPath path: String) -> ParsedFileCache {
+        guard let data = try? Data(contentsOf: fileCacheURL(forResolvedPath: path)),
+              let cache = try? JSONDecoder().decode(ParsedFileCache.self, from: data)
+        else { return ParsedFileCache() }
+        return cache.validated(forToolVersion: AcaiConstants.standard.toolVersion)
+    }
+
+    /// Writes the per-file parse cache for `path`, alongside (never instead of) its whole-project
+    /// ``Entry``. The two are independent: a per-file cache miss still falls back to a cold parse of
+    /// that file, and a stale or missing whole-project entry doesn't invalidate this one.
+    public func writeFileCache(_ cache: ParsedFileCache, forResolvedPath path: String) throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONEncoder().encode(cache).write(to: fileCacheURL(forResolvedPath: path), options: .atomic)
+    }
+
+    /// A different extension from the whole-project entry files (`.json`) so it is never picked up by
+    /// `allEntryURLs()`'s scan for those.
+    private func fileCacheURL(forResolvedPath path: String) -> URL {
+        directory.appendingPathComponent("\(PathDigest(path).hex).filecache")
+    }
+
     // MARK: - Private
 
     private func hashedEntryURL(forResolvedPath path: String) -> URL {
