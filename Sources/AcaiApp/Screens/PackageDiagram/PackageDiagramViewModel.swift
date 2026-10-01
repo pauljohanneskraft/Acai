@@ -51,6 +51,12 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
+    /// Why the diagram has nothing to draw, so an empty canvas can say whether anything the viewer
+    /// did caused it. There is no scope to narrow here — the module set comes from the build system.
+    var emptyReason: DiagramEmptyReason {
+        filter == nil ? .codebase : .filter
+    }
+
     private func rebuild() {
         let new = PackageDiagramBuilder(filter: filter).build(
             from: artifact.enriched(using: artifact.standardLanguageResolver))

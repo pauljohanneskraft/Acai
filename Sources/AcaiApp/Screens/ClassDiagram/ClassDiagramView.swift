@@ -203,8 +203,7 @@ struct ClassDiagramView: View {
                 nodeLimitErrorState(message: nodeLimitError.message)
             } else if viewModel.nodes.isEmpty {
                 DiagramEmptyScopeOverlay(
-                    reason: viewModel.emptyReason,
-                    nothingOfThisKind: .app("View.ClassDiagramView.NoTypesToDiagram"),
+                    reason: viewModel.emptyReason, nothingOfThisKind: noTypesDescription,
                     onUndo: clearEmptyScope
                 )
             }
@@ -282,6 +281,14 @@ extension ClassDiagramView {
 
     private var editor: ClassDiagramConfigEditor {
         ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
+    }
+
+    private var noTypesDescription: DiagramEmptyDescription {
+        DiagramEmptyDescription(
+            systemImage: "square.dashed",
+            title: .app("View.ClassDiagramView.NoTypesToDiagram"),
+            detail: .app("View.ClassDiagramView.NoTypesToDiagramDetail")
+        )
     }
 
     /// Undoes whatever emptied the canvas, matching what `ClassDiagramViewModel.emptyReason` offered:

@@ -153,11 +153,27 @@ struct PackageDiagramView: View {
                 }
             }
         )
+        .overlay {
+            if viewModel.layout.nodes.isEmpty {
+                DiagramEmptyScopeOverlay(
+                    reason: viewModel.emptyReason, nothingOfThisKind: noModulesDescription,
+                    onUndo: { filterBinding.wrappedValue = nil }
+                )
+            }
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
             CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
+    }
+
+    private var noModulesDescription: DiagramEmptyDescription {
+        DiagramEmptyDescription(
+            systemImage: "shippingbox",
+            title: .app("View.PackageDiagramView.NoModules"),
+            detail: .app("View.PackageDiagramView.NoModulesDetail")
+        )
     }
 
     private func packageEdges(_ layout: PackageLayoutModel) -> some View {

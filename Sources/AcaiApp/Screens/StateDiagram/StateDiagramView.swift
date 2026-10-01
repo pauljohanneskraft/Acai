@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiDiff
+import AcaiQuality
 import AcaiRender
 import UniformTypeIdentifiers
 
@@ -115,10 +116,7 @@ struct StateDiagramView: View {
                 model.diagrams.updateStateConfiguration(diagramID: diagram.id, configuration: config)
                 centerDiagram()
             },
-            onApplyFilter: { filter in
-                viewModel.applyFilter(filter)
-                model.diagrams.updateStateFilter(diagramID: diagram.id, filter: filter)
-            },
+            onApplyFilter: applyFilter,
             onSaveAsFreeform: {
                 // Pass every state's live centre (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
@@ -140,6 +138,8 @@ struct StateDiagramView: View {
     private var diagramContent: some View {
         Group {
             switch viewModel.result {
+            case .success(let stateDiagram) where stateDiagram.states.isEmpty:
+                emptyState
             case .success:
                 canvasContent
             case .failure(let error):
@@ -179,6 +179,36 @@ struct StateDiagramView: View {
     }
 
     // MARK: - Failure / unconfigured states
+
+    private func applyFilter(_ filter: AcaiQuality.Selector?) {
+        viewModel.applyFilter(filter)
+        model.diagrams.updateStateFilter(diagramID: diagram.id, filter: filter)
+    }
+
+    /// The analysis succeeded but produced no states — either the variable has none, or the filter
+    /// dropped them all.
+    private var emptyState: some View {
+        DiagramEmptyScopeOverlay(
+            reason: viewModel.emptyReason, nothingOfThisKind: noStatesDescription,
+            onUndo: { applyFilter(nil) }
+        )
+    }
+
+    private var noStatesDescription: DiagramEmptyDescription {
+        DiagramEmptyDescription(
+            systemImage: "circle.hexagonpath",
+            title: .app("View.StateDiagramView.NoStatesFound"),
+            detail: .app("View.StateDiagramView.NoStatesFoundDetail"),
+            action: DiagramEmptyAction(
+                title: .app("View.StateDiagramView.EditConfiguration"),
+                systemImage: "slider.horizontal.3",
+                perform: {
+                    sidebarTab = .settings
+                    showSidebar = true
+                }
+            )
+        )
+    }
 
     private func failureState(_ error: StateDiagramAnalysisError) -> some View {
         VStack(spacing: .spacingL) {

@@ -10,7 +10,7 @@ import AcaiRender
 @MainActor
 final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     private let artifact: CodeArtifact
-    private let scope: CallGraphScope
+    let scope: CallGraphScope
     private let comparisonArtifact: CodeArtifact?
 
     @Published private(set) var graph: CallGraph
@@ -42,6 +42,14 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     func applyFilter(_ newFilter: AcaiQuality.Selector?) {
         filter = newFilter
         rebuild()
+    }
+
+    /// Why the graph has nothing to draw, so an empty canvas can say whether anything the viewer did
+    /// caused it. A narrowed scope outranks the filter: widening back to the whole codebase is the
+    /// undo most likely to bring call sites back.
+    var emptyReason: DiagramEmptyReason {
+        if scope != .wholeCodebase { return .scope }
+        return filter == nil ? .codebase : .filter
     }
 
     private func rebuild() {
