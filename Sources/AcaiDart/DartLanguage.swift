@@ -33,10 +33,11 @@ extension DartCodeParser {
                     "main", "build", "createstate", "initstate", "dispose",
                     "didchangedependencies", "didupdatewidget"
                 ]),
-            // `Thing()` and `Thing.named()` reach `CallSiteScope.bareCall`, which drops a known type
-            // name as a construction, so a constructor has no caller edge. An `operator []` is
-            // extracted as a method and is scanned as one.
-            deadCodeMemberKinds: [.method]
+            // `Thing()` now resolves through `CallSiteScope.bareCall`'s constructor opt-in, and
+            // `Thing.named()` already resolved like any other `TypeName.method()` static call — both
+            // target the constructor, named after the type itself (or the named-constructor suffix).
+            // An `operator []` is extracted as a method and is scanned as one.
+            deadCodeMemberKinds: [.method, .initializer]
         )
     }
 }

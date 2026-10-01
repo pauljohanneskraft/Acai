@@ -107,16 +107,17 @@ struct KotlinCallSiteBroadeningTests {
     }
 
     /// A bare `foo()` (an implicit-receiver call to a sibling method or top-level function) is
-    /// captured as `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not.
-    @Test func capturesBareImplicitSelfCallButNotConstruction() {
+    /// captured as `.selfDispatch`; a construction `Foo()` (same grammar shape) now resolves to the
+    /// constructor's fixed `init` member rather than being dropped.
+    @Test func capturesBareImplicitSelfCallAndConstruction() {
         let source = """
-        class Helper {
+        class Helper(val x: Int) {
             fun make() {}
         }
         class Worker {
             fun run() {
                 helper()
-                Helper()
+                Helper(1)
             }
             fun helper() {}
         }
@@ -125,7 +126,7 @@ struct KotlinCallSiteBroadeningTests {
         let worker = artifact.types.first { $0.name == "Worker" }
         let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
         #expect(sites.contains { $0.methodName == "helper" && $0.receiver == .selfDispatch })
-        #expect(!sites.contains { $0.methodName == "Helper" })
+        #expect(sites.contains { $0.methodName == "init" && $0.receiver == .type("Helper") })
     }
 
     /// Calls made only from a property initializer, an `init { }` block, or a custom accessor are
