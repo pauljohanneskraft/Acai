@@ -301,7 +301,7 @@ struct CodableRoundTripTests {
         let metadata = CodeArtifact.Metadata(sourceLanguage: .swift, filePaths: ["A.swift"])
         let data = try JSONEncoder().encode(metadata)
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-        #expect(object["discoveredRoots"] as? [Any] != nil)
+        #expect(object["discoveredRoots"] is [Any])
         #expect(try roundTrip(metadata) == metadata)
     }
 
