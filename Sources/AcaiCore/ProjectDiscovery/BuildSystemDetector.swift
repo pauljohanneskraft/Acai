@@ -10,9 +10,9 @@ public struct SourceSpec {
     /// excluded together with everything below it.
     public var excludedPaths: [URL]
 
-    /// Problems found while discovering this spec — a manifest that could not be read in full, say,
-    /// leaving the file set a guess. Merged into the artifact's parse diagnostics, so ``HealthCheck``
-    /// reflects them.
+    /// Problems found while discovering this spec — a manifest whose layout could not be read in
+    /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
+    /// ``HealthCheck`` reflects them.
     public var diagnostics: [ParseDiagnostic]
 
     public init(

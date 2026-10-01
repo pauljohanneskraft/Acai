@@ -155,6 +155,23 @@ struct MermaidRendererTests {
         #expect(mermaid.contains("<<struct>>"))
     }
 
+    @Test func classDiagramGenericVarianceInClassName() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .kotlin, filePaths: ["X.kt"]),
+            types: [
+                TypeDeclaration(id: "Producer", name: "Producer", qualifiedName: "Producer",
+                                kind: .interface, accessLevel: .public,
+                                genericParameters: [GenericParameter(name: "T", variance: .covariant)]),
+                TypeDeclaration(id: "Consumer", name: "Consumer", qualifiedName: "Consumer",
+                                kind: .interface, accessLevel: .public,
+                                genericParameters: [GenericParameter(name: "T", variance: .contravariant)])
+            ]
+        )
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
+        #expect(mermaid.contains("class Producer[\"Producer<out T>\"]"))
+        #expect(mermaid.contains("class Consumer[\"Consumer<in T>\"]"))
+    }
+
     @Test func classDiagramRendersExternalTypesWhenEnabled() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),

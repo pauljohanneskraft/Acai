@@ -1,4 +1,5 @@
 import Foundation
+import AcaiCore
 import AcaiQuality
 
 /// A per-codebase, ordered file allow/blocklist, applied at indexing time so an excluded file is
