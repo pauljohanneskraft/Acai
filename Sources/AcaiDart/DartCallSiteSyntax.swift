@@ -19,8 +19,9 @@ struct DartCallSiteSyntax: CallSiteSyntax {
     /// more selectors still and is dropped, as it is in every other language.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         // `field = callee(args)` flattens as siblings [field-id, callee-id, selector(argument_part)]
-        // inside `field_initializer` or `initialized_identifier`. The guard drops constructions
-        // `Foo()` and non-call initializers.
+        // inside `field_initializer` or `initialized_identifier`. `Foo()` shares this shape but is a
+        // construction: it resolves to the default constructor, whose member is named after the type
+        // itself in Dart (unlike Kotlin's fixed `init`).
         if node.nodeType == "field_initializer" || node.nodeType == "initialized_identifier" {
             let kids = node.namedChildren()
             guard kids.count >= 2,
@@ -28,20 +29,22 @@ struct DartCallSiteSyntax: CallSiteSyntax {
                   kids[kids.count - 2].nodeType == "identifier"
             else { return nil }
             return scope.bareCall(
-                named: kids[kids.count - 2].text(in: context), implicitSelf: true, location: node.location(in: context)
+                named: kids[kids.count - 2].text(in: context), implicitSelf: true,
+                constructorMethodName: { $0 }, location: node.location(in: context)
             )
         }
 
         let named = node.namedChildren()
 
         // Bare `foo(args)`: implicit `this.foo()` or a top-level function, tagged `.selfDispatch` so
-        // the call-graph builder can fall back to a free function. `bareCall`'s `knownTypeNames`
-        // guard drops constructor calls `Foo()`, which share this shape.
+        // the call-graph builder can fall back to a free function. `Foo()` shares this shape but is a
+        // construction, resolving to the default constructor named after the type itself.
         if named.count == 2,
            named[0].nodeType == "identifier",
            isArgumentSelector(named[1]) {
             return scope.bareCall(
-                named: named[0].text(in: context), implicitSelf: true, location: node.location(in: context)
+                named: named[0].text(in: context), implicitSelf: true,
+                constructorMethodName: { $0 }, location: node.location(in: context)
             )
         }
 

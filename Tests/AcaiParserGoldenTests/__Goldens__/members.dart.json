@@ -909,7 +909,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 29,
+                "endLine" : 33,
+                "filePath" : "members.dart",
+                "line" : 33
+              },
+              "methodName" : "Point",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Point"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -1295,7 +1308,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 55,
+                "endLine" : 52,
+                "filePath" : "members.dart",
+                "line" : 52
+              },
+              "methodName" : "Point",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Point"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
@@ -2108,7 +2134,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 35,
+                "endLine" : 100,
+                "filePath" : "members.dart",
+                "line" : 100
+              },
+              "methodName" : "Counter",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Counter"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
@@ -2265,7 +2304,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 73,
+                "endLine" : 108,
+                "filePath" : "members.dart",
+                "line" : 108
+              },
+              "methodName" : "Counter",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Counter"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
@@ -2421,7 +2473,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 47,
+                "endLine" : 112,
+                "filePath" : "members.dart",
+                "line" : 112
+              },
+              "methodName" : "Counter",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Counter"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [

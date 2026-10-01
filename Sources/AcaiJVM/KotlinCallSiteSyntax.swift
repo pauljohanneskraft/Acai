@@ -19,11 +19,13 @@ struct KotlinCallSiteSyntax: CallSiteSyntax {
 
         guard let navExpr = node.firstChild(withType: "navigation_expression") else {
             // Bare `foo()` — an implicit-receiver call (a member of the enclosing type or a top-level
-            // function). Tagged `.selfDispatch`; the builder falls back to a free function. The
-            // `knownTypeNames` guard drops constructor calls `Foo()`, which share this grammar shape.
+            // function), tagged `.selfDispatch`; the builder falls back to a free function. `Foo()`
+            // shares this grammar shape but is a construction: it resolves to the constructor's
+            // `init` member, Kotlin's fixed name for every primary and secondary constructor.
             guard let calleeId = node.firstChild(withType: "simple_identifier") else { return nil }
             return scope.bareCall(
-                named: calleeId.text(in: context), implicitSelf: true, location: node.location(in: context)
+                named: calleeId.text(in: context), implicitSelf: true,
+                constructorMethodName: { _ in "init" }, location: node.location(in: context)
             )
         }
 
