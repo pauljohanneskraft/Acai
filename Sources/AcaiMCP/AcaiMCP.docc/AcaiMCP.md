@@ -200,7 +200,7 @@ Three cuts of the static call graph.
 
 - **`metrics`** — per-method fan-in/out, recursion, resolution coverage. Finds hot methods.
 - **`cycles`** — method-level mutual recursion and tangled clusters.
-- **`deadcode`** — uncalled methods not reachable by contract (public API, overrides, protocol requirements, entry points). **Always read the reported coverage** — it's the false-positive floor.
+- **`deadcode`** — uncalled members not reachable by contract (public API, overrides, protocol requirements, entry points). Methods in every language; a language's initializers and subscripts only where its parser records calls to them, since a kind whose callers are never recorded would report every declaration of it as uncalled. The report's `scannedKinds` lists the kinds actually scanned, so an empty `candidates` never speaks for a kind outside it — it's the union across every language in the codebase, so in a polyglot codebase a listed kind was scanned for at least one language, not necessarily all of them. **Always read the reported coverage** — it's the false-positive floor.
 
 Result shape wraps each mode's data alongside `health`: `{ "callGraph": <CallGraphMetrics.Report>, "health": ... }`, `{ "cycles": [<MethodCycles.Cluster>], "health": ... }`, or `{ "deadCode": <DeadCodeScan.Report>, "health": ... }`.
 
