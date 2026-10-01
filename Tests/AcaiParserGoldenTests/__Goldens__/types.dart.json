@@ -663,7 +663,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 59,
+                "endLine" : 27,
+                "filePath" : "types.dart",
+                "line" : 27
+              },
+              "methodName" : "Vector",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Vector"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
@@ -2161,7 +2174,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 69,
+                "endLine" : 81,
+                "filePath" : "types.dart",
+                "line" : 81
+              },
+              "methodName" : "Meters",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Meters"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [

@@ -56,6 +56,28 @@ struct JavaCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "helper" && $0.receiver == .selfDispatch })
     }
 
+    /// `new Thing()` resolves to a call-site edge targeting the constructor, the same way any other
+    /// overloaded method call already does — every overload of `Thing` collapses to one target.
+    @Test func capturesConstructorCall() {
+        let source = """
+        class Thing {
+            Thing() {}
+            Thing(int x) {}
+        }
+        class Worker {
+            void run() {
+                Thing a = new Thing();
+                Thing b = new Thing(1);
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.java")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.count == 2)
+        #expect(sites.allSatisfy { $0.methodName == "Thing" && $0.receiver == .type("Thing") })
+    }
+
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {

@@ -105,10 +105,12 @@ struct DartCallSiteTests {
     }
 
     /// A bare `foo()` is an implicit `this.foo()` (or a top-level function) — captured as
-    /// `.selfDispatch`; a constructor call `Foo()` (same grammar shape) is not.
-    @Test func capturesBareImplicitSelfCallButNotConstruction() {
+    /// `.selfDispatch`; a default-constructor call `Foo()` (same grammar shape) now resolves to the
+    /// constructor, named after the type itself.
+    @Test func capturesBareImplicitSelfCallAndDefaultConstruction() {
         let source = """
         class Helper {
+            Helper();
             void make() {}
         }
         class Worker {
@@ -123,7 +125,7 @@ struct DartCallSiteTests {
         let worker = artifact.types.first { $0.name == "Worker" }
         let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
         #expect(sites.contains { $0.methodName == "validate" && $0.receiver == .selfDispatch })
-        #expect(!sites.contains { $0.methodName == "Helper" })
+        #expect(sites.contains { $0.methodName == "Helper" && $0.receiver == .type("Helper") })
     }
 
     /// Calls in a field initializer or a constructor initializer list are recorded so their targets

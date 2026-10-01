@@ -664,7 +664,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 67,
+                "endLine" : 39,
+                "filePath" : "Shop.java",
+                "line" : 39
+              },
+              "methodName" : "Logger",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -800,7 +813,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 77,
+                "endLine" : 42,
+                "filePath" : "Shop.java",
+                "line" : 42
+              },
+              "methodName" : "ArrayList",
+              "receiver" : {
+                "unresolvedTypeName" : {
+                  "_0" : "ArrayList"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -1039,6 +1065,20 @@
 
           ],
           "callSites" : [
+            {
+              "location" : {
+                "column" : 47,
+                "endLine" : 65,
+                "filePath" : "Shop.java",
+                "line" : 65
+              },
+              "methodName" : "Logger",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            },
             {
               "location" : {
                 "column" : 17,
@@ -1344,7 +1384,20 @@
 
               ],
               "callSites" : [
-
+                {
+                  "location" : {
+                    "column" : 39,
+                    "endLine" : 48,
+                    "filePath" : "Shop.java",
+                    "line" : 48
+                  },
+                  "methodName" : "Product",
+                  "receiver" : {
+                    "type" : {
+                      "_0" : "Product"
+                    }
+                  }
+                }
               ],
               "cyclomaticComplexity" : 1,
               "fieldReads" : [
