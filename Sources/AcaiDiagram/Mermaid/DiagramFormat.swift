@@ -1,7 +1,8 @@
 public enum DiagramFormat: String, Sendable, CaseIterable {
-    /// The default.
     case dot
     case mermaid
+
+    public static let standard: DiagramFormat = .mermaid
 }
 
 /// A built diagram paired with both of its renderers, so callers dispatch on
