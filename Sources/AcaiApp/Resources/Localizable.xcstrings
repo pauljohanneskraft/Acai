@@ -22690,6 +22690,182 @@
           }
         }
       }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingMatchesThisScope" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts entspricht diesem Bereich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches this scope"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien ne correspond à cette portée"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingMatchesThisFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts entspricht diesem Filter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches this filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien ne correspond à ce filtre"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ScopeHidEverything" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Bereich, auf den dieses Diagramm eingeschränkt ist, enthält nichts zum Zeichnen. Setze ihn zurück, um wieder die gesamte Codebase zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The scope this diagram is narrowed to contains nothing to draw. Reset it to see the whole codebase again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La portée à laquelle ce diagramme est restreint ne contient rien à dessiner. Réinitialise-la pour revoir toute la codebase."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.FilterHidEverything" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Filter im Tab „Einstellungen“ hat alle Elemente ausgeblendet. Lösche ihn, um sie wieder zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The filter in the Settings tab hid every element. Clear it to see them again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le filtre de l’onglet Réglages a masqué tous les éléments. Efface-le pour les revoir."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingToUndo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Filter und kein Bereich blendet etwas aus – es gibt hier einfach nichts zum Zeichnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No filter or scope is hiding anything — there is simply nothing here to draw."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun filtre ni aucune portée ne masque quoi que ce soit : il n’y a tout simplement rien à dessiner ici."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ResetScope" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bereich zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Scope"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser la portée"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ClearFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer le filtre"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramView.NoTypesToDiagram" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Typen zum Diagrammieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No types to diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun type à représenter"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
