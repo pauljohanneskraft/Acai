@@ -24,4 +24,26 @@ struct JSTypeResolutionTests {
         #expect(enriched.first { $0.name == "Animal" }?.id == "Zoo.Animal")
         #expect(enriched.first { $0.name == "Dog" }?.inheritedTypes.first?.name == "Zoo.Animal")
     }
+
+    /// The `constraint` node spans the whole `extends Error` clause, keyword included; the
+    /// constraint must resolve to the bound type (`Error`), not to that literal text.
+    @Test func genericConstraintResolvesToTheBoundTypeNotTheExtendsClause() {
+        let source = """
+        interface Sink<T extends Error> {}
+        """
+        let artifact = parser.parse(source: source, fileName: "sink.ts")
+        let sink = artifact.types.first { $0.name == "Sink" }
+        #expect(sink?.genericParameters.first?.constraints.first?.type.name == "Error")
+    }
+
+    /// A multi-bound constraint (`T extends A & B`) still drops the `extends` keyword; the bound
+    /// resolves through the existing intersection-type handling rather than taking raw clause text.
+    @Test func multiBoundGenericConstraintDropsTheExtendsKeyword() {
+        let source = """
+        interface Multi<T extends A & B> {}
+        """
+        let artifact = parser.parse(source: source, fileName: "multi.ts")
+        let multi = artifact.types.first { $0.name == "Multi" }
+        #expect(multi?.genericParameters.first?.constraints.first?.type.name == "A & B")
+    }
 }
