@@ -265,6 +265,46 @@ struct CodableRoundTripTests {
         #expect(!resolved.relationships.contains { $0.source == "SIMD3" })
     }
 
+    /// Every `Metadata` field set to a non-default value, so a field added without a matching
+    /// `Codable` member fails here instead of silently not persisting.
+    @Test func fullyPopulatedMetadata() throws {
+        let original = CodeArtifact.Metadata(
+            sourceLanguage: .swift,
+            filePaths: ["Sources/A/A.swift", "Sources/B/B.swift"],
+            toolVersion: "1.2.3",
+            parseDiagnostics: [
+                ParseDiagnostic(
+                    location: SourceLocation(filePath: "Sources/A/A.swift", line: 3, column: 7),
+                    kind: .missing,
+                    message: "expected '}'"
+                )
+            ],
+            discoveredRoots: [
+                CodeArtifact.DiscoveredRoot(
+                    path: ".",
+                    detector: "SwiftPackageManagerDetector",
+                    languages: [.swift]
+                ),
+                CodeArtifact.DiscoveredRoot(
+                    path: "web",
+                    detector: "NodeDetector",
+                    languages: [.typeScript, .javaScript]
+                )
+            ]
+        )
+        #expect(try roundTrip(original) == original)
+    }
+
+    /// An empty `discoveredRoots` is written as an empty array rather than omitted, so the key is
+    /// always present and a reader never has to distinguish "absent" from "none discovered".
+    @Test func emptyDiscoveredRootsStillEncodesTheKey() throws {
+        let metadata = CodeArtifact.Metadata(sourceLanguage: .swift, filePaths: ["A.swift"])
+        let data = try JSONEncoder().encode(metadata)
+        let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(object["discoveredRoots"] as? [Any] != nil)
+        #expect(try roundTrip(metadata) == metadata)
+    }
+
     // MARK: - Helper
 
     private func roundTrip<T: Codable & Equatable>(_ value: T) throws -> T {

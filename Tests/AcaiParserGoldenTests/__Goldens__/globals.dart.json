@@ -778,6 +778,9 @@
     }
   ],
   "metadata" : {
+    "discoveredRoots" : [
+
+    ],
     "filePaths" : [
       "globals.dart"
     ],
