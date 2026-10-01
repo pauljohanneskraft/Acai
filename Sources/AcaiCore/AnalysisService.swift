@@ -44,7 +44,8 @@ public struct AnalysisService: Sendable {
         self.parsers = parsers
         self.projectDiscovery = projectDiscovery ?? ProjectDiscovery(
             detectors: [],
-            fallback: FallbackDetector(parsers: parsers)
+            fallback: FallbackDetector(parsers: parsers),
+            excludedDirectories: LanguageRegistry(parsers: parsers).excludedDirectories
         )
         self.fileParsingConcurrencyLimit = fileParsingConcurrencyLimit
         self.maximumSourceFileBytes = maximumSourceFileBytes
@@ -93,7 +94,7 @@ public struct AnalysisService: Sendable {
 
         var combinedArtifact: CodeArtifact?
 
-        for spec in specs {
+        for spec in specs.mergedByLanguage {
             if let artifact = try await parseSpec(
                 spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
             ) {
@@ -107,6 +108,7 @@ public struct AnalysisService: Sendable {
         // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
         // per-language-group before specs are merged, so it can't see cross-spec call receivers.
         var result = combined.resolvingCallSiteReceivers()
+        result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
         return result
     }
@@ -127,9 +129,10 @@ public struct AnalysisService: Sendable {
             for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
         )
         guard !collected.files.isEmpty else {
-            guard !collected.diagnostics.isEmpty else { return nil }
+            let diagnostics = spec.diagnostics + collected.diagnostics
+            guard !diagnostics.isEmpty else { return nil }
             var result = CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-            result.metadata.parseDiagnostics.append(contentsOf: collected.diagnostics)
+            result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
             return result
         }
 
@@ -137,7 +140,7 @@ public struct AnalysisService: Sendable {
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )
-        let diagnostics = collected.diagnostics + parsed.diagnostics
+        let diagnostics = spec.diagnostics + collected.diagnostics + parsed.diagnostics
         guard !diagnostics.isEmpty else { return enriched }
         var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
         result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
@@ -145,10 +148,10 @@ public struct AnalysisService: Sendable {
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
-    /// dir), not just `codeParser`'s own, before applying `includingFile`. A symbolic link the walk
-    /// could not resolve (dangling, or outside the caller's security scope) becomes a `.skipped`
-    /// diagnostic rather than vanishing the way it did before #303 — the same promise the per-file
-    /// size ceiling makes for a file that exists but is too big.
+    /// dir), not just `codeParser`'s own, then the spec's own excluded paths, before applying
+    /// `includingFile`. A symbolic link the walk could not resolve (dangling, or outside the caller's
+    /// security scope) becomes a `.skipped` diagnostic rather than vanishing the way it did before
+    /// #303 — the same promise the per-file size ceiling makes for a file that exists but is too big.
     private func collectFiles(
         for codeParser: any CodeParser,
         in spec: SourceSpec,
@@ -172,6 +175,7 @@ public struct AnalysisService: Sendable {
                 }
             }
             .removingDuplicates { $0 }
+            .filter { !spec.excludes($0) }
             .filter { url in
                 let path = url.relativePath(from: rootURL)
                 return (gitignore?.includes(path) ?? true) && includingFile(path)

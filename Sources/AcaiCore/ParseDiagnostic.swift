@@ -21,6 +21,10 @@ public struct ParseDiagnostic: Codable, Equatable, Hashable, Sendable {
         /// rule. Not a parse failure: the analysis ran, but it excluded less (or more) than the
         /// repository asked for.
         case invalidPattern
+        /// A build manifest could not be read in full, so source discovery fell back to probing the
+        /// filesystem. Not a parse failure: the files that were found parsed fine, but the set of
+        /// files may not be the set the build system actually compiles.
+        case incompleteDiscovery
     }
 
     public var location: SourceLocation

@@ -111,6 +111,9 @@
     }
   ],
   "metadata" : {
+    "discoveredRoots" : [
+
+    ],
     "filePaths" : [
       "shop.dart"
     ],
