@@ -165,6 +165,34 @@ class DiagramScreenBase {
         )
     }
 
+    // MARK: - Empty scope (`DiagramEmptyScopeOverlay`, shared by every generated diagram type)
+
+    /// The overlay an empty canvas shows, named by the `DiagramEmptyReason` that produced it — so a
+    /// journey asserting "the filter hid everything" cannot pass on "the codebase has none of this
+    /// kind", which is the distinction the overlay exists to make.
+    func emptyScopeOverlay(_ reason: String) -> XCUIElement {
+        app.descendants(matching: .any)["diagram.emptyScope.\(reason)"]
+    }
+
+    /// Reset Scope / Clear Filter, or the diagram type's own next step. Absent when the codebase
+    /// simply has none of this kind and there is nothing to undo.
+    var emptyScopeActionButton: XCUIElement { app.buttons["diagram.emptyScope.actionButton"] }
+
+    // MARK: - Filter (`DiagramFilterSection`, shared by every generated diagram type)
+
+    var filterTypeGlobField: XCUIElement { app.textFields["diagram.filter.selector.typeGlob"] }
+
+    /// Types a type glob into the Settings tab's filter and waits for the canvas to catch up. The
+    /// filter binding applies live per keystroke, so the wait is on `expecting` — the overlay for a
+    /// glob that matches nothing, or a node for one that matches something — never on a fixed delay.
+    func filterTypes(
+        matching glob: String, expecting: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        revealInSettings(filterTypeGlobField, "the filter's type-glob field", file: file, line: line)
+        filterTypeGlobField.clearAndTypeText(glob, file: file, line: line)
+        expecting.waitOrFail("the canvas to settle after filtering to '\(glob)'", file: file, line: line)
+    }
+
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)
 
     var compareButton: XCUIElement { app.descendants(matching: .any)["delta.openButton"] }

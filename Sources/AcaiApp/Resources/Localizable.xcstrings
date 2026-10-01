@@ -22836,6 +22836,336 @@
           }
         }
       }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingMatchesThisScope" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts entspricht diesem Bereich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches this scope"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien ne correspond à cette portée"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingMatchesThisFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts entspricht diesem Filter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches this filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien ne correspond à ce filtre"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ScopeHidEverything" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Bereich, auf den dieses Diagramm eingeschränkt ist, enthält nichts zum Zeichnen. Setze ihn zurück, um wieder die gesamte Codebase zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The scope this diagram is narrowed to contains nothing to draw. Reset it to see the whole codebase again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La portée à laquelle ce diagramme est restreint ne contient rien à dessiner. Réinitialise-la pour revoir toute la codebase."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.FilterHidEverything" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Filter im Tab „Einstellungen“ hat alle Elemente ausgeblendet. Lösche ihn, um sie wieder zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The filter in the Settings tab hid every element. Clear it to see them again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le filtre de l’onglet Réglages a masqué tous les éléments. Efface-le pour les revoir."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ResetScope" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bereich zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Scope"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser la portée"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ClearFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer le filtre"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramView.NoTypesToDiagram" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Typen zum Diagrammieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No types to diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun type à représenter"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramView.NoTypesToDiagramDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Filter und kein Bereich blendet etwas aus – diese Codebase hat keine Typen, die Açaí darstellen kann."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No filter or scope is hiding anything — this codebase has no types Açaí can diagram."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun filtre ni aucune portée ne masque quoi que ce soit : cette codebase n’a aucun type qu’Açaí puisse représenter."
+          }
+        }
+      }
+    },
+    "View.CallGraphCanvasView.EditConfiguration" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konfiguration bearbeiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Configuration"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier la configuration"
+          }
+        }
+      }
+    },
+    "View.CallGraphCanvasView.NoCallsResolved" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Aufrufe in diesem Bereich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No calls in this scope"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun appel dans cette portée"
+          }
+        }
+      }
+    },
+    "View.CallGraphCanvasView.NoCallsResolvedDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier konnten keine Aufrufstellen aufgelöst werden. Erweitere den Bereich oder wähle einen anderen Typ oder ein anderes Modul."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No call sites could be resolved here. Widen the scope, or pick a different type or module."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun site d’appel n’a pu être résolu ici. Élargis la portée, ou choisis un autre type ou module."
+          }
+        }
+      }
+    },
+    "View.PackageDiagramView.NoModules" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Module zum Diagrammieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No modules to diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun module à représenter"
+          }
+        }
+      }
+    },
+    "View.PackageDiagramView.NoModulesDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Filter blendet etwas aus – Açaí hat in dieser Codebase keine Build-Module gefunden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No filter is hiding anything — Açaí found no build modules in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun filtre ne masque quoi que ce soit : Açaí n’a trouvé aucun module de build dans cette codebase."
+          }
+        }
+      }
+    },
+    "View.StateDiagramView.NoStatesFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Zustände gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No states found"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun état trouvé"
+          }
+        }
+      }
+    },
+    "View.StateDiagramView.NoStatesFoundDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Analyse ist abgeschlossen, hat aber keine Zustände für diese Variable gefunden. Wähle eine andere Variable oder erweitere deren Konfiguration."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The analysis finished but found no states for this variable. Pick a different variable, or widen its configuration."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’analyse s’est terminée mais n’a trouvé aucun état pour cette variable. Choisis une autre variable, ou élargis sa configuration."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

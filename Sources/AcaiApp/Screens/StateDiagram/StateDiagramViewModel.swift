@@ -171,6 +171,14 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         return nil
     }
 
+    /// Why a successfully analysed diagram has nothing to draw, so an empty canvas can say whether
+    /// anything the viewer did caused it. The state-variable spec is not a one-tap undo — it is a
+    /// choice made in the Settings tab, not a narrowing with a neutral value — so it stays part of the
+    /// `.codebase` case.
+    var emptyReason: DiagramEmptyReason {
+        configuration?.filter == nil ? .codebase : .filter
+    }
+
     // MARK: - Layout
 
     var layout: StateLayoutModel {

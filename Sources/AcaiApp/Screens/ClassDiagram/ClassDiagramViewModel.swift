@@ -138,6 +138,17 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
     }
 
+    // MARK: - Empty Scope
+
+    /// Why the canvas has nothing to draw, so an empty canvas can say whether anything the viewer
+    /// did caused it. A focus scope outranks a filter: it is the narrower of the two, so resetting
+    /// it is the undo most likely to bring types back.
+    var emptyReason: DiagramEmptyReason {
+        if configuration.isFocused { return .scope }
+        if configuration.filter != nil || configuration.minimumAccessLevel != nil { return .filter }
+        return .codebase
+    }
+
     // MARK: - Apply Configuration
 
     func applyConfiguration(_ newConfig: ClassDiagramConfiguration, artifact: CodeArtifact) {

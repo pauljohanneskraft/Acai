@@ -132,6 +132,13 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     var isEmpty: Bool { diagram.participants.isEmpty }
 
+    /// Why the trace has nothing to draw, so an empty canvas can say whether anything the viewer did
+    /// caused it. The entry point is not a one-tap undo — it is a pair of names chosen in the Settings
+    /// tab, not a narrowing with a neutral value — so it stays part of the `.codebase` case.
+    var emptyReason: DiagramEmptyReason {
+        configuration.filter == nil ? .codebase : .filter
+    }
+
     var isDeltaMode: Bool { diff != nil }
 
     /// Non-color complement to `messageDeltaColor(_:)`. `nil` when unchanged or not in delta mode.

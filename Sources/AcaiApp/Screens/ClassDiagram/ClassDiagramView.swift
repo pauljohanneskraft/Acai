@@ -201,6 +201,11 @@ struct ClassDiagramView: View {
         .overlay {
             if let nodeLimitError = viewModel.nodeLimitError {
                 nodeLimitErrorState(message: nodeLimitError.message)
+            } else if viewModel.nodes.isEmpty {
+                DiagramEmptyScopeOverlay(
+                    reason: viewModel.emptyReason, nothingOfThisKind: noTypesDescription,
+                    onUndo: clearEmptyScope
+                )
             }
         }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
@@ -276,6 +281,27 @@ extension ClassDiagramView {
 
     private var editor: ClassDiagramConfigEditor {
         ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
+    }
+
+    private var noTypesDescription: DiagramEmptyDescription {
+        DiagramEmptyDescription(
+            systemImage: "square.dashed",
+            title: .app("View.ClassDiagramView.NoTypesToDiagram"),
+            detail: .app("View.ClassDiagramView.NoTypesToDiagramDetail")
+        )
+    }
+
+    /// Undoes whatever emptied the canvas, matching what `ClassDiagramViewModel.emptyReason` offered:
+    /// the focus scope while one is set, otherwise both filters that can hide every type.
+    private func clearEmptyScope() {
+        editor.mutate { configuration in
+            if configuration.isFocused {
+                configuration.focus = nil
+            } else {
+                configuration.filter = nil
+                configuration.minimumAccessLevel = nil
+            }
+        }
     }
 
     @ViewBuilder private var nodeLayer: some View {
