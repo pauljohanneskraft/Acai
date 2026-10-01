@@ -291,6 +291,13 @@ final class DeclarationVisitor: SyntaxVisitor {
         return .visitChildren
     }
 
+    override func visit(_ node: SubscriptCallExprSyntax) -> SyntaxVisitorContinueKind {
+        scope.recordSubscriptCallSite(
+            from: node, scope: functionBodyDepth > 0 ? .functionBody : (typeStack.isEmpty ? .fileScope : .other),
+            enclosingTypeName: typeStack.last?.name, topLevelGlobalPropertyMap: topLevelGlobalPropertyMap())
+        return .visitChildren
+    }
+
     override func visit(_ node: SequenceExprSyntax) -> SyntaxVisitorContinueKind {
         if functionBodyDepth > 0 {
             scope.recordAssignment(from: node)
