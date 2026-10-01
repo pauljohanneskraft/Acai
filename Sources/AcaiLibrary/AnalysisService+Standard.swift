@@ -44,7 +44,8 @@ extension AnalysisService {
         parsers: standardParsers,
         projectDiscovery: ProjectDiscovery(
             detectors: standardDetectors,
-            fallback: FallbackDetector(parsers: standardParsers)
+            fallback: FallbackDetector(parsers: standardParsers),
+            excludedDirectories: LanguageRegistry(parsers: standardParsers).excludedDirectories
         )
     )
 }

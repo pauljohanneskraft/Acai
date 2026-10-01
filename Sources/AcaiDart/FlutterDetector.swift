@@ -18,6 +18,6 @@ public struct FlutterDetector: BuildSystemDetector {
 
         let sourceDirs = SourceDirectoryProbe(preferring: "lib").directories(in: root)
         guard SourceFilePresence(extensions: ["dart"]).exist(inAnyOf: sourceDirs) else { return [] }
-        return [SourceSpec(language: .dart, sourceDirs: sourceDirs)]
+        return [SourceSpec(language: .dart, sourceDirs: sourceDirs, root: root)]
     }
 }

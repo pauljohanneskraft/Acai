@@ -39,7 +39,8 @@ struct QualityCommandTests {
             // Baseline has only an empty type set; the current source adds types/edges → drift.
             let baseURL = dir.appendingPathComponent("base.json")
             let baseJSON = """
-            {"metadata":{"filePaths":[],"parseDiagnostics":[],"sourceLanguage":"swift"},\
+            {"metadata":{"discoveredRoots":[],"filePaths":[],"parseDiagnostics":[],\
+            "sourceLanguage":"swift"},\
             "freestandingFunctions":[],"globalVariables":[],"relationships":[],"types":[]}
             """
             try baseJSON.write(to: baseURL, atomically: true, encoding: .utf8)
