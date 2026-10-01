@@ -817,7 +817,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 25,
+                "endLine" : 41,
+                "filePath" : "Shop.swift",
+                "line" : 41
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -1237,6 +1250,20 @@
           "callSites" : [
             {
               "location" : {
+                "column" : 21,
+                "endLine" : 58,
+                "filePath" : "Shop.swift",
+                "line" : 58
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            },
+            {
+              "location" : {
                 "column" : 9,
                 "endLine" : 59,
                 "filePath" : "Shop.swift",
@@ -1306,7 +1333,20 @@
             }
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 25,
+                "endLine" : 70,
+                "filePath" : "Shop.swift",
+                "line" : 70
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "unresolvedTypeName" : {
+                  "_0" : "Double"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 4,
           "fieldReads" : [
@@ -1562,7 +1602,20 @@
 
               ],
               "callSites" : [
-
+                {
+                  "location" : {
+                    "column" : 35,
+                    "endLine" : 38,
+                    "filePath" : "Shop.swift",
+                    "line" : 38
+                  },
+                  "methodName" : "init",
+                  "receiver" : {
+                    "type" : {
+                      "_0" : "Product"
+                    }
+                  }
+                }
               ],
               "cyclomaticComplexity" : 1,
               "fieldReads" : [

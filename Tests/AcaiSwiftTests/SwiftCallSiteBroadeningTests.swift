@@ -347,7 +347,7 @@ struct SwiftCallSiteBroadeningTests {
                 _ = self[1]
             }
         }
-        """, method: "run")
+        """, method: "run", ofType: "Thing")
         let subscriptSites = sites.filter { $0.methodName == "subscript" }
         #expect(subscriptSites.count == 2)
         #expect(subscriptSites.contains { $0.receiverType == "Thing" })
