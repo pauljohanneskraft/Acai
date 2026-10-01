@@ -24,7 +24,7 @@ struct DiagramElementDescriptionTests {
     func typeNodeCountsVisibleMembers() {
         var config = ClassDiagramConfiguration()
         config.propertyVisibility["Status"] = false
-        let node = GeneratedDiagramNode(from: type("Status"), configuration: config)
+        let node = GeneratedDiagramNode(from: type("Status"), configuration: config, varianceKeywords: [:])
 
         let description = DiagramElementDescription(typeNode: node, delta: nil)
 
@@ -36,7 +36,7 @@ struct DiagramElementDescriptionTests {
 
     @Test("A change status is read only when the element changed")
     func changeStatusIsReadOnlyWhenChanged() {
-        let node = GeneratedDiagramNode(from: type("Status"))
+        let node = GeneratedDiagramNode(from: type("Status"), varianceKeywords: [:])
 
         let added = DiagramElementDescription(typeNode: node, delta: .added)
         let unchanged = DiagramElementDescription(typeNode: node, delta: .unchanged)
