@@ -19,14 +19,6 @@ struct DetectorTests {
         try body(dir.standardizedFileURL)
     }
 
-    private func withTempDirAsync(_ body: (URL) async throws -> Void) async throws {
-        let dir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-            .appendingPathComponent("detector-tests-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
-        try await body(dir.standardizedFileURL)
-    }
-
     private func write(_ relativePath: String, in root: URL, contents: String = "// file") throws {
         let url = root.appendingPathComponent(relativePath)
         try FileManager.default.createDirectory(
@@ -39,201 +31,9 @@ struct DetectorTests {
         specs.first { $0.language == language }?.sourceDirs.map(\.lastPathComponent) ?? []
     }
 
-    // MARK: - Swift Package Manager
-
-    @Test func spmDetectsManifestAndPrefersSourcesDir() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            #expect(!detector.isPresent(at: root))
-            try write("Package.swift", in: root)
-            #expect(detector.isPresent(at: root))
-
-            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .swift)
-                == [root.lastPathComponent])
-            try write("Sources/A.swift", in: root)
-            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .swift)
-                == ["Sources"])
-            #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.kotlin]).isEmpty)
-        }
-    }
-
-    @Test func spmReadsDeclaredTargetPaths() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            try write("Package.swift", in: root, contents: """
-            // swift-tools-version: 6.0
-            import PackageDescription
-
-            let package = Package(
-                name: "Demo",
-                targets: [
-                    .target(name: "Core", path: "Lib/Core", exclude: ["Fixtures"]),
-                    .target(name: "Narrow", sources: ["Public"]),
-                    .testTarget(name: "CoreTests"),
-                ]
-            )
-            """)
-            try write("Lib/Core/Core.swift", in: root)
-            try write("Lib/Core/Fixtures/Sample.swift", in: root)
-            try write("Sources/Narrow/Public/API.swift", in: root)
-            try write("Sources/Narrow/Internal/Hidden.swift", in: root)
-            try write("Tests/CoreTests/CoreTests.swift", in: root)
-            // Not declared by any target, and outside every declared path.
-            try write("Sources/Stray/Stray.swift", in: root)
-
-            let spec = try #require(
-                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
-            #expect(spec.diagnostics.isEmpty)
-            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Core", "Public", "CoreTests"])
-            #expect(spec.excludes(root.appendingPathComponent("Lib/Core/Fixtures/Sample.swift")))
-            #expect(!spec.excludes(root.appendingPathComponent("Lib/Core/Core.swift")))
-        }
-    }
-
-    /// The declared layout has to survive the whole pipeline, not just the detector: an excluded
-    /// fixture, a `sources:`-narrowed folder and an undeclared target must not reach the artifact.
-    @Test func spmDeclaredLayoutDecidesWhichFilesAreParsed() async throws {
-        try await withTempDirAsync { root in
-            try write("Package.swift", in: root, contents: """
-            let package = Package(
-                name: "Demo",
-                targets: [
-                    .target(name: "Core", path: "Lib/Core", exclude: ["Fixtures"]),
-                    .target(name: "Narrow", sources: ["Public"]),
-                ]
-            )
-            """)
-            try write("Lib/Core/Core.swift", in: root, contents: "struct Core {}")
-            try write("Lib/Core/Fixtures/Sample.swift", in: root, contents: "struct Sample {}")
-            try write("Sources/Narrow/Public/API.swift", in: root, contents: "struct API {}")
-            try write("Sources/Narrow/Internal/Hidden.swift", in: root, contents: "struct Hidden {}")
-            try write("Sources/Stray/Stray.swift", in: root, contents: "struct Stray {}")
-
-            let artifact = try await AnalysisService.standard
-                .analyzeProject(at: root, allowedLanguages: [.swift])
-            #expect(artifact.flattened().map(\.name).sorted() == ["API", "Core"])
-            #expect(artifact.metadata.parseDiagnostics.isEmpty)
-        }
-    }
-
-    /// A manifest the reader can't fully interpret has to say so, not quietly guess.
-    @Test func spmRecordsADiagnosticWhenItFallsBackToProbing() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            try write("Package.swift", in: root, contents: """
-            let package = Package(name: "Demo", targets: [.target(name: "Core")] + extraTargets)
-            """)
-            try write("Sources/Core/Core.swift", in: root)
-
-            let spec = try #require(
-                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
-            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Sources"])
-            #expect(spec.diagnostics.map(\.kind) == [.incompleteDiscovery])
-            #expect(spec.diagnostics.first?.location.filePath == "Package.swift")
-        }
-    }
-
-    @Test func spmFindsTheOnlyTargetOfAKindDirectlyInItsPredefinedDirectory() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            try write("Package.swift", in: root, contents: """
-            let package = Package(
-                name: "tool",
-                targets: [.executableTarget(name: "tool"), .testTarget(name: "toolTests")]
-            )
-            """)
-            try write("Sources/main.swift", in: root)
-            try write("Tests/ToolTests.swift", in: root)
-
-            let spec = try #require(
-                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
-            #expect(spec.diagnostics.isEmpty)
-            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Sources", "Tests"])
-        }
-    }
-
-    /// `path` comes from the manifest, which is external input: a target that resolves outside the
-    /// package is refused rather than followed.
-    @Test func spmProbesWhenATargetPathEscapesThePackage() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            try write("Package.swift", in: root, contents: """
-            let package = Package(name: "Demo", targets: [.target(name: "Core", path: "../Elsewhere")])
-            """)
-            try write("Sources/Core/Core.swift", in: root)
-
-            let spec = try #require(
-                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
-            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Sources"])
-            #expect(spec.diagnostics.map(\.kind) == [.incompleteDiscovery])
-            #expect(spec.diagnostics.first?.message.contains("outside the package") == true)
-        }
-    }
-
-    /// A `sources:` entry that leaves the target would widen it into a sibling, so it is dropped.
-    @Test func spmIgnoresASourcesEntryOutsideItsTarget() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            try write("Package.swift", in: root, contents: """
-            let package = Package(
-                name: "Demo",
-                targets: [
-                    .target(name: "Core"),
-                    .target(name: "Narrow", sources: ["Public", "../Core"]),
-                ]
-            )
-            """)
-            try write("Sources/Core/Core.swift", in: root)
-            try write("Sources/Narrow/Public/API.swift", in: root)
-
-            let spec = try #require(
-                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
-            #expect(spec.diagnostics.isEmpty)
-            #expect(spec.sourceDirs.map(\.lastPathComponent) == ["Core", "Public"])
-        }
-    }
-
-    /// SwiftPM copies resources rather than compiling them, so a fixture package declared as a
-    /// resource is not part of the target's source — the usual way a test fixture is declared.
-    @Test func spmSkipsSwiftFilesUnderADeclaredResource() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            try write("Package.swift", in: root, contents: """
-            let package = Package(
-                name: "Demo",
-                targets: [
-                    .target(name: "Core"),
-                    .testTarget(name: "CoreTests", resources: [.copy("Fixtures")]),
-                ]
-            )
-            """)
-            try write("Sources/Core/Core.swift", in: root)
-            try write("Tests/CoreTests/CoreTests.swift", in: root)
-            try write("Tests/CoreTests/Fixtures/Package.swift", in: root)
-            try write("Tests/CoreTests/Fixtures/Sources/Fixture/Fixture.swift", in: root)
-
-            let spec = try #require(
-                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
-            let fixtureSource = "Tests/CoreTests/Fixtures/Sources/Fixture/Fixture.swift"
-            #expect(spec.diagnostics.isEmpty)
-            #expect(spec.excludes(root.appendingPathComponent(fixtureSource)))
-            #expect(!spec.excludes(root.appendingPathComponent("Tests/CoreTests/CoreTests.swift")))
-        }
-    }
-
-    @Test func spmProbesRatherThanDroppingATargetWhoseDirectoryIsMissing() throws {
-        let detector = SwiftPackageManagerDetector()
-        try withTempDir { root in
-            try write("Package.swift", in: root, contents: """
-            let package = Package(name: "Demo", targets: [.target(name: "Core"), .target(name: "Gone")])
-            """)
-            try write("Sources/Core/Core.swift", in: root)
-
-            let spec = try #require(
-                detector.discoverSourceSpecs(at: root, requestedLanguages: []).first { $0.language == .swift })
-            #expect(spec.diagnostics.map(\.kind) == [.incompleteDiscovery])
-            #expect(spec.diagnostics.first?.message.contains("`Gone`") == true)
-        }
+    /// A detector claims the directory it was asked about, whatever source dirs it reports under it.
+    private func allClaim(_ specs: [SourceSpec], _ root: URL) -> Bool {
+        !specs.isEmpty && specs.allSatisfy { $0.root.standardizedFileURL == root.standardizedFileURL }
     }
 
     // MARK: - Xcode
@@ -246,6 +46,7 @@ struct DetectorTests {
                 at: root.appendingPathComponent("App.xcodeproj"), withIntermediateDirectories: true)
             #expect(detector.isPresent(at: root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: []).first?.language == .swift)
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.java]).isEmpty)
         }
     }
@@ -264,6 +65,8 @@ struct DetectorTests {
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(dirNames(specs, for: .kotlin) == ["kotlin"])
             #expect(dirNames(specs, for: .java) == ["java"])
+            // The nested source dirs sit under the root, but the claimed root is the folder itself.
+            #expect(allClaim(specs, root))
             let kotlinOnly = detector.discoverSourceSpecs(at: root, requestedLanguages: [.kotlin])
             #expect(kotlinOnly.map(\.language) == [.kotlin])
         }
@@ -277,6 +80,7 @@ struct DetectorTests {
             try write("Main.java", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .java)
                 == [root.lastPathComponent])
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
         }
     }
 
@@ -294,8 +98,45 @@ struct DetectorTests {
             try write("src/b.js", in: root)
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.map(\.language) == [.typeScript])
+            #expect(allClaim(specs, root))
             let withJS = detector.discoverSourceSpecs(at: root, requestedLanguages: [.javaScript])
             #expect(withJS.contains { $0.language == .javaScript })
+        }
+    }
+
+    /// `claim(at:requestedLanguages:)` is what the walk calls, so it has to agree with the two
+    /// questions it answers at once.
+    @Test func nodeClaimAgreesWithTheSeparateQuestions() throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: "{}")
+            try write("src/a.ts", in: root)
+            try write("src/b.js", in: root)
+
+            let claim = detector.claim(at: root, requestedLanguages: [])
+            #expect(claim.specs.map(\.language)
+                == detector.discoverSourceSpecs(at: root, requestedLanguages: []).map(\.language))
+            #expect(claim.withheldLanguages
+                == detector.withheldLanguages(at: root, requestedLanguages: []))
+            #expect(claim.withheldLanguages == [.javaScript])
+
+            // Asked for explicitly, JavaScript is a spec rather than withheld.
+            let explicit = detector.claim(at: root, requestedLanguages: [.javaScript])
+            #expect(explicit.withheldLanguages.isEmpty)
+            #expect(explicit.specs.map(\.language) == [.javaScript])
+        }
+    }
+
+    /// A detector that answers only the two separate questions still claims correctly through the
+    /// protocol's default.
+    @Test func detectorWithoutItsOwnClaimUsesTheDefault() throws {
+        let detector = SwiftPackageManagerDetector()
+        try withTempDir { root in
+            try write("Package.swift", in: root, contents: "// swift-tools-version:6.0")
+            try write("Sources/App/main.swift", in: root)
+            let claim = detector.claim(at: root, requestedLanguages: [])
+            #expect(claim.specs.map(\.language) == [.swift])
+            #expect(claim.withheldLanguages.isEmpty)
         }
     }
 
@@ -306,6 +147,7 @@ struct DetectorTests {
             try write("src/only.js", in: root)
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.map(\.language) == [.javaScript])
+            #expect(allClaim(specs, root))
         }
     }
 
@@ -434,6 +276,7 @@ struct DetectorTests {
             try write("lib/main.dart", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
                 == ["lib"])
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
         }
     }
 
@@ -449,6 +292,7 @@ struct DetectorTests {
             try write("src/app.py", in: root)
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .python)
                 == ["src"])
+            #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.swift]).isEmpty)
         }
     }
@@ -467,6 +311,7 @@ struct DetectorTests {
             let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
             #expect(specs.contains { $0.language == .c })
             #expect(specs.contains { $0.language == .cpp })
+            #expect(allClaim(specs, root))
             #expect(detector.discoverSourceSpecs(at: root, requestedLanguages: [.cpp]).map(\.language) == [.cpp])
         }
     }

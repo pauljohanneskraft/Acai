@@ -702,6 +702,9 @@
     }
   ],
   "metadata" : {
+    "discoveredRoots" : [
+
+    ],
     "filePaths" : [
       "module.py"
     ],
