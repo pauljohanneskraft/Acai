@@ -33,11 +33,12 @@ struct SwiftCallSiteBroadeningTests {
     @Test func capturesPropertySelfStaticAndTypedLocalReceivers() {
         let sites = runCallSites()
         // process (property → Helper), validate (self → nil), log (static → Logger),
-        // doThing (local `Helper()` → Helper).
-        #expect(sites.count == 4)
+        // init (construction `Helper()` → Helper), doThing (local `Helper()` → Helper).
+        #expect(sites.count == 5)
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
+        #expect(sites.contains { $0.methodName == "init" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
@@ -60,20 +61,38 @@ struct SwiftCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "parse" && $0.receiverType == nil })
     }
 
-    /// `Foo()` / `UUID()` are constructions, not calls: a same-file declared type or any capitalised
-    /// identifier is treated as a type name and dropped, so they never masquerade as method calls.
-    @Test func doesNotCaptureConstruction() {
+    /// `Foo()` is a construction, not a method call, but is still recorded as a call site targeting
+    /// `init` — a same-file declared type resolves to `.type`, so the dead-code scan can find an
+    /// uncalled initializer (issue #412).
+    @Test func capturesConstructionAsInitCallSite() {
         let sites = callSites(in: """
         struct Widget {}
         class Worker {
             func run() {
                 let w = Widget()
-                _ = UUID()
                 _ = w
             }
         }
         """, method: "run")
-        #expect(sites.isEmpty)
+        #expect(sites.count == 1)
+        #expect(sites.contains { $0.methodName == "init" && $0.receiverType == "Widget" })
+    }
+
+    /// `UUID()` constructs a capitalised identifier not declared in this file — deferred the same way
+    /// an unqualified cross-file `Thing.init(x:)` already is, rather than treated as `.type` directly.
+    @Test func capturesConstructionOfUnknownTypeAsUnresolvedInitCallSite() {
+        let sites = callSites(in: """
+        class Worker {
+            func run() {
+                _ = UUID()
+            }
+        }
+        """, method: "run")
+        #expect(sites.count == 1)
+        let site = sites.first
+        #expect(site?.methodName == "init")
+        #expect(site?.receiverType == nil)
+        #expect(site?.receiver == .unresolvedTypeName("UUID"))
     }
 
     /// Generic-specialised (`render<Int>()`), trailing-closure (`build { }`), and optional-chained
@@ -313,5 +332,41 @@ struct SwiftCallSiteBroadeningTests {
         let worker = artifact.types.first { $0.name == "Worker" }
         let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
+    }
+
+    /// `x[i]` against `self`, `Self`, or a property/local typed as a same-file declared type resolves
+    /// to a `subscript` call site — the same provable-receiver shapes a regular method call already
+    /// resolves through (issue #412).
+    @Test func capturesSubscriptAccessOnLocallyDeclaredType() {
+        let sites = callSites(in: """
+        class Thing {
+            subscript(i: Int) -> Int { 0 }
+            func run() {
+                let made = Thing()
+                _ = made[0]
+                _ = self[1]
+            }
+        }
+        """, method: "run", ofType: "Thing")
+        let subscriptSites = sites.filter { $0.methodName == "subscript" }
+        #expect(subscriptSites.count == 2)
+        #expect(subscriptSites.contains { $0.receiverType == "Thing" })
+        #expect(subscriptSites.contains { $0.receiver == .selfDispatch })
+    }
+
+    /// `x[i]` is overwhelmingly used on `Array`/`Dictionary`, whose own type name (`"Array"`) is never
+    /// a same-file declared type — recording it would inflate the call graph's `coverage` denominator
+    /// with a candidate that can never resolve, so it's dropped rather than deferred (issue #412).
+    @Test func dropsSubscriptAccessOnCollectionOrUnresolvedType() {
+        let sites = callSites(in: """
+        class Worker {
+            var items: [Int] = []
+            func run() {
+                _ = items[0]
+                _ = Elsewhere()[1]
+            }
+        }
+        """, method: "run")
+        #expect(sites.allSatisfy { $0.methodName != "subscript" })
     }
 }

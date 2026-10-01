@@ -46,9 +46,52 @@ struct CallSiteCollector {
             )
         }
         if let declRef = callee.as(DeclReferenceExprSyntax.self) {
-            return implicitCall(named: declRef.baseName.text, node: node, propertyMap: propertyMap)
+            let name = declRef.baseName.text
+            if isTypeName(name) {
+                return CallSite(
+                    receiver: knownTypeNames.contains(name) ? .type(name) : .unresolvedTypeName(name),
+                    methodName: "init",
+                    location: sourceLocations.sourceLocation(of: node)
+                )
+            }
+            return implicitCall(named: name, node: node, propertyMap: propertyMap)
         }
         return nil
+    }
+
+    /// A resolvable subscript access (`receiver[index]`). Scoped to a receiver resolving to `self`/
+    /// `Self` or a same-file declared type only — unlike other call kinds, never deferred to the
+    /// post-merge cross-file pass and never recorded on a receiver whose type can't be proven here.
+    /// `x[i]` is overwhelmingly used on `Array`/`Dictionary` (whose own type name, e.g. `"Array"`, is
+    /// never in `knownTypeNames`), so this scoping is what keeps those from being recorded as
+    /// unresolvable candidates that would lower the dead-code report's `coverage` (issue #412).
+    func subscriptCallSite(
+        from node: SubscriptCallExprSyntax, propertyMap: [String: String],
+        enclosingTypeName: String?, knownLocalNames: Set<String> = []
+    ) -> CallSite? {
+        guard let resolved = resolveReceiver(
+            from: node.calledExpression, propertyMap: propertyMap,
+            enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames),
+              isLocallyDeclared(resolved.receiver)
+        else { return nil }
+        return CallSite(
+            receiver: resolved.receiver, methodName: "subscript",
+            location: sourceLocations.sourceLocation(of: node)
+        )
+    }
+
+    /// Whether a resolved receiver is provably a type declared in this file (or the enclosing
+    /// instance itself) — the certainty `subscriptCallSite` requires before recording a call site.
+    private func isLocallyDeclared(_ receiver: CallReceiver) -> Bool {
+        switch receiver {
+        case .selfDispatch:
+            return true
+        case .type(let name):
+            return knownTypeNames.contains(name)
+        case .free, .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement,
+             .ownMethodReturn:
+            return false
+        }
     }
 
     /// A call site whose receiver is a local/guard-let/global binding previously deferred to a
