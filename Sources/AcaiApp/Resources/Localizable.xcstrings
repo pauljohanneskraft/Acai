@@ -1371,6 +1371,28 @@
         }
       }
     },
+    "Error.ProjectBrowserViewModel.ProjectDeletedWhileCloning %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ wurde fertig geklont, nachdem das zugehörige Projekt gelöscht wurde. Der Klon wurde verworfen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” finished cloning after its project was deleted, so the clone was discarded."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » a fini d’être cloné après la suppression de son projet ; le clone a été supprimé."
+          }
+        }
+      }
+    },
     "Error.ProjectBrowserViewModel.PullFailed %@" : {
       "localizations" : {
         "de" : {

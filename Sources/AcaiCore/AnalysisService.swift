@@ -105,14 +105,16 @@ public struct AnalysisService: Sendable {
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )
-        guard !parsed.diagnostics.isEmpty else { return enriched }
+        let diagnostics = spec.diagnostics + parsed.diagnostics
+        guard !diagnostics.isEmpty else { return enriched }
         var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
+        result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
         return result
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
-    /// dir), not just `codeParser`'s own, before applying `includingFile`.
+    /// dir), not just `codeParser`'s own, then the spec's own excluded paths, before applying
+    /// `includingFile`.
     private func collectFiles(
         for codeParser: any CodeParser, in spec: SourceSpec, rootURL: URL, includingFile: (String) -> Bool
     ) -> [URL] {
@@ -126,6 +128,7 @@ public struct AnalysisService: Sendable {
                 )
             }
             .removingDuplicates { $0 }
+            .filter { !spec.excludes($0) }
             .filter { includingFile($0.relativePath(from: rootURL)) }
     }
 

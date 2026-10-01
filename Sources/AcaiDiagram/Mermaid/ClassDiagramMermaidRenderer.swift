@@ -56,7 +56,8 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
 
     private func renderClass(_ type: TypeDeclaration, safeID: String) -> [String] {
         let config = options.languages.configuration(for: type)
-        let header = "    class \(safeID)[\"\(displayName(for: type).mermaidLabelEscaped)\"]"
+        let name = displayName(for: type, config: config).mermaidLabelEscaped
+        let header = "    class \(safeID)[\"\(name)\"]"
 
         var body: [String] = []
         if let stereotype = stereotypeString(for: type, config: config) {
@@ -73,9 +74,12 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         return [header + " {"] + body + ["    }"]
     }
 
-    private func displayName(for type: TypeDeclaration) -> String {
+    private func displayName(for type: TypeDeclaration, config: LanguageConfiguration) -> String {
         guard options.showGenericParameters, !type.genericParameters.isEmpty else { return type.name }
-        return type.name + "<" + type.genericParameters.map(\.name).joined(separator: ", ") + ">"
+        let parameters = type.genericParameters
+            .map { $0.umlDisplayString(varianceKeywords: config.varianceKeywords) }
+            .joined(separator: ", ")
+        return type.name + "<" + parameters + ">"
     }
 
     private func memberLine(_ member: Member, config: LanguageConfiguration) -> String {

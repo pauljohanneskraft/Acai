@@ -42,9 +42,9 @@ struct ClassFreeformConversion: FreeformConversion {
         let showAnnotationStereotypes = diagram.classConfiguration?.showAnnotationStereotypes ?? true
         let languages = artifact.standardLanguageResolver
         let storedSize = diagram.nodeSizes[item.id]
+        let langConfig = languages.configuration(for: item)
         let stereotype = item.stereotype(
-            annotationStereotypes: showAnnotationStereotypes
-                ? languages.configuration(for: item).annotationStereotypes : [:]
+            annotationStereotypes: showAnnotationStereotypes ? langConfig.annotationStereotypes : [:]
         )
         return FreeformDiagram.Node(
             id: id,
@@ -59,7 +59,8 @@ struct ClassFreeformConversion: FreeformConversion {
                     .filter { $0.kind == .method || $0.kind == .initializer || $0.kind == .deinitializer }
                     .map(freeformMember(from:)),
                 enumCases: item.enumCases.map { .init(name: $0.name) },
-                genericParameters: item.genericParameters.map(\.name)
+                genericParameters: item.genericParameters
+                    .map { $0.umlDisplayString(varianceKeywords: langConfig.varianceKeywords) }
             )),
             positionX: Double(position.x),
             positionY: Double(position.y),
@@ -142,7 +143,8 @@ struct ClassFreeformConversion: FreeformConversion {
             let diagramNode = GeneratedDiagramNode(
                 from: type, configuration: configuration,
                 annotationStereotypes: langConfig.annotationStereotypes,
-                collectionTypeNames: langConfig.collectionTypeNames
+                collectionTypeNames: langConfig.collectionTypeNames,
+                varianceKeywords: langConfig.varianceKeywords
             )
             switch grouping {
             case .none:

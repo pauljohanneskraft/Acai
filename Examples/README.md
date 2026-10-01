@@ -53,11 +53,11 @@ Five little domains, each chosen to exercise a different corner of the analysis:
 
 Run these from the repository root with the CLI built (`swift build`, then use `.build/debug/AcaiCLI`, or install it as `acai` via `./Scripts/cli_install.sh`). Substitute each language the diagram supports (see the coverage table) for `<lang>`.
 
-Every `acai diagram` command also takes `--format mermaid` to write the `.mmd` sibling (same source, entry point, and variable — only the output format and extension change). Every `acai image` command renders the light theme by default; add `--theme dark` and write to the `<lang>.dark.png` sibling to regenerate the dark-palette proof image (e.g. `acai image --source Examples/ClassDiagram --language swift --grouping none --theme dark --output Examples/ClassDiagram/Exports/swift.dark.png --scale 2`).
+Each golden names its format and is generated with an explicit `--format`, so the commands keep producing the same file whatever the CLI's default is (it is `mermaid`). The `.dot` and `.mmd` siblings differ only in that flag and the extension — same source, entry point and variable. Every `acai image` command renders the light theme by default; add `--theme dark` and write to the `<lang>.dark.png` sibling to regenerate the dark-palette proof image (e.g. `acai image --source Examples/ClassDiagram --language swift --grouping none --theme dark --output Examples/ClassDiagram/Exports/swift.dark.png --scale 2`).
 
 ```sh
 # Class diagram — DOT + Mermaid + PNG per language (swift kotlin java typescript dart python c cpp), macOS only for images
-acai diagram --source Examples/ClassDiagram --language <lang> \
+acai diagram --source Examples/ClassDiagram --language <lang> --format dot \
     --output Examples/ClassDiagram/Exports/<lang>.dot
 acai diagram --source Examples/ClassDiagram --language <lang> --format mermaid \
     --output Examples/ClassDiagram/Exports/<lang>.mmd
@@ -67,7 +67,7 @@ acai image   --source Examples/ClassDiagram --language <lang> --grouping none \
 # Sequence diagram (swift | kotlin | java | typescript | dart | python | cpp). The entry point is
 # "Checkout.placeOrder" for every language EXCEPT c, whose entry is the dotless free function
 # "place_order" (substitute it below when --language c).
-acai diagram --source Examples/SequenceDiagram --language <lang> \
+acai diagram --source Examples/SequenceDiagram --language <lang> --format dot \
     --sequence-from "Checkout.placeOrder" \
     --output Examples/SequenceDiagram/Exports/<lang>.dot
 acai diagram --source Examples/SequenceDiagram --language <lang> --format mermaid \
@@ -78,7 +78,7 @@ acai image   --source Examples/SequenceDiagram --language <lang> \
     --output Examples/SequenceDiagram/Exports/<lang>.png --scale 2
 
 # State diagram — uniform variable
-acai diagram --source Examples/StateDiagram --language <lang> \
+acai diagram --source Examples/StateDiagram --language <lang> --format dot \
     --state-from "Download.state" \
     --output Examples/StateDiagram/Exports/<lang>.dot
 acai diagram --source Examples/StateDiagram --language <lang> --format mermaid \
@@ -92,7 +92,7 @@ acai image   --source Examples/StateDiagram --language <lang> \
 # Core/Banking directories become modules. <Lang> is the dir name (Swift, Kotlin, Java,
 # TypeScript, Dart, Python, C, Cpp); <lang> the lower-case stem (note: TypeScript dir vs typescript
 # stem, and Cpp dir vs cpp stem).
-acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package \
+acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package --format dot \
     --output Examples/PackageDiagram/Exports/<lang>.dot
 acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --package --format mermaid \
     --output Examples/PackageDiagram/Exports/<lang>.mmd
@@ -100,13 +100,13 @@ acai image   --source Examples/PackageDiagram/<Lang> --language <lang> --package
     --output Examples/PackageDiagram/Exports/<lang>.png --scale 2
 
 # Module coupling view — same sources, DOT + Mermaid only (no PNG: acai image has no --module-coupling)
-acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --module-coupling \
+acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --module-coupling --format dot \
     --output Examples/PackageDiagram/Exports/<lang>.coupling.dot
 acai diagram --source Examples/PackageDiagram/<Lang> --language <lang> --module-coupling --format mermaid \
     --output Examples/PackageDiagram/Exports/<lang>.coupling.mmd
 
 # Call graph (swift kotlin java typescript dart python c cpp) — whole-codebase scope.
-acai diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph \
+acai diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph --format dot \
     --output Examples/CallGraph/Exports/<lang>.dot
 acai diagram --source Examples/CallGraph/<Lang> --language <lang> --call-graph --format mermaid \
     --output Examples/CallGraph/Exports/<lang>.mmd

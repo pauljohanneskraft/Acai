@@ -87,7 +87,7 @@ struct DiagramCommandRunTests {
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("diagram.dot")
             var cmd = try CLITestSupport.parseDiagram(
-                ["--source", dir.path, "--language", "swift", "--output", output.path]
+                ["--source", dir.path, "--language", "swift", "--format", "dot", "--output", output.path]
             )
             try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
@@ -107,7 +107,8 @@ struct DiagramCommandRunTests {
             try source.write(to: dir.appendingPathComponent("Widget.swift"), atomically: true, encoding: .utf8)
             let output = dir.appendingPathComponent("diagram.dot")
             var cmd = try CLITestSupport.parseDiagram(
-                ["--source", dir.path, "--language", "swift", "--min-access", "public", "--output", output.path]
+                ["--source", dir.path, "--language", "swift", "--format", "dot",
+                 "--min-access", "public", "--output", output.path]
             )
             try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
@@ -130,7 +131,7 @@ struct DiagramCommandRunTests {
             try source.write(to: dir.appendingPathComponent("Widget.swift"), atomically: true, encoding: .utf8)
             let output = dir.appendingPathComponent("diagram.dot")
             var cmd = try CLITestSupport.parseDiagram(
-                ["--source", dir.path, "--language", "swift",
+                ["--source", dir.path, "--language", "swift", "--format", "dot",
                  "--min-access", "packagePrivate", "--output", output.path]
             )
             try await cmd.run()
@@ -184,7 +185,8 @@ struct DiagramCommandRunTests {
             try CLITestSupport.writeSampleSwiftSource(in: dir)
             let output = dir.appendingPathComponent("diagram.dot")
             var cmd = try CLITestSupport.parseDiagram(
-                ["--source", dir.path, "--language", "swift", "--max-nodes", "1000", "--output", output.path]
+                ["--source", dir.path, "--language", "swift", "--format", "dot",
+                 "--max-nodes", "1000", "--output", output.path]
             )
             try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
@@ -237,7 +239,7 @@ struct DiagramCommandRunTests {
             let rulesURL = try writeMaxParametersRules(in: dir)
             let output = dir.appendingPathComponent("diagram.dot")
             var cmd = try CLITestSupport.parseDiagram([
-                "--source", dir.path, "--language", "swift",
+                "--source", dir.path, "--language", "swift", "--format", "dot",
                 "--color-by", "maxParameters", "--rules", rulesURL.path,
                 "--output", output.path
             ])
@@ -257,7 +259,7 @@ struct DiagramCommandRunTests {
             // `maxParameters` is one of `MetricBudget.defaultSmellBudgets` (max 5), so `--color-by`
             // works without `--rules` — the same budget that gates a build without one also colours it.
             var cmd = try CLITestSupport.parseDiagram([
-                "--source", dir.path, "--language", "swift",
+                "--source", dir.path, "--language", "swift", "--format", "dot",
                 "--color-by", "maxParameters", "--output", output.path
             ])
             try await cmd.run()

@@ -227,6 +227,27 @@ struct ClassDiagramDOTRendererTests {
         #expect(dot.contains("Box&lt;T&gt;"))
     }
 
+    @Test func genericParameterVarianceUsesTheLanguagesOwnKeyword() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .kotlin, filePaths: ["Test.kt"]),
+            types: [
+                TypeDeclaration(
+                    id: "Producer", name: "Producer", qualifiedName: "Producer", kind: .interface,
+                    accessLevel: .public,
+                    genericParameters: [GenericParameter(name: "T", variance: .covariant)]
+                ),
+                TypeDeclaration(
+                    id: "Consumer", name: "Consumer", qualifiedName: "Consumer", kind: .interface,
+                    accessLevel: .public,
+                    genericParameters: [GenericParameter(name: "T", variance: .contravariant)]
+                )
+            ]
+        )
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
+        #expect(dot.contains("Producer&lt;out T&gt;"))
+        #expect(dot.contains("Consumer&lt;in T&gt;"))
+    }
+
     @Test func emptyArtifact() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: [])

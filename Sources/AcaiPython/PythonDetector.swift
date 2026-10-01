@@ -16,8 +16,13 @@ public struct PythonDetector: BuildSystemDetector {
     ) -> [SourceSpec] {
         guard LanguageRequest(requestedLanguages).wants(.python) else { return [] }
 
-        let sourceDirs = SourceDirectoryProbe(preferring: "src").directories(in: root)
+        let manifest = PythonManifest(root: root).sourceDirectories()
+        let sourceDirs = manifest.directories.isEmpty
+            ? SourceDirectoryProbe(preferring: "src").directories(in: root)
+            : manifest.directories
         guard SourceFilePresence(extensions: ["py"]).exist(inAnyOf: sourceDirs) else { return [] }
-        return [SourceSpec(language: .python, sourceDirs: sourceDirs)]
+        return [
+            SourceSpec(language: .python, sourceDirs: sourceDirs, diagnostics: manifest.diagnostics)
+        ]
     }
 }
