@@ -29,7 +29,9 @@ struct SourceFileBatchParser {
     func parse(_ files: [URL], reusing cache: ParsedFileCache?) async throws -> Outcome {
         guard !files.isEmpty else { return .empty }
 
-        let plan = ParsedFileBatchPlan(files: files, rootURL: rootURL, cache: cache)
+        let plan = ParsedFileBatchPlan(
+            files: files, rootURL: rootURL, cache: cache, maximumFileBytes: maximumFileBytes
+        )
         var outcomeByIndex = plan.outcomeByIndex
         try await parseMisses(plan.indicesNeedingParse, in: files, into: &outcomeByIndex)
         let entries = cache == nil ? [:] : plan.cacheEntries(addingFreshlyParsed: outcomeByIndex)

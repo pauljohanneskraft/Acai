@@ -13,7 +13,7 @@ struct ParsedFileBatchPlan {
     private let carriedForward: [String: ParsedFileCache.Entry]
 
     /// A `nil` cache plans every file as a miss without fingerprinting any.
-    init(files: [URL], rootURL: URL, cache: ParsedFileCache?) {
+    init(files: [URL], rootURL: URL, cache: ParsedFileCache?, maximumFileBytes: Int) {
         var outcomeByIndex = [FileOutcome?](repeating: nil, count: files.count)
         guard let cache else {
             self.outcomeByIndex = outcomeByIndex
@@ -32,7 +32,7 @@ struct ParsedFileBatchPlan {
                 continue
             }
             fingerprints[index] = fingerprint
-            guard let cached = cache.fragment(for: fingerprint) else {
+            guard fingerprint.size <= maximumFileBytes, let cached = cache.fragment(for: fingerprint) else {
                 needingParse.append(index)
                 continue
             }
@@ -45,12 +45,14 @@ struct ParsedFileBatchPlan {
         self.carriedForward = carriedForward
     }
 
-    /// The hits plus every freshly parsed miss — exactly the files this batch saw, so a removed file
+    /// The hits plus every settled, freshly parsed miss — exactly the files this batch saw, so a removed file
     /// drops out.
     func cacheEntries(addingFreshlyParsed parsed: [FileOutcome?]) -> [String: ParsedFileCache.Entry] {
         var entries = carriedForward
         for index in indicesNeedingParse {
-            guard case .parsed(let artifact) = parsed[index], let fingerprint = fingerprints[index] else { continue }
+            guard case .parsed(let artifact) = parsed[index], let fingerprint = fingerprints[index],
+                  fingerprint.isSettled
+            else { continue }
             entries[fingerprint.relativePath] = fingerprint.entry(for: artifact)
         }
         return entries

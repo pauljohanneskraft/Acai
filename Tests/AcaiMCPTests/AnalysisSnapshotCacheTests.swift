@@ -61,8 +61,12 @@ struct AnalysisSnapshotCacheTests {
     /// replay the fragments that cache already holds and there would be no way to get a cold one.
     @Test func refreshReparsesFilesRatherThanReplayingCachedFragments() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
-            try "one".write(to: dir.appendingPathComponent("A.fx"), atomically: true, encoding: .utf8)
-            try "two".write(to: dir.appendingPathComponent("B.fx"), atomically: true, encoding: .utf8)
+            for (name, content) in [("A.fx", "one"), ("B.fx", "two")] {
+                let file = dir.appendingPathComponent(name)
+                try content.write(to: file, atomically: true, encoding: .utf8)
+                try FileManager.default.setAttributes(
+                    [.modificationDate: Date().addingTimeInterval(-3600)], ofItemAtPath: file.path)
+            }
             let parser = CountingFixtureParser()
             let cache = AnalysisSnapshotCache(
                 service: AnalysisService(parsers: [parser]), store: MCPTestSupport.freshStore())

@@ -64,20 +64,22 @@ struct AnalysisServiceFileCacheTests {
             .appendingPathComponent("AcaiCoreFileCacheTests-\(unique)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         for name in ["A", "B", "C"] {
-            try "content-\(name)".write(
-                to: root.appendingPathComponent("\(name).fx"), atomically: true, encoding: .utf8)
+            try write("content-\(name)", to: root.appendingPathComponent("\(name).fx"), modifiedSecondsAgo: 3600)
         }
         let storeDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("AcaiCoreFileCacheStore-\(unique)", isDirectory: true)
         return Fixture(root: root, store: AnalysisStore(directory: storeDirectory), storeDirectory: storeDirectory)
     }
 
-    /// Advances `url`'s modification date well past "now" so a subsequent analysis sees a changed
-    /// fingerprint even on a filesystem with coarse mtime resolution.
-    private func touch(_ url: URL, content: String) throws {
+    /// Backdated so the file is settled and its parse is persisted.
+    private func write(_ content: String, to url: URL, modifiedSecondsAgo age: TimeInterval) throws {
         try content.write(to: url, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes(
-            [.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: url.path)
+            [.modificationDate: Date().addingTimeInterval(-age)], ofItemAtPath: url.path)
+    }
+
+    private func touch(_ url: URL, content: String) throws {
+        try write(content, to: url, modifiedSecondsAgo: 60)
     }
 
     @Test func unchangedFilesAreNotReparsedAfterOneFileChanges() async throws {
@@ -171,5 +173,43 @@ struct AnalysisServiceFileCacheTests {
         #expect(parser.parsedCount == 6, "nothing is reused between two uncached analyses")
         #expect(fixture.storedCacheFiles.isEmpty)
         #expect(AnalysisCache.disabled.reusableFragments() == nil)
+    }
+
+    /// On a second-granular filesystem a same-size rewrite within that second keeps
+    /// `(modified, size)`, so a just-written file's parse must not be trusted on a later run.
+    @Test func aJustWrittenFileIsParsedButNotPersisted() async throws {
+        let fixture = try makeFixture()
+        defer { fixture.remove() }
+        let parser = CountingParser()
+        let service = AnalysisService(parsers: [parser])
+        let fresh = fixture.root.appendingPathComponent("D.fx")
+        try write("content-D", to: fresh, modifiedSecondsAgo: 0)
+
+        let first = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
+        #expect(first.types.contains { $0.name == "D_content-D" })
+
+        let freshFingerprint = try #require(SourceFileFingerprint(file: fresh, relativeTo: fixture.root))
+        let settledFingerprint = try #require(SourceFileFingerprint(
+            file: fixture.root.appendingPathComponent("A.fx"), relativeTo: fixture.root))
+        let stored = try #require(fixture.storedFragments)
+        #expect(stored.fragment(for: freshFingerprint) == nil)
+        #expect(stored.fragment(for: settledFingerprint) != nil)
+
+        _ = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
+        #expect(parser.parsedCount == 5, "only the unsettled file is parsed again")
+    }
+
+    @Test func aCachedFileOverTheSizeCeilingIsSkippedRatherThanReplayed() async throws {
+        let fixture = try makeFixture()
+        defer { fixture.remove() }
+        let parser = CountingParser()
+
+        _ = try await AnalysisService(parsers: [parser])
+            .analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
+        let capped = try await AnalysisService(parsers: [parser], maximumSourceFileBytes: 1)
+            .analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
+
+        #expect(capped.types.isEmpty)
+        #expect(capped.metadata.parseDiagnostics.filter { $0.kind == .skipped }.count == 3)
     }
 }
