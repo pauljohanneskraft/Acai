@@ -10,7 +10,9 @@ struct HealthTextReport {
     let report: HealthCheck.Report
 
     func render() -> String {
-        (scoreLines + rootLines + diagnosticLines).joined(separator: "\n") + "\n"
+        let diagnostics = diagnosticLines
+        let separator = diagnostics.isEmpty ? [] : [""]
+        return (scoreLines + rootLines + separator + diagnostics).joined(separator: "\n") + "\n"
     }
 
     private var scoreLines: [String] {

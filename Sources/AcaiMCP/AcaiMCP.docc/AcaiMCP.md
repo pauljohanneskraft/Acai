@@ -125,6 +125,14 @@ Index a codebase and return a summary: languages, type and relationship counts, 
 | `includeGenerated` | boolean | |
 | `health` | boolean | Return the full parse-health report (trust score + diagnostics with `file:line`) instead of the summary. |
 
+The `health: true` report also says which scope the parse ran over, under `discoveredRoots`: one
+entry per project root discovery claimed, each with its `path` (relative to the analysed folder,
+`"."` for the folder itself), the `detector` that claimed it, its `languages`, the `sourceDirs` it
+contributed, and `isFallback`. Read it when a codebase analyses to fewer types than you expect —
+every root reading `isFallback: true` means no build system's manifest was recognised anywhere, so
+the file set is an extension match over the tree rather than a manifest's declared scope, and a
+directory you expected to be in scope may simply never have been claimed.
+
 Deliberately returns a compact snapshot, not the full model — the whole artifact is far too large for a context window. Use the CLI's `acai analyze` if you want the complete JSON.
 
 > **Run `health: true` before trusting anything else.** A low score means the parse is incomplete, and every metric, cycle and diagram built on it is unreliable.

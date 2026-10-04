@@ -141,11 +141,23 @@ struct DeadCodeReportView: View {
 
 /// A `ParseDiagnostic` carries no type/method identity, so rows get only the "View Source" action
 /// (via `LocationRow`) — there's nothing for "Open in…" to resolve.
+///
+/// The discovered roots are shown above the diagnostics whether or not anything went wrong: a clean
+/// score over the wrong scope is exactly the case a type count alone cannot explain.
 struct HealthReportView: View {
     let report: HealthCheck.Report
     var codebase: Codebase?
 
     var body: some View {
+        VStack(alignment: .leading, spacing: .spacingM) {
+            if !report.discoveredRoots.isEmpty {
+                DiscoveredRootsView(roots: report.discoveredRoots, isFallbackOnly: report.isFallbackOnly)
+            }
+            diagnostics
+        }
+    }
+
+    @ViewBuilder private var diagnostics: some View {
         let percent = Int((report.score * 100).rounded())
         if report.diagnostics.isEmpty {
             let types = String(localized: .app("View.ParseHealthSection.Types \(report.typeCount)"))
@@ -162,5 +174,51 @@ struct HealthReportView: View {
                 }
             }
         }
+    }
+}
+
+/// Which project roots discovery claimed, and by which detector — the scope the parse ran over.
+///
+/// Paths, detector names and language identifiers are all parser output, so they are `verbatim`
+/// throughout; only the labels around them are localized.
+struct DiscoveredRootsView: View {
+    let roots: [CodeArtifact.DiscoveredRoot]
+    let isFallbackOnly: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: .spacingS) {
+            Text(.app("View.DiscoveredRootsView.ProjectRoots \(roots.count)"))
+                .font(.caption).foregroundStyle(.secondary)
+            ForEach(Array(roots.prefix(analysisReportLimit).enumerated()), id: \.offset) { _, root in
+                row(for: root)
+            }
+            if isFallbackOnly {
+                Label {
+                    Text(.app("View.DiscoveredRootsView.NoBuildSystemRecognised"))
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("healthReport.noBuildSystemRecognised")
+            }
+        }
+        .accessibilityIdentifier("healthReport.discoveredRoots")
+    }
+
+    private func row(for root: CodeArtifact.DiscoveredRoot) -> some View {
+        let languages = root.languages.map(\.rawValue).joined(separator: ", ")
+        let sources = root.sourceDirs.joined(separator: ", ")
+        return VStack(alignment: .leading, spacing: .spacingXXS) {
+            Text(verbatim: root.path).font(.callout.monospaced())
+            Text(verbatim: "\(root.detector) · \(languages)")
+                .font(.caption).foregroundStyle(.secondary)
+            if !sources.isEmpty {
+                Text(.app("View.DiscoveredRootsView.Sources \(sources)"))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
