@@ -3,7 +3,9 @@ import AcaiQuality
 
 /// Builds a `PackageDiagram` (one node per build module) from a `CodeArtifact`.
 ///
-/// Types are grouped into build modules via `ModuleResolver.standard`. Every relationship whose
+/// Types are grouped into build modules via `ModuleMap`, so a folder holding several projects
+/// qualifies each module with its project and a node carries that project as its outer box. Every
+/// relationship whose
 /// endpoints live in different modules contributes to a weighted module→module edge (each distinct
 /// source-type → target-type crossing counted once); node metrics come from `computeMetrics().modules`.
 /// Edge source attribution is provenance-aware (`ModuleAttribution`), so a cross-module extension is

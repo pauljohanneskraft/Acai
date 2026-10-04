@@ -39,6 +39,9 @@ public struct ProjectRoots: Sendable {
 ///
 /// A path the map was not built with still resolves — it is computed on demand rather than answered
 /// wrongly — so a location that never reached `metadata.filePaths` is not a silent miss.
+///
+/// Enrichment is deliberately not a caller: its module key is an internal disambiguation tier of
+/// `TypeIdentityResolver`, which indexes by the *unqualified* name, and the two have to agree.
 public struct ModuleMap: Sendable {
 
     public let resolver: ModuleResolver
