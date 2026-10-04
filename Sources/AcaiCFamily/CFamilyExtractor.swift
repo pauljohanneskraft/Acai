@@ -25,6 +25,7 @@ struct CFamilyExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
+    let documentation: DocumentationReader
 
     var declarations = DeclarationBuilder()
 
@@ -81,6 +82,12 @@ struct CFamilyExtractor {
         // Bare identifiers, plus the `field_identifier` of a `this->field`/`obj.field` access, are
         // both identifier-shaped nodes.
         fieldReads = FieldReadResolver(context: context, identifierTypes: ["identifier", "field_identifier"])
+        // Doxygen's four markers; a plain `//` or `/* */` comment documents nothing.
+        documentation = DocumentationReader(
+            convention: DocumentationComment(
+                linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"]),
+            transparentParentTypes: ["declaration", "field_declaration", "type_definition"]
+        )
 
         declarations.declaredTypeNames = declaredTypeNames
     }
@@ -102,6 +109,11 @@ struct CFamilyExtractor {
     }
 
     private mutating func visitTopLevel(_ node: Node) {
+        let mark = declarations.mark
+        defer {
+            declarations.attachDocumentation(
+                documentation.documentation(above: node, in: context), since: mark)
+        }
         switch node.nodeType {
         case "declaration":
             visitTopLevelDeclaration(node)
@@ -270,9 +282,12 @@ extension CFamilyExtractor {
         if let body = node.child(byFieldName: "body") {
             for enumerator in body.namedChildren() where enumerator.nodeType == "enumerator" {
                 if let caseName = enumerator.child(byFieldName: "name").map({ $0.text(in: context) }) {
-                    let rawValue = enumerator.child(byFieldName: "value").map { $0.text(in: context) }
-                    let location = enumerator.location(in: context)
-                    cases.append(EnumCase(name: caseName, rawValue: rawValue, location: location))
+                    cases.append(EnumCase(
+                        name: caseName,
+                        rawValue: enumerator.child(byFieldName: "value").map { $0.text(in: context) },
+                        location: enumerator.location(in: context),
+                        documentation: documentation.documentation(above: enumerator, in: context)
+                    ))
                 }
             }
         }
