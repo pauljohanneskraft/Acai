@@ -89,6 +89,17 @@ struct HealthCheckTests {
         #expect(!report.isFallbackOnly)
     }
 
+    /// `AcaiRender`'s `AtlasFindings` builds a `Report` through the memberwise initializer with no
+    /// roots to hand it. That target is macOS-only, so a field added here without a default breaks a
+    /// build Linux never sees — pinned here, where it does.
+    @Test func aReportCanBeBuiltWithoutAnyRoots() {
+        let report = HealthCheck.Report(
+            score: 1, typeCount: 1, diagnosticCount: 0, countsByKind: [:], diagnostics: [])
+
+        #expect(report.discoveredRoots.isEmpty)
+        #expect(!report.isFallbackOnly)
+    }
+
     @Test func incompleteDiscoveryIsReportedButNotScored() {
         let diagnostic = ParseDiagnostic(
             location: SourceLocation(filePath: "manifest", line: 1, column: 1),

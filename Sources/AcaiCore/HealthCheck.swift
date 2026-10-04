@@ -17,7 +17,10 @@ public struct HealthCheck: Sendable {
         /// claimed it, the languages it accounted for and the directories it contributed. This is
         /// what makes a folder analysing to fewer types than it contains diagnosable — the scope the
         /// parse ran over, rather than only its outcome.
-        public var discoveredRoots: [CodeArtifact.DiscoveredRoot]
+        ///
+        /// Defaulted because "no roots recorded" is a state the report has to express anyway: a
+        /// single file parsed directly never had a root claimed for it.
+        public var discoveredRoots: [CodeArtifact.DiscoveredRoot] = []
 
         /// `true` when every root came from the fallback detector: no build system's manifest was
         /// recognised anywhere in the folder, so the file set is an extension match over the tree
