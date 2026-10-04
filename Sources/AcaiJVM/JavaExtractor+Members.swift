@@ -148,12 +148,22 @@ extension JavaExtractor {
         nodeType: String,
         context: inout BodyExtractionContext
     ) {
-        let added = (context.members.count, context.nestedTypes.count, context.enumCases.count)
+        let before = (
+            members: context.members.count,
+            nestedTypes: context.nestedTypes.count,
+            enumCases: context.enumCases.count
+        )
         appendBodyChild(role, child: child, nodeType: nodeType, context: &context)
         guard let prose = documentation.documentation(above: child, in: self.context) else { return }
-        for index in added.0..<context.members.count { context.members[index].documentation = prose }
-        for index in added.1..<context.nestedTypes.count { context.nestedTypes[index].documentation = prose }
-        for index in added.2..<context.enumCases.count { context.enumCases[index].documentation = prose }
+        for index in before.members..<context.members.count {
+            context.members[index].documentation = prose
+        }
+        for index in before.nestedTypes..<context.nestedTypes.count {
+            context.nestedTypes[index].documentation = prose
+        }
+        for index in before.enumCases..<context.enumCases.count {
+            context.enumCases[index].documentation = prose
+        }
     }
 
     private mutating func appendBodyChild(

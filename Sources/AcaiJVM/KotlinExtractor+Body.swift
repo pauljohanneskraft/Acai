@@ -70,13 +70,13 @@ extension KotlinExtractor {
         at index: Int,
         context: inout BodyChildContext
     ) {
-        let added = (context.typeDecl.members.count, context.typeDecl.nestedTypes.count)
+        let before = (members: context.typeDecl.members.count, nestedTypes: context.typeDecl.nestedTypes.count)
         appendBodyChild(child, at: index, context: &context)
         guard let prose = documentation.documentation(above: child, in: self.context) else { return }
-        for index in added.0..<context.typeDecl.members.count {
+        for index in before.members..<context.typeDecl.members.count {
             context.typeDecl.members[index].documentation = prose
         }
-        for index in added.1..<context.typeDecl.nestedTypes.count {
+        for index in before.nestedTypes..<context.typeDecl.nestedTypes.count {
             context.typeDecl.nestedTypes[index].documentation = prose
         }
     }

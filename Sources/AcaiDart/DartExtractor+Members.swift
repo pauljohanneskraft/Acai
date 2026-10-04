@@ -188,6 +188,7 @@ extension DartExtractor {
                 continue
             }
             let countBefore = members.count
+            let ignoredBefore = ignored.count
             switch nodeType {
             case "enum_constant":
                 if var enumCase = memberExtractor.enumConstant(child) {
@@ -213,7 +214,7 @@ extension DartExtractor {
             pendingAnnotations = []
             attachDocumentation(
                 above: child, members: &members, from: countBefore,
-                nestedTypes: &ignored, from: ignored.count)
+                nestedTypes: &ignored, from: ignoredBefore)
             previousChildAddedMember = members.count == countBefore + 1
             // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
             // walk it so its calls aren't lost. Runs before `this`, so file-level type names resolve
