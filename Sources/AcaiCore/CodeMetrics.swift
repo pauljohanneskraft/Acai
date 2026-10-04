@@ -248,8 +248,10 @@ extension CodeArtifact {
     ) -> [CodeMetrics.ModuleCoupling] {
         let idToModule = modules.modules(ofTypes: flat)
         var moduleTypes: [String: [TypeDeclaration]] = [:]
+        // Grouped by each type's own file rather than by `idToModule`, which keeps one entry per id:
+        // two types sharing an id must still each count toward the module they were declared in.
         for type in flat {
-            moduleTypes[idToModule[type.id] ?? modules.resolver.fallbackGroup, default: []].append(type)
+            moduleTypes[modules.module(forFilePath: type.location?.filePath ?? ""), default: []].append(type)
         }
         // Attributes each edge's source to its declaring module, so a cross-module extension counts
         // toward the extension's module, not the extended type's.

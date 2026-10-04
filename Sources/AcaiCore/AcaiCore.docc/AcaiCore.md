@@ -104,6 +104,8 @@ usually touch these directly — they power the automatic discovery.
 - ``ProjectDiscovery``
 - ``BuildSystemDetector``
 - ``ModuleResolver``
+- ``ModuleMap``
+- ``ProjectRoots``
 - ``FallbackDetector``
 - ``SourceSpec``
 
