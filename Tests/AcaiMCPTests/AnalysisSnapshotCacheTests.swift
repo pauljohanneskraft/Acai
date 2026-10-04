@@ -7,6 +7,34 @@ import AcaiCore
 /// invalidates it, a missing path is rejected, and a fresh cache instance starts warm from the
 /// shared `AnalysisStore` instead of re-parsing. Every cache here is built with its own temp-directory
 /// store — never `AnalysisStore.standard` — so tests never touch the real `~/.acai/analysis`.
+/// Counts every `parse` call, so a test can tell a reparse from a replayed cache fragment.
+private final class CountingFixtureParser: CodeParser, @unchecked Sendable {
+    var language: CodeArtifact.SourceLanguage { .init(rawValue: "fixture") }
+    var fileExtensions: [String] { ["fx"] }
+    var configuration: LanguageConfiguration { LanguageConfiguration() }
+
+    private let lock = NSLock()
+    private var count = 0
+
+    var parsedCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return count
+    }
+
+    func parse(source: String, fileName: String) -> CodeArtifact {
+        lock.lock()
+        count += 1
+        lock.unlock()
+        let name = (fileName as NSString).lastPathComponent.replacingOccurrences(of: ".fx", with: "")
+        let type = TypeDeclaration(
+            id: name, name: name, qualifiedName: name, kind: .class, accessLevel: .public,
+            location: .init(filePath: fileName, line: 1, column: 1)
+        )
+        return CodeArtifact(metadata: .init(sourceLanguage: language, filePaths: [fileName]), types: [type])
+    }
+}
+
 @Suite("Analysis Snapshot Cache")
 struct AnalysisSnapshotCacheTests {
 
@@ -27,6 +55,24 @@ struct AnalysisSnapshotCacheTests {
             _ = try await cache.artifact(path: dir.path)
             _ = try await cache.artifact(path: dir.path, refresh: true)
             #expect(await cache.analysisCount == 2)
+        }
+    }
+
+    /// `refresh` has to reach past the per-file cache too, or a "forced re-parse" would quietly
+    /// replay the fragments that cache already holds and there would be no way to get a cold one.
+    @Test func refreshReparsesFilesRatherThanReplayingCachedFragments() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try "one".write(to: dir.appendingPathComponent("A.fx"), atomically: true, encoding: .utf8)
+            try "two".write(to: dir.appendingPathComponent("B.fx"), atomically: true, encoding: .utf8)
+            let parser = CountingFixtureParser()
+            let cache = AnalysisSnapshotCache(
+                service: AnalysisService(parsers: [parser]), store: MCPTestSupport.freshStore())
+
+            _ = try await cache.artifact(path: dir.path)
+            #expect(parser.parsedCount == 2)
+
+            _ = try await cache.artifact(path: dir.path, refresh: true)
+            #expect(parser.parsedCount == 4, "a forced re-parse must read both files again, not reuse fragments")
         }
     }
 
