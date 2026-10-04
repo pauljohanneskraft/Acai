@@ -10,12 +10,13 @@ import AcaiDiagram
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
 
-    /// Java, Kotlin and Dart now also scan `.initializer` — each has its own dedicated pair of tests
+    private static let languagesBeyondMethods: Set<CodeArtifact.SourceLanguage> = [.swift, .java, .kotlin, .dart]
+
+    /// Swift, Java, Kotlin and Dart scan beyond `.method` — each has its own dedicated pair of tests
     /// below pinning the parser behaviour that justifies it. Every other built-in language still
     /// scans methods only.
-    @Test(arguments: AnalysisService.standardParsers
-        .map(\.language)
-        .filter { $0 != .java && $0 != .kotlin && $0 != .dart && $0 != .swift })
+    @Test(arguments: AnalysisService.standardParsers.map(\.language)
+        .filter { !DeadCodeMemberKindAuditTests.languagesBeyondMethods.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
