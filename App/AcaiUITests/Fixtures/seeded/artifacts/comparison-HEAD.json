@@ -378,7 +378,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 26,
+                "endLine" : 2,
+                "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
+                "line" : 2
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Helper"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -521,7 +534,20 @@
 
           ],
           "callSites" : [
-
+            {
+              "location" : {
+                "column" : 26,
+                "endLine" : 2,
+                "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
+                "line" : 2
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Worker"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 

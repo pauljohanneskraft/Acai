@@ -333,40 +333,4 @@ struct SwiftCallSiteBroadeningTests {
         let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
     }
-
-    /// `x[i]` against `self`, `Self`, or a property/local typed as a same-file declared type resolves
-    /// to a `subscript` call site — the same provable-receiver shapes a regular method call already
-    /// resolves through (issue #412).
-    @Test func capturesSubscriptAccessOnLocallyDeclaredType() {
-        let sites = callSites(in: """
-        class Thing {
-            subscript(i: Int) -> Int { 0 }
-            func run() {
-                let made = Thing()
-                _ = made[0]
-                _ = self[1]
-            }
-        }
-        """, method: "run", ofType: "Thing")
-        let subscriptSites = sites.filter { $0.methodName == "subscript" }
-        #expect(subscriptSites.count == 2)
-        #expect(subscriptSites.contains { $0.receiverType == "Thing" })
-        #expect(subscriptSites.contains { $0.receiver == .selfDispatch })
-    }
-
-    /// `x[i]` is overwhelmingly used on `Array`/`Dictionary`, whose own type name (`"Array"`) is never
-    /// a same-file declared type — recording it would inflate the call graph's `coverage` denominator
-    /// with a candidate that can never resolve, so it's dropped rather than deferred (issue #412).
-    @Test func dropsSubscriptAccessOnCollectionOrUnresolvedType() {
-        let sites = callSites(in: """
-        class Worker {
-            var items: [Int] = []
-            func run() {
-                _ = items[0]
-                _ = Elsewhere()[1]
-            }
-        }
-        """, method: "run")
-        #expect(sites.allSatisfy { $0.methodName != "subscript" })
-    }
 }

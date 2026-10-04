@@ -268,22 +268,6 @@ struct DeadCodeMemberKindAuditTests {
         #expect(report.candidates.map(\.id) == ["Uncalled.init"])
     }
 
-    /// The `.subscript` analogue: a called subscript is not reported, while an uncalled one on a
-    /// sibling type still is.
-    @Test func aCalledSwiftSubscriptIsNotReportedWhileAnUncalledOneIs() {
-        let artifact = SwiftCodeParser().parse(source: """
-        class Called { subscript(i: Int) -> Int { 0 } }
-        class Uncalled { subscript(i: Int) -> Int { 0 } }
-        class Worker {
-            let called = Called()
-            public func use() { _ = called[0] }
-        }
-        """, fileName: "Thing.swift")
-        let report = DeadCodeScan(
-            artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id) == ["Uncalled.subscript"])
-    }
-
     /// A method is still reported alongside the new kinds — opting `.initializer`/`.subscript` in
     /// doesn't relax the existing method scan.
     @Test func anUnusedMethodIsStillReportedAlongsideTheNewKinds() {

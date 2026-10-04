@@ -36,9 +36,6 @@ extension SwiftCodeParser {
                     "updatensview", "updateuiview",
                     "dismantlensview", "dismantleuiview"
                 ]),
-            // `Thing()`, `Thing.init(x:)` and a subscript access on a same-file declared type
-            // (`CallSiteCollector.callSite(from:)`/`subscriptCallSite(from:)`) all record a caller
-            // edge now, so an initializer or subscript here can be found uncalled.
             deadCodeMemberKinds: [.method, .initializer, .subscript]
         )
     }

@@ -16,12 +16,15 @@ struct CallSiteCollector {
     /// Simple names of every type declared in the file, used to recognise `TypeName.method()`
     /// static calls.
     let knownTypeNames: Set<String>
+    /// The language's primitive and collection type names, whose subscripts are never the project's.
+    private let builtInTypeNames: Set<String>
 
     private let sourceLocations: SourceLocationResolver
     private let values = SwiftValueClassifier()
 
-    init(knownTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
+    init(knownTypeNames: Set<String>, builtInTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
         self.knownTypeNames = knownTypeNames
+        self.builtInTypeNames = builtInTypeNames
         self.sourceLocations = sourceLocations
     }
 
@@ -59,12 +62,9 @@ struct CallSiteCollector {
         return nil
     }
 
-    /// A resolvable subscript access (`receiver[index]`). Scoped to a receiver resolving to `self`/
-    /// `Self` or a same-file declared type only — unlike other call kinds, never deferred to the
-    /// post-merge cross-file pass and never recorded on a receiver whose type can't be proven here.
-    /// `x[i]` is overwhelmingly used on `Array`/`Dictionary` (whose own type name, e.g. `"Array"`, is
-    /// never in `knownTypeNames`), so this scoping is what keeps those from being recorded as
-    /// unresolvable candidates that would lower the dead-code report's `coverage` (issue #412).
+    /// A subscript access (`receiver[index]`) on `self` or a named type. Most `x[i]` index an
+    /// `Array`/`Dictionary`, so a built-in receiver, or one whose type isn't named here, is dropped
+    /// rather than recorded as an unresolvable site that would lower the call graph's `coverage`.
     func subscriptCallSite(
         from node: SubscriptCallExprSyntax, propertyMap: [String: String],
         enclosingTypeName: String?, knownLocalNames: Set<String> = []
@@ -72,7 +72,7 @@ struct CallSiteCollector {
         guard let resolved = resolveReceiver(
             from: node.calledExpression, propertyMap: propertyMap,
             enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames),
-              isLocallyDeclared(resolved.receiver)
+              isSubscriptableProjectType(resolved.receiver)
         else { return nil }
         return CallSite(
             receiver: resolved.receiver, methodName: "subscript",
@@ -80,16 +80,13 @@ struct CallSiteCollector {
         )
     }
 
-    /// Whether a resolved receiver is provably a type declared in this file (or the enclosing
-    /// instance itself) — the certainty `subscriptCallSite` requires before recording a call site.
-    private func isLocallyDeclared(_ receiver: CallReceiver) -> Bool {
+    private func isSubscriptableProjectType(_ receiver: CallReceiver) -> Bool {
         switch receiver {
         case .selfDispatch:
             return true
-        case .type(let name):
-            return knownTypeNames.contains(name)
-        case .free, .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement,
-             .ownMethodReturn:
+        case .type(let name), .unresolvedTypeName(let name):
+            return knownTypeNames.contains(name) || (isTypeName(name) && !builtInTypeNames.contains(name))
+        case .free, .unknown, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
             return false
         }
     }

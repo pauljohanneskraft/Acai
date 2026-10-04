@@ -27,13 +27,14 @@ final class DeclarationVisitor: SyntaxVisitor {
     /// forward-declared siblings.
     init(
         sourceLocations: SourceLocationResolver, knownTypeNames: Set<String> = [],
-        protocolProperties: [String: [String: String]] = [:]
+        builtInTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]
     ) {
         self.sourceLocations = sourceLocations
         self.protocolProperties = protocolProperties
         self.typeDeclarations = TypeDeclarationExtractor(sourceLocations: sourceLocations)
         self.members = MemberExtractor(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
-        self.scope = CallSiteTracker(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
+        self.scope = CallSiteTracker(
+            knownTypeNames: knownTypeNames, builtInTypeNames: builtInTypeNames, sourceLocations: sourceLocations)
         declarations.declaredTypeNames = knownTypeNames
         super.init(viewMode: .sourceAccurate)
     }

@@ -34,8 +34,9 @@ final class CallSiteTracker {
     private let signatures = DeclarationSignatureExtractor()
     private let sourceLocations: SourceLocationResolver
 
-    init(knownTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
-        self.callSites = CallSiteCollector(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
+    init(knownTypeNames: Set<String>, builtInTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
+        self.callSites = CallSiteCollector(
+            knownTypeNames: knownTypeNames, builtInTypeNames: builtInTypeNames, sourceLocations: sourceLocations)
         self.sourceLocations = sourceLocations
     }
 
