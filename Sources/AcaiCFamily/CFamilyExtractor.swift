@@ -25,7 +25,11 @@ struct CFamilyExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
-    let documentation: DocumentationReader
+    /// Doxygen's four markers; a plain `//` or `/* */` comment documents nothing.
+    let documentation = DocumentationReader(
+        convention: DocumentationComment(linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"]),
+        transparentParentTypes: ["declaration", "field_declaration", "type_definition"]
+    )
 
     var declarations = DeclarationBuilder()
 
@@ -82,12 +86,6 @@ struct CFamilyExtractor {
         // Bare identifiers, plus the `field_identifier` of a `this->field`/`obj.field` access, are
         // both identifier-shaped nodes.
         fieldReads = FieldReadResolver(context: context, identifierTypes: ["identifier", "field_identifier"])
-        // Doxygen's four markers; a plain `//` or `/* */` comment documents nothing.
-        documentation = DocumentationReader(
-            convention: DocumentationComment(
-                linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"]),
-            transparentParentTypes: ["declaration", "field_declaration", "type_definition"]
-        )
 
         declarations.declaredTypeNames = declaredTypeNames
     }

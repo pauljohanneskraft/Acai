@@ -23,7 +23,10 @@ struct JavaExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
-    let documentation: DocumentationReader
+    let documentation = DocumentationReader(
+        convention: DocumentationComment(blockOpenings: ["/**"]),
+        commentNodeTypes: ["block_comment", "line_comment", "comment"]
+    )
 
     var declarations = DeclarationBuilder()
 
@@ -59,10 +62,6 @@ struct JavaExtractor {
         assignments = AssignmentResolver(syntax: assignmentSyntax)
         // Bare identifiers, and the `field` of a `this.<field>` access, are both `identifier` nodes.
         fieldReads = FieldReadResolver(context: context, identifierTypes: ["identifier"])
-        documentation = DocumentationReader(
-            convention: DocumentationComment(blockOpenings: ["/**"]),
-            commentNodeTypes: ["block_comment", "line_comment", "comment"]
-        )
 
         declarations.declaredTypeNames = declaredTypeNames
     }

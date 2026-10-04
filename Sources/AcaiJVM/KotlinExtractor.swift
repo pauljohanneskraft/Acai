@@ -10,7 +10,10 @@ struct KotlinExtractor {
     let typeReferences: KotlinTypeReferenceResolver
     let parameterExtractor: KotlinParameterExtractor
     let memberExtractor: KotlinMemberExtractor
-    let documentation: DocumentationReader
+    let documentation = DocumentationReader(
+        convention: DocumentationComment(blockOpenings: ["/**"]),
+        commentNodeTypes: ["multiline_comment", "line_comment", "comment"]
+    )
 
     var declarations = DeclarationBuilder()
 
@@ -36,10 +39,6 @@ struct KotlinExtractor {
             // Bare references and `this.<prop>` navigation members are both `simple_identifier` nodes.
             fieldReads: FieldReadResolver(context: context, identifierTypes: ["simple_identifier"]),
             declaredTypeNames: declaredTypeNames
-        )
-        documentation = DocumentationReader(
-            convention: DocumentationComment(blockOpenings: ["/**"]),
-            commentNodeTypes: ["multiline_comment", "line_comment", "comment"]
         )
 
         declarations.declaredTypeNames = declaredTypeNames

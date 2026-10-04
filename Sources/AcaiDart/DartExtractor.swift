@@ -19,7 +19,18 @@ struct DartExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
-    let documentation: DocumentationReader
+    let documentation = DocumentationReader(
+        convention: DocumentationComment(linePrefixes: ["///"], blockOpenings: ["/**"]),
+        commentNodeTypes: ["documentation_comment", "comment"],
+        transparentParentTypes: [
+            "declaration", "initialized_identifier_list", "static_final_declaration_list"
+        ],
+        // A top-level variable has no wrapping node: its modifiers and type are siblings.
+        skippedSiblingTypes: [
+            "final_builtin", "const_builtin", "type_identifier", "generic_type",
+            "function_type", "void_type", "type_arguments", "nullable_type", "inferred_type"
+        ]
+    )
 
     var declarations = DeclarationBuilder()
 
@@ -47,18 +58,6 @@ struct DartExtractor {
         assignments = AssignmentResolver(syntax: assignmentSyntax)
         // Bare references and `this.<prop>` navigation members are both `identifier` nodes.
         fieldReads = FieldReadResolver(context: context, identifierTypes: ["identifier"])
-        documentation = DocumentationReader(
-            convention: DocumentationComment(linePrefixes: ["///"], blockOpenings: ["/**"]),
-            commentNodeTypes: ["documentation_comment", "comment"],
-            transparentParentTypes: [
-                "declaration", "initialized_identifier_list", "static_final_declaration_list"
-            ],
-            // A top-level variable has no wrapping node: its modifiers and type are siblings.
-            skippedSiblingTypes: [
-                "final_builtin", "const_builtin", "type_identifier", "generic_type",
-                "function_type", "void_type", "type_arguments", "nullable_type", "inferred_type"
-            ]
-        )
 
         declarations.declaredTypeNames = declaredTypeNames
     }
