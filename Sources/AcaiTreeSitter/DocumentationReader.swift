@@ -9,6 +9,7 @@ public struct DocumentationReader: Sendable {
     private let convention: DocumentationComment
     private let commentNodeTypes: Set<String>
     private let transparentParentTypes: Set<String>
+    private let skippedSiblingTypes: Set<String>
 
     /// - Parameters:
     ///   - convention: Which markers mark documentation in this language, and how to strip them.
@@ -16,22 +17,31 @@ public struct DocumentationReader: Sendable {
     ///     its own node type needs that one listed too.
     ///   - transparentParentTypes: Node types that wrap a declaration without being one (`export …`,
     ///     `template …`): the documentation sits above the wrapper, so the search continues there.
+    ///   - skippedSiblingTypes: Node types belonging to the declaration itself although the grammar
+    ///     flattens them into siblings ahead of it (a modifier, a written-out type): the comment run
+    ///     is on the far side of them.
     public init(
         convention: DocumentationComment,
         commentNodeTypes: Set<String> = ["comment"],
-        transparentParentTypes: Set<String> = []
+        transparentParentTypes: Set<String> = [],
+        skippedSiblingTypes: Set<String> = []
     ) {
         self.convention = convention
         self.commentNodeTypes = commentNodeTypes
         self.transparentParentTypes = transparentParentTypes
+        self.skippedSiblingTypes = skippedSiblingTypes
     }
 
     /// The prose documenting the declaration `node`, or `nil` when it carries none.
     public func documentation(above node: Node, in context: SourceFileContext) -> String? {
         var comments: [String] = []
         var sibling = node.previousNamedSibling
-        while let current = sibling, current.nodeType.map(commentNodeTypes.contains) == true {
-            comments.insert(current.text(in: context), at: 0)
+        while let current = sibling, let type = current.nodeType {
+            if commentNodeTypes.contains(type) {
+                comments.insert(current.text(in: context), at: 0)
+            } else if !comments.isEmpty || !skippedSiblingTypes.contains(type) {
+                break
+            }
             sibling = current.previousNamedSibling
         }
         if let prose = convention.prose(fromLeading: comments) { return prose }

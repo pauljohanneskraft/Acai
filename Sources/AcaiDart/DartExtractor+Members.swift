@@ -77,6 +77,7 @@ extension DartExtractor {
                 continue
             }
             let countBefore = members.count
+            let nestedBefore = nestedTypes.count
             if nodeType == "declaration" {
                 extractClassMemberDeclaration(
                     child, members: &members, nestedTypes: &nestedTypes, parentName: parentName
@@ -89,6 +90,9 @@ extension DartExtractor {
             }
             annotations.assign(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
+            attachDocumentation(
+                above: child, members: &members, from: countBefore,
+                nestedTypes: &nestedTypes, from: nestedBefore)
             previousChildAddedMember = members.count == countBefore + 1
             // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
             // walk it so its calls aren't lost. Runs before `this`, so file-level type names resolve
@@ -146,6 +150,24 @@ extension DartExtractor {
         pendingBodies.append((members.count - 1, node))
     }
 
+    /// Documents whatever this one body child produced: a member, several (one `declaration` can
+    /// list more than one field), or a nested type.
+    private func attachDocumentation(
+        above child: Node,
+        members: inout [Member],
+        from memberIndex: Int,
+        nestedTypes: inout [TypeDeclaration],
+        from nestedIndex: Int
+    ) {
+        guard let prose = documentation.documentation(above: child, in: context) else { return }
+        for index in memberIndex..<members.count where members[index].documentation == nil {
+            members[index].documentation = prose
+        }
+        for index in nestedIndex..<nestedTypes.count {
+            nestedTypes[index].documentation = prose
+        }
+    }
+
     // MARK: - Enum Body
 
     mutating func extractEnumBody(
@@ -168,7 +190,10 @@ extension DartExtractor {
             let countBefore = members.count
             switch nodeType {
             case "enum_constant":
-                if let enumCase = memberExtractor.enumConstant(child) { enumCases.append(enumCase) }
+                if var enumCase = memberExtractor.enumConstant(child) {
+                    enumCase.documentation = documentation.documentation(above: child, in: context)
+                    enumCases.append(enumCase)
+                }
             case "function_body":
                 attachFunctionBody(
                     child, previousChildAddedMember: previousChildAddedMember,
@@ -186,6 +211,9 @@ extension DartExtractor {
             }
             annotations.assign(pendingAnnotations, toMembersFrom: countBefore, in: &members)
             pendingAnnotations = []
+            attachDocumentation(
+                above: child, members: &members, from: countBefore,
+                nestedTypes: &ignored, from: ignored.count)
             previousChildAddedMember = members.count == countBefore + 1
             // A constructor's initializer list (`: x = compute()`) lives inside `method_signature`;
             // walk it so its calls aren't lost. Runs before `this`, so file-level type names resolve
