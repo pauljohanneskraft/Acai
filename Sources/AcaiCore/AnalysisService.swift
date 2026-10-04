@@ -70,50 +70,24 @@ public struct AnalysisService: Sendable {
     /// `respectingGitignore` composes the project's own `.gitignore` rules into that same predicate,
     /// so a file the repository ignores is not analyzed. Pass `false` to analyze a tree exactly as it
     /// sits on disk.
-    public func analyzeProject(
-        at rootURL: URL,
-        allowedLanguages: [CodeArtifact.SourceLanguage],
-        respectingGitignore: Bool = true,
-        includingFile: (String) -> Bool = { _ in true }
-    ) async throws -> CodeArtifact {
-        try await analyzingProject(
-            at: rootURL, allowedLanguages: allowedLanguages, respectingGitignore: respectingGitignore,
-            fileCache: nil, includingFile: includingFile
-        ).artifact
-    }
-
-    /// Per-file-cache-aware variant: `fileCache` is consulted before reparsing each file — a hit by
-    /// `(relativePath, modified, size)` skips reading and parsing that file entirely — and the
-    /// returned cache reflects every file this analysis saw (a changed or new file freshly parsed, an
-    /// unchanged one carried forward, a removed one dropped), ready for the caller to persist for the
-    /// next analysis of the same tree.
+    ///
+    /// `cache` is the tree's per-file parse cache: a file whose `(relativePath, modified, size)` is
+    /// unchanged since that cache was written is carried forward rather than reread and reparsed, and
+    /// the cache is updated with everything this analysis saw. It defaults to
+    /// ``AnalysisCache/disabled``, which reuses and persists nothing — the right choice for a tree no
+    /// later analysis will revisit.
     ///
     /// Enrichment and cross-file resolution (``CodeArtifact/enriched(using:)``,
-    /// ``CodeArtifact/resolvingCallSiteReceivers()``) always run over the full merged corpus, exactly
-    /// as the cache-free overload does — a cache hit only skips re-parsing a file, never any step that
-    /// needs the whole project — so the returned artifact is byte-identical to a cold analysis of the
-    /// same tree.
+    /// ``CodeArtifact/resolvingCallSiteReceivers()``) always run over the full merged corpus whether a
+    /// file was reparsed or carried forward — a cache hit only skips re-parsing one file, never a step
+    /// that needs the whole project — so a warm analysis returns exactly what a cold one would.
     public func analyzeProject(
         at rootURL: URL,
         allowedLanguages: [CodeArtifact.SourceLanguage],
         respectingGitignore: Bool = true,
-        reusing fileCache: ParsedFileCache,
+        reusing cache: AnalysisCache = .disabled,
         includingFile: (String) -> Bool = { _ in true }
-    ) async throws -> (artifact: CodeArtifact, fileCache: ParsedFileCache) {
-        try await analyzingProject(
-            at: rootURL, allowedLanguages: allowedLanguages, respectingGitignore: respectingGitignore,
-            fileCache: fileCache.validated(forToolVersion: AcaiConstants.standard.toolVersion),
-            includingFile: includingFile
-        )
-    }
-
-    private func analyzingProject(
-        at rootURL: URL,
-        allowedLanguages: [CodeArtifact.SourceLanguage],
-        respectingGitignore: Bool,
-        fileCache: ParsedFileCache?,
-        includingFile: (String) -> Bool
-    ) async throws -> (artifact: CodeArtifact, fileCache: ParsedFileCache) {
+    ) async throws -> CodeArtifact {
         guard FileManager.default.fileExists(atPath: rootURL.path) else {
             throw ValidationError("Source directory does not exist: \(rootURL.path)")
         }
@@ -130,14 +104,15 @@ public struct AnalysisService: Sendable {
             throw ValidationError("Could not discover any source files in \(rootURL.path). \(hint)")
         }
 
+        let reusable = cache.isEnabled ? cache.reusableFragments() : nil
         var combinedArtifact: CodeArtifact?
-        var combinedFileCacheEntries: [String: ParsedFileCache.Entry] = [:]
+        var freshEntries: [String: ParsedFileCache.Entry] = [:]
 
         for spec in specs.mergedByLanguage {
             let parsedSpec = try await parseSpec(
-                spec, rootURL: rootURL, gitignore: gitignore, fileCache: fileCache, includingFile: includingFile
+                spec, rootURL: rootURL, gitignore: gitignore, fileCache: reusable, includingFile: includingFile
             )
-            combinedFileCacheEntries.merge(parsedSpec.fileCacheEntries) { _, new in new }
+            freshEntries.merge(parsedSpec.fileCacheEntries) { _, new in new }
             if let artifact = parsedSpec.artifact {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
@@ -151,12 +126,12 @@ public struct AnalysisService: Sendable {
         var result = combined.resolvingCallSiteReceivers()
         result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
-        let newFileCache = fileCache == nil
-            ? ParsedFileCache()
-            : ParsedFileCache(
-                toolVersion: AcaiConstants.standard.toolVersion, entriesByRelativePath: combinedFileCacheEntries
-            )
-        return (result, newFileCache)
+        if cache.isEnabled {
+            cache.save(ParsedFileCache(
+                toolVersion: AcaiConstants.standard.toolVersion, entriesByRelativePath: freshEntries
+            ))
+        }
+        return result
     }
 
     private func parseSpec(
@@ -183,7 +158,11 @@ public struct AnalysisService: Sendable {
             return (result, [:])
         }
 
-        let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL, fileCache: fileCache)
+        let batch = SourceFileBatchParser(
+            codeParser: codeParser, rootURL: rootURL,
+            concurrencyLimit: fileParsingConcurrencyLimit, maximumFileBytes: maximumSourceFileBytes
+        )
+        let parsed = try await batch.parse(collected.files, reusing: fileCache)
         let enriched = enrichPerLanguage(
             (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
         )

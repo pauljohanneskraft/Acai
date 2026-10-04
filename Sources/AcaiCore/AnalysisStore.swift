@@ -108,9 +108,11 @@ public struct AnalysisStore: Sendable {
         return destination
     }
 
-    /// Removes the stored entry for `path`, under whatever file name it lives at. A no-op when
-    /// nothing is stored for this path.
+    /// Removes the stored entry for `path`, under whatever file name it lives at, together with its
+    /// companion per-file parse cache — the two are written as a pair, so nothing is left behind for
+    /// a codebase the user deleted. A no-op when nothing is stored for this path.
     public func removeEntry(forResolvedPath path: String) throws {
+        try? FileManager.default.removeItem(at: fileCacheURL(forResolvedPath: path))
         guard let url = existingEntryURL(forResolvedPath: path) else { return }
         try FileManager.default.removeItem(at: url)
     }
@@ -119,7 +121,8 @@ public struct AnalysisStore: Sendable {
 
     /// The per-file parse cache for `path` — empty when nothing is stored, the stored file is
     /// corrupt, or it was written by a format/tool version this build no longer trusts.
-    public func lookupFileCache(forResolvedPath path: String) -> ParsedFileCache {
+    /// Reached through ``AnalysisCache``, which owns which tree's cache a given analysis uses.
+    func lookupFileCache(forResolvedPath path: String) -> ParsedFileCache {
         guard let data = try? Data(contentsOf: fileCacheURL(forResolvedPath: path)),
               let cache = try? JSONDecoder().decode(ParsedFileCache.self, from: data)
         else { return ParsedFileCache() }
@@ -129,7 +132,7 @@ public struct AnalysisStore: Sendable {
     /// Writes the per-file parse cache for `path`, alongside (never instead of) its whole-project
     /// ``Entry``. The two are independent: a per-file cache miss still falls back to a cold parse of
     /// that file, and a stale or missing whole-project entry doesn't invalidate this one.
-    public func writeFileCache(_ cache: ParsedFileCache, forResolvedPath path: String) throws {
+    func writeFileCache(_ cache: ParsedFileCache, forResolvedPath path: String) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try JSONEncoder().encode(cache).write(to: fileCacheURL(forResolvedPath: path), options: .atomic)
     }

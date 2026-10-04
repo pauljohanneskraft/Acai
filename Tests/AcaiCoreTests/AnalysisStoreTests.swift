@@ -143,17 +143,20 @@ struct AnalysisStoreTests {
 
     // MARK: - Per-file parse cache
 
-    private func makeFileCacheEntry(source: String) -> ParsedFileCache.Entry {
+    private func makeFileCacheEntry() -> ParsedFileCache.Entry {
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Foo.swift"]))
         return ParsedFileCache.Entry(modified: Date(timeIntervalSince1970: 500), size: 42, artifact: artifact)
+    }
+
+    private func makeFileCache(toolVersion: String = AcaiConstants.standard.toolVersion) -> ParsedFileCache {
+        ParsedFileCache(
+            toolVersion: toolVersion, entriesByRelativePath: ["Foo.swift": makeFileCacheEntry()])
     }
 
     @Test func fileCacheRoundTripsThroughTheStore() throws {
         let (store, directory) = try makeStore()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = ParsedFileCache(
-            toolVersion: AcaiConstants.standard.toolVersion,
-            entriesByRelativePath: ["Foo.swift": makeFileCacheEntry(source: "foo")])
+        let cache = makeFileCache()
 
         try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
 
@@ -170,9 +173,7 @@ struct AnalysisStoreTests {
     @Test func fileCacheFromAnOlderToolVersionIsDiscardedWhole() throws {
         let (store, directory) = try makeStore()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = ParsedFileCache(
-            toolVersion: "not-\(AcaiConstants.standard.toolVersion)",
-            entriesByRelativePath: ["Foo.swift": makeFileCacheEntry(source: "foo")])
+        let cache = makeFileCache(toolVersion: "not-\(AcaiConstants.standard.toolVersion)")
 
         try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
 
@@ -182,11 +183,34 @@ struct AnalysisStoreTests {
     @Test func fileCacheFilesAreNeverPickedUpAsWholeProjectEntries() throws {
         let (store, directory) = try makeStore()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = ParsedFileCache(
-            toolVersion: AcaiConstants.standard.toolVersion,
-            entriesByRelativePath: ["Foo.swift": makeFileCacheEntry(source: "foo")])
-        try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
+        try store.writeFileCache(makeFileCache(), forResolvedPath: "/tmp/proj")
 
         #expect(store.lookup(forResolvedPath: "/tmp/proj") == .absent)
+    }
+
+    /// Deleting a codebase goes through `removeEntry`, so that is where its parsed fragments have to
+    /// go too — otherwise they sit in `~/.acai/analysis` for a path nothing will ever look up again.
+    @Test func removingAnEntryAlsoRemovesItsFileCache() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try store.write(makeArtifact(), sourcePath: "/tmp/proj", fingerprint: fingerprint)
+        try store.writeFileCache(makeFileCache(), forResolvedPath: "/tmp/proj")
+
+        try store.removeEntry(forResolvedPath: "/tmp/proj")
+
+        #expect(store.lookup(forResolvedPath: "/tmp/proj") == .absent)
+        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == ParsedFileCache())
+        let remaining = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+        #expect(remaining.filter { $0.pathExtension == "filecache" }.isEmpty)
+    }
+
+    @Test func removingAFileCacheWithNoWholeProjectEntryStillSucceeds() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try store.writeFileCache(makeFileCache(), forResolvedPath: "/tmp/proj")
+
+        try store.removeEntry(forResolvedPath: "/tmp/proj")
+
+        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == ParsedFileCache())
     }
 }

@@ -35,15 +35,41 @@ private final class CountingParser: CodeParser, @unchecked Sendable {
 
 @Suite("AnalysisService per-file parse cache", .timeLimit(.minutes(1)))
 struct AnalysisServiceFileCacheTests {
-    private func makeFixture() throws -> URL {
+
+    /// A source tree plus its own private analysis store, so one test's cache can never be another's.
+    private struct Fixture {
+        let root: URL
+        let store: AnalysisStore
+        let storeDirectory: URL
+
+        var cache: AnalysisCache { AnalysisCache(store: store, for: root) }
+
+        var storedFragments: ParsedFileCache { cache.reusableFragments() }
+
+        var storedCacheFiles: [URL] {
+            let contents = (try? FileManager.default.contentsOfDirectory(
+                at: storeDirectory, includingPropertiesForKeys: nil)) ?? []
+            return contents.filter { $0.pathExtension == "filecache" }
+        }
+
+        func remove() {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: storeDirectory)
+        }
+    }
+
+    private func makeFixture() throws -> Fixture {
+        let unique = UUID().uuidString
         let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("AcaiCoreFileCacheTests-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("AcaiCoreFileCacheTests-\(unique)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         for name in ["A", "B", "C"] {
             try "content-\(name)".write(
                 to: root.appendingPathComponent("\(name).fx"), atomically: true, encoding: .utf8)
         }
-        return root
+        let storeDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AcaiCoreFileCacheStore-\(unique)", isDirectory: true)
+        return Fixture(root: root, store: AnalysisStore(directory: storeDirectory), storeDirectory: storeDirectory)
     }
 
     /// Advances `url`'s modification date well past "now" so a subsequent analysis sees a changed
@@ -55,67 +81,95 @@ struct AnalysisServiceFileCacheTests {
     }
 
     @Test func unchangedFilesAreNotReparsedAfterOneFileChanges() async throws {
-        let root = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: root) }
+        let fixture = try makeFixture()
+        defer { fixture.remove() }
         let parser = CountingParser()
         let service = AnalysisService(parsers: [parser])
 
-        let first = try await service.analyzeProject(at: root, allowedLanguages: [], reusing: ParsedFileCache())
+        _ = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
         #expect(parser.parsedCount == 3)
 
-        try touch(root.appendingPathComponent("B.fx"), content: "content-B-edited")
+        try touch(fixture.root.appendingPathComponent("B.fx"), content: "content-B-edited")
 
-        let second = try await service.analyzeProject(at: root, allowedLanguages: [], reusing: first.fileCache)
+        let second = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
         #expect(parser.parsedCount == 4, "exactly one file changed, so exactly one more parse call is expected")
 
         // The edited file's content actually reached the result — not a stale cached fragment.
-        #expect(second.artifact.types.contains { $0.name == "B_content-B-edited" })
-        #expect(!second.artifact.types.contains { $0.name == "B_content-B" })
+        #expect(second.types.contains { $0.name == "B_content-B-edited" })
+        #expect(!second.types.contains { $0.name == "B_content-B" })
         // The untouched files' fragments were carried forward unchanged.
-        #expect(second.artifact.types.contains { $0.name == "A_content-A" })
-        #expect(second.artifact.types.contains { $0.name == "C_content-C" })
+        #expect(second.types.contains { $0.name == "A_content-A" })
+        #expect(second.types.contains { $0.name == "C_content-C" })
     }
 
     @Test func cachedAnalysisIsByteIdenticalToAColdOne() async throws {
-        let root = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: root) }
+        let fixture = try makeFixture()
+        defer { fixture.remove() }
 
-        let warmParser = CountingParser()
-        let warmService = AnalysisService(parsers: [warmParser])
-        let warm = try await warmService.analyzeProject(at: root, allowedLanguages: [], reusing: ParsedFileCache())
-        try touch(root.appendingPathComponent("A.fx"), content: "content-A-edited")
-        let warmed = try await warmService.analyzeProject(at: root, allowedLanguages: [], reusing: warm.fileCache)
+        let warmService = AnalysisService(parsers: [CountingParser()])
+        _ = try await warmService.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
+        try touch(fixture.root.appendingPathComponent("A.fx"), content: "content-A-edited")
+        let warmed = try await warmService.analyzeProject(
+            at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
 
-        let coldParser = CountingParser()
-        let coldService = AnalysisService(parsers: [coldParser])
-        let cold = try await coldService.analyzeProject(at: root, allowedLanguages: [])
+        let coldService = AnalysisService(parsers: [CountingParser()])
+        let cold = try await coldService.analyzeProject(at: fixture.root, allowedLanguages: [])
 
-        #expect(warmed.artifact == cold)
+        #expect(warmed == cold)
     }
 
     @Test func aFileRemovedSinceTheCacheWasBuiltIsDroppedFromTheUpdatedCache() async throws {
-        let root = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: root) }
+        let fixture = try makeFixture()
+        defer { fixture.remove() }
         let parser = CountingParser()
         let service = AnalysisService(parsers: [parser])
 
-        let first = try await service.analyzeProject(at: root, allowedLanguages: [], reusing: ParsedFileCache())
-        try FileManager.default.removeItem(at: root.appendingPathComponent("C.fx"))
+        _ = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
+        try FileManager.default.removeItem(at: fixture.root.appendingPathComponent("C.fx"))
 
-        let second = try await service.analyzeProject(at: root, allowedLanguages: [], reusing: first.fileCache)
+        let second = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
         #expect(parser.parsedCount == 3, "the two surviving files are both unchanged, so neither reparses")
-        #expect(!second.artifact.types.contains { $0.name == "C_content-C" })
+        #expect(!second.types.contains { $0.name == "C_content-C" })
+
+        // The surviving files are still cached, so dropping the removed one didn't discard the rest.
+        let surviving = try #require(SourceFileFingerprint(
+            file: fixture.root.appendingPathComponent("A.fx"), relativeTo: fixture.root))
+        #expect(fixture.storedFragments.fragment(for: surviving) != nil)
     }
 
     @Test func aCacheFromADifferentToolVersionIsIgnoredEntirely() async throws {
-        let root = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: root) }
+        let fixture = try makeFixture()
+        defer { fixture.remove() }
         let parser = CountingParser()
         let service = AnalysisService(parsers: [parser])
 
-        let foreignCache = ParsedFileCache(
-            toolVersion: "not-\(AcaiConstants.standard.toolVersion)", entriesByRelativePath: [:])
-        _ = try await service.analyzeProject(at: root, allowedLanguages: [], reusing: foreignCache)
+        // A fragment whose fingerprint matches the file on disk exactly, so only the tool-version
+        // stamp can be what makes it unusable.
+        let fingerprint = try #require(SourceFileFingerprint(
+            file: fixture.root.appendingPathComponent("A.fx"), relativeTo: fixture.root))
+        let foreign = ParsedFileCache(
+            toolVersion: "not-\(AcaiConstants.standard.toolVersion)",
+            entriesByRelativePath: [fingerprint.relativePath: fingerprint.entry(for: CodeArtifact(
+                metadata: .init(sourceLanguage: .init(rawValue: "fixture"))))])
+        try fixture.store.writeFileCache(foreign, forResolvedPath: fixture.root.resolvingSymlinksInPath().path)
+
+        _ = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: fixture.cache)
         #expect(parser.parsedCount == 3, "a version mismatch must discard the whole cache, not just skip misses")
+    }
+
+    /// The guarantee the ephemeral-tree callers rely on: analyzing a directory nothing will revisit
+    /// (a git revision extracted to a temporary folder) must not leave a cache file behind for it.
+    @Test func aDisabledCacheNeitherReadsNorWritesAnything() async throws {
+        let fixture = try makeFixture()
+        defer { fixture.remove() }
+        let parser = CountingParser()
+        let service = AnalysisService(parsers: [parser])
+
+        _ = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: .disabled)
+        _ = try await service.analyzeProject(at: fixture.root, allowedLanguages: [], reusing: .disabled)
+
+        #expect(parser.parsedCount == 6, "nothing is reused between two uncached analyses")
+        #expect(fixture.storedCacheFiles.isEmpty)
+        #expect(AnalysisCache.disabled.reusableFragments() == ParsedFileCache())
     }
 }

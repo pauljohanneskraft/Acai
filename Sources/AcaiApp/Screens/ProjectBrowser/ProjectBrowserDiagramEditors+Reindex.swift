@@ -134,7 +134,13 @@ struct CodebaseIndexing {
     ) async throws -> (CodeArtifact, CodeStateFingerprint) {
         let freshness = CodebaseFreshnessChecker(directoryPath: directory.path, revision: revision)
         guard let revision else {
-            let artifact = try await analyzer.enrichedArtifact(at: directory, fileFilter: fileFilter)
+            // Reindexing the working tree is the one path that sees the same directory again, so it
+            // is the one that caches: an edit to a handful of files reparses only those. The pinned
+            // revision below extracts to a temporary directory instead, which no later analysis
+            // revisits, so it stays uncached rather than leaving a cache file behind for it.
+            let artifact = try await analyzer.enrichedArtifact(
+                at: directory, fileFilter: fileFilter,
+                reusing: AnalysisCache(for: directory))
             return (artifact, freshness.currentFingerprint())
         }
         let snapshot = GitDiffSnapshot(directory: directory, reference: revision)
