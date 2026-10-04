@@ -3,11 +3,7 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-/// `ProjectStore.preindexCodebase` is the off-main-actor half of `preindexFixtureCodebases` (#410):
-/// fingerprinting a UI test fixture's source tree and writing its canned artifact used to run inline
-/// in `ProjectStore.init`, blocking the main actor between app launch and the first frame. Awaited
-/// directly here rather than through the fire-and-forget `Task` `preindexFixtureCodebases` wraps it
-/// in — same shape as `ProjectStoreGitStorageTests`'s direct `await GitStorageSweep(...).run()`.
+/// `preindex(_:)` awaited directly, rather than through the task `load()` retains for it.
 @Suite("Project Store fixture preindexing", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectStorePreindexTests {
@@ -33,8 +29,10 @@ struct ProjectStorePreindexTests {
         store.projects = [project]
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Demo.swift"]))
 
-        await store.preindexCodebase(
-            codebase.id, sourcePath: sourceDir.path, artifact: artifact, projectID: project.id
+        await store.preindex(
+            ProjectStore.FixturePreindex(
+                codebaseID: codebase.id, projectID: project.id, sourcePath: sourceDir.path, artifact: artifact
+            )
         )
 
         #expect(store.projects.first?.codebases.first?.hasArtifact == true)
@@ -67,11 +65,39 @@ struct ProjectStorePreindexTests {
         store.projects = [project]
         let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: []))
 
-        await store.preindexCodebase(
-            codebase.id, sourcePath: sourceDir.path, artifact: artifact, projectID: project.id
+        await store.preindex(
+            ProjectStore.FixturePreindex(
+                codebaseID: codebase.id, projectID: project.id, sourcePath: sourceDir.path, artifact: artifact
+            )
         )
 
         #expect(store.projects.first?.codebases.first?.hasArtifact == false)
         #expect(store.artifacts[codebase.id] == nil)
+    }
+
+    @Test func leavesACodebaseIndexedWhileItWasInFlightUntouched() async throws {
+        let storeDir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: storeDir) }
+        let sourceDir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: sourceDir) }
+        try Data("struct Demo {}".utf8).write(to: sourceDir.appendingPathComponent("Demo.swift"))
+
+        let analysisStore = AnalysisStore(directory: storeDir.appendingPathComponent("analysis"))
+        let store = ProjectStore(baseDir: storeDir, analysisStore: analysisStore)
+        var codebase = Codebase(name: "Demo", directoryPath: sourceDir.path)
+        codebase.hasArtifact = true
+        var project = Project(title: "Demo", subtitle: "")
+        project.codebases = [codebase]
+        store.projects = [project]
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Demo.swift"]))
+
+        await store.preindex(
+            ProjectStore.FixturePreindex(
+                codebaseID: codebase.id, projectID: project.id, sourcePath: sourceDir.path, artifact: artifact
+            )
+        )
+
+        #expect(store.projects.first?.codebases.first?.lastIndexed == nil)
+        #expect(store.projects.first?.codebases.first?.indexedFingerprint == nil)
     }
 }

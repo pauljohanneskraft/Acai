@@ -30,6 +30,10 @@ final class ProjectStore: ObservableObject {
     /// The most recent load/save failure, surfaced to the UI (e.g. via an alert).
     @Published var lastError: StoreError?
 
+    /// The fixture preindexing `load()` started, retained so a caller can await it rather than race
+    /// it. `nil` in production, where there is nothing to preindex.
+    private(set) var fixturePreindexing: Task<Void, Never>?
+
     /// A user-presentable persistence error. `Identifiable` so SwiftUI `.alert(item:)` can bind it.
     struct StoreError: Identifiable {
         /// The cause, separate from the presented `message`, so a caller can act on it.
@@ -145,6 +149,7 @@ final class ProjectStore: ObservableObject {
     func load() {
         let fileManager = FileManager.default
         let decoder = JSONDecoder()
+        var fixtures: [FixturePreindex] = []
 
         do {
             let projectURLs = try fileManager.contentsOfDirectory(at: projectsDir, includingPropertiesForKeys: nil)
@@ -159,7 +164,7 @@ final class ProjectStore: ObservableObject {
                     for diagramID in project.freeformDiagramIDs {
                         loadFreeformDiagram(diagramID)
                     }
-                    preindexFixtureCodebases(inProjectAt: projects.count - 1)
+                    fixtures += fixturesToPreindex(inProjectAt: projects.count - 1)
                     for codebase in projects[projects.count - 1].codebases where codebase.hasArtifact {
                         loadArtifact(for: codebase.id)
                     }
@@ -171,53 +176,28 @@ final class ProjectStore: ObservableObject {
         } catch {
             report(.app("Error.ProjectStore.LoadProjectDirectory \(error.localizedDescription)"))
         }
-    }
-
-    /// Indexes the fixture's codebases from a canned artifact at launch, so a journey that needs an
-    /// indexed codebase starts on one instead of tapping Reindex and waiting. Inert outside a UI test:
-    /// `resolvePreindexedArtifactURL()` reads an environment variable a real launch never carries, and
-    /// `lastIndexed` is fixed so the date this puts on screen is the same in every run.
-    ///
-    /// Fingerprinting and writing happen off the main actor, as `CodebaseFreshnessChecker`'s own doc
-    /// comment requires — `currentFingerprint()` falls back to walking the whole source tree when the
-    /// directory isn't a git checkout, which every UI test fixture is not. Done inline, that walk sat on
-    /// the main actor between app launch and the first frame, with a cost that scales with filesystem
-    /// latency rather than fixture size: the UI test launches most affected by CI disk contention are
-    /// exactly the preindexed ones.
-    private func preindexFixtureCodebases(inProjectAt projectIndex: Int) {
-        guard let artifactURL = UITestFixtureResolver().resolvePreindexedArtifactURL(),
-              let data = try? Data(contentsOf: artifactURL),
-              let artifact = try? JSONDecoder().decode(CodeArtifact.self, from: data)
-        else { return }
-        let projectID = projects[projectIndex].id
-        for codebase in projects[projectIndex].codebases {
-            let codebaseID = codebase.id
-            let sourcePath = codebase.directoryPath.resolvedAsAnalysisSourcePath
-            Task {
-                await preindexCodebase(codebaseID, sourcePath: sourcePath, artifact: artifact, projectID: projectID)
+        guard !fixtures.isEmpty else { return }
+        fixturePreindexing = Task { [weak self, fixtures] in
+            for fixture in fixtures {
+                await self?.preindex(fixture)
             }
         }
     }
 
-    /// Fingerprints `sourcePath`, writes `artifact` for it, and marks the codebase indexed once both
-    /// succeed. The off-main-actor half of `preindexFixtureCodebases`, split out so a test can await it
-    /// directly instead of polling a fire-and-forget `Task`.
-    func preindexCodebase(_ codebaseID: UUID, sourcePath: String, artifact: CodeArtifact, projectID: UUID) async {
-        let store = analysisStore
-        let fingerprint: CodeStateFingerprint? = await Task.detached(priority: .utility) {
-            let fingerprint = CodebaseFreshnessChecker(directoryPath: sourcePath).currentFingerprint()
-            guard (try? store.write(artifact, sourcePath: sourcePath, fingerprint: fingerprint)) != nil
-            else { return nil }
-            return fingerprint
-        }.value
-        guard let fingerprint,
-              let pIndex = projects.firstIndex(where: { $0.id == projectID }),
-              let cIndex = projects[pIndex].codebases.firstIndex(where: { $0.id == codebaseID })
-        else { return }
-        projects[pIndex].codebases[cIndex].hasArtifact = true
-        projects[pIndex].codebases[cIndex].lastIndexed = Date(timeIntervalSince1970: 1_700_000_000)
-        projects[pIndex].codebases[cIndex].indexedFingerprint = fingerprint
-        loadArtifact(for: codebaseID)
+    /// Empty outside a UI test: `resolvePreindexedArtifactURL()` reads an environment variable a real
+    /// launch never carries.
+    private func fixturesToPreindex(inProjectAt projectIndex: Int) -> [FixturePreindex] {
+        guard let artifactURL = UITestFixtureResolver().resolvePreindexedArtifactURL(),
+              let data = try? Data(contentsOf: artifactURL),
+              let artifact = try? JSONDecoder().decode(CodeArtifact.self, from: data)
+        else { return [] }
+        let projectID = projects[projectIndex].id
+        return projects[projectIndex].codebases.filter { !$0.hasArtifact }.map { codebase in
+            FixturePreindex(
+                codebaseID: codebase.id, projectID: projectID,
+                sourcePath: codebase.directoryPath.resolvedAsAnalysisSourcePath, artifact: artifact
+            )
+        }
     }
 
     func loadGeneratedDiagram(_ id: UUID) {
