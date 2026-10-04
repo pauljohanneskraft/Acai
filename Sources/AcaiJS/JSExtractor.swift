@@ -15,6 +15,7 @@ struct JSExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
+    let documentation: DocumentationReader
 
     var declarations = DeclarationBuilder()
 
@@ -49,6 +50,14 @@ struct JSExtractor {
         fieldReads = FieldReadResolver(
             context: context,
             identifierTypes: ["identifier", "property_identifier", "shorthand_property_identifier"]
+        )
+        // JSDoc only: a `///` line in TypeScript is a compiler directive, not documentation.
+        documentation = DocumentationReader(
+            convention: DocumentationComment(blockOpenings: ["/**"]),
+            transparentParentTypes: [
+                "export_statement", "ambient_declaration", "expression_statement",
+                "lexical_declaration", "variable_declaration", "variable_declarator"
+            ]
         )
 
         declarations.declaredTypeNames = declaredTypeNames
