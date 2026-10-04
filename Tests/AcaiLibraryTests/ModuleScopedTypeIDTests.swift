@@ -37,6 +37,17 @@ struct ModuleScopedTypeIDTests {
         #expect(Set(artifact.flattened().map(\.id)) == ["Sources/App/A.swift:Helper", "Sources/App/B.swift:Helper"])
     }
 
+    @Test("A file-private type elsewhere in the module leaves an existing type's id unchanged")
+    func filePrivateTypeDoesNotRenameItsNamesake() async throws {
+        let before = try await analyze(["Sources/App/A.swift": "struct Helper {}"])
+        let after = try await analyze([
+            "Sources/App/A.swift": "struct Helper {}",
+            "Sources/App/B.swift": "fileprivate struct Helper {}"
+        ])
+        #expect(before.flattened().map(\.id) == ["App.Helper"])
+        #expect(Set(after.flattened().map(\.id)) == ["App.Helper", "Sources/App/B.swift:Helper"])
+    }
+
     @Test("An extension in another module merges into the type it extends")
     func crossModuleExtension() async throws {
         let artifact = try await analyze([

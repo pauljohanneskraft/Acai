@@ -39,14 +39,23 @@ extension TypeDeclaration {
     public var unqualifiedID: String {
         idScope.unqualified(id)
     }
+
+    /// A top-level `private`/`fileprivate` declaration is visible only in its own file (Swift,
+    /// Kotlin, Dart's `_`-prefixed names), so the file — not the module — is what keeps it unique.
+    var isFileScoped: Bool {
+        accessLevel == .private || accessLevel == .filePrivate
+    }
 }
 
 extension CodeArtifact {
     /// Prefixes every type id with the build module of the file declaring it, so same-named types in
-    /// two modules (`AcaiCLI.ThemeOption`, `AcaiMCP.ThemeOption`) stay distinct. Applied once per
-    /// parsed file, before files are merged.
-    public func qualifyingTypeIDsByModule() -> CodeArtifact {
-        renamingTypeIDs { $0.idScope.moduleScoped($0.id) }
+    /// two modules (`AcaiCLI.ThemeOption`, `AcaiMCP.ThemeOption`) stay distinct; a file-private type
+    /// gets its file instead. Either way an id depends only on its own file, so it stays stable when
+    /// other files change. Applied once per parsed file, before files are merged.
+    public func scopingTypeIDs() -> CodeArtifact {
+        renamingTypeIDs { type in
+            type.isFileScoped ? type.idScope.fileScoped(type.id) : type.idScope.moduleScoped(type.id)
+        }
     }
 
     /// Re-scopes each type whose id (or a nested type's id) is in `collidingIDs` from its module to

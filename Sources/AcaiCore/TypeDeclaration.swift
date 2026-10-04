@@ -10,8 +10,9 @@
 public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     /// Stable, namespace-qualified identity (equal to ``qualifiedName``). Relationship endpoints,
     /// ``extensionOf``, and nested-type ids resolve against this. Project analysis prefixes it with
-    /// the declaring build module (`AcaiCLI.ThemeOption`), or with the file path when one module
-    /// declares the name in several files (`Sources/App/A.swift:Helper`); ``unqualifiedID`` undoes that.
+    /// the declaring build module (`AcaiCLI.ThemeOption`), or with the file path for a file-private
+    /// type or a name one module declares non-privately in several files (`Sources/App/A.swift:Helper`);
+    /// ``unqualifiedID`` undoes that.
     public var id: String
     /// The **simple** (unqualified) source name — must match the simple names used in
     /// `TypeReference.name` and a `CallReceiver.type` receiver for resolution to succeed.

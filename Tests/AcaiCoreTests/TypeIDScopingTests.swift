@@ -29,7 +29,7 @@ struct TypeIDScopingTests {
 
     @Test("Module scoping prefixes every declared id, nested ones and the edges naming them included")
     func moduleScoping() {
-        let scoped = file.qualifyingTypeIDsByModule()
+        let scoped = file.scopingTypeIDs()
         #expect(scoped.flattened().map(\.id)
             == ["ModA.Outer", "ModA.Outer.Inner", "extension.Outer", "ModA.Outer.Extra"])
         #expect(scoped.flattened().allSatisfy { $0.id == $0.qualifiedName || $0.kind == .extension })
@@ -42,11 +42,11 @@ struct TypeIDScopingTests {
 
     @Test("A colliding id is re-scoped to its file, and only that type moves")
     func fileScoping() {
-        let scoped = file.qualifyingTypeIDsByModule()
+        let scoped = file.scopingTypeIDs()
         let other = CodeArtifact(
             metadata: scoped.metadata,
             types: [TypeDeclaration(
-                id: "ModA.Outer", name: "Outer", qualifiedName: "ModA.Outer", kind: .struct, accessLevel: .private,
+                id: "ModA.Outer", name: "Outer", qualifiedName: "ModA.Outer", kind: .struct, accessLevel: .internal,
                 location: SourceLocation(filePath: "Sources/ModA/Other.swift", line: 1, column: 1))])
         let collisions = CollidingTypeIDs(files: [scoped, other])
         #expect(collisions.ids == ["ModA.Outer"])
@@ -59,9 +59,21 @@ struct TypeIDScopingTests {
         #expect(collisions.disambiguating(other).types[0].id == "Sources/ModA/Other.swift:Outer")
     }
 
+    @Test(
+        "A file-private type is scoped to its file, nested types following",
+        arguments: [AccessLevel.private, .filePrivate])
+    func filePrivateScoping(access: AccessLevel) {
+        var artifact = file
+        artifact.types[0].accessLevel = access
+        let scoped = artifact.scopingTypeIDs()
+        #expect(scoped.flattened().map(\.id).prefix(2)
+            == ["Sources/ModA/Outer.swift:Outer", "Sources/ModA/Outer.swift:Outer.Inner"])
+        #expect(scoped.relationships[0].source == "Sources/ModA/Outer.swift:Outer")
+    }
+
     @Test("A reference spelled the way source code spells it resolves to the scoped id")
     func resolverMatchesUnqualifiedIDs() {
-        let resolver = TypeIdentityResolver(types: file.qualifyingTypeIDsByModule().types)
+        let resolver = TypeIdentityResolver(types: file.scopingTypeIDs().types)
         #expect(resolver.resolve("Outer.Inner") == .resolved(TypeID("ModA.Outer.Inner")))
         #expect(resolver.resolve("Outer") == .resolved(TypeID("ModA.Outer")))
         #expect(resolver.resolve("ModA.Outer") == .resolved(TypeID("ModA.Outer")))

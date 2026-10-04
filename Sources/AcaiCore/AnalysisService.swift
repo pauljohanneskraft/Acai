@@ -101,9 +101,10 @@ public struct AnalysisService: Sendable {
             }
         }
 
-        // Ids are module-scoped per file, so a name only collides here when one module declares it in
-        // several files; those are scoped to their file. Every spec is parsed first so this sees
-        // collisions across languages too.
+        // Ids are already module- (or, file-private, file-) scoped, so a name only collides here when
+        // one module declares it non-privately in several files — normal where each file is its own
+        // namespace (Python, TS); those are scoped to their file. Every spec is parsed first so this
+        // sees collisions across languages too.
         let collisions = CollidingTypeIDs(files: parsedSpecs.flatMap(\.files))
         var combinedArtifact: CodeArtifact?
         for parsed in parsedSpecs {
@@ -147,7 +148,7 @@ public struct AnalysisService: Sendable {
         let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL)
         return ParsedSpec(
             spec: spec, fallback: codeParser.configuration,
-            files: parsed.files.map { $0.qualifyingTypeIDsByModule() },
+            files: parsed.files.map { $0.scopingTypeIDs() },
             diagnostics: spec.diagnostics + collected.diagnostics + parsed.diagnostics)
     }
 
