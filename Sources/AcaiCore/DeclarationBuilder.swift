@@ -57,6 +57,39 @@ public struct DeclarationBuilder: Sendable {
         }
     }
 
+    // MARK: - Documentation
+
+    /// A point in the accumulated declarations, so a caller that has just walked one source node can
+    /// find what that walk added.
+    public struct Mark: Sendable {
+        fileprivate let types: Int
+        fileprivate let freestandingFunctions: Int
+        fileprivate let globalVariables: Int
+    }
+
+    public var mark: Mark {
+        Mark(
+            types: types.count,
+            freestandingFunctions: freestandingFunctions.count,
+            globalVariables: globalVariables.count
+        )
+    }
+
+    /// Documents every top-level declaration added since `mark` — a walk over one source node can
+    /// yield a type, a function or a variable, and the prose above it documents whichever it was.
+    public mutating func attachDocumentation(_ prose: String?, since mark: Mark) {
+        guard let prose else { return }
+        for index in mark.types..<types.count {
+            types[index].documentation = prose
+        }
+        for index in mark.freestandingFunctions..<freestandingFunctions.count {
+            freestandingFunctions[index].documentation = prose
+        }
+        for index in mark.globalVariables..<globalVariables.count {
+            globalVariables[index].documentation = prose
+        }
+    }
+
     // MARK: - Relationships
 
     /// The edges' `target` is each supertype's simple name; ``resolveRelationshipNames()`` later
