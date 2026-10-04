@@ -7,8 +7,7 @@ import AcaiCore
 struct SelectorEditor: View {
     let title: LocalizedStringResource
     @Binding var selector: AcaiQuality.Selector
-    /// Unset leaves the fields unidentified, as they were before any journey needed to type into one.
-    var identifierPrefix: String?
+    var identifierPrefix = "selector"
 
     var body: some View {
         VStack(alignment: .leading, spacing: .spacingXS) {
@@ -54,6 +53,6 @@ struct SelectorEditor: View {
     }
 
     private func identifier(_ facet: String) -> String {
-        identifierPrefix.map { "\($0).\(facet)" } ?? ""
+        "\(identifierPrefix).\(facet)"
     }
 }

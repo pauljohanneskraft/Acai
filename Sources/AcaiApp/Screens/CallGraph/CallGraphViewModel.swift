@@ -10,7 +10,7 @@ import AcaiRender
 @MainActor
 final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     private let artifact: CodeArtifact
-    let scope: CallGraphScope
+    private let scope: CallGraphScope
     private let comparisonArtifact: CodeArtifact?
 
     @Published private(set) var graph: CallGraph
