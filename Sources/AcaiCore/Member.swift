@@ -47,6 +47,10 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// `case`s, `catch`es, short-circuit `&&`/`||`, ternaries). `nil` when not computed, so an
     /// aggregate metric can tell "no branches" from "not measured".
     public var cyclomaticComplexity: Int?
+    /// What the author wrote about this member, as prose: the documentation written against the
+    /// declaration with the markup that only marked it as documentation stripped. `nil` when the
+    /// declaration carries none — a plain comment nearby is not documentation.
+    public var documentation: String?
 
     public init(
         name: String,
@@ -65,7 +69,8 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         fieldReads: [FieldAccess] = [],
         initialValue: VariableAssignment.Value? = nil,
         referencedTypeNames: [String] = [],
-        cyclomaticComplexity: Int? = nil
+        cyclomaticComplexity: Int? = nil,
+        documentation: String? = nil
     ) {
         self.name = name
         self.kind = kind
@@ -84,6 +89,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         self.initialValue = initialValue
         self.referencedTypeNames = referencedTypeNames
         self.cyclomaticComplexity = cyclomaticComplexity
+        self.documentation = documentation
     }
 
     /// Whether this member belongs in the "attributes" compartment of a class diagram.

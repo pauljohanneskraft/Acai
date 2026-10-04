@@ -46,6 +46,10 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     /// `LanguageConfiguration` rather than a single artifact-wide one. `nil` for a type produced
     /// outside the enrichment pipeline; a `LanguageConfigurationResolver` maps that to its default.
     public var sourceLanguage: CodeArtifact.SourceLanguage?
+    /// What the author wrote about this type, as prose: the documentation written against the
+    /// declaration with the markup that only marked it as documentation stripped. `nil` when the
+    /// declaration carries none — a plain comment nearby is not documentation.
+    public var documentation: String?
 
     public init(
         id: String,
@@ -64,7 +68,8 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         extensionOf: String? = nil,
         namespace: String? = nil,
         location: SourceLocation? = nil,
-        sourceLanguage: CodeArtifact.SourceLanguage? = nil
+        sourceLanguage: CodeArtifact.SourceLanguage? = nil,
+        documentation: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -83,6 +88,7 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         self.namespace = namespace
         self.location = location
         self.sourceLanguage = sourceLanguage
+        self.documentation = documentation
     }
 
     /// A copy of this type (and its nested types, recursively) stamped with `language`.
