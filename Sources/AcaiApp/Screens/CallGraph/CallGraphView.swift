@@ -216,10 +216,11 @@ private struct CallGraphCanvasView: View {
         )
         .overlay {
             if viewModel.isEmpty {
-                DiagramEmptyScopeOverlay(
-                    reason: viewModel.emptyReason, nothingOfThisKind: noCallsDescription,
-                    onUndo: clearEmptyScope
-                )
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    noCallsState
+                } onUndo: {
+                    clearEmptyScope()
+                }
             }
         }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
@@ -229,20 +230,23 @@ private struct CallGraphCanvasView: View {
         }
     }
 
-    private var noCallsDescription: DiagramEmptyDescription {
-        DiagramEmptyDescription(
-            systemImage: "point.3.connected.trianglepath.dotted",
-            title: .app("View.CallGraphCanvasView.NoCallsResolved"),
-            detail: .app("View.CallGraphCanvasView.NoCallsResolvedDetail"),
-            action: DiagramEmptyAction(
-                title: .app("View.CallGraphCanvasView.EditConfiguration"),
-                systemImage: "slider.horizontal.3",
-                perform: {
-                    sidebarTab = .settings
-                    showSidebar = true
-                }
+    private var noCallsState: some View {
+        ContentUnavailableView {
+            Label(
+                .app("View.CallGraphCanvasView.NoCallsResolved"), systemImage: "point.3.connected.trianglepath.dotted"
             )
-        )
+        } description: {
+            Text(.app("View.CallGraphCanvasView.NoCallsResolvedDetail"))
+        } actions: {
+            Button {
+                sidebarTab = .settings
+                showSidebar = true
+            } label: {
+                Label(.app("View.CallGraphCanvasView.EditConfiguration"), systemImage: "slider.horizontal.3")
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("diagram.emptyScope.editConfigurationButton")
+        }
     }
 
     private func clearEmptyScope() {

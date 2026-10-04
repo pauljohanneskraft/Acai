@@ -179,31 +179,29 @@ struct SequenceDiagramView: View {
     // MARK: - Empty state
 
     private var emptyState: some View {
-        DiagramEmptyScopeOverlay(
-            reason: viewModel.emptyReason, nothingOfThisKind: noTraceDescription,
-            onUndo: { applyFilter(nil) }
-        )
+        DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+            ContentUnavailableView {
+                Label(.app("View.SequenceDiagramView.NoCallsCouldTraced"), systemImage: "arrow.triangle.branch")
+            } description: {
+                Text(.app("View.SequenceDiagramView.CallsAreFollowedThrough"))
+            } actions: {
+                Button {
+                    sidebarTab = .settings
+                    showSidebar = true
+                } label: {
+                    Label(.app("View.SequenceDiagramView.EditConfiguration"), systemImage: "slider.horizontal.3")
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("diagram.emptyScope.editConfigurationButton")
+            }
+        } onUndo: {
+            applyFilter(nil)
+        }
     }
 
     private func applyFilter(_ filter: AcaiQuality.Selector?) {
         viewModel.applyFilter(filter)
         model.diagrams.updateSequenceFilter(diagramID: diagram.id, filter: filter)
-    }
-
-    private var noTraceDescription: DiagramEmptyDescription {
-        DiagramEmptyDescription(
-            systemImage: "arrow.triangle.branch",
-            title: .app("View.SequenceDiagramView.NoCallsCouldTraced"),
-            detail: .app("View.SequenceDiagramView.CallsAreFollowedThrough"),
-            action: DiagramEmptyAction(
-                title: .app("View.SequenceDiagramView.EditConfiguration"),
-                systemImage: "slider.horizontal.3",
-                perform: {
-                    sidebarTab = .settings
-                    showSidebar = true
-                }
-            )
-        )
     }
 
     // MARK: - Persistence & layout

@@ -186,26 +186,24 @@ struct StateDiagramView: View {
     // MARK: - Empty / failure / unconfigured states
 
     private var emptyState: some View {
-        DiagramEmptyScopeOverlay(
-            reason: viewModel.emptyReason, nothingOfThisKind: noStatesDescription,
-            onUndo: { applyFilter(nil) }
-        )
-    }
-
-    private var noStatesDescription: DiagramEmptyDescription {
-        DiagramEmptyDescription(
-            systemImage: "circle.hexagonpath",
-            title: .app("View.StateDiagramView.NoStatesFound"),
-            detail: .app("View.StateDiagramView.NoStatesFoundDetail"),
-            action: DiagramEmptyAction(
-                title: .app("View.StateDiagramView.EditConfiguration"),
-                systemImage: "slider.horizontal.3",
-                perform: {
+        DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+            ContentUnavailableView {
+                Label(.app("View.StateDiagramView.NoStatesFound"), systemImage: "circle.hexagonpath")
+            } description: {
+                Text(.app("View.StateDiagramView.NoStatesFoundDetail"))
+            } actions: {
+                Button {
                     sidebarTab = .settings
                     showSidebar = true
+                } label: {
+                    Label(.app("View.StateDiagramView.EditConfiguration"), systemImage: "slider.horizontal.3")
                 }
-            )
-        )
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("diagram.emptyScope.editConfigurationButton")
+            }
+        } onUndo: {
+            applyFilter(nil)
+        }
     }
 
     private func failureState(_ error: StateDiagramAnalysisError) -> some View {

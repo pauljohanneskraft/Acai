@@ -155,10 +155,15 @@ struct PackageDiagramView: View {
         )
         .overlay {
             if viewModel.isEmpty {
-                DiagramEmptyScopeOverlay(
-                    reason: viewModel.emptyReason, nothingOfThisKind: noModulesDescription,
-                    onUndo: { filterBinding.wrappedValue = nil }
-                )
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    ContentUnavailableView {
+                        Label(.app("View.PackageDiagramView.NoModules"), systemImage: "shippingbox")
+                    } description: {
+                        Text(.app("View.PackageDiagramView.NoModulesDetail"))
+                    }
+                } onUndo: {
+                    filterBinding.wrappedValue = nil
+                }
             }
         }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
@@ -166,14 +171,6 @@ struct PackageDiagramView: View {
         .overlay(alignment: .topTrailing) {
             CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
-    }
-
-    private var noModulesDescription: DiagramEmptyDescription {
-        DiagramEmptyDescription(
-            systemImage: "shippingbox",
-            title: .app("View.PackageDiagramView.NoModules"),
-            detail: .app("View.PackageDiagramView.NoModulesDetail")
-        )
     }
 
     private func packageEdges(_ layout: PackageLayoutModel) -> some View {

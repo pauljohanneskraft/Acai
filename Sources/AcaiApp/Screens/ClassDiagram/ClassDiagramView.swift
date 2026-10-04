@@ -202,10 +202,15 @@ struct ClassDiagramView: View {
             if let nodeLimitError = viewModel.nodeLimitError {
                 nodeLimitErrorState(message: nodeLimitError.message)
             } else if viewModel.nodes.isEmpty {
-                DiagramEmptyScopeOverlay(
-                    reason: viewModel.emptyReason, nothingOfThisKind: noTypesDescription,
-                    onUndo: { editor.clearEmptyScope(for: viewModel.emptyReason) }
-                )
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    ContentUnavailableView {
+                        Label(.app("View.ClassDiagramView.NoTypesToDiagram"), systemImage: "square.dashed")
+                    } description: {
+                        Text(.app("View.ClassDiagramView.NoTypesToDiagramDetail"))
+                    }
+                } onUndo: {
+                    editor.clearEmptyScope(for: viewModel.emptyReason)
+                }
             }
         }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
@@ -281,14 +286,6 @@ extension ClassDiagramView {
 
     private var editor: ClassDiagramConfigEditor {
         ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
-    }
-
-    private var noTypesDescription: DiagramEmptyDescription {
-        DiagramEmptyDescription(
-            systemImage: "square.dashed",
-            title: .app("View.ClassDiagramView.NoTypesToDiagram"),
-            detail: .app("View.ClassDiagramView.NoTypesToDiagramDetail")
-        )
     }
 
     @ViewBuilder private var nodeLayer: some View {
