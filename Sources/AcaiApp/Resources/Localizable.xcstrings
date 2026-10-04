@@ -22898,7 +22898,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La portée à laquelle ce diagramme est restreint ne contient rien à dessiner. Réinitialise-la pour revoir toute la codebase."
+            "value" : "La portée à laquelle ce diagramme est restreint ne contient rien à dessiner. Réinitialisez-la pour revoir toute la codebase."
           }
         }
       }
@@ -22920,7 +22920,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le filtre de l’onglet Réglages a masqué tous les éléments. Efface-le pour les revoir."
+            "value" : "Le filtre de l’onglet Réglages a masqué tous les éléments. Effacez-le pour les revoir."
           }
         }
       }
@@ -23074,7 +23074,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucun site d’appel n’a pu être résolu ici. Élargis la portée, ou choisis un autre type ou module."
+            "value" : "Aucun site d’appel n’a pu être résolu ici. Élargissez la portée, ou choisissez un autre type ou module."
           }
         }
       }
@@ -23162,7 +23162,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L’analyse s’est terminée mais n’a trouvé aucun état pour cette variable. Choisis une autre variable, ou élargis sa configuration."
+            "value" : "L’analyse s’est terminée mais n’a trouvé aucun état pour cette variable. Choisissez une autre variable, ou élargissez sa configuration."
           }
         }
       }
