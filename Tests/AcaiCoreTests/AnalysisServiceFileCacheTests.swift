@@ -44,7 +44,7 @@ struct AnalysisServiceFileCacheTests {
 
         var cache: AnalysisCache { AnalysisCache(store: store, for: root) }
 
-        var storedFragments: ParsedFileCache { cache.reusableFragments() }
+        var storedFragments: ParsedFileCache? { cache.reusableFragments() }
 
         var storedCacheFiles: [URL] {
             let contents = (try? FileManager.default.contentsOfDirectory(
@@ -134,7 +134,7 @@ struct AnalysisServiceFileCacheTests {
         // The surviving files are still cached, so dropping the removed one didn't discard the rest.
         let surviving = try #require(SourceFileFingerprint(
             file: fixture.root.appendingPathComponent("A.fx"), relativeTo: fixture.root))
-        #expect(fixture.storedFragments.fragment(for: surviving) != nil)
+        #expect(fixture.storedFragments?.fragment(for: surviving) != nil)
     }
 
     @Test func aCacheFromADifferentToolVersionIsIgnoredEntirely() async throws {
@@ -170,6 +170,6 @@ struct AnalysisServiceFileCacheTests {
 
         #expect(parser.parsedCount == 6, "nothing is reused between two uncached analyses")
         #expect(fixture.storedCacheFiles.isEmpty)
-        #expect(AnalysisCache.disabled.reusableFragments() == ParsedFileCache())
+        #expect(AnalysisCache.disabled.reusableFragments() == nil)
     }
 }

@@ -53,9 +53,6 @@ actor AnalysisSnapshotCache {
         if !isDirectory.boolValue && url.pathExtension == "json" {
             artifact = try decodeArtifact(at: url)
         } else {
-            // Most edits touch a handful of files in an otherwise-unchanged tree, so only those are
-            // actually reparsed; everything else is carried forward from the per-file cache. `refresh`
-            // means "reparse for real", so it opts out of that cache rather than reading through it.
             artifact = try await service.analyzeProject(
                 at: url, allowedLanguages: languageResolver.resolve(names: languageNames),
                 reusing: refresh ? .disabled : AnalysisCache(store: store, forResolvedPath: key))

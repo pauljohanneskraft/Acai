@@ -148,9 +148,9 @@ struct AnalysisStoreTests {
         return ParsedFileCache.Entry(modified: Date(timeIntervalSince1970: 500), size: 42, artifact: artifact)
     }
 
-    private func makeFileCache(toolVersion: String = AcaiConstants.standard.toolVersion) -> ParsedFileCache {
+    private func makeFileCache() -> ParsedFileCache {
         ParsedFileCache(
-            toolVersion: toolVersion, entriesByRelativePath: ["Foo.swift": makeFileCacheEntry()])
+            toolVersion: AcaiConstants.standard.toolVersion, entriesByRelativePath: ["Foo.swift": makeFileCacheEntry()])
     }
 
     @Test func fileCacheRoundTripsThroughTheStore() throws {
@@ -164,20 +164,10 @@ struct AnalysisStoreTests {
         #expect(loaded == cache)
     }
 
-    @Test func missingFileCacheIsEmptyNotThrown() throws {
+    @Test func missingFileCacheIsNilNotThrown() throws {
         let (store, directory) = try makeStore()
         defer { try? FileManager.default.removeItem(at: directory) }
-        #expect(store.lookupFileCache(forResolvedPath: "/no/such/path") == ParsedFileCache())
-    }
-
-    @Test func fileCacheFromAnOlderToolVersionIsDiscardedWhole() throws {
-        let (store, directory) = try makeStore()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = makeFileCache(toolVersion: "not-\(AcaiConstants.standard.toolVersion)")
-
-        try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
-
-        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == ParsedFileCache())
+        #expect(store.lookupFileCache(forResolvedPath: "/no/such/path") == nil)
     }
 
     @Test func fileCacheFilesAreNeverPickedUpAsWholeProjectEntries() throws {
@@ -199,7 +189,7 @@ struct AnalysisStoreTests {
         try store.removeEntry(forResolvedPath: "/tmp/proj")
 
         #expect(store.lookup(forResolvedPath: "/tmp/proj") == .absent)
-        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == ParsedFileCache())
+        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == nil)
         let remaining = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
         #expect(remaining.filter { $0.pathExtension == "filecache" }.isEmpty)
     }
@@ -211,6 +201,6 @@ struct AnalysisStoreTests {
 
         try store.removeEntry(forResolvedPath: "/tmp/proj")
 
-        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == ParsedFileCache())
+        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == nil)
     }
 }

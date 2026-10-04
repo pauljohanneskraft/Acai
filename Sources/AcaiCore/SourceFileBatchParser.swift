@@ -1,18 +1,12 @@
 import Foundation
 
-/// Reads and parses one spec's source files — the whole of that job, so ``AnalysisService`` keeps
-/// only the orchestration around it.
+/// Reads and parses one spec's source files concurrently, merging them back in their original order so
+/// the outcome is identical to serial parsing.
 ///
-/// Results are grouped by each file's *own* `metadata.sourceLanguage` rather than the spec's nominal
-/// language, since a parser may classify a file differently than the extension that discovered it
-/// (the C parser owns `.h` but reports C++ for a C++ header). Files merge back in their original
-/// order regardless of completion order, so the outcome — and therefore `order`, which preserves
-/// first-seen order so the merged artifact's top-level language is stable — is identical to serial
-/// parsing.
+/// Results are grouped by each file's *own* `metadata.sourceLanguage`, since a parser may classify a
+/// file differently than the extension that discovered it (the C parser reports C++ for a C++ header).
 struct SourceFileBatchParser {
 
-    /// What a batch yielded: the per-language artifacts, the order their languages were first seen
-    /// in, the diagnostics files produced, and one cache entry per file the batch saw.
     struct Outcome {
         let byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact]
         let order: [CodeArtifact.SourceLanguage]
@@ -26,15 +20,12 @@ struct SourceFileBatchParser {
 
     let rootURL: URL
 
-    /// Caps how many files parse at once; `nil` derives the cap from the processor count.
+    /// `nil` derives the cap from the processor count.
     let concurrencyLimit: Int?
 
-    /// Per-file byte ceiling; a larger file is skipped with a `.skipped` diagnostic rather than read
-    /// whole.
     let maximumFileBytes: Int
 
-    /// `cache` is `nil` when the caller is not caching, which skips fingerprinting altogether; an
-    /// empty cache instead fingerprints every file so the outcome can seed one.
+    /// A `nil` cache skips fingerprinting and yields no cache entries.
     func parse(_ files: [URL], reusing cache: ParsedFileCache?) async throws -> Outcome {
         guard !files.isEmpty else { return .empty }
 
@@ -47,8 +38,6 @@ struct SourceFileBatchParser {
 
     // MARK: - Parsing
 
-    /// Schedules a parse task per miss, bounded by ``concurrencyLimit`` (or the processor count when
-    /// unset), and writes each result back into `outcomeByIndex` at its original position.
     private func parseMisses(
         _ indices: [Int], in files: [URL], into outcomeByIndex: inout [FileOutcome?]
     ) async throws {
@@ -77,13 +66,8 @@ struct SourceFileBatchParser {
         }
     }
 
-    /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic
-    /// rather than failing the whole batch.
-    ///
-    /// The size check resolves the symlink first: `attributesOfItem(atPath:)` does not traverse a
-    /// terminal symbolic link, so a link to a huge file reports the length of the *link itself* (a
-    /// handful of bytes) and sails under the ceiling. Now that links are followed on purpose, that
-    /// would silently reintroduce the unbounded read #303 asks to bound.
+    /// A read failure becomes a `.unreadable` diagnostic rather than failing the whole batch. The size
+    /// check resolves the symlink first, since `attributesOfItem(atPath:)` reports a link's own size.
     private func parseFile(_ file: URL) -> FileOutcome {
         let relativePath = file.relativePath(from: rootURL)
         let resolvedPath = file.resolvingSymlinksInPath().path
@@ -135,8 +119,6 @@ struct SourceFileBatchParser {
     }
 }
 
-/// The result of reading and parsing one file: either a parsed artifact, or a diagnostic when the
-/// file itself couldn't be read.
 enum FileOutcome: Sendable {
     case parsed(CodeArtifact)
     case diagnostic(ParseDiagnostic)

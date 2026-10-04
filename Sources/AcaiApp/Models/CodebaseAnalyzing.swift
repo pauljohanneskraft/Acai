@@ -7,9 +7,7 @@ protocol CodebaseAnalyzing: Sendable {
 }
 
 extension CodebaseAnalyzing {
-    /// Analyzes with nothing carried over from an earlier pass. The right call for a tree that will
-    /// not be analyzed again — a git revision extracted to a temporary directory, say, where a
-    /// persisted per-file cache would be written under a path nothing ever looks up again.
+    /// Uncached — for a tree no later analysis revisits, like an extracted git revision.
     func enrichedArtifact(at url: URL, fileFilter: FileFilter? = nil) async throws -> CodeArtifact {
         try await enrichedArtifact(at: url, fileFilter: fileFilter, reusing: .disabled)
     }

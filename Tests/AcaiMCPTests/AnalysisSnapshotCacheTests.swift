@@ -3,11 +3,6 @@ import Testing
 import AcaiCore
 @testable import AcaiMCP
 
-/// Covers the parse-once-per-task contract: a cache hit reuses the snapshot, an edit or `refresh`
-/// invalidates it, a missing path is rejected, and a fresh cache instance starts warm from the
-/// shared `AnalysisStore` instead of re-parsing. Every cache here is built with its own temp-directory
-/// store — never `AnalysisStore.standard` — so tests never touch the real `~/.acai/analysis`.
-/// Counts every `parse` call, so a test can tell a reparse from a replayed cache fragment.
 private final class CountingFixtureParser: CodeParser, @unchecked Sendable {
     var language: CodeArtifact.SourceLanguage { .init(rawValue: "fixture") }
     var fileExtensions: [String] { ["fx"] }
@@ -35,6 +30,10 @@ private final class CountingFixtureParser: CodeParser, @unchecked Sendable {
     }
 }
 
+/// Covers the parse-once-per-task contract: a cache hit reuses the snapshot, an edit or `refresh`
+/// invalidates it, a missing path is rejected, and a fresh cache instance starts warm from the
+/// shared `AnalysisStore` instead of re-parsing. Every cache here is built with its own temp-directory
+/// store — never `AnalysisStore.standard` — so tests never touch the real `~/.acai/analysis`.
 @Suite("Analysis Snapshot Cache")
 struct AnalysisSnapshotCacheTests {
 

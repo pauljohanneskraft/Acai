@@ -1,24 +1,18 @@
 import Foundation
 
-/// Which of a batch's files a ``ParsedFileCache`` already answers for, worked out up front from a
-/// file stat rather than a read — so only a genuine miss costs a parse task.
+/// Which of a batch's files a ``ParsedFileCache`` already answers for, decided from a stat alone.
 struct ParsedFileBatchPlan {
 
-    /// A cache hit's outcome, already filled in at the file's original position; a miss stays `nil`
-    /// until it has been parsed.
+    /// A hit's outcome at its file's position; `nil` for a miss.
     let outcomeByIndex: [FileOutcome?]
 
-    /// The files still to parse, by their position in the batch.
     let indicesNeedingParse: [Int]
 
-    /// Kept so a freshly parsed file's (already computed) fingerprint needs no second stat.
     private let fingerprints: [Int: SourceFileFingerprint]
 
-    /// Every cache hit, ready to be carried into the next cache unchanged.
     private let carriedForward: [String: ParsedFileCache.Entry]
 
-    /// A `nil` cache plans every file as a miss and fingerprints none of them, so a caller that is
-    /// not caching pays nothing for the fact that caching exists.
+    /// A `nil` cache plans every file as a miss without fingerprinting any.
     init(files: [URL], rootURL: URL, cache: ParsedFileCache?) {
         var outcomeByIndex = [FileOutcome?](repeating: nil, count: files.count)
         guard let cache else {
@@ -51,9 +45,8 @@ struct ParsedFileBatchPlan {
         self.carriedForward = carriedForward
     }
 
-    /// Every cache hit carried forward plus one entry per freshly parsed miss — together, a complete
-    /// cache for exactly the files this batch saw, so a file removed since the last analysis is
-    /// dropped rather than accumulating forever.
+    /// The hits plus every freshly parsed miss — exactly the files this batch saw, so a removed file
+    /// drops out.
     func cacheEntries(addingFreshlyParsed parsed: [FileOutcome?]) -> [String: ParsedFileCache.Entry] {
         var entries = carriedForward
         for index in indicesNeedingParse {

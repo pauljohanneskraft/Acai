@@ -130,8 +130,8 @@ extension ProjectCodebaseEditor {
 struct CodebaseIndexing {
     let directory: URL
     let revision: String?
-    /// Where a working-tree reindex's per-file parse cache lives — the same store the artifact
-    /// itself goes to, so a test's injected store keeps both out of the real `~/.acai/analysis`.
+    /// Holds a working-tree reindex's per-file parse cache; a pinned revision's temporary
+    /// extraction is never cached.
     let analysisStore: AnalysisStore
 
     func run(
@@ -139,10 +139,6 @@ struct CodebaseIndexing {
     ) async throws -> (CodeArtifact, CodeStateFingerprint) {
         let freshness = CodebaseFreshnessChecker(directoryPath: directory.path, revision: revision)
         guard let revision else {
-            // Reindexing the working tree is the one path that sees the same directory again, so it
-            // is the one that caches: an edit to a handful of files reparses only those. The pinned
-            // revision below extracts to a temporary directory instead, which no later analysis
-            // revisits, so it stays uncached rather than leaving a cache file behind for it.
             let artifact = try await analyzer.enrichedArtifact(
                 at: directory, fileFilter: fileFilter,
                 reusing: AnalysisCache(store: analysisStore, for: directory))

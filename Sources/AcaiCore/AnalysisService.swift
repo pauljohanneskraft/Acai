@@ -71,16 +71,8 @@ public struct AnalysisService: Sendable {
     /// so a file the repository ignores is not analyzed. Pass `false` to analyze a tree exactly as it
     /// sits on disk.
     ///
-    /// `cache` is the tree's per-file parse cache: a file whose `(relativePath, modified, size)` is
-    /// unchanged since that cache was written is carried forward rather than reread and reparsed, and
-    /// the cache is updated with everything this analysis saw. It defaults to
-    /// ``AnalysisCache/disabled``, which reuses and persists nothing — the right choice for a tree no
-    /// later analysis will revisit.
-    ///
-    /// Enrichment and cross-file resolution (``CodeArtifact/enriched(using:)``,
-    /// ``CodeArtifact/resolvingCallSiteReceivers()``) always run over the full merged corpus whether a
-    /// file was reparsed or carried forward — a cache hit only skips re-parsing one file, never a step
-    /// that needs the whole project — so a warm analysis returns exactly what a cold one would.
+    /// `cache` only replaces parsing an unchanged file; enrichment and cross-file resolution still run
+    /// over the whole project, so a warm analysis returns exactly what a cold one would.
     public func analyzeProject(
         at rootURL: URL,
         allowedLanguages: [CodeArtifact.SourceLanguage],
@@ -104,7 +96,7 @@ public struct AnalysisService: Sendable {
             throw ValidationError("Could not discover any source files in \(rootURL.path). \(hint)")
         }
 
-        let reusable = cache.isEnabled ? cache.reusableFragments() : nil
+        let reusable = cache.reusableFragments()
         var combinedArtifact: CodeArtifact?
         var freshEntries: [String: ParsedFileCache.Entry] = [:]
 
@@ -126,11 +118,7 @@ public struct AnalysisService: Sendable {
         var result = combined.resolvingCallSiteReceivers()
         result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
-        if cache.isEnabled {
-            cache.save(ParsedFileCache(
-                toolVersion: AcaiConstants.standard.toolVersion, entriesByRelativePath: freshEntries
-            ))
-        }
+        cache.save(freshEntries)
         return result
     }
 
