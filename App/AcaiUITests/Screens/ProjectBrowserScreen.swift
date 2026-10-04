@@ -81,23 +81,20 @@ final class ProjectBrowserScreen {
 
     var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
 
-    /// ⌘K on macOS, ⇧⌘O from a hardware keyboard on iPad. A key event goes to whatever is frontmost, so a
-    /// system banner swallows it the way it swallows a tap — the tap helpers clear one first, and typing must too.
+    /// ⇧⌘O, from the Mac's menu bar or an iPad's hardware keyboard. A key event goes to whatever is
+    /// frontmost, so a system banner swallows it the way it swallows a tap — the tap helpers clear one
+    /// first, and typing must too.
     func openQuickOpenWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
         newProjectButton.waitOrFail("the project browser", file: file, line: line)
         SystemBanners().dismiss(file: file, line: line)
-        #if os(macOS)
-        app.typeKey("k", modifierFlags: .command)
-        #else
         app.typeKey("o", modifierFlags: [.command, .shift])
-        #endif
         QuickOpenScreen(app: app).searchField.waitOrFail("the Quick Open search field", file: file, line: line)
     }
 
     /// Opens Quick Open through whichever entry point this platform and width actually has.
     func openQuickOpen(file: StaticString = #filePath, line: UInt = #line) {
         #if os(macOS)
-        // macOS's only entry point is ⌘K (`QuickOpenCommands`) — there is no toolbar button there.
+        // macOS's only entry point is ⇧⌘O (`QuickOpenCommands`) — there is no toolbar button there.
         openQuickOpenWithKeyboard(file: file, line: line)
         #else
         quickOpenButton.tap(

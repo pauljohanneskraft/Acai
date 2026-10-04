@@ -22,7 +22,7 @@ final class QuickOpenJourneyTests: UIJourneyTestCase {
         result.tap("the seeded codebase's Quick Open result", until: codebaseDetail.reindexButton)
 
         #if os(iOS)
-        // macOS opened it with ⌘K above; an iPad's hardware keyboard must reach it with ⇧⌘O too.
+        // macOS opened it with ⇧⌘O above; an iPad's hardware keyboard must reach the same key too.
         if !SnapshotPlatform().usesCompactLayout {
             quickOpen.searchField.waitForDisappearanceOrFail("Quick Open after selecting a result")
             browser.openQuickOpenWithKeyboard()

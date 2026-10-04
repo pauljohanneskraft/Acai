@@ -77,16 +77,11 @@ extension KeyboardShortcutReference {
     static let cancelDialog = KeyboardShortcutReference(
         id: "cancelDialog", shortcut: .cancelAction,
         name: .app("KeyboardShortcutReference.CancelDialog"))
-    #if os(macOS)
-    static let quickOpen = KeyboardShortcutReference(
-        id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
-        name: .app("KeyboardShortcutReference.QuickOpen"))
-    #else
-    // ⇧⌘O is Xcode's Open Quickly; ⌘K never reached the app from an iPad hardware keyboard.
+    // ⇧⌘O (Xcode's Open Quickly) on every platform, so the panel, the README and the docs carry no
+    // platform qualifier and a reader of either platform's reference is told the same key.
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("o", modifiers: [.command, .shift]),
         name: .app("KeyboardShortcutReference.QuickOpen"))
-    #endif
     static let openInNewWindow = KeyboardShortcutReference(
         id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),
         name: .app("KeyboardShortcutReference.OpenInNewWindow"))

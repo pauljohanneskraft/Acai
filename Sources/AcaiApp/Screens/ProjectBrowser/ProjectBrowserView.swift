@@ -18,7 +18,7 @@ public struct ProjectBrowserView: View {
 
     @EnvironmentObject var browserWindows: BrowserWindows
     // See `QuickOpenPresenter` for why macOS's is per window — published below as a focused scene
-    // object, so ⌘K reaches the key window's own — and iOS's comes from the scene.
+    // object, so ⇧⌘O reaches the key window's own — and iOS's comes from the scene.
     #if os(macOS)
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
     #else
