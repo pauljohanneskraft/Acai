@@ -257,12 +257,14 @@ extension CodeArtifact {
         if let exact = flat.first(where: { $0.qualifiedName == name || $0.id == name }) {
             return exact.id
         }
+        // A plain suffix check first: the scope lookups below split the file path, too costly per type.
+        let candidates = flat.filter { $0.name == name || $0.id.hasSuffix(name) }
         let extModule = ext.idScope.module
-        let sameModuleMatches = flat.filter {
+        let sameModuleMatches = candidates.filter {
             ($0.name == name || $0.unqualifiedID == name) && $0.idScope.module == extModule
         }
         if sameModuleMatches.count == 1 { return sameModuleMatches[0].id }
-        let unqualifiedMatches = flat.filter { $0.unqualifiedID == name }
+        let unqualifiedMatches = candidates.filter { $0.unqualifiedID == name }
         guard sameModuleMatches.isEmpty, unqualifiedMatches.count == 1 else { return nil }
         return unqualifiedMatches[0].id
     }

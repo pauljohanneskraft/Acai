@@ -47,4 +47,42 @@ struct ModuleScopedTypeIDTests {
         #expect(base.members.map(\.name).contains("extra"))
         #expect(artifact.relationships.contains { $0.source == "App.User" && $0.target == "Core.Base.Inner" })
     }
+
+    @Test("A root named the way source spells it is not its own dependent")
+    func impactRootSpelledUnqualified() async throws {
+        let artifact = try await analyze([
+            "Sources/Core/Outer.swift": "struct Outer { struct Inner {} }\nstruct User { var inner: Outer.Inner }"
+        ])
+        let report = ImpactAnalysis(artifact: artifact, rootType: "Outer.Inner").report
+        #expect(report.found)
+        #expect(report.dependents.map(\.id) == ["Core.User"])
+    }
+
+    @Test("A state variable on a nested type is found by the name source spells")
+    func stateFromNestedType() async throws {
+        let artifact = try await analyze([
+            "Sources/Core/Outer.swift": """
+                enum Phase { case idle, running }
+                struct Outer { struct Inner { var phase = Phase.idle; mutating func run() { phase = .running } } }
+                """
+        ])
+        let diagram = try StateDiagramBuilder(
+            configuration: StateDiagramConfiguration(typeName: "Outer.Inner", variableName: "phase")
+        ).build(from: artifact)
+        #expect(diagram.states.contains { $0.name == "running" })
+    }
+
+    @Test("A type nested in another module's extension keeps its own id and edges in the class diagram")
+    func classDiagramKeepsCrossModuleExtensionNestedType() async throws {
+        let artifact = try await analyze([
+            "Sources/Core/Base.swift": "public class Base {}",
+            "Sources/App/Base+App.swift": "extension Base { struct Extra {} }\nstruct User { var extra: Base.Extra }"
+        ])
+        let diagram = ClassDiagramBuilder(
+            options: ClassDiagramOptions(languages: artifact.standardLanguageResolver)
+        ).build(from: artifact)
+        #expect(diagram.types.contains { $0.id == "App.Base.Extra" })
+        #expect(diagram.externalTypes.isEmpty)
+        #expect(diagram.relationships.contains { $0.source == "App.User" && $0.target == "App.Base.Extra" })
+    }
 }
