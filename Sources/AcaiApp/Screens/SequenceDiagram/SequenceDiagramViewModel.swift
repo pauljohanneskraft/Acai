@@ -142,9 +142,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         emptyReason = hidByFilter ? .filter : .codebase
     }
 
-    /// `SequenceDiagramGenerator.filtered` keeps the entry-point participant whatever the filter says,
-    /// so a filter matching nothing leaves a lone lifeline — blank to the viewer all the same. True
-    /// only when the unfiltered trace had more, so a genuinely root-only one offers no Clear Filter.
+    /// Filtering always keeps the entry-point participant, so a filter matching nothing leaves one lifeline.
     private func filterHidEveryParticipant() -> Bool {
         guard diagram.participants.count <= 1, configuration.filter != nil else { return false }
         var unfiltered = configuration

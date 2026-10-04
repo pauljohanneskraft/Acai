@@ -52,7 +52,6 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
-    /// Reads the diagram, not `layout`, which rebuilds the whole layout on every read.
     var isEmpty: Bool { diagram.nodes.isEmpty }
 
     private func rebuild() {
@@ -72,8 +71,6 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         return (diff.union, diff)
     }
 
-    /// Blames the filter only when clearing it would bring modules back. There is no scope to narrow
-    /// here — the module set comes from the build system.
     private func resolvedEmptyReason() -> DiagramEmptyReason {
         guard diagram.nodes.isEmpty, filter != nil else { return .codebase }
         return build(filter: nil).diagram.nodes.isEmpty ? .codebase : .filter

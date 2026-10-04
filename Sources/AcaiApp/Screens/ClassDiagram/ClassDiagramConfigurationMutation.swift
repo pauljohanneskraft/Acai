@@ -62,8 +62,6 @@ struct ClassDiagramConfigEditor {
 }
 
 extension ClassDiagramConfiguration {
-    /// `ClassDiagramViewModel.emptyReason` picks a reason by probing these and `clearEmptyScope(for:)`
-    /// applies the one it picked, so the reason reported and the narrowing cleared cannot disagree.
     func widened(undoing reason: DiagramEmptyReason) -> ClassDiagramConfiguration {
         var widened = self
         switch reason {

@@ -45,7 +45,6 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
-    /// Reads the graph, not `layout`, which rebuilds the whole layout on every read.
     var isEmpty: Bool { graph.nodes.isEmpty }
 
     private func rebuild() {
@@ -66,8 +65,6 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         return (diff.union, diff)
     }
 
-    /// Probes each widening rather than reading what is merely set: an artifact with no resolved calls
-    /// is empty however it is scoped, and Reset Scope there would do nothing.
     private func resolvedEmptyReason() -> DiagramEmptyReason {
         guard graph.nodes.isEmpty else { return .codebase }
         if scope != .wholeCodebase, !build(scope: .wholeCodebase, filter: filter).graph.nodes.isEmpty {

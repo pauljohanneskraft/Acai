@@ -6,7 +6,6 @@ enum DiagramEmptyReason: String, Sendable {
     case filter
 }
 
-/// Shows `nothingOfThisKind` when the codebase itself is empty, otherwise offers to undo the narrowing.
 struct DiagramEmptyScopeOverlay<NothingOfThisKind: View>: View {
     let reason: DiagramEmptyReason
     @ViewBuilder let nothingOfThisKind: () -> NothingOfThisKind

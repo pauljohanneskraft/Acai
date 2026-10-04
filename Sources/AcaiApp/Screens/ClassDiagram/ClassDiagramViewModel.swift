@@ -142,8 +142,6 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Empty Scope
 
-    /// Probes each widening, narrowest first, rather than reading what is merely set: an undo that
-    /// would leave the canvas just as empty must not be offered.
     private func resolvedEmptyReason(in renderArtifact: CodeArtifact) -> DiagramEmptyReason {
         guard model.nodes.isEmpty else { return .codebase }
         let undos: [DiagramEmptyReason] = configuration.isFocused ? [.scope, .filter] : [.filter]

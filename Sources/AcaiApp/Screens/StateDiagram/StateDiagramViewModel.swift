@@ -126,9 +126,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         emptyReason = (isEmpty && filterHidEveryState(configuration)) ? .filter : .codebase
     }
 
-    /// `StateDiagramGenerator.filtered` exempts the initial pseudo-state, so a filter matching no state
-    /// leaves that lone circle — blank to the viewer all the same. True only when the unfiltered
-    /// diagram had real states, so a machine that genuinely has none offers no Clear Filter.
+    /// Filtering always keeps the initial pseudo-state, so a filter matching nothing leaves that lone circle.
     private func filterHidEveryState(_ configuration: StateDiagramConfiguration?) -> Bool {
         guard var unfiltered = configuration, unfiltered.filter != nil else { return false }
         unfiltered.filter = nil

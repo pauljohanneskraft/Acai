@@ -165,9 +165,6 @@ class DiagramScreenBase {
         )
     }
 
-    /// On compact width (iPhone) the sidebar is a `.sheet` covering the canvas, dismissed from its own
-    /// Done button; regular width uses `.inspector`, which the toolbar toggle closes. Call with the
-    /// sidebar open — it leaves it closed.
     func closeSidebar(file: StaticString = #filePath, line: UInt = #line) {
         if SnapshotPlatform().usesCompactLayout {
             sidebarDoneButton.tapWhenReady("the sidebar's Done button", file: file, line: line)
@@ -181,8 +178,6 @@ class DiagramScreenBase {
 
     // MARK: - Empty scope (`DiagramEmptyScopeOverlay`, shared by every generated diagram type)
 
-    /// Named by the `DiagramEmptyReason` that produced it, so "the filter hid everything" cannot pass
-    /// on "the codebase has none of this kind".
     func emptyScopeOverlay(_ reason: String) -> XCUIElement {
         app.descendants(matching: .any)["diagram.emptyScope.\(reason)"]
     }
@@ -193,7 +188,6 @@ class DiagramScreenBase {
 
     var filterTypeGlobField: XCUIElement { app.textFields["diagram.filter.selector.typeGlob"] }
 
-    /// The filter binding applies live per keystroke, so the wait is on `expecting` — never a delay.
     func filterTypes(
         matching glob: String, expecting: XCUIElement, file: StaticString = #filePath, line: UInt = #line
     ) {
