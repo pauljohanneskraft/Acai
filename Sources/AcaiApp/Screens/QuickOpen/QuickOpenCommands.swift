@@ -1,16 +1,18 @@
 import SwiftUI
 
-#if os(macOS)
-/// Quick Open's `KeyboardShortcutReference.quickOpen` — ⌘K, in the Edit menu, acting on the key
-/// window's presenter. Off macOS the item comes from `HelpMenuCommands` instead.
+/// Quick Open's `KeyboardShortcutReference.quickOpen`, in the Edit menu. macOS acts on the key
+/// window's presenter; off macOS there is one scene, so the item reads the scene's presenter.
 struct QuickOpenCommands: Commands {
+    #if os(macOS)
     @FocusedObject private var presenter: QuickOpenPresenter?
+    #else
+    @EnvironmentObject private var presenter: QuickOpenPresenter
+    #endif
 
     var body: some Commands {
         CommandGroup(after: .textEditing) { QuickOpenMenuButton(presenter: presenter) }
     }
 }
-#endif
 
 /// Takes the presenter as a plain value: a `Commands` struct's own property wrappers are not in
 /// scope for the button's action, which is why `KeyboardShortcutsHelpMenuButton` does the same.

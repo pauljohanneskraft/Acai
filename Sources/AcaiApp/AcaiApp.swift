@@ -47,22 +47,19 @@ public struct AcaiRootScene: Scene {
         }
         // A shortcut bound only in a macOS-only command is silently missing from an iPad's hardware
         // keyboard. `KeyboardShortcutReferenceTests` rejects that unless the shortcut's group is
-        // `isMacOSOnly` or something outside the macOS-only region binds the same shortcut — which is
-        // how `HelpMenuCommands` covers ⌘/ and ⇧⌘O for the two commands attached on macOS alone.
+        // `isMacOSOnly`, which is why only `BrowserWindowCommands` is attached on macOS alone.
         .commands {
             DiagramThemeCommands()
-            #if os(macOS)
             KeyboardShortcutCommands()
             QuickOpenCommands()
+            #if os(macOS)
             BrowserWindowCommands()
-            #else
-            HelpMenuCommands()
             #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which
         // renders into the menu bar, a separate view hierarchy from the window's content — can also
-        // read these via `@EnvironmentObject` (`KeyboardShortcutCommands` on macOS, and
-        // `HelpMenuCommands` off it, need theirs).
+        // read these via `@EnvironmentObject` (`KeyboardShortcutCommands` and, off macOS,
+        // `QuickOpenCommands` need theirs).
         .environmentObject(accountStore)
         .environmentObject(projectStore)
         .environmentObject(settingsPresenter)
