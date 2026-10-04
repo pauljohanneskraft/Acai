@@ -64,7 +64,7 @@ public struct PackageDiagramDOTRenderer: DOTRenderer {
         let instability = String(format: "%.2f", node.instability)
         let abstractness = String(format: "%.2f", node.abstractness)
         let types = node.typeCount == 1 ? "1 type" : "\(node.typeCount) types"
-        return "\(node.name)\nI=\(instability)  A=\(abstractness)\n\(types)"
+        return "\(node.moduleName)\nI=\(instability)  A=\(abstractness)\n\(types)"
     }
 
     /// Maps an edge weight to a line width, clamped so heavy edges stay readable.

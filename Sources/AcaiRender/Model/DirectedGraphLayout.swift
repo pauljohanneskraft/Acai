@@ -12,20 +12,27 @@ struct DirectedGraphLayout {
 
     /// `edges` must already be oriented for `LayerAssignment` (which lifts edge *targets* toward
     /// the top) — callers reverse where needed.
+    ///
+    /// `groups` keys a node id to its group path; when any node has one the engine partitions by
+    /// group, so each group's nodes stay contiguous and a caller can draw a box around them.
     init(
         nodeSizes: [(id: String, size: CGSize)],
         edges: [(from: String, to: String)],
-        positionOverrides: [String: CGPoint]
+        positionOverrides: [String: CGPoint],
+        groups: [String: String] = [:]
     ) {
         let sizeByID = Dictionary(nodeSizes.map { ($0.id, $0.size) }, uniquingKeysWith: { first, _ in first })
 
         let inputs = nodeSizes.map {
-            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: $0.size, group: nil)
+            SugiyamaLayoutEngine.NodeInput(id: $0.id, size: $0.size, group: groups[$0.id])
         }
         let edgeInputs = edges.map {
             SugiyamaLayoutEngine.EdgeInput(sourceID: $0.from, targetID: $0.to, kind: .inheritance)
         }
-        var positions = SugiyamaLayoutEngine().layout(nodes: inputs, edges: edgeInputs).positions
+        let engine = SugiyamaLayoutEngine()
+        var positions = groups.isEmpty
+            ? engine.layout(nodes: inputs, edges: edgeInputs).positions
+            : engine.layoutByGroup(nodes: inputs, edges: edgeInputs).positions
         for (id, point) in positionOverrides {
             positions[id] = point
         }

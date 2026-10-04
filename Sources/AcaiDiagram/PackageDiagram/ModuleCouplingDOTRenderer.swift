@@ -65,7 +65,7 @@ public struct ModuleCouplingDOTRenderer: DOTRenderer {
     private func nodeLabel(_ node: PackageDiagram.Node) -> String {
         let types = node.typeCount == 1 ? "1 type" : "\(node.typeCount) types"
         return """
-            \(node.name)
+            \(node.moduleName)
             Ca=\(node.afferentCoupling)  Ce=\(node.efferentCoupling)
             I=\(twoDecimals(node.instability))  A=\(twoDecimals(node.abstractness))  \
             D=\(twoDecimals(node.distanceFromMainSequence))

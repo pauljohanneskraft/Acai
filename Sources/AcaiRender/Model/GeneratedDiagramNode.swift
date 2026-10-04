@@ -14,14 +14,21 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     public let genericParameters: [String]
     /// e.g. `Sources/AcaiCore/ClassDiagram`.
     public let directoryPath: String?
+    /// The compiled product, as `modules` names it — `<project>/<module>` in a folder holding
+    /// several projects, which is what gives the grouped layout a project box around each
+    /// project's modules.
     public let productGroup: String?
 
+    /// - Parameter modules: the artifact's file-to-module map. Pass `ModuleMap(artifact:)`; a node
+    ///   built outside an analysed folder has no roots to qualify against, which
+    ///   `ModuleMap(roots: [], filePaths: [])` says explicitly.
     public init(
         from type: TypeDeclaration,
         configuration: ClassDiagramConfiguration? = nil,
         annotationStereotypes: [String: String] = [:],
         collectionTypeNames: Set<String> = [],
-        varianceKeywords: [Variance: String]
+        varianceKeywords: [Variance: String],
+        modules: ModuleMap
     ) {
         let config = configuration ?? .init()
 
@@ -68,7 +75,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         if let filePath = type.location?.filePath {
             let dirComponents = filePath.split(separator: "/").dropLast().map(String.init)
             self.directoryPath = dirComponents.isEmpty ? nil : dirComponents.joined(separator: "/")
-            self.productGroup = ModuleResolver.standard.productName(forFilePath: filePath)
+            self.productGroup = modules.module(forFilePath: filePath)
         } else {
             self.directoryPath = nil
             self.productGroup = nil

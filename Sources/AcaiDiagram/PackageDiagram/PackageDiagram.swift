@@ -26,6 +26,14 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         /// Abstractness `A = abstractTypes / totalTypes`.
         public var abstractness: Double
 
+        /// The module's own name, without the `project` prefix that a multi-project folder
+        /// qualifies `name` with — what a box drawn inside its project's box should read, since the
+        /// project already labels that box. Equal to `name` for a single-project folder.
+        public var moduleName: String {
+            guard let project, name.hasPrefix("\(project)/") else { return name }
+            return String(name.dropFirst(project.count + 1))
+        }
+
         /// Distance from the main sequence `D = |A + I − 1|` (0 = balanced,
         /// 1 = either the "zone of pain" or the "zone of uselessness").
         public var distanceFromMainSequence: Double {
