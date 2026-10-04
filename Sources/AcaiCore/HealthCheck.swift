@@ -13,6 +13,19 @@ public struct HealthCheck: Sendable {
         public var countsByKind: [String: Int]
         /// Every diagnostic, each carrying its `SourceLocation` for a precise jump target.
         public var diagnostics: [ParseDiagnostic]
+        /// The project roots discovery claimed, in discovery order: where each sits, which detector
+        /// claimed it, the languages it accounted for and the directories it contributed. This is
+        /// what makes a folder analysing to fewer types than it contains diagnosable — the scope the
+        /// parse ran over, rather than only its outcome.
+        public var discoveredRoots: [CodeArtifact.DiscoveredRoot]
+
+        /// `true` when every root came from the fallback detector: no build system's manifest was
+        /// recognised anywhere in the folder, so the file set is an extension match over the tree
+        /// rather than a manifest's declared scope. The case worth saying out loud, since it is the
+        /// one where a user expected a manifest to scope the analysis and it silently didn't.
+        public var isFallbackOnly: Bool {
+            !discoveredRoots.isEmpty && discoveredRoots.allSatisfy(\.isFallback)
+        }
     }
 
     /// The compact form of ``Report`` other commands embed in their own output: the score and
@@ -53,7 +66,8 @@ public struct HealthCheck: Sendable {
             countsByKind: countsByKind,
             diagnostics: diagnostics.sorted {
                 ($0.location.filePath, $0.location.line) < ($1.location.filePath, $1.location.line)
-            })
+            },
+            discoveredRoots: artifact.metadata.discoveredRoots)
     }
 
     public var summary: Summary {
