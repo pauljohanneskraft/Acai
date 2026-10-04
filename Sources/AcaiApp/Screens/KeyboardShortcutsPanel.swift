@@ -60,7 +60,9 @@ struct KeyboardShortcutCommands: Commands {
 
 struct KeyboardShortcutsHelpMenuButton: View {
     let presenter: KeyboardShortcutsPresenter
+    #if os(macOS)
     @Environment(\.openWindow) private var openWindow
+    #endif
 
     var body: some View {
         Button(.app("View.KeyboardShortcutsHelpMenuButton.KeyboardShortcuts")) {
