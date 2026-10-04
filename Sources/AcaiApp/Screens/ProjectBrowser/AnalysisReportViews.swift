@@ -141,9 +141,6 @@ struct DeadCodeReportView: View {
 
 /// A `ParseDiagnostic` carries no type/method identity, so rows get only the "View Source" action
 /// (via `LocationRow`) — there's nothing for "Open in…" to resolve.
-///
-/// The discovered roots are shown above the diagnostics whether or not anything went wrong: a clean
-/// score over the wrong scope is exactly the case a type count alone cannot explain.
 struct HealthReportView: View {
     let report: HealthCheck.Report
     var codebase: Codebase?
@@ -177,10 +174,6 @@ struct HealthReportView: View {
     }
 }
 
-/// Which project roots discovery claimed, and by which detector — the scope the parse ran over.
-///
-/// Paths, detector names and language identifiers are all parser output, so they are `verbatim`
-/// throughout; only the labels around them are localized.
 struct DiscoveredRootsView: View {
     let roots: [CodeArtifact.DiscoveredRoot]
     let isFallbackOnly: Bool

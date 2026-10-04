@@ -13,19 +13,10 @@ public struct HealthCheck: Sendable {
         public var countsByKind: [String: Int]
         /// Every diagnostic, each carrying its `SourceLocation` for a precise jump target.
         public var diagnostics: [ParseDiagnostic]
-        /// The project roots discovery claimed, in discovery order: where each sits, which detector
-        /// claimed it, the languages it accounted for and the directories it contributed. This is
-        /// what makes a folder analysing to fewer types than it contains diagnosable — the scope the
-        /// parse ran over, rather than only its outcome.
-        ///
-        /// Defaulted because "no roots recorded" is a state the report has to express anyway: a
-        /// single file parsed directly never had a root claimed for it.
+        /// The scope the parse ran over, in discovery order; empty for a single file parsed directly.
         public var discoveredRoots: [CodeArtifact.DiscoveredRoot] = []
 
-        /// `true` when every root came from the fallback detector: no build system's manifest was
-        /// recognised anywhere in the folder, so the file set is an extension match over the tree
-        /// rather than a manifest's declared scope. The case worth saying out loud, since it is the
-        /// one where a user expected a manifest to scope the analysis and it silently didn't.
+        /// No build system's manifest was recognised anywhere, so the file set is an extension match.
         public var isFallbackOnly: Bool {
             !discoveredRoots.isEmpty && discoveredRoots.allSatisfy(\.isFallback)
         }

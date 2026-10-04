@@ -1,11 +1,6 @@
 import AcaiCore
 
-/// The human-readable form of ``HealthCheck/Report``: the trust score, the scope the parse ran over
-/// (which project roots were found and by what), and every diagnostic.
-///
-/// The roots are what make "this folder analysed to fewer types than it contains" diagnosable, so
-/// they are printed whether or not anything went wrong — a clean score over the wrong scope is the
-/// case worth catching.
+/// Prints the roots even on a clean score: a clean score over the wrong scope is the case worth catching.
 struct HealthTextReport {
     let report: HealthCheck.Report
 
@@ -25,7 +20,7 @@ struct HealthTextReport {
 
     private var rootLines: [String] {
         guard !report.discoveredRoots.isEmpty else {
-            return ["Project roots: none recorded (analysis predates root discovery, or none was run)"]
+            return ["Project roots: none recorded"]
         }
         var lines = ["Project roots (\(report.discoveredRoots.count)):"]
         for root in report.discoveredRoots {
