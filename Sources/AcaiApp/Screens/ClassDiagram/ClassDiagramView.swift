@@ -204,7 +204,7 @@ struct ClassDiagramView: View {
             } else if viewModel.nodes.isEmpty {
                 DiagramEmptyScopeOverlay(
                     reason: viewModel.emptyReason, nothingOfThisKind: noTypesDescription,
-                    onUndo: editor.clearEmptyScope
+                    onUndo: { editor.clearEmptyScope(for: viewModel.emptyReason) }
                 )
             }
         }

@@ -7,8 +7,7 @@ import AcaiCore
 struct SelectorEditor: View {
     let title: LocalizedStringResource
     @Binding var selector: AcaiQuality.Selector
-    /// Prefixes each field's accessibility identifier, so a journey can type into one facet of a
-    /// selector that appears several times on the same screen. Unset leaves the fields unidentified.
+    /// Unset leaves the fields unidentified, as they were before any journey needed to type into one.
     var identifierPrefix: String?
 
     var body: some View {

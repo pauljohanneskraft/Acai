@@ -60,10 +60,8 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         filterEverythingAwayAndBack(diagram)
     }
 
-    /// Covers #346. A filter matching nothing leaves a pannable, silent canvas, which reads as a
-    /// diagram that hasn't rendered — so the canvas must say what happened, say that the filter is
-    /// what did it, and offer the way back. Folded into this journey rather than added as its own:
-    /// it needs a class diagram with known nodes and its Settings tab, which this one already has.
+    /// Covers #346. Folded into this journey rather than added as its own: it needs a class diagram
+    /// with known nodes and its Settings tab, which this one already has.
     private func filterEverythingAwayAndBack(
         _ diagram: ClassDiagramScreen, file: StaticString = #filePath, line: UInt = #line
     ) {
@@ -73,16 +71,14 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         XCTAssertFalse(
             diagram.typeNode(named: "Base").exists, "the filter should have hidden every node", file: file, line: line
         )
-        // The overlay lives on the canvas, which the Settings tab covers on iPhone (a `.sheet`) and
-        // sits beside on iPad/macOS (an `.inspector`) — closing it is what makes the canvas both
+        // The Settings tab covers the canvas on iPhone, so closing it is what makes the overlay both
         // the subject of the screenshot and tappable, on every platform alike.
         diagram.closeSidebar(file: file, line: line)
         diagram.emptyScopeOverlay("filter")
             .waitOrFail("the empty-scope overlay on the uncovered canvas", file: file, line: line)
         validateScreenshot("ClassDiagram", state: "filteredToNothing")
 
-        // The overlay's own action is the way back — the undo is on the empty canvas, not only in the
-        // sidebar the viewer may have closed.
+        // The undo is on the empty canvas, not only in the sidebar the viewer may have closed.
         diagram.emptyScopeActionButton.tapWhenReady("the empty canvas's Clear Filter button", file: file, line: line)
         diagram.typeNode(named: "Base")
             .waitOrFail("the Base type node after clearing the filter", file: file, line: line)

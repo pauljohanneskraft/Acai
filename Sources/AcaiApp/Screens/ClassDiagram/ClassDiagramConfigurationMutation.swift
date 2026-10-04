@@ -23,17 +23,8 @@ struct ClassDiagramConfigEditor {
         viewModel.applyConfiguration(configuration, artifact: artifact)
     }
 
-    /// Undoes whatever emptied the canvas, matching what `ClassDiagramViewModel.emptyReason` offered:
-    /// the focus scope while one is set, otherwise both filters that can hide every type.
-    func clearEmptyScope() {
-        mutate { configuration in
-            if configuration.isFocused {
-                configuration.focus = nil
-            } else {
-                configuration.filter = nil
-                configuration.minimumAccessLevel = nil
-            }
-        }
+    func clearEmptyScope(for reason: DiagramEmptyReason) {
+        mutate { $0 = $0.widened(undoing: reason) }
     }
 
     /// Binding for a global visibility default. Flipping it also clears the matching per-type
@@ -67,5 +58,24 @@ struct ClassDiagramConfigEditor {
                 mutate { $0[keyPath: overrideKeyPath][typeID] = newValue }
             }
         )
+    }
+}
+
+extension ClassDiagramConfiguration {
+    /// `ClassDiagramViewModel.emptyReason` picks a reason by probing these and `clearEmptyScope(for:)`
+    /// applies the one it picked, so the reason reported and the narrowing cleared cannot disagree.
+    func widened(undoing reason: DiagramEmptyReason) -> ClassDiagramConfiguration {
+        var widened = self
+        switch reason {
+        case .scope:
+            widened.focus = nil
+        case .filter:
+            widened.filter = nil
+            widened.minimumAccessLevel = nil
+            widened.hideGeneratedTypes = false
+        case .codebase:
+            break
+        }
+        return widened
     }
 }

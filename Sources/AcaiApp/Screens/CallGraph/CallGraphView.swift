@@ -245,13 +245,14 @@ private struct CallGraphCanvasView: View {
         )
     }
 
-    /// Undoes whatever emptied the canvas, matching what `CallGraphViewModel.emptyReason` offered:
-    /// the scope while it is narrowed, otherwise the filter.
     private func clearEmptyScope() {
-        if viewModel.scope != .wholeCodebase {
+        switch viewModel.emptyReason {
+        case .scope:
             onApplyScope(.wholeCodebase)
-        } else {
+        case .filter:
             filterBinding.wrappedValue = nil
+        case .codebase:
+            break
         }
     }
 

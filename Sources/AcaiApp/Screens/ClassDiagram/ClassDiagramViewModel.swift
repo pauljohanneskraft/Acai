@@ -29,6 +29,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// out and measuring that many nodes is the hang the ceiling exists to prevent, so this stops
     /// short of it rather than attempting it behind the progress indicator.
     @Published private(set) var nodeLimitError: DiagramRequestError?
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
     private(set) var configuration: ClassDiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
@@ -115,6 +116,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
         nodes = model.nodes
         edges = model.edges
+        emptyReason = resolvedEmptyReason(in: renderArtifact)
 
         for node in nodes {
             nodeSizes[node.id] = DiagramLayoutModel.estimateSize(for: node)
@@ -140,13 +142,17 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Empty Scope
 
-    /// Why the canvas has nothing to draw, so an empty canvas can say whether anything the viewer
-    /// did caused it. A focus scope outranks a filter: it is the narrower of the two, so resetting
-    /// it is the undo most likely to bring types back.
-    var emptyReason: DiagramEmptyReason {
-        if configuration.isFocused { return .scope }
-        if configuration.filter != nil || configuration.minimumAccessLevel != nil { return .filter }
-        return .codebase
+    /// Probes each widening, narrowest first, rather than reading what is merely set: an undo that
+    /// would leave the canvas just as empty must not be offered.
+    private func resolvedEmptyReason(in renderArtifact: CodeArtifact) -> DiagramEmptyReason {
+        guard model.nodes.isEmpty else { return .codebase }
+        let undos: [DiagramEmptyReason] = configuration.isFocused ? [.scope, .filter] : [.filter]
+        return undos.first { undo in
+            !DiagramLayoutModel(
+                artifact: renderArtifact, configuration: configuration.widened(undoing: undo),
+                languages: renderArtifact.standardLanguageResolver
+            ).nodes.isEmpty
+        } ?? .codebase
     }
 
     // MARK: - Apply Configuration

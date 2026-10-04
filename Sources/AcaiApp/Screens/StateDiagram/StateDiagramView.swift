@@ -138,7 +138,7 @@ struct StateDiagramView: View {
     private var diagramContent: some View {
         Group {
             switch viewModel.result {
-            case .success(let stateDiagram) where stateDiagram.states.isEmpty:
+            case .success where viewModel.isEmpty:
                 emptyState
             case .success:
                 canvasContent
@@ -185,8 +185,6 @@ struct StateDiagramView: View {
 
     // MARK: - Empty / failure / unconfigured states
 
-    /// The analysis succeeded but produced no states — either the variable has none, or the filter
-    /// dropped them all.
     private var emptyState: some View {
         DiagramEmptyScopeOverlay(
             reason: viewModel.emptyReason, nothingOfThisKind: noStatesDescription,

@@ -64,6 +64,8 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     private let comparisonArtifact: CodeArtifact?
 
     @Published private(set) var diagram: SequenceDiagram
+    @Published private(set) var isEmpty = false
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
     /// Per-participant centre overrides, keyed by `Participant.id`. Only `x` is honoured.
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
@@ -114,29 +116,40 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuildDiagram()
     }
 
+    private func rebuildDiagram() {
+        let built = build(configuration: configuration)
+        diagram = built.diagram
+        diff = built.diff
+        resolveEmptiness()
+    }
+
     /// In delta mode, renders the union of both revisions (via `SequenceDiagramDiff`) so removed
     /// participants/messages still appear and can be tinted; otherwise renders the working-tree
     /// trace directly.
-    private func rebuildDiagram() {
+    private func build(
+        configuration: SequenceDiagramConfiguration
+    ) -> (diagram: SequenceDiagram, diff: SequenceDiagramDiff?) {
         let new = SequenceDiagramGenerator(artifact: artifact, configuration: configuration).generate()
-        if let comparisonArtifact {
-            let old = SequenceDiagramGenerator(artifact: comparisonArtifact, configuration: configuration).generate()
-            let diff = SequenceDiagramDiff(old: old, new: new)
-            self.diff = diff
-            diagram = diff.union
-        } else {
-            diff = nil
-            diagram = new
-        }
+        guard let comparisonArtifact else { return (new, nil) }
+        let old = SequenceDiagramGenerator(artifact: comparisonArtifact, configuration: configuration).generate()
+        let diff = SequenceDiagramDiff(old: old, new: new)
+        return (diff.union, diff)
     }
 
-    var isEmpty: Bool { diagram.participants.isEmpty }
+    private func resolveEmptiness() {
+        let hidByFilter = filterHidEveryParticipant()
+        isEmpty = diagram.participants.isEmpty || hidByFilter
+        emptyReason = hidByFilter ? .filter : .codebase
+    }
 
-    /// Why the trace has nothing to draw, so an empty canvas can say whether anything the viewer did
-    /// caused it. The entry point is not a one-tap undo — it is a pair of names chosen in the Settings
-    /// tab, not a narrowing with a neutral value — so it stays part of the `.codebase` case.
-    var emptyReason: DiagramEmptyReason {
-        configuration.filter == nil ? .codebase : .filter
+    /// `SequenceDiagramGenerator.filtered` keeps the entry-point participant whatever the filter says,
+    /// so a filter matching nothing leaves a lone lifeline — blank to the viewer all the same. True
+    /// only when the unfiltered trace had more, so a genuinely root-only one offers no Clear Filter.
+    private func filterHidEveryParticipant() -> Bool {
+        guard diagram.participants.count <= 1, configuration.filter != nil else { return false }
+        var unfiltered = configuration
+        unfiltered.filter = nil
+        return build(configuration: unfiltered).diagram.participants.count > diagram.participants.count
     }
 
     var isDeltaMode: Bool { diff != nil }

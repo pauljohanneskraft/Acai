@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Why a generated diagram's canvas has no nodes to lay out. `scope` and `filter` are narrowings the
-/// viewer applied and can undo in one tap; `codebase` is the codebase itself having none of this kind.
+/// `scope` and `filter` are narrowings the viewer applied and can undo in one tap; `codebase` is the
+/// codebase itself having none of this kind, with no undo to offer.
 enum DiagramEmptyReason: String, Equatable, Sendable {
     case codebase
     case scope
@@ -14,8 +14,6 @@ struct DiagramEmptyAction {
     let perform: () -> Void
 }
 
-/// A diagram type's own account of the codebase having none of its kind — "no state machines" and
-/// "no modules" read differently, and so does what to do about them.
 struct DiagramEmptyDescription {
     let systemImage: String
     let title: LocalizedStringResource
@@ -23,8 +21,7 @@ struct DiagramEmptyDescription {
     var action: DiagramEmptyAction?
 }
 
-/// Shown over a generated diagram's canvas whenever its laid-out node set is empty, so a pannable,
-/// silent canvas never reads as one that has not rendered yet.
+/// Shown over an empty canvas, which would otherwise read as one that has not rendered yet.
 struct DiagramEmptyScopeOverlay: View {
     let reason: DiagramEmptyReason
     let nothingOfThisKind: DiagramEmptyDescription

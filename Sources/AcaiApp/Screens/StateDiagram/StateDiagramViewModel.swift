@@ -59,6 +59,8 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     /// `nil` while the diagram has no state-variable spec chosen yet.
     @Published private(set) var result: Result<StateDiagram, StateDiagramAnalysisError>?
+    @Published private(set) var isEmpty = false
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
@@ -88,28 +90,50 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild(configuration: configuration)
     }
 
+    private func rebuild(configuration: StateDiagramConfiguration?) {
+        let built = build(configuration: configuration)
+        result = built.result
+        diff = built.diff
+        resolveEmptiness(configuration: configuration)
+    }
+
     /// In delta mode, renders the union of both revisions (via `StateDiagramDiff`) so removed
     /// states/transitions still appear and can be tinted. Falls back to the plain working-tree
     /// result — without a diff — when the comparison revision fails its own analysis (e.g. the
     /// chosen variable didn't exist yet): there's nothing to diff against, but the new result is
     /// still shown rather than reporting a spurious failure.
-    private func rebuild(configuration: StateDiagramConfiguration?) {
+    private func build(
+        configuration: StateDiagramConfiguration?
+    ) -> (result: Result<StateDiagram, StateDiagramAnalysisError>?, diff: StateDiagramDiff?) {
         let newResult = StateDiagramGenerator(artifact: artifact, configuration: configuration).generate()
-        guard let comparisonArtifact, case .success(let new) = newResult else {
-            diff = nil
-            result = newResult
-            return
-        }
+        guard let comparisonArtifact, case .success(let new) = newResult else { return (newResult, nil) }
         guard case .success(let old) = StateDiagramGenerator(
             artifact: comparisonArtifact, configuration: configuration
         ).generate() else {
-            diff = nil
-            result = newResult
-            return
+            return (newResult, nil)
         }
         let diff = StateDiagramDiff(old: old, new: new)
-        self.diff = diff
-        result = .success(diff.union)
+        return (.success(diff.union), diff)
+    }
+
+    private func resolveEmptiness(configuration: StateDiagramConfiguration?) {
+        guard case .success(let current) = result else {
+            isEmpty = false
+            emptyReason = .codebase
+            return
+        }
+        isEmpty = !current.states.contains { $0.kind != .initial }
+        emptyReason = (isEmpty && filterHidEveryState(configuration)) ? .filter : .codebase
+    }
+
+    /// `StateDiagramGenerator.filtered` exempts the initial pseudo-state, so a filter matching no state
+    /// leaves that lone circle — blank to the viewer all the same. True only when the unfiltered
+    /// diagram had real states, so a machine that genuinely has none offers no Clear Filter.
+    private func filterHidEveryState(_ configuration: StateDiagramConfiguration?) -> Bool {
+        guard var unfiltered = configuration, unfiltered.filter != nil else { return false }
+        unfiltered.filter = nil
+        guard case .success(let widened) = build(configuration: unfiltered).result else { return false }
+        return widened.states.contains { $0.kind != .initial }
     }
 
     func applyConfiguration(_ newConfiguration: StateDiagramConfiguration) {
@@ -169,14 +193,6 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     var analysisError: StateDiagramAnalysisError? {
         if case .failure(let error) = result { return error }
         return nil
-    }
-
-    /// Why a successfully analysed diagram has nothing to draw, so an empty canvas can say whether
-    /// anything the viewer did caused it. The state-variable spec is not a one-tap undo — it is a
-    /// choice made in the Settings tab, not a narrowing with a neutral value — so it stays part of the
-    /// `.codebase` case.
-    var emptyReason: DiagramEmptyReason {
-        configuration?.filter == nil ? .codebase : .filter
     }
 
     // MARK: - Layout

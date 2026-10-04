@@ -20,6 +20,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     @Published private(set) var diagram: PackageDiagram
     @Published private(set) var filter: AcaiQuality.Selector?
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
     /// Per-module centre overrides, keyed by module id.
     @Published var positionOverrides: [String: CGPoint] = [:]
@@ -51,29 +52,31 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
-    /// Checked against the diagram rather than `layout`, which rebuilds the whole layout on every
-    /// read — a render pass asking "is this empty?" must not pay for a second layout.
+    /// Reads the diagram, not `layout`, which rebuilds the whole layout on every read.
     var isEmpty: Bool { diagram.nodes.isEmpty }
 
-    /// Why the diagram has nothing to draw, so an empty canvas can say whether anything the viewer
-    /// did caused it. There is no scope to narrow here — the module set comes from the build system.
-    var emptyReason: DiagramEmptyReason {
-        filter == nil ? .codebase : .filter
+    private func rebuild() {
+        let built = build(filter: filter)
+        diagram = built.diagram
+        diff = built.diff
+        emptyReason = resolvedEmptyReason()
     }
 
-    private func rebuild() {
+    private func build(filter: AcaiQuality.Selector?) -> (diagram: PackageDiagram, diff: PackageDiagramDiff?) {
         let new = PackageDiagramBuilder(filter: filter).build(
             from: artifact.enriched(using: artifact.standardLanguageResolver))
-        if let comparisonArtifact {
-            let old = PackageDiagramBuilder(filter: filter).build(
-                from: comparisonArtifact.enriched(using: comparisonArtifact.standardLanguageResolver))
-            let diff = PackageDiagramDiff(old: old, new: new)
-            self.diff = diff
-            self.diagram = diff.union
-        } else {
-            self.diff = nil
-            self.diagram = new
-        }
+        guard let comparisonArtifact else { return (new, nil) }
+        let old = PackageDiagramBuilder(filter: filter).build(
+            from: comparisonArtifact.enriched(using: comparisonArtifact.standardLanguageResolver))
+        let diff = PackageDiagramDiff(old: old, new: new)
+        return (diff.union, diff)
+    }
+
+    /// Blames the filter only when clearing it would bring modules back. There is no scope to narrow
+    /// here — the module set comes from the build system.
+    private func resolvedEmptyReason() -> DiagramEmptyReason {
+        guard diagram.nodes.isEmpty, filter != nil else { return .codebase }
+        return build(filter: nil).diagram.nodes.isEmpty ? .codebase : .filter
     }
 
     var isDeltaMode: Bool { diff != nil }

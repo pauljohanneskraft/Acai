@@ -6,9 +6,8 @@ import AcaiQuality
 import AcaiRender
 @testable import AcaiApp
 
-/// Covers #346. An empty canvas has to say whether anything the viewer did caused it, because only
-/// then is there an undo to offer — so each diagram type's reading of its own configuration is
-/// checked here rather than once per diagram type in a journey.
+/// Covers #346. An empty canvas may only offer an undo that actually works, so each diagram type's
+/// reason is checked here rather than once per diagram type in a journey.
 @Suite("Diagram Empty Reason")
 @MainActor
 struct DiagramEmptyReasonTests {
@@ -37,19 +36,47 @@ struct DiagramEmptyReasonTests {
         )
     }
 
+    /// No types at all, so no narrowing can be what emptied a canvas built from it.
+    private func emptyArtifact() -> CodeArtifact {
+        CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: []), types: [])
+    }
+
+    /// `Loader.state` moves through idle → loading → loaded, so a state diagram built from it has
+    /// real states a filter can hide (same shape as `StateDiagramViewModelTests`'s fixture).
+    private func stateMachineArtifact() -> CodeArtifact {
+        CodeArtifact(
+            metadata: .init(sourceLanguage: .swift),
+            types: [TypeDeclaration(
+                id: "Loader", name: "Loader", qualifiedName: "Loader", kind: .class, accessLevel: .public,
+                members: [
+                    Member(
+                        name: "state", kind: .property, accessLevel: .internal,
+                        type: TypeReference(name: "State"),
+                        initialValue: .init(kind: .enumCase, text: "idle")
+                    ),
+                    Member(
+                        name: "load", kind: .method, accessLevel: .internal,
+                        assignments: [
+                            .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loading")),
+                            .init(targetName: "state", op: .assign, value: .init(kind: .enumCase, text: "loaded"))
+                        ]
+                    )
+                ]
+            )]
+        )
+    }
+
     private func codebase() -> Codebase {
         Codebase(name: "c", directoryPath: "/tmp")
     }
 
-    /// Matches none of the fixture's type names, so every type-filtered diagram ends up with
-    /// nothing to draw.
+    /// Matches none of the fixture's type names.
     private var matchesNothing: AcaiQuality.Selector {
         AcaiQuality.Selector(typeGlob: "ZzNoSuchType*")
     }
 
-    /// Matches none of the fixture's modules. A package diagram's filter is checked with
-    /// `Selector.matchesModule(named:)`, which consults only the module facets — so `matchesNothing`
-    /// would leave every module standing.
+    /// A package node is matched by `Selector.matchesModule(named:)`, which consults only the module
+    /// facets, so `matchesNothing` would leave every module standing.
     private var matchesNoModule: AcaiQuality.Selector {
         AcaiQuality.Selector(module: "ZzNoSuchModule*")
     }
@@ -58,8 +85,7 @@ struct DiagramEmptyReasonTests {
 
     @Test("An unnarrowed class diagram with no types blames the codebase, not the viewer")
     func classDiagramWithoutNarrowingBlamesTheCodebase() {
-        let empty = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: []), types: [])
-        let viewModel = ClassDiagramViewModel(codebase: codebase(), artifact: empty)
+        let viewModel = ClassDiagramViewModel(codebase: codebase(), artifact: emptyArtifact())
         #expect(viewModel.nodes.isEmpty)
         #expect(viewModel.emptyReason == .codebase)
     }
@@ -93,15 +119,38 @@ struct DiagramEmptyReasonTests {
         #expect(viewModel.emptyReason == .filter)
     }
 
-    @Test("A focus scope outranks a filter, because resetting it widens further")
-    func classDiagramFocusOutranksFilter() {
+    @Test("A focus on a type that isn't there is reported as the scope")
+    func classDiagramFocusIsReported() {
+        var configuration = ClassDiagramConfiguration()
+        configuration.focus = FocusConfiguration(rootTypeName: "ZzNoSuchType")
+        let viewModel = ClassDiagramViewModel(
+            codebase: codebase(), artifact: artifact(), configuration: configuration)
+        #expect(viewModel.nodes.isEmpty)
+        #expect(viewModel.emptyReason == .scope)
+    }
+
+    @Test("A filter over a codebase with no types at all is the codebase's doing, not the filter's")
+    func classDiagramFilterOverAnEmptyCodebaseBlamesTheCodebase() {
+        var configuration = ClassDiagramConfiguration()
+        configuration.filter = matchesNothing
+        let viewModel = ClassDiagramViewModel(
+            codebase: codebase(), artifact: emptyArtifact(), configuration: configuration)
+        #expect(viewModel.nodes.isEmpty)
+        // Clearing the filter would leave the canvas just as empty, so it must not be offered.
+        #expect(viewModel.emptyReason == .codebase)
+    }
+
+    @Test("When no single undo would bring types back, neither is offered")
+    func classDiagramBlamesTheCodebaseWhenNoSingleUndoHelps() {
         var configuration = ClassDiagramConfiguration()
         configuration.filter = matchesNothing
         configuration.focus = FocusConfiguration(rootTypeName: "ZzNoSuchType")
         let viewModel = ClassDiagramViewModel(
             codebase: codebase(), artifact: artifact(), configuration: configuration)
         #expect(viewModel.nodes.isEmpty)
-        #expect(viewModel.emptyReason == .scope)
+        // Resetting the scope leaves the filter hiding everything, and clearing the filter leaves
+        // the focus pointing at a type that isn't there — so neither button would do anything.
+        #expect(viewModel.emptyReason == .codebase)
     }
 
     // MARK: - Call graph
@@ -117,17 +166,31 @@ struct DiagramEmptyReasonTests {
         let viewModel = CallGraphViewModel(
             artifact: artifact(), scope: .wholeCodebase, filter: matchesNothing)
         #expect(viewModel.isEmpty)
-        // `isEmpty` reads the graph to avoid rebuilding the layout per render pass; the two must agree.
         #expect(viewModel.layout.nodes.isEmpty)
         #expect(viewModel.emptyReason == .filter)
     }
 
-    @Test("A narrowed call-graph scope outranks a filter")
-    func callGraphScopeOutranksFilter() {
+    @Test("A scope narrowed to a type that isn't there is reported as the scope")
+    func callGraphScopeIsReported() {
+        let viewModel = CallGraphViewModel(artifact: artifact(), scope: .type("ZzNoSuchType"))
+        #expect(viewModel.isEmpty)
+        #expect(viewModel.emptyReason == .scope)
+    }
+
+    @Test("A filter over a codebase with no calls at all is the codebase's doing, not the filter's")
+    func callGraphFilterOverAnEmptyCodebaseBlamesTheCodebase() {
+        let viewModel = CallGraphViewModel(
+            artifact: emptyArtifact(), scope: .wholeCodebase, filter: matchesNothing)
+        #expect(viewModel.isEmpty)
+        #expect(viewModel.emptyReason == .codebase)
+    }
+
+    @Test("When no single undo would bring call sites back, neither is offered")
+    func callGraphBlamesTheCodebaseWhenNoSingleUndoHelps() {
         let viewModel = CallGraphViewModel(
             artifact: artifact(), scope: .type("ZzNoSuchType"), filter: matchesNothing)
         #expect(viewModel.isEmpty)
-        #expect(viewModel.emptyReason == .scope)
+        #expect(viewModel.emptyReason == .codebase)
     }
 
     @Test("Clearing a call-graph filter is reflected in the reason")
@@ -155,37 +218,74 @@ struct DiagramEmptyReasonTests {
         #expect(filtered.emptyReason == .filter)
     }
 
+    @Test("A filter over a codebase with no modules is the codebase's doing, not the filter's")
+    func packageDiagramFilterOverAnEmptyCodebaseBlamesTheCodebase() {
+        let viewModel = PackageDiagramViewModel(artifact: emptyArtifact(), filter: matchesNoModule)
+        #expect(viewModel.isEmpty)
+        #expect(viewModel.emptyReason == .codebase)
+    }
+
     // MARK: - Sequence diagram
 
     @Test("A sequence trace's entry point is not an undo, so only its filter is reported")
     func sequenceDiagramReportsOnlyItsFilter() {
-        let entryPoint = SequenceDiagramConfiguration(entryTypeName: "A", entryMethodName: "run")
         let untraceable = SequenceDiagramConfiguration(entryTypeName: "ZzNoSuchType", entryMethodName: "run")
-        #expect(SequenceDiagramViewModel(artifact: artifact(), configuration: untraceable).emptyReason == .codebase)
+        let noTrace = SequenceDiagramViewModel(artifact: artifact(), configuration: untraceable)
+        #expect(noTrace.isEmpty)
+        #expect(noTrace.emptyReason == .codebase)
 
-        var filtered = entryPoint
+        var filtered = SequenceDiagramConfiguration(entryTypeName: "A", entryMethodName: "run")
         filtered.filter = matchesNothing
         let viewModel = SequenceDiagramViewModel(artifact: artifact(), configuration: filtered)
+        // The generator keeps the entry-point participant whatever the filter says, so this is a
+        // root-only trace rather than an empty one — and must still read as empty.
+        #expect(viewModel.diagram.participants.count == 1)
+        #expect(viewModel.isEmpty)
         #expect(viewModel.emptyReason == .filter)
+    }
+
+    @Test("A trace that was only ever its own root is not blamed on a filter that hid nothing")
+    func sequenceDiagramRootOnlyTraceBlamesTheCodebase() {
+        // `B.work` calls nothing, so this trace is one lifeline with or without the filter.
+        var configuration = SequenceDiagramConfiguration(entryTypeName: "B", entryMethodName: "work")
+        configuration.filter = matchesNothing
+        let viewModel = SequenceDiagramViewModel(artifact: artifact(), configuration: configuration)
+        #expect(viewModel.emptyReason == .codebase)
     }
 
     // MARK: - State diagram
 
-    @Test("An unconfigured or unfiltered state diagram blames the codebase")
-    func stateDiagramWithoutFilterBlamesTheCodebase() {
-        #expect(StateDiagramViewModel(artifact: artifact(), configuration: nil).emptyReason == .codebase)
+    @Test("An unconfigured or failed state diagram is not an empty canvas to explain")
+    func stateDiagramWithoutAResultIsNotEmpty() {
+        let unconfigured = StateDiagramViewModel(artifact: stateMachineArtifact(), configuration: nil)
+        #expect(!unconfigured.isEmpty)
+        #expect(unconfigured.emptyReason == .codebase)
 
-        let configuration = StateDiagramConfiguration(typeName: "A", variableName: "state")
-        #expect(
-            StateDiagramViewModel(artifact: artifact(), configuration: configuration).emptyReason == .codebase
-        )
+        // A failed analysis has its own error state, so it must not be blamed on the filter either.
+        var missing = StateDiagramConfiguration(typeName: "Loader", variableName: "nope")
+        missing.filter = matchesNothing
+        let failed = StateDiagramViewModel(artifact: stateMachineArtifact(), configuration: missing)
+        #expect(!failed.isEmpty)
+        #expect(failed.emptyReason == .codebase)
+    }
+
+    @Test("A state machine with states to draw is not empty")
+    func stateDiagramWithStatesIsNotEmpty() {
+        let configuration = StateDiagramConfiguration(typeName: "Loader", variableName: "state")
+        let viewModel = StateDiagramViewModel(artifact: stateMachineArtifact(), configuration: configuration)
+        #expect(!viewModel.isEmpty)
+        #expect(viewModel.emptyReason == .codebase)
     }
 
     @Test("A state-diagram filter that matches nothing is reported as the filter")
     func stateDiagramFilterIsReported() {
-        var configuration = StateDiagramConfiguration(typeName: "A", variableName: "state")
+        var configuration = StateDiagramConfiguration(typeName: "Loader", variableName: "state")
         configuration.filter = matchesNothing
-        let viewModel = StateDiagramViewModel(artifact: artifact(), configuration: configuration)
+        let viewModel = StateDiagramViewModel(artifact: stateMachineArtifact(), configuration: configuration)
+        // Filtering exempts the initial pseudo-state, so the diagram is not literally stateless —
+        // but every state the viewer came to see is gone, so the canvas must say so.
+        #expect(viewModel.diagram?.states.allSatisfy { $0.kind == .initial } == true)
+        #expect(viewModel.isEmpty)
         #expect(viewModel.emptyReason == .filter)
     }
 }
