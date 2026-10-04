@@ -3,7 +3,6 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-/// `preindex(_:)` awaited directly, rather than through the task `load()` retains for it.
 @Suite("Project Store fixture preindexing", .timeLimit(.minutes(1)))
 @MainActor
 struct ProjectStorePreindexTests {
@@ -53,8 +52,7 @@ struct ProjectStorePreindexTests {
         let sourceDir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: sourceDir) }
 
-        // A plain file where `write(_:sourcePath:fingerprint:)` wants to create its directory: its own
-        // `createDirectory(at:)` throws, so the write — and with it, marking the codebase indexed — fails.
+        // A plain file where the analysis store wants its directory, so its write throws.
         let unwritableAnalysisDir = storeDir.appendingPathComponent("analysis")
         try Data().write(to: unwritableAnalysisDir)
         let analysisStore = AnalysisStore(directory: unwritableAnalysisDir)
@@ -75,29 +73,34 @@ struct ProjectStorePreindexTests {
         #expect(store.artifacts[codebase.id] == nil)
     }
 
-    @Test func leavesACodebaseIndexedWhileItWasInFlightUntouched() async throws {
+    @Test func aReindexSavedWhilePreindexingIsInFlightLandsLast() async throws {
         let storeDir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: storeDir) }
-        let sourceDir = try makeTempDirectory()
+        let sourceDir = try makeTempDirectory().resolvingSymlinksInPath()
         defer { try? FileManager.default.removeItem(at: sourceDir) }
         try Data("struct Demo {}".utf8).write(to: sourceDir.appendingPathComponent("Demo.swift"))
 
         let analysisStore = AnalysisStore(directory: storeDir.appendingPathComponent("analysis"))
         let store = ProjectStore(baseDir: storeDir, analysisStore: analysisStore)
-        var codebase = Codebase(name: "Demo", directoryPath: sourceDir.path)
-        codebase.hasArtifact = true
+        let codebase = Codebase(name: "Demo", directoryPath: sourceDir.path)
         var project = Project(title: "Demo", subtitle: "")
         project.codebases = [codebase]
         store.projects = [project]
-        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Demo.swift"]))
+        let canned = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Canned.swift"]))
+        let reindexed = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Demo.swift"]))
 
-        await store.preindex(
+        store.startFixturePreindexing([
             ProjectStore.FixturePreindex(
-                codebaseID: codebase.id, projectID: project.id, sourcePath: sourceDir.path, artifact: artifact
+                codebaseID: codebase.id, projectID: project.id, sourcePath: sourceDir.path, artifact: canned
             )
-        )
+        ])
+        try await store.saveArtifactAndWait(reindexed, for: codebase.id)
 
-        #expect(store.projects.first?.codebases.first?.lastIndexed == nil)
-        #expect(store.projects.first?.codebases.first?.indexedFingerprint == nil)
+        #expect(store.artifacts[codebase.id] == reindexed)
+        if case .entry(let entry) = analysisStore.lookup(forResolvedPath: sourceDir.path) {
+            #expect(entry.artifact == reindexed)
+        } else {
+            Issue.record("expected an analysis entry for the reindexed codebase")
+        }
     }
 }
