@@ -24,7 +24,7 @@ struct JavaExtractor {
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
     let documentation = DocumentationReader(
-        convention: DocumentationComment(blockOpenings: ["/**"]),
+        convention: DocumentationComment(blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"),
         commentNodeTypes: ["block_comment", "line_comment", "comment"]
     )
 

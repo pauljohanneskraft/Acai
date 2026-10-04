@@ -3,7 +3,9 @@ import Testing
 
 @Suite("Documentation comment stripping")
 struct DocumentationCommentTests {
-    private let cStyle = DocumentationComment(linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"])
+    private let cStyle = DocumentationComment(
+        linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"], blockClosing: "*/", continuationMarker: "*"
+    )
 
     @Test func stripsLineMarkersAndJoinsConsecutiveLines() {
         let prose = cStyle.prose(fromLeading: ["/// The zoo.", "///", "/// Holds animals."])
@@ -28,6 +30,24 @@ struct DocumentationCommentTests {
          */
         """])
         #expect(prose == "Usage:\n    zoo.feed()")
+    }
+
+    @Test func textOnTheOpeningLineLosesTheSpaceAfterTheMarker() {
+        let prose = cStyle.prose(fromLeading: ["""
+        /** The zoo.
+         * @param name its name
+         */
+        """])
+        #expect(prose == "The zoo.\n@param name its name")
+    }
+
+    @Test func onlyTheNearestBlockDocuments() {
+        #expect(cStyle.prose(fromLeading: ["/** Old. */", "/** New. */"]) == "New.")
+        #expect(cStyle.prose(fromLeading: ["/// Old.", "/** New. */"]) == "New.")
+    }
+
+    @Test func aMultiLineLineCommentNodeIsStrippedPerLine() {
+        #expect(cStyle.prose(fromLeading: ["/// The zoo.\n  /// Holds animals."]) == "The zoo.\nHolds animals.")
     }
 
     @Test func singleLineBlockReadsAsItsSentence() {
@@ -74,6 +94,12 @@ struct DocumentationCommentTests {
         #expect(docstring.prose(fromLiteral: "\"\"\"The zoo.\"\"\"") == "The zoo.")
         #expect(docstring.prose(fromLiteral: "r'''The zoo.'''") == "The zoo.")
         #expect(docstring.prose(fromLiteral: "\"The zoo.\"") == "The zoo.")
+    }
+
+    @Test func theOpeningDelimiterDecidesTheQuotes() {
+        let docstring = DocumentationComment(literalDelimiters: ["\"\"\"", "'''", "\"", "'"])
+        #expect(docstring.prose(fromLiteral: "'Say \"hi\".'") == "Say \"hi\".")
+        #expect(docstring.prose(fromLiteral: "\"It's.\"") == "It's.")
     }
 
     @Test func aLiteralSpanningLinesIsDedented() {

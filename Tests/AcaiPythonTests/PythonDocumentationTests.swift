@@ -99,6 +99,15 @@ struct PythonDocumentationTests {
         #expect(species?.members.first { $0.name == "label" }?.documentation == "A readable name.")
     }
 
+    @Test func aSingleQuotedDocstringMayHoldDoubleQuotes() {
+        let types = artifact("""
+        class Zoo:
+            def greet(self):
+                'Say "hi".'
+        """).types
+        #expect(types.first?.members.first { $0.name == "greet" }?.documentation == "Say \"hi\".")
+    }
+
     @Test func aStringThatIsNotTheFirstStatementIsNotADocstring() {
         let types = artifact("""
         class Zoo:

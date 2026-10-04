@@ -11,7 +11,7 @@ struct KotlinExtractor {
     let parameterExtractor: KotlinParameterExtractor
     let memberExtractor: KotlinMemberExtractor
     let documentation = DocumentationReader(
-        convention: DocumentationComment(blockOpenings: ["/**"]),
+        convention: DocumentationComment(blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"),
         commentNodeTypes: ["multiline_comment", "line_comment", "comment"]
     )
 

@@ -33,6 +33,16 @@ struct JavaDocumentationTests {
         #expect(zoo?.members.first { $0.kind == .initializer }?.documentation == "Builds one.")
     }
 
+    @Test func javadocStartingOnTheOpeningLineKeepsItsTags() {
+        let artifact = parser.parse(source: """
+        /** The zoo.
+         * @param name its name
+         */
+        public class Zoo {}
+        """, fileName: "Zoo.java")
+        #expect(artifact.types.first?.documentation == "The zoo.\n@param name its name")
+    }
+
     @Test func enumsInterfacesRecordsAndNestedTypesAreDocumented() {
         let artifact = parser.parse(source: """
         /** Species. */

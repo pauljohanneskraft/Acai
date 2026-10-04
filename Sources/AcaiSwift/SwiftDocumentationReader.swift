@@ -6,7 +6,9 @@ import AcaiCore
 /// Trivia rather than a sibling search: SwiftSyntax hands a declaration the comments above it
 /// already attached, and marks which of them are documentation.
 struct SwiftDocumentationReader {
-    private let convention = DocumentationComment(linePrefixes: ["///"], blockOpenings: ["/**"])
+    private let convention = DocumentationComment(
+        linePrefixes: ["///"], blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"
+    )
 
     func documentation(of node: some SyntaxProtocol) -> String? {
         var comments: [String] = []

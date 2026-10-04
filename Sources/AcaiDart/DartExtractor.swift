@@ -20,7 +20,7 @@ struct DartExtractor {
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
     let documentation = DocumentationReader(
-        convention: DocumentationComment(linePrefixes: ["///"], blockOpenings: ["/**"]),
+        convention: DocumentationComment(linePrefixes: ["///"], blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"),
         commentNodeTypes: ["documentation_comment", "comment"],
         transparentParentTypes: [
             "declaration", "initialized_identifier_list", "static_final_declaration_list"

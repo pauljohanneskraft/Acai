@@ -27,7 +27,9 @@ struct CFamilyExtractor {
     let fieldReads: FieldReadResolver
     /// Doxygen's four markers; a plain `//` or `/* */` comment documents nothing.
     let documentation = DocumentationReader(
-        convention: DocumentationComment(linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"]),
+        convention: DocumentationComment(
+            linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"], blockClosing: "*/", continuationMarker: "*"
+        ),
         transparentParentTypes: ["declaration", "field_declaration", "type_definition"]
     )
 
