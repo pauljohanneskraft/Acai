@@ -156,7 +156,7 @@ copying it in place.
 | Flag | Meaning |
 | --- | --- |
 | `--module <glob>` | Module/target name; supports `*` and `?`. |
-| `--type <glob>` | Type id / qualified name glob. |
+| `--type <glob>` | Type id glob — the module-scoped id (`Billing.OrderService`) or the name as the source spells it (`OrderService`). |
 | `--kind <kind>` | `class`, `actor`, `struct`, `enum`, `protocol`, `interface`, `trait`, `typeAlias`, `object`, `extension`, `annotation`, `module`, `record`, `mixin` |
 | `--min-access <level>` | `public`, `open`, `internal`, `protected`, `private`, `filePrivate`, `packagePrivate` |
 | `--stereotype <name>` | UML stereotype, e.g. `entity`, `repository`. |

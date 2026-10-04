@@ -7,7 +7,7 @@ import AcaiCore
 public struct Selector: Codable, Hashable, Sendable {
     /// Exact module/target name, or a glob (`*`, `?`) over it.
     public var module: String?
-    /// Glob (`*`, `?`) over a type's canonical id / qualified name.
+    /// Glob (`*`, `?`) over a type's canonical id / qualified name, or its id as source spells it.
     public var typeGlob: String?
     /// Required UML stereotype (e.g. `entity`, `repository`), resolved from annotations + kind.
     public var stereotype: String?
@@ -63,7 +63,7 @@ public struct Selector: Codable, Hashable, Sendable {
     public func matches(_ node: GraphView.Node) -> Bool {
         if let explicitIDs, !explicitIDs.contains(node.id) { return false }
         if let module, !Glob(module).matches(node.module) { return false }
-        if let typeGlob, !Glob(typeGlob).matches(node.id), !Glob(typeGlob).matches(node.qualifiedName) {
+        if let typeGlob, ![node.id, node.qualifiedName, node.unqualifiedID].contains(where: Glob(typeGlob).matches) {
             return false
         }
         if let stereotype, node.stereotype != stereotype { return false }

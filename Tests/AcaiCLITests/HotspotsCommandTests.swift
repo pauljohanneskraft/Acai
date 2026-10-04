@@ -98,7 +98,7 @@ struct HotspotsCommandTests {
             let report = try JSONDecoder().decode(Report.self, from: try Data(contentsOf: output))
             #expect(report.hotspots.map(\.path) == ["Hot.swift"])
             let hot = try #require(report.hotspots.first)
-            #expect(hot.type == "Hot")
+            #expect(hot.type == "root.Hot")
             #expect(hot.churn == 3)
             #expect(hot.complexity > 1)
             #expect(hot.score == hot.churn * hot.complexity)

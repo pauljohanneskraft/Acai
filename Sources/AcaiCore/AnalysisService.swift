@@ -92,12 +92,22 @@ public struct AnalysisService: Sendable {
             throw ValidationError("Could not discover any source files in \(rootURL.path). \(hint)")
         }
 
-        var combinedArtifact: CodeArtifact?
-
+        var parsedSpecs: [ParsedSpec] = []
         for spec in specs.mergedByLanguage {
-            if let artifact = try await parseSpec(
+            if let parsed = try await parseSpec(
                 spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
             ) {
+                parsedSpecs.append(parsed)
+            }
+        }
+
+        // Ids are module-scoped per file, so a name only collides here when one module declares it in
+        // several files; those are scoped to their file. Every spec is parsed first so this sees
+        // collisions across languages too.
+        let collisions = CollidingTypeIDs(files: parsedSpecs.flatMap(\.files))
+        var combinedArtifact: CodeArtifact?
+        for parsed in parsedSpecs {
+            if let artifact = assemble(parsed.disambiguating(collisions)) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -118,7 +128,7 @@ public struct AnalysisService: Sendable {
         rootURL: URL,
         gitignore: GitignoreFilter?,
         includingFile: (String) -> Bool
-    ) async throws -> CodeArtifact? {
+    ) async throws -> ParsedSpec? {
         guard let codeParser = parser(for: spec.language) else {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
@@ -129,21 +139,40 @@ public struct AnalysisService: Sendable {
             for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
         )
         guard !collected.files.isEmpty else {
-            let diagnostics = spec.diagnostics + collected.diagnostics
-            guard !diagnostics.isEmpty else { return nil }
-            var result = CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-            result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
-            return result
+            return ParsedSpec(
+                spec: spec, fallback: codeParser.configuration, files: [],
+                diagnostics: spec.diagnostics + collected.diagnostics)
         }
 
         let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL)
+        return ParsedSpec(
+            spec: spec, fallback: codeParser.configuration,
+            files: parsed.files.map { $0.qualifyingTypeIDsByModule() },
+            diagnostics: spec.diagnostics + collected.diagnostics + parsed.diagnostics)
+    }
+
+    /// Groups a spec's files by each file's *own* `metadata.sourceLanguage` rather than the spec's
+    /// nominal language — a parser may classify a file differently than the extension that discovered
+    /// it (e.g. the C parser owns `.h` but reports C++ for a C++ header) — and enriches each group.
+    /// First-seen order is kept so the merged artifact's top-level language is stable.
+    private func assemble(_ parsed: ParsedSpec) -> CodeArtifact? {
+        var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
+        var order: [CodeArtifact.SourceLanguage] = []
+        for file in parsed.files {
+            let language = file.metadata.sourceLanguage
+            if let existing = byLanguage[language] {
+                byLanguage[language] = existing.merging(with: file)
+            } else {
+                byLanguage[language] = file
+                order.append(language)
+            }
+        }
         let enriched = enrichPerLanguage(
-            (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
+            (byLanguage: byLanguage, order: order), spec: parsed.spec, fallback: parsed.fallback
         )
-        let diagnostics = spec.diagnostics + collected.diagnostics + parsed.diagnostics
-        guard !diagnostics.isEmpty else { return enriched }
-        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-        result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
+        guard !parsed.diagnostics.isEmpty else { return enriched }
+        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: parsed.spec.language))
+        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
         return result
     }
 
@@ -184,20 +213,12 @@ public struct AnalysisService: Sendable {
     }
 
     /// Parses every file concurrently (bounded by `fileParsingConcurrencyLimit`, or the processor
-    /// count when unset) and groups results by each file's *own* `metadata.sourceLanguage` rather
-    /// than the spec's nominal language — a parser may classify a file differently than the extension
-    /// that discovered it (e.g. the C parser owns `.h` but reports C++ for a C++ header). Files merge
-    /// back in their original order regardless of completion order, so the result — and therefore
-    /// `order`, which preserves first-seen order so the merged artifact's top-level language is
-    /// stable — is identical to serial parsing.
+    /// count when unset). Results come back in the files' original order regardless of completion
+    /// order, so the result is identical to serial parsing.
     private func parseFiles(
         _ files: [URL], using codeParser: any CodeParser, rootURL: URL
-    ) async throws -> (
-        byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact],
-        order: [CodeArtifact.SourceLanguage],
-        diagnostics: [ParseDiagnostic]
-    ) {
-        guard !files.isEmpty else { return ([:], [], []) }
+    ) async throws -> (files: [CodeArtifact], diagnostics: [ParseDiagnostic]) {
+        guard !files.isEmpty else { return ([], []) }
         let concurrency = fileParsingConcurrencyLimit ?? ProcessInfo.processInfo.activeProcessorCount
         let limit = max(1, min(files.count, concurrency))
 
@@ -223,24 +244,17 @@ public struct AnalysisService: Sendable {
             }
         }
 
-        var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
-        var order: [CodeArtifact.SourceLanguage] = []
+        var parsed: [CodeArtifact] = []
         var diagnostics: [ParseDiagnostic] = []
         for case let outcome? in outcomeByIndex {
             switch outcome {
-            case .parsed(let parsed):
-                let language = parsed.metadata.sourceLanguage
-                if let existing = byLanguage[language] {
-                    byLanguage[language] = existing.merging(with: parsed)
-                } else {
-                    byLanguage[language] = parsed
-                    order.append(language)
-                }
+            case .parsed(let artifact):
+                parsed.append(artifact)
             case .diagnostic(let diagnostic):
                 diagnostics.append(diagnostic)
             }
         }
-        return (byLanguage, order, diagnostics)
+        return (parsed, diagnostics)
     }
 
     /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic
@@ -303,6 +317,21 @@ public struct AnalysisService: Sendable {
             combined.metadata.toolVersion = AcaiConstants.standard.toolVersion
         }
         return combined
+    }
+}
+
+/// One spec's files, parsed and module-scoped but not yet enriched — held until every spec is parsed
+/// so ids colliding across specs can be told apart first.
+private struct ParsedSpec {
+    let spec: SourceSpec
+    let fallback: LanguageConfiguration
+    var files: [CodeArtifact]
+    let diagnostics: [ParseDiagnostic]
+
+    func disambiguating(_ collisions: CollidingTypeIDs) -> ParsedSpec {
+        var copy = self
+        copy.files = files.map(collisions.disambiguating)
+        return copy
     }
 }
 

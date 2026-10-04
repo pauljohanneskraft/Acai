@@ -1,10 +1,10 @@
 classDiagram
-    class Library["Library"] {
+    class Cpp_Library["Library"] {
         -playlists_ std::vector~Playlist~
         +addPlaylist(playlist Playlist) void
         +playlist(named std::string) Playlist
     }
-    class MediaItem["MediaItem"] {
+    class Cpp_MediaItem["MediaItem"] {
         -title_ std::string
         -duration_ double
         -genre_ Genre
@@ -13,7 +13,7 @@ classDiagram
         +duration() double
         +play() void
     }
-    class Genre["Genre"] {
+    class Cpp_Genre["Genre"] {
         <<enumeration>>
         pop
         rock
@@ -22,44 +22,44 @@ classDiagram
         electronic
         spokenWord
     }
-    class Playable["Playable"] {
+    class Cpp_Playable["Playable"] {
         +~Playable()
         +title() std::string*
         +duration() double*
         +play() void*
     }
-    class Player["Player"] {
+    class Cpp_Player["Player"] {
         -library_ Library
         -nowPlaying_ Playable
         +Player(library Library)
         +play(item Playable) void
         +playFirstItem(playlistNamed std::string) void
     }
-    class Playlist["Playlist"] {
+    class Cpp_Playlist["Playlist"] {
         -name_ std::string
         -items_ std::vector~MediaItem~
         +Playlist(name std::string)
         +totalDuration() double
         +add(item MediaItem) void
     }
-    class Podcast["Podcast"] {
+    class Cpp_Podcast["Podcast"] {
         -host_ std::string
         -episodeNumber_ int
         +Podcast(title std::string, duration double, host std::string, episodeNumber int)
         +play() void
     }
-    class Song["Song"] {
+    class Cpp_Song["Song"] {
         -artist_ std::string
         -album_ std::string
         +Song(title std::string, duration double, genre Genre, artist std::string, album std::string)
         +play() void
     }
-    Playable <|-- MediaItem
-    MediaItem <|-- Podcast
-    MediaItem <|-- Song
-    Library o-- "*" Playlist : playlists_
-    MediaItem *-- "1" Genre : genre_
-    Player *-- "1" Library : library_
-    Player *-- "1" Playable : nowPlaying_
-    Playlist o-- "*" MediaItem : items_
-    Song ..> Genre
+    Cpp_Playable <|-- Cpp_MediaItem
+    Cpp_MediaItem <|-- Cpp_Podcast
+    Cpp_MediaItem <|-- Cpp_Song
+    Cpp_Library o-- "*" Cpp_Playlist : playlists_
+    Cpp_MediaItem *-- "1" Cpp_Genre : genre_
+    Cpp_Player *-- "1" Cpp_Library : library_
+    Cpp_Player *-- "1" Cpp_Playable : nowPlaying_
+    Cpp_Playlist o-- "*" Cpp_MediaItem : items_
+    Cpp_Song ..> Cpp_Genre

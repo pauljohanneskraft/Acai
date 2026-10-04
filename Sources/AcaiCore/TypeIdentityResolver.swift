@@ -71,15 +71,20 @@ public struct TypeIdentityResolver: Sendable {
         // silently resolve to whichever type was counted last.
         func countKeys(_ types: [TypeDeclaration]) {
             for type in types {
-                for key in Set([type.id, type.qualifiedName]) {
+                // The unqualified id is the name as source code spells it (`Outer.Inner`), before
+                // project analysis scoped it to a module or file.
+                let unqualified = type.unqualifiedID
+                for key in Set([type.id, type.qualifiedName, unqualified]) {
                     exactKeyCount[key, default: 0] += 1
                     exactKeyID[key] = type.id
                 }
                 let simple = type.name.components(separatedBy: ".").last ?? type.name
                 simpleNameCount[simple, default: 0] += 1
-                let module = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
-                moduleSimpleNameCount[module, default: [:]][simple, default: 0] += 1
-                moduleSimpleNameID[module, default: [:]][simple] = type.id
+                let module = type.idScope.module
+                for key in Set([simple, unqualified]) {
+                    moduleSimpleNameCount[module, default: [:]][key, default: 0] += 1
+                    moduleSimpleNameID[module, default: [:]][key] = type.id
+                }
                 countKeys(type.nestedTypes)
             }
         }

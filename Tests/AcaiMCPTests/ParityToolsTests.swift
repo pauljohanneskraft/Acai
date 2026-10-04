@@ -113,7 +113,7 @@ struct ParityToolsTests {
             let value = try await MCPTestSupport.call(
                 "acai_inspect", on: MCPTestSupport.testRegistry, path: dir, ["enums": .bool(true)])
             let entries = try #require(value.objectValue?["enums"]?.arrayValue)
-            let direction = try #require(entries.first { $0.objectValue?["type"]?.stringValue == "Direction" })
+            let direction = try #require(entries.first { $0.objectValue?["type"]?.stringValue == "root.Direction" })
             let cases = try #require(direction.objectValue?["cases"]?.arrayValue)
             #expect(cases.count == 2)
             #expect(value.objectValue?["health"] != nil)
@@ -189,7 +189,7 @@ struct ParityToolsTests {
                 let violations = try #require(object["quality"]?.objectValue?["violations"]?.arrayValue)
                 let movement = try #require(violations.first {
                     $0.objectValue?["ruleKind"]?.stringValue == "movement"
-                        && $0.objectValue?["subject"]?.stringValue == "Service"
+                        && $0.objectValue?["subject"]?.stringValue == "root.Service"
                 }?.objectValue)
                 let detail = try #require(movement["detail"]?.objectValue)
                 #expect(detail["metric"]?.stringValue == "fanOut")

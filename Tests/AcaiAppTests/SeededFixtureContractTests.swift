@@ -46,10 +46,12 @@ struct SeededFixtureContractTests {
             members: MemberFilter(isPublicVar: true),
             languageResolver: artifact.standardLanguageResolver
         ).rows
-        #expect(publiclySettable.map(\.qualifiedName) == ["Base"])
+        #expect(publiclySettable.map(\.qualifiedName) == ["SampleSwiftPackage.Base"])
 
         let dependents = artifact.relationships.filter { $0.kind == .composition }
-        #expect(dependents.contains { $0.target == "Helper" && $0.source == "Derived" })
+        #expect(dependents.contains {
+            $0.target == "SampleSwiftPackage.Helper" && $0.source == "SampleSwiftPackage.Derived"
+        })
         #expect(Set(artifact.types.map(\.name)) == ["Base", "Derived", "Helper", "Worker"])
     }
 

@@ -12,7 +12,8 @@ public protocol CodeParser: Sendable {
     /// **Producer contract** (the invariants enrichment and rendering depend on, centralised in
     /// ``TypeIdentityResolver``):
     /// - Each ``TypeDeclaration`` has ``TypeDeclaration/id`` == ``TypeDeclaration/qualifiedName``
-    ///   (namespace-qualified), while ``TypeDeclaration/name`` is the **simple** name.
+    ///   (namespace-qualified), while ``TypeDeclaration/name`` is the **simple** name. A parser never
+    ///   adds the build module: project analysis prefixes every id with it after parsing.
     /// - A nested type's id/qualified name is **hierarchically prefixed** by its parent's.
     /// - ``Relationship`` and supertype endpoints are names the resolver can map to a declared id, or
     ///   legitimately-external names (carried through as-is).

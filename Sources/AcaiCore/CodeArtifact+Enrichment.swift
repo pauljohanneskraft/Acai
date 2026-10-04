@@ -246,11 +246,10 @@ extension CodeArtifact {
 
     /// Resolves the id of the single type `name` should merge into.
     ///
-    /// An exact `qualifiedName`/`id` match wins outright. Otherwise falls back to a bare simple-name
-    /// match scoped to the extension's own module (via ``ModuleResolver``): a bare name shared with an
-    /// unrelated type in another module (e.g. an extension of external `SwiftTreeSitter.Node` colliding
-    /// with in-project `FreeformDiagram.Node`) must not silently merge into it, so the fallback only
-    /// accepts a sole same-module candidate.
+    /// An exact `qualifiedName`/`id` match wins outright. Otherwise a sole same-module type whose
+    /// unqualified id or simple name matches, then a sole type anywhere whose unqualified id matches.
+    /// A bare simple name in another module (e.g. an extension of external `SwiftTreeSitter.Node`
+    /// against in-project `FreeformDiagram.Node`) never matches, so it can't silently merge.
     private static func extensionTargetID(
         _ ext: TypeDeclaration, name: String, in types: [TypeDeclaration]
     ) -> String? {
@@ -258,13 +257,14 @@ extension CodeArtifact {
         if let exact = flat.first(where: { $0.qualifiedName == name || $0.id == name }) {
             return exact.id
         }
-        let extModule = ModuleResolver.standard.productName(forFilePath: ext.location?.filePath ?? "")
+        let extModule = ext.idScope.module
         let sameModuleMatches = flat.filter {
-            $0.name == name
-                && ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? "") == extModule
+            ($0.name == name || $0.unqualifiedID == name) && $0.idScope.module == extModule
         }
-        guard sameModuleMatches.count == 1 else { return nil }
-        return sameModuleMatches[0].id
+        if sameModuleMatches.count == 1 { return sameModuleMatches[0].id }
+        let unqualifiedMatches = flat.filter { $0.unqualifiedID == name }
+        guard sameModuleMatches.isEmpty, unqualifiedMatches.count == 1 else { return nil }
+        return unqualifiedMatches[0].id
     }
 
     private static func mergeExtensionMembers(
