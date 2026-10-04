@@ -12,6 +12,10 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
     public struct Node: Codable, Hashable, Sendable, Identifiable {
         public var id: String
         public var name: String
+        /// The project this module belongs to, when the analysed folder held more than one — the
+        /// outer box the module is drawn inside. `nil` for a single-project folder, where every
+        /// module shares the one project and an outer box says nothing.
+        public var project: String?
         public var typeCount: Int
         /// Afferent coupling (Ca): external types that depend on this module.
         public var afferentCoupling: Int
@@ -50,6 +54,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         public init(
             id: String,
             name: String,
+            project: String? = nil,
             typeCount: Int,
             afferentCoupling: Int,
             efferentCoupling: Int,
@@ -58,6 +63,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         ) {
             self.id = id
             self.name = name
+            self.project = project
             self.typeCount = typeCount
             self.afferentCoupling = afferentCoupling
             self.efferentCoupling = efferentCoupling

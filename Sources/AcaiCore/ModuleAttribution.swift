@@ -8,19 +8,20 @@
 ///
 /// Shared by the metrics engine and the quality evaluator so both agree on the same module graph.
 public struct ModuleAttribution: Sendable {
-    private let resolver: ModuleResolver
+    private let modules: ModuleMap
     private let idToModule: [String: String]
 
-    /// - Parameter resolver: derives a type's declaring module from its file path.
+    /// - Parameter modules: the artifact's resolved file-to-module map, which an edge's `origin`
+    ///   path is looked up in.
     /// - Parameter idToModule: each in-codebase type id mapped to its declaring module. Edge
     ///   endpoints not in the map are external and resolve to `nil`.
-    public init(resolver: ModuleResolver = .standard, idToModule: [String: String]) {
-        self.resolver = resolver
+    public init(modules: ModuleMap, idToModule: [String: String]) {
+        self.modules = modules
         self.idToModule = idToModule
     }
 
     public func sourceModule(of edge: Relationship) -> String? {
-        if let origin = edge.origin { return resolver.productName(forFilePath: origin) }
+        if let origin = edge.origin { return modules.module(forFilePath: origin) }
         return idToModule[edge.source]
     }
 

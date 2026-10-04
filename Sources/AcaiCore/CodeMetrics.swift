@@ -114,13 +114,19 @@ extension CodeArtifact {
 
     /// Call on an `enriched()` artifact so relationship endpoints are resolved to type ids.
     public func computeMetrics() -> CodeMetrics {
+        computeMetrics(modules: ModuleMap(artifact: self))
+    }
+
+    /// The same metrics against an already-built file-to-module map, so a caller that needs the map
+    /// for its own grouping resolves every path once rather than twice.
+    public func computeMetrics(modules: ModuleMap) -> CodeMetrics {
         let flat = Self.allTypes(types)
         let identity = TypeIdentityResolver(types: types)
         let spans = declarationSpans
         return CodeMetrics(
             counts: computeCounts(flat: flat, spans: spans),
-            modules: computeModuleCoupling(flat: flat, identity: identity, spans: spans),
-            types: computeTypeMetrics(flat: flat, identity: identity)
+            modules: computeModuleCoupling(flat: flat, identity: identity, spans: spans, modules: modules),
+            types: computeTypeMetrics(flat: flat, identity: identity, modules: modules)
         )
     }
 
@@ -168,7 +174,7 @@ extension CodeArtifact {
     }
 
     private func computeTypeMetrics(
-        flat: [TypeDeclaration], identity: TypeIdentityResolver
+        flat: [TypeDeclaration], identity: TypeIdentityResolver, modules: ModuleMap
     ) -> [CodeMetrics.TypeMetric] {
         let shape = InheritanceShape(types: flat, relationships: relationships)
         let (fanIn, fanOut) = fanMetrics(flat: flat, identity: identity)
@@ -178,7 +184,7 @@ extension CodeArtifact {
             CodeMetrics.TypeMetric(
                 id: type.id,
                 name: type.qualifiedName,
-                module: ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? ""),
+                module: modules.module(forFilePath: type.location?.filePath ?? ""),
                 depthOfInheritance: shape.depth(of: type.id),
                 numberOfChildren: shape.children(of: type.id),
                 weightedMethods: type.members.filter { $0.kind == .method }.count,
@@ -238,19 +244,16 @@ extension CodeArtifact {
     }
 
     private func computeModuleCoupling(
-        flat: [TypeDeclaration], identity: TypeIdentityResolver, spans: LineSpanUnion
+        flat: [TypeDeclaration], identity: TypeIdentityResolver, spans: LineSpanUnion, modules: ModuleMap
     ) -> [CodeMetrics.ModuleCoupling] {
-        let resolver = ModuleResolver.standard
-        var idToModule: [String: String] = [:]
+        let idToModule = modules.modules(ofTypes: flat)
         var moduleTypes: [String: [TypeDeclaration]] = [:]
         for type in flat {
-            let module = resolver.productName(forFilePath: type.location?.filePath ?? "")
-            idToModule[type.id] = module
-            moduleTypes[module, default: []].append(type)
+            moduleTypes[idToModule[type.id] ?? modules.resolver.fallbackGroup, default: []].append(type)
         }
         // Attributes each edge's source to its declaring module, so a cross-module extension counts
         // toward the extension's module, not the extended type's.
-        let attribution = ModuleAttribution(resolver: resolver, idToModule: idToModule)
+        let attribution = ModuleAttribution(modules: modules, idToModule: idToModule)
         var sets = ModuleCouplingSets()
         for edge in relationships {
             guard let sourceModule = attribution.sourceModule(of: edge),
@@ -260,9 +263,10 @@ extension CodeArtifact {
             sets.record(sourceModule: sourceModule, targetModule: targetModule,
                         edgeTarget: edge.target, edgeSource: edge.source)
         }
-        addBodyReferenceCoupling(flat: flat, identity: identity, idToModule: idToModule, into: &sets)
+        addBodyReferenceCoupling(
+            flat: flat, identity: identity, idToModule: idToModule, modules: modules, into: &sets)
 
-        return moduleCouplings(moduleTypes: moduleTypes, sets: sets, spans: spans)
+        return moduleCouplings(moduleTypes: moduleTypes, sets: sets, spans: spans, modules: modules)
     }
 
     /// Construction/body dependencies between modules. Source is the member's declaring file (so an
@@ -270,12 +274,11 @@ extension CodeArtifact {
     /// type's module.
     private func addBodyReferenceCoupling(
         flat: [TypeDeclaration], identity: TypeIdentityResolver, idToModule: [String: String],
-        into sets: inout ModuleCouplingSets
+        modules: ModuleMap, into sets: inout ModuleCouplingSets
     ) {
-        let resolver = ModuleResolver.standard
         for type in flat {
             for member in type.members {
-                let sourceModule = resolver.productName(
+                let sourceModule = modules.module(
                     forFilePath: member.location?.filePath ?? type.location?.filePath ?? "")
                 for name in member.referencedTypeNames {
                     guard let target = identity.resolvedID(for: name)?.value, let targetModule = idToModule[target],
@@ -289,10 +292,10 @@ extension CodeArtifact {
     }
 
     private func moduleCouplings(
-        moduleTypes: [String: [TypeDeclaration]], sets: ModuleCouplingSets, spans: LineSpanUnion
+        moduleTypes: [String: [TypeDeclaration]], sets: ModuleCouplingSets, spans: LineSpanUnion,
+        modules: ModuleMap
     ) -> [CodeMetrics.ModuleCoupling] {
-        let resolver = ModuleResolver.standard
-        let linesByModule = spans.lineCounts(groupedBy: { resolver.productName(forFilePath: $0) })
+        let linesByModule = spans.lineCounts(groupedBy: { modules.module(forFilePath: $0) })
         let efferent = sets.efferent
         let afferent = sets.afferent
         let moduleAdjacency = sets.moduleAdjacency

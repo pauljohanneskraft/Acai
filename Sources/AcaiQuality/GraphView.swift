@@ -30,6 +30,9 @@ public struct GraphView: Sendable {
     public let nodes: [Node]
     public let relationships: [Relationship]
     public let metrics: CodeMetrics
+    /// The artifact's file-to-module map, resolved once here and shared with everything built on
+    /// this view (`CycleFinder`, the starter rules) so all of them name a module the same way.
+    public let modules: ModuleMap
 
     private let nodesByID: [String: Node]
 
@@ -39,16 +42,17 @@ public struct GraphView: Sendable {
         languageResolver: LanguageConfigurationResolver
     ) {
         let flat = artifact.flattened()
+        let modules = ModuleMap(artifact: artifact, resolver: moduleResolver)
         // Compute metrics up front so each node can be tagged with its metric-derived fields
         // (single source of truth — the node's `nestingDepth` comes from the metric, not a re-walk).
-        let metrics = artifact.computeMetrics()
+        let metrics = artifact.computeMetrics(modules: modules)
         let nestingByID = Dictionary(
             metrics.types.map { ($0.id, $0.nestingDepth) }, uniquingKeysWith: { first, _ in first })
         let nodes = flat.map { type in
             Node(
                 id: type.id,
                 qualifiedName: type.qualifiedName,
-                module: moduleResolver.productName(forFilePath: type.location?.filePath ?? ""),
+                module: modules.module(forFilePath: type.location?.filePath ?? ""),
                 kind: type.kind,
                 access: type.accessLevel,
                 language: type.sourceLanguage,
@@ -63,6 +67,7 @@ public struct GraphView: Sendable {
         self.nodes = nodes
         self.relationships = artifact.relationships
         self.metrics = metrics
+        self.modules = modules
         self.nodesByID = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
@@ -72,4 +77,8 @@ public struct GraphView: Sendable {
 
     /// The set of modules that contain at least one node, sorted for deterministic reporting.
     public var moduleNames: [String] { Set(nodes.map(\.module)).sorted() }
+
+    /// The projects those modules belong to, sorted; empty when the artifact holds a single root
+    /// and module names are unqualified.
+    public var projectNames: [String] { Set(nodes.compactMap { modules.project(ofModule: $0.module) }).sorted() }
 }

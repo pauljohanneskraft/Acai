@@ -36,11 +36,11 @@ public struct ModuleCouplingDOTRenderer: DOTRenderer {
         }
         out += graphAttributes()
 
-        for node in diagram.nodes {
-            out += "  \(node.id.dotNodeID) [label=\"\(nodeLabel(node).dotEscaped)\""
-            out += " fillcolor=\"\(node.zoneColorHex)\""
-            if let border = nodeColor?(node.id) { out += " color=\"\(border)\" penwidth=3" }
-            out += "];\n"
+        out += PackageProjectClusters(theme: theme).render(nodes: diagram.nodes) { node in
+            var line = "  \(node.id.dotNodeID) [label=\"\(nodeLabel(node).dotEscaped)\""
+            line += " fillcolor=\"\(node.zoneColorHex)\""
+            if let border = nodeColor?(node.id) { line += " color=\"\(border)\" penwidth=3" }
+            return line + "];\n"
         }
 
         let breaches = diagram.stableDependencyBreaches

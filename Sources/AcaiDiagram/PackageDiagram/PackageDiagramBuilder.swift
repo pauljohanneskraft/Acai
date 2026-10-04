@@ -24,10 +24,12 @@ public struct PackageDiagramBuilder: Sendable {
     }
 
     public func build(from artifact: CodeArtifact) -> PackageDiagram {
-        let nodes = artifact.computeMetrics().modules.map { module in
+        let modules = ModuleMap(artifact: artifact)
+        let nodes = artifact.computeMetrics(modules: modules).modules.map { module in
             PackageDiagram.Node(
                 id: module.name,
                 name: module.name,
+                project: modules.project(ofModule: module.name),
                 typeCount: module.typeCount,
                 afferentCoupling: module.afferentCoupling,
                 efferentCoupling: module.efferentCoupling,
@@ -36,11 +38,8 @@ public struct PackageDiagramBuilder: Sendable {
             )
         }
 
-        var idToModule: [String: String] = [:]
-        for type in artifact.flattened() {
-            idToModule[type.id] = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
-        }
-        let attribution = ModuleAttribution(idToModule: idToModule)
+        let attribution = ModuleAttribution(
+            modules: modules, idToModule: modules.modules(ofTypes: artifact.flattened()))
 
         struct Pair: Hashable { let from: String; let to: String }
         var weights: [Pair: Int] = [:]
