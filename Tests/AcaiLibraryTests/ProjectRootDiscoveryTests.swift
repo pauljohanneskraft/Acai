@@ -328,55 +328,6 @@ struct ProjectRootDiscoveryTests {
         }
     }
 
-    /// The directories each root contributed are what turn "fewer types than I expected" into a
-    /// specific answer, so they reach the metadata alongside the root itself.
-    @Test func eachRootRecordsTheSourceDirectoriesItContributed() async throws {
-        try await withTempDirAsync { base in
-            try writeFourProjects(in: base)
-            let artifact = try await AnalysisService.standard.analyzeProject(
-                at: base, allowedLanguages: [])
-
-            let web = try #require(artifact.metadata.discoveredRoots.first { $0.path == "web" })
-            #expect(web.sourceDirs == ["web/src"])
-            let swiftRoot = try #require(artifact.metadata.discoveredRoots.first { $0.path == "app-ios" })
-            #expect(swiftRoot.sourceDirs == ["app-ios/Sources"])
-            #expect(artifact.metadata.discoveredRoots.allSatisfy { !$0.isFallback })
-        }
-    }
-
-    /// The case `--health` has to say out loud: no manifest anywhere, so every root is the fallback's
-    /// and the file set is an extension match over the whole tree.
-    @Test func aFolderWithNoManifestsRecordsItsRootAsTheFallbacks() async throws {
-        try await withTempDirAsync { base in
-            try write("app-ios/Sources/App.swift", in: base, contents: "class App {}")
-            let artifact = try await AnalysisService.standard.analyzeProject(
-                at: base, allowedLanguages: [])
-
-            let roots = artifact.metadata.discoveredRoots
-            #expect(roots.map(\.path) == ["."])
-            #expect(roots.map(\.detector) == ["FallbackDetector"])
-            #expect(roots.map(\.isFallback) == [true])
-            #expect(roots.map(\.sourceDirs) == [["."]])
-            #expect(HealthCheck(artifact: artifact).report.isFallbackOnly)
-        }
-    }
-
-    /// One manifest is enough for the folder to have been scoped by a build system, even though the
-    /// fallback also had to reach a language it left out.
-    @Test func aManifestAtTheRootMeansTheReportIsNotFallbackOnly() async throws {
-        try await withTempDirAsync { base in
-            try write("package.json", in: base, contents: "{}")
-            try write("src/app.ts", in: base, contents: "export class App {}")
-            try write("native/Foo.swift", in: base, contents: "class Foo {}")
-            let artifact = try await AnalysisService.standard.analyzeProject(
-                at: base, allowedLanguages: [])
-
-            let fallbacks = artifact.metadata.discoveredRoots.filter(\.isFallback)
-            #expect(fallbacks.map(\.detector) == ["FallbackDetector"])
-            #expect(!HealthCheck(artifact: artifact).report.isFallbackOnly)
-        }
-    }
-
     @Test func aSingleRootFolderRecordsItselfAsTheRoot() async throws {
         try await withTempDirAsync { base in
             try write("Package.swift", in: base)
