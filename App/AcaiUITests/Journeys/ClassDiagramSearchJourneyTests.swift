@@ -73,6 +73,12 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         XCTAssertFalse(
             diagram.typeNode(named: "Base").exists, "the filter should have hidden every node", file: file, line: line
         )
+        // The overlay lives on the canvas, which the Settings tab covers on iPhone (a `.sheet`) and
+        // sits beside on iPad/macOS (an `.inspector`) — closing it is what makes the canvas both
+        // the subject of the screenshot and tappable, on every platform alike.
+        diagram.closeSidebar(file: file, line: line)
+        diagram.emptyScopeOverlay("filter")
+            .waitOrFail("the empty-scope overlay on the uncovered canvas", file: file, line: line)
         validateScreenshot("ClassDiagram", state: "filteredToNothing")
 
         // The overlay's own action is the way back — the undo is on the empty canvas, not only in the

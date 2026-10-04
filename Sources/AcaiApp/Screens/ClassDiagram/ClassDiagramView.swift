@@ -204,7 +204,7 @@ struct ClassDiagramView: View {
             } else if viewModel.nodes.isEmpty {
                 DiagramEmptyScopeOverlay(
                     reason: viewModel.emptyReason, nothingOfThisKind: noTypesDescription,
-                    onUndo: clearEmptyScope
+                    onUndo: editor.clearEmptyScope
                 )
             }
         }
@@ -289,19 +289,6 @@ extension ClassDiagramView {
             title: .app("View.ClassDiagramView.NoTypesToDiagram"),
             detail: .app("View.ClassDiagramView.NoTypesToDiagramDetail")
         )
-    }
-
-    /// Undoes whatever emptied the canvas, matching what `ClassDiagramViewModel.emptyReason` offered:
-    /// the focus scope while one is set, otherwise both filters that can hide every type.
-    private func clearEmptyScope() {
-        editor.mutate { configuration in
-            if configuration.isFocused {
-                configuration.focus = nil
-            } else {
-                configuration.filter = nil
-                configuration.minimumAccessLevel = nil
-            }
-        }
     }
 
     @ViewBuilder private var nodeLayer: some View {

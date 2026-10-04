@@ -23,6 +23,19 @@ struct ClassDiagramConfigEditor {
         viewModel.applyConfiguration(configuration, artifact: artifact)
     }
 
+    /// Undoes whatever emptied the canvas, matching what `ClassDiagramViewModel.emptyReason` offered:
+    /// the focus scope while one is set, otherwise both filters that can hide every type.
+    func clearEmptyScope() {
+        mutate { configuration in
+            if configuration.isFocused {
+                configuration.focus = nil
+            } else {
+                configuration.filter = nil
+                configuration.minimumAccessLevel = nil
+            }
+        }
+    }
+
     /// Binding for a global visibility default. Flipping it also clears the matching per-type
     /// override map, so the toggle acts as a bulk reset for all individual type settings.
     func globalVisibility(

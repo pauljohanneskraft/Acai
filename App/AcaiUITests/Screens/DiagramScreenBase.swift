@@ -165,6 +165,21 @@ class DiagramScreenBase {
         )
     }
 
+    /// Closes whichever sidebar presentation the platform chose, so a journey can reach the canvas
+    /// underneath: on compact width (iPhone) the sidebar is a `.sheet` covering the canvas, dismissed
+    /// from its own Done button, while regular width (iPad/macOS) uses `.inspector`, a side panel the
+    /// toolbar toggle closes. Call it with the sidebar open — it leaves it closed.
+    func closeSidebar(file: StaticString = #filePath, line: UInt = #line) {
+        if SnapshotPlatform().usesCompactLayout {
+            sidebarDoneButton.tapWhenReady("the sidebar's Done button", file: file, line: line)
+        } else {
+            tapSidebarToggle(file: file, line: line)
+        }
+        anySidebarContent.waitForDisappearanceOrFail(
+            "the diagram's sidebar after closing it", file: file, line: line
+        )
+    }
+
     // MARK: - Empty scope (`DiagramEmptyScopeOverlay`, shared by every generated diagram type)
 
     /// The overlay an empty canvas shows, named by the `DiagramEmptyReason` that produced it — so a

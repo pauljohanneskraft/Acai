@@ -41,9 +41,17 @@ struct DiagramEmptyReasonTests {
         Codebase(name: "c", directoryPath: "/tmp")
     }
 
-    /// Matches none of the fixture's type names, so every diagram ends up with nothing to draw.
+    /// Matches none of the fixture's type names, so every type-filtered diagram ends up with
+    /// nothing to draw.
     private var matchesNothing: AcaiQuality.Selector {
         AcaiQuality.Selector(typeGlob: "ZzNoSuchType*")
+    }
+
+    /// Matches none of the fixture's modules. A package diagram's filter is checked with
+    /// `Selector.matchesModule(named:)`, which consults only the module facets — so `matchesNothing`
+    /// would leave every module standing.
+    private var matchesNoModule: AcaiQuality.Selector {
+        AcaiQuality.Selector(module: "ZzNoSuchModule*")
     }
 
     // MARK: - Class diagram
@@ -141,7 +149,7 @@ struct DiagramEmptyReasonTests {
 
         #expect(!unfiltered.isEmpty)
 
-        let filtered = PackageDiagramViewModel(artifact: artifact(), filter: matchesNothing)
+        let filtered = PackageDiagramViewModel(artifact: artifact(), filter: matchesNoModule)
         #expect(filtered.isEmpty)
         #expect(filtered.layout.nodes.isEmpty)
         #expect(filtered.emptyReason == .filter)
