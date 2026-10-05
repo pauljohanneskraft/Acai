@@ -112,4 +112,29 @@ struct DartDocumentationTests {
         #expect(parsed.globalVariables.first { $0.name == "shared" }?.documentation == "The shared zoo.")
         #expect(parsed.globalVariables.first { $0.name == "other" }?.documentation == nil)
     }
+
+    @Test func documentationSurvivesAMemberAnnotation() {
+        let zoo = artifact("""
+        class Zoo {
+          /// Describes the zoo.
+          @override
+          String toString() => '';
+
+          /// The size.
+          @Deprecated('x')
+          final int size = 0;
+        }
+        """).types.first
+        #expect(zoo?.members.first { $0.name == "toString" }?.documentation == "Describes the zoo.")
+        #expect(zoo?.members.first { $0.name == "size" }?.documentation == "The size.")
+    }
+
+    @Test func aFileHeaderSeparatedByABlankLineDocumentsNothing() {
+        let types = artifact("""
+        /// A file header.
+
+        class Zoo {}
+        """).types
+        #expect(types.first?.documentation == nil)
+    }
 }

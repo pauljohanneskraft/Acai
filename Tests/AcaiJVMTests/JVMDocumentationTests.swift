@@ -158,4 +158,21 @@ struct KotlinDocumentationTests {
         """, fileName: "Zoo.kt")
         #expect(artifact.types.first?.documentation == nil)
     }
+
+    @Test func aBlankLineDetachesTheCommentsAboveIt() {
+        let artifact = parser.parse(source: """
+        /**
+         * License header.
+         */
+
+        class Zoo
+
+        /** Something else. */
+
+        /** The keeper. */
+        class Keeper
+        """, fileName: "Zoo.kt")
+        #expect(artifact.types.first { $0.name == "Zoo" }?.documentation == nil)
+        #expect(artifact.types.first { $0.name == "Keeper" }?.documentation == "The keeper.")
+    }
 }

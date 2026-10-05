@@ -121,4 +121,23 @@ struct CFamilyDocumentationTests {
         """, fileName: "zoo.c")
         #expect(artifact.types.first?.documentation == nil)
     }
+
+    @Test func aFileHeaderSeparatedByABlankLineDocumentsNothing() {
+        let artifact = cParser.parse(source: """
+        /** @file zoo.c Copyright the zoo. */
+
+        int first(void) { return 0; }
+        """, fileName: "zoo.c")
+        #expect(artifact.freestandingFunctions.first?.documentation == nil)
+    }
+
+    @Test func aTrailingCommentDocumentsTheFieldBeforeItNotAfter() {
+        let artifact = cParser.parse(source: """
+        struct Zoo {
+            int a; ///< The a.
+            int b;
+        };
+        """, fileName: "zoo.c")
+        #expect(artifact.types.first?.members.first { $0.name == "b" }?.documentation == nil)
+    }
 }

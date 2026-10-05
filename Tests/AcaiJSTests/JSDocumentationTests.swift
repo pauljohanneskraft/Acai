@@ -106,4 +106,32 @@ struct JSDocumentationTests {
         """, fileName: "zoo.ts")
         #expect(artifact.types.first?.documentation == nil)
     }
+
+    @Test func aLicenseHeaderIsNotTheFirstClassesDocumentation() {
+        let artifact = tsParser.parse(source: """
+        /**
+         * @license MIT
+         */
+
+        class Zoo {}
+
+        /** Something else. */
+
+        /** The keeper. */
+        class Keeper {}
+        """, fileName: "zoo.ts")
+        #expect(artifact.types.first { $0.name == "Zoo" }?.documentation == nil)
+        #expect(artifact.types.first { $0.name == "Keeper" }?.documentation == "The keeper.")
+    }
+
+    @Test func documentationSurvivesAMethodDecorator() {
+        let artifact = tsParser.parse(source: """
+        class Zoo {
+            /** Handles a click. */
+            @HostListener('click')
+            onClick(): void {}
+        }
+        """, fileName: "zoo.ts")
+        #expect(artifact.types.first?.members.first { $0.name == "onClick" }?.documentation == "Handles a click.")
+    }
 }

@@ -21,7 +21,8 @@ struct JSExtractor {
         transparentParentTypes: [
             "export_statement", "ambient_declaration", "expression_statement",
             "lexical_declaration", "variable_declaration", "variable_declarator"
-        ]
+        ],
+        skippedSiblingTypes: ["decorator"]
     )
 
     var declarations = DeclarationBuilder()

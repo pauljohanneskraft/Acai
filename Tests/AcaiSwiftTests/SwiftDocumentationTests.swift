@@ -121,4 +121,19 @@ struct SwiftDocumentationTests {
         #expect(parsed.freestandingFunctions.first { $0.name == "main" }?.documentation == "Boots the app.")
         #expect(parsed.globalVariables.first { $0.name == "shared" }?.documentation == "The shared zoo.")
     }
+
+    @Test func aBlankLineDetachesTheCommentsAboveIt() {
+        let types = artifact("""
+        /// A file header.
+
+        struct Zoo {}
+
+        /// Something else.
+
+        /// The keeper.
+        struct Keeper {}
+        """).types
+        #expect(types.first { $0.name == "Zoo" }?.documentation == nil)
+        #expect(types.first { $0.name == "Keeper" }?.documentation == "The keeper.")
+    }
 }

@@ -20,14 +20,17 @@ struct DartExtractor {
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
     let documentation = DocumentationReader(
-        convention: DocumentationComment(linePrefixes: ["///"], blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"),
+        convention: DocumentationComment(
+            linePrefixes: ["///"], blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"
+        ),
         commentNodeTypes: ["documentation_comment", "comment"],
         transparentParentTypes: [
             "declaration", "initialized_identifier_list", "static_final_declaration_list"
         ],
-        // A top-level variable has no wrapping node: its modifiers and type are siblings.
+        // A top-level variable has no wrapping node: its modifiers and type are siblings, and so is
+        // a member's annotation.
         skippedSiblingTypes: [
-            "final_builtin", "const_builtin", "type_identifier", "generic_type",
+            "annotation", "final_builtin", "const_builtin", "type_identifier", "generic_type",
             "function_type", "void_type", "type_arguments", "nullable_type", "inferred_type"
         ]
     )

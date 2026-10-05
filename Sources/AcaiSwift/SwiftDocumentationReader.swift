@@ -20,8 +20,8 @@ struct SwiftDocumentationReader {
             case .spaces, .tabs, .carriageReturns, .formfeeds, .verticalTabs:
                 continue
             case .newlines(let count), .carriageReturnLineFeeds(let count):
-                // A blank line ends the run: what sits above it documents something else.
-                guard comments.isEmpty || count < 2 else { return convention.prose(fromLeading: comments) }
+                // A blank line ends the run, including one between the run and the declaration.
+                guard count < 2 else { return convention.prose(fromLeading: comments) }
             default:
                 return convention.prose(fromLeading: comments)
             }

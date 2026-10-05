@@ -33,18 +33,26 @@ public struct DocumentationReader: Sendable {
     }
 
     /// The prose documenting the declaration `node`, or `nil` when it carries none.
+    ///
+    /// Only comments directly above the declaration count: a blank line anywhere between them and
+    /// it ends the run, so a file header or a comment about something else is never attached.
     public func documentation(above node: Node, in context: SourceFileContext) -> String? {
         var comments: [String] = []
+        var below = node
         var sibling = node.previousNamedSibling
-        while let current = sibling, let type = current.nodeType {
-            if commentNodeTypes.contains(type) {
-                comments.insert(current.text(in: context), at: 0)
-            } else if !comments.isEmpty || !skippedSiblingTypes.contains(type) {
-                break
+        while let current = sibling, let type = current.nodeType, current.lastRow + 1 >= below.firstRow {
+            let isComment = commentNodeTypes.contains(type)
+            guard isComment || (comments.isEmpty && skippedSiblingTypes.contains(type)) else { break }
+            let above = current.previousNamedSibling
+            if isComment {
+                // A comment sharing a line with the code before it trails that code.
+                if let above, above.lastRow == current.firstRow { break }
+                comments.append(current.text(in: context))
             }
-            sibling = current.previousNamedSibling
+            below = current
+            sibling = above
         }
-        if let prose = convention.prose(fromLeading: comments) { return prose }
+        if let prose = convention.prose(fromLeading: Array(comments.reversed())) { return prose }
 
         guard let parent = node.parent, parent.nodeType.map(transparentParentTypes.contains) == true else {
             return nil
@@ -56,5 +64,16 @@ public struct DocumentationReader: Sendable {
     /// convention puts it inside the declaration's body rather than above it.
     public func documentation(inLiteral node: Node, in context: SourceFileContext) -> String? {
         convention.prose(fromLiteral: node.text(in: context))
+    }
+}
+
+extension Node {
+    fileprivate var firstRow: UInt32 { pointRange.lowerBound.row }
+
+    /// A node whose extent runs to the start of the next line, as some grammars' line comments do,
+    /// ends on the line before.
+    fileprivate var lastRow: UInt32 {
+        let end = pointRange.upperBound
+        return end.column == 0 && end.row > firstRow ? end.row - 1 : end.row
     }
 }
