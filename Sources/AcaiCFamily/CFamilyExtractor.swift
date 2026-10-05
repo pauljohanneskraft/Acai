@@ -70,7 +70,8 @@ struct CFamilyExtractor {
         self.typeReferences = typeReferences
         let assignmentSyntax = CFamilyAssignmentSyntax(context: context, declaredEnumConstants: declaredEnumConstants)
         let callSites = CallSiteResolver(syntax: CFamilyCallSiteSyntax(
-            context: context, typeReferences: typeReferences, declaredFunctionNames: declaredFunctionNames))
+            context: context, typeReferences: typeReferences, dialect: dialect,
+            declaredFunctionNames: declaredFunctionNames))
         self.assignmentSyntax = assignmentSyntax
         self.callSites = callSites
         memberExtractor = CFamilyMemberExtractor(

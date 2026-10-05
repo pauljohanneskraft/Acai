@@ -10,19 +10,21 @@ import AcaiDiagram
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
 
-    /// Java, Kotlin and Dart now also scan `.initializer` — each has its own dedicated pair of tests
-    /// below pinning the parser behaviour that justifies it. Every other built-in language still
-    /// scans methods only.
+    /// The languages that record a call targeting a constructor, each with its own dedicated pair of
+    /// tests below pinning the parser behaviour that justifies the opt-in.
+    private static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
+        [.java, .kotlin, .dart, .cpp]
+
     @Test(arguments: AnalysisService.standardParsers
         .map(\.language)
-        .filter { $0 != .java && $0 != .kotlin && $0 != .dart })
+        .filter { !initializerScanningLanguages.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
     }
 
-    @Test(arguments: [CodeArtifact.SourceLanguage.java, .kotlin, .dart])
-    func javaKotlinAndDartAlsoScanInitializers(language: CodeArtifact.SourceLanguage) throws {
+    @Test(arguments: initializerScanningLanguages)
+    func aLanguageRecordingConstructorCallsAlsoScansInitializers(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer])
     }
@@ -193,7 +195,9 @@ struct DeadCodeMemberKindAuditTests {
         #expect(kinds["__getitem__"] == .method)
     }
 
-    @Test func cppRecordsNoConstructorCall() throws {
+    /// Why C++ takes `.initializer`: construction is a declaration rather than a call, and every
+    /// spelling of it — including the heap allocation — now resolves to the constructor.
+    @Test func cppRecordsAConstructorCallForEveryConstructionForm() throws {
         let sites = try callSites("""
         class Thing {
         public:
@@ -202,11 +206,14 @@ struct DeadCodeMemberKindAuditTests {
             void use() {
                 Thing made;
                 Thing other(1);
+                Thing braced{1};
+                Thing* owned = new Thing(2);
             }
         };
         """, in: "use", of: CppCodeParser(), fileName: "Thing.cpp")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 4)
+        #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "Thing" })
     }
 
     @Test func cppExtractsAnIndexOperatorAsAMethod() throws {
@@ -319,6 +326,28 @@ struct DeadCodeMemberKindAuditTests {
             artifact: artifact, languages: artifact.standardLanguageResolver).report
         #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled"))
         #expect(!report.candidates.map(\.id).contains("_Called._Called"))
+    }
+
+    /// The end-to-end consequence for C++: a constructed class's constructor is not reported, while
+    /// an unconstructed one now is. Both are `private`, since C++'s own `class` default would
+    /// otherwise exempt neither — the members are listed under `public:` to be callable at all, so
+    /// the access level is what keeps the public-API exemption out of the comparison.
+    @Test func aCalledCppConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = CppCodeParser().parse(source: """
+        class Called {
+            Called() {}
+        };
+        class Uncalled {
+            Uncalled() {}
+        };
+        class Worker {
+            void run() { Called made; }
+        };
+        """, fileName: "Worker.cpp")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("Called.Called"))
     }
 
     /// The end-to-end consequence for Dart's named constructors: a called one is not reported, while

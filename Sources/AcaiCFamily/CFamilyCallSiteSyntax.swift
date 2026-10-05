@@ -6,6 +6,10 @@ struct CFamilyCallSiteSyntax: CallSiteSyntax {
     let context: SourceFileContext
     let typeReferences: CFamilyTypeReferenceResolver
 
+    /// Construction resolution is C++-only: C has no constructors, so a `struct Thing t;` there has
+    /// no member to target and would leave an edge that can never resolve.
+    let dialect: CFamilyDialect
+
     /// Simple names of every function/method declared in the file, from the pre-pass, so an
     /// unqualified call `foo()` can be resolved to a free function / same-type method (and only
     /// then) — keeps stdlib calls (`printf`, …) out of the coverage denominator.
@@ -37,11 +41,11 @@ struct CFamilyCallSiteSyntax: CallSiteSyntax {
             // `.selfDispatch`: the call-graph builder tries the enclosing type first, then falls
             // back to a free function.
             let name = function.text(in: context)
-            guard scope.knownTypeNames.contains(name) || declaredFunctionNames.contains(name) else {
-                return nil
-            }
+            let constructs = dialect == .cpp && scope.knownTypeNames.contains(name)
+            guard constructs || declaredFunctionNames.contains(name) else { return nil }
             return scope.bareCall(
-                named: name, implicitSelf: true, constructorMethodName: { $0 },
+                named: name, implicitSelf: true,
+                constructorMethodName: constructs ? { $0 } : nil,
                 location: node.location(in: context)
             )
         default:
@@ -70,6 +74,7 @@ struct CFamilyCallSiteSyntax: CallSiteSyntax {
     /// `Thing t[3];` are `declaration` nodes, and `new Thing(…)` is a `new_expression`. Each
     /// resolves to the matching constructor, whose member is named after the type itself.
     private func constructionCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
+        guard dialect == .cpp else { return nil }
         switch node.nodeType {
         case "new_expression":
             return constructorCallSite(
