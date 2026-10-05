@@ -19,6 +19,8 @@ public struct SourceSpec {
     /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
     /// ``HealthCheck`` reflects them.
     public var diagnostics: [ParseDiagnostic]
+    /// Recorded rather than derived from ``detector``, so no consumer has to recognise a detector's name.
+    public var isFallback: Bool
 
     public init(
         language: CodeArtifact.SourceLanguage,
@@ -26,7 +28,8 @@ public struct SourceSpec {
         root: URL,
         detector: String = "",
         excludedPaths: [URL] = [],
-        diagnostics: [ParseDiagnostic] = []
+        diagnostics: [ParseDiagnostic] = [],
+        isFallback: Bool = false
     ) {
         self.language = language
         self.sourceDirs = sourceDirs
@@ -34,11 +37,13 @@ public struct SourceSpec {
         self.detector = detector
         self.excludedPaths = excludedPaths
         self.diagnostics = diagnostics
+        self.isFallback = isFallback
     }
 
-    func detected(by detector: any BuildSystemDetector) -> SourceSpec {
+    func detected(by detector: any BuildSystemDetector, asFallback: Bool = false) -> SourceSpec {
         var copy = self
         copy.detector = String(describing: type(of: detector))
+        copy.isFallback = asFallback
         return copy
     }
 
