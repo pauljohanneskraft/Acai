@@ -35,8 +35,7 @@ for ARTIFACT in $ARTIFACTS; do
         continue
     fi
     FOUND=1
-    # `*.captured.png` is the real capture a below-threshold state kept beside the golden copy it
-    # uploaded as `<state>.png`; it exists to be looked at, never to be installed as a golden.
+    # `*.captured.png` is a below-threshold state's real capture, kept for inspection only.
     while IFS= read -r CAPTURE; do
         RELATIVE="${CAPTURE#"$STAGING/$ARTIFACT/"}"
         TARGET="$GOLDENS/$PLATFORM/$RELATIVE"

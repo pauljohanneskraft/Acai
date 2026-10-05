@@ -25,8 +25,7 @@ struct ScreenshotComparator {
 
     private let comparisonSide = 256
     private let perCellDelta = 16
-    /// Suffix for a below-threshold state's real capture, kept out of `Scripts/snapshots_accept.sh`'s
-    /// walk so it is never installed as a golden.
+    /// `Scripts/snapshots_accept.sh` skips this suffix, so a capture kept for inspection never becomes a golden.
     private let capturedExtension = "captured.png"
 
     /// Where every `validate` call writes its capture — never `goldenDirectory` itself, which stays
@@ -88,6 +87,7 @@ struct ScreenshotComparator {
         testCase.add(attachment)
 
         let rendered = screenshot.pngRepresentation
+        try? FileManager.default.removeItem(at: outputDirectory.appendingPathComponent("\(name).\(capturedExtension)"))
         guard let committed = try? Data(contentsOf: goldenDirectory.appendingPathComponent("\(name).png")) else {
             write(rendered, name: name)
             return "Missing golden \(name).png — a new screenshot state is red on its first CI run by design; "
@@ -104,12 +104,7 @@ struct ScreenshotComparator {
             return "Could not compute perceptual diff for \(name).png"
         }
 
-        // `<state>.png` is what `Scripts/snapshots_accept.sh` installs, so below-threshold drift
-        // writes the committed golden's own bytes back and an unchanged state produces no diff when
-        // CI's output is dropped over `__Snapshots__/`. The capture is kept beside it whenever those
-        // bytes differ: a state that passed only marginally is exactly the one a later investigation
-        // needs real pixels for, and diffing the copy against the golden it came from can only ever
-        // report a match.
+        // Below threshold `<state>.png` is the golden's own bytes; the real capture is kept as `.captured.png`.
         let withinThreshold = changed <= maxChangedFraction
         write(withinThreshold ? committed : rendered, name: name)
         if withinThreshold, rendered != committed {

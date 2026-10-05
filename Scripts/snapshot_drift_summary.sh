@@ -11,15 +11,14 @@ OUT="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 # Wherever the comparator's `outputDirectory` resolved to on this platform.
 ROOTS=("/private/tmp/AcaiUITestSnapshots" "App/AcaiUITests/__RecordedSnapshots__")
 
-# Each line is a `.drift` file's contents plus the root it was found under, so the table can tell
-# whether that state also kept a `.captured.png` beside its uploaded golden copy.
+# Each `.drift` line plus its root, where that state's `.captured.png` would be; one row per state.
 DRIFTS=$(for ROOT in "${ROOTS[@]}"; do
     [ -d "$ROOT" ] || continue
     while IFS= read -r FILE; do
         LINE=$(cat "$FILE")
         [ -n "$LINE" ] && printf '%s %s\n' "$LINE" "$ROOT"
     done < <(find "$ROOT" -name '*.drift')
-done | sort -u)
+done | sort -u -k1,1)
 
 if [ -z "$DRIFTS" ]; then
     echo "No screenshot comparisons ran." >> "$OUT"
