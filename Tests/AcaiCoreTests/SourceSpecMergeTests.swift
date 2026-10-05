@@ -46,6 +46,15 @@ struct SourceSpecMergeTests {
         #expect(merged.diagnostics == [oneDiagnostic, twoDiagnostic])
     }
 
+    @Test func mergingConcatenatesNestedRootPaths() {
+        var one = spec("one", dirs: ["."])
+        one.nestedRootPaths = [URL(fileURLWithPath: "/repo/one/core")]
+        var two = spec("two", dirs: ["."])
+        two.nestedRootPaths = [URL(fileURLWithPath: "/repo/two/ui")]
+
+        #expect(one.merging(two).nestedRootPaths.map(\.lastPathComponent) == ["core", "ui"])
+    }
+
     @Test func mergedByLanguageFoldsOnlyWithinALanguage() {
         let kotlin = SourceSpec(
             language: .kotlin,

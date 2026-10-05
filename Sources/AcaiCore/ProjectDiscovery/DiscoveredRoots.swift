@@ -56,6 +56,7 @@ extension SourceSpec {
             sourceDirs: sourceDirs + other.sourceDirs,
             root: root,
             detector: detector,
+            nestedRootPaths: nestedRootPaths + other.nestedRootPaths,
             diagnostics: diagnostics + other.diagnostics
         )
     }

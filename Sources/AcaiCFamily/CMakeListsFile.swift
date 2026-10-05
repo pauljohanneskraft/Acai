@@ -1,21 +1,16 @@
 import Foundation
 
-/// A CMake listfile's `add_subdirectory()` declarations, read as text.
-///
-/// CMake listfiles are programs, so this reads only the one command that composes a project from
-/// parts: `add_subdirectory(<dir> [<binary_dir>] [EXCLUDE_FROM_ALL])`. Just the first argument names a
-/// source directory — `EXCLUDE_FROM_ALL` concerns the default build target rather than whether the
-/// code exists, so it is not read. Comments and quoted arguments are both skipped while searching, so
-/// a commented-out call names no sub-directory and neither does the command's own name inside a
-/// `message("…")`.
+/// A CMake listfile's `add_subdirectory()` declarations, read as text past comments and quoted arguments.
 struct CMakeListsFile {
 
-    /// What one `add_subdirectory()` call names.
+    struct Declaration: Equatable {
+        let directory: Subdirectory
+        let line: Int
+    }
+
     enum Subdirectory: Equatable {
-        /// A directory named outright, relative to the listfile's own directory or absolute.
         case literal(String)
-        /// An argument carrying a variable reference, an environment lookup or a generator expression,
-        /// which only CMake itself can expand.
+        /// A variable, environment lookup or generator expression only CMake can expand.
         case computed(argument: String)
     }
 
@@ -25,16 +20,15 @@ struct CMakeListsFile {
         characters = Array(source)
     }
 
-    /// The first argument of every `add_subdirectory()` call, in source order.
-    var subdirectories: [Subdirectory] {
-        var found: [Subdirectory] = []
+    var subdirectories: [Declaration] {
+        var found: [Declaration] = []
         var index = 0
         while index < characters.count {
             if let end = commentEnd(at: index) ?? stringLiteralEnd(at: index) {
                 index = end
             } else if let open = callOpening(at: index) {
                 let (subdirectory, end) = firstArgument(from: open)
-                if let subdirectory { found.append(subdirectory) }
+                if let subdirectory { found.append(Declaration(directory: subdirectory, line: line(at: index))) }
                 index = max(end, index + 1)
             } else {
                 index += 1
@@ -43,9 +37,11 @@ struct CMakeListsFile {
         return found
     }
 
-    /// The index just past the `(` of an `add_subdirectory` call starting at `index` — nil when the
-    /// word is part of a longer identifier or opens no call. CMake command names are
-    /// case-insensitive, so `ADD_SUBDIRECTORY(` is the same command.
+    private func line(at index: Int) -> Int {
+        characters[..<index].reduce(1) { $1 == "\n" ? $0 + 1 : $0 }
+    }
+
+    /// The index just past the `(`; command names are case-insensitive.
     private func callOpening(at index: Int) -> Int? {
         let word = Array("add_subdirectory")
         guard index + word.count <= characters.count,
@@ -57,11 +53,17 @@ struct CMakeListsFile {
         return cursor + 1
     }
 
-    /// The call's first argument, read from just past its `(`, and the index to resume scanning at.
-    /// Nil for `add_subdirectory()`, which names nothing.
     private func firstArgument(from open: Int) -> (Subdirectory?, Int) {
         var cursor = open
-        while cursor < characters.count, characters[cursor].isWhitespace { cursor += 1 }
+        while cursor < characters.count {
+            if characters[cursor].isWhitespace {
+                cursor += 1
+            } else if let end = commentEnd(at: cursor) {
+                cursor = end
+            } else {
+                break
+            }
+        }
         guard cursor < characters.count, characters[cursor] != ")" else { return (nil, cursor) }
         let (text, end) = argument(at: cursor)
         guard !text.isEmpty else { return (nil, end) }
@@ -69,7 +71,6 @@ struct CMakeListsFile {
         return (text.contains("$") ? .computed(argument: text) : .literal(text), end)
     }
 
-    /// The argument starting at `index`, quoted or bare, and the index just past it.
     private func argument(at index: Int) -> (text: String, end: Int) {
         guard characters[index] == "\"" else {
             let end = characters[index...].firstIndex { $0.isWhitespace || $0 == ")" } ?? characters.count
@@ -85,8 +86,7 @@ struct CMakeListsFile {
         return (text, min(cursor + 1, characters.count))
     }
 
-    /// The index just past the quoted argument starting at `index` — nil when none starts there, and
-    /// nil for one that is never closed, which leaves the quote to be read as ordinary text.
+    /// Nil for an unclosed quote, which is then read as ordinary text.
     private func stringLiteralEnd(at index: Int) -> Int? {
         guard characters[index] == "\"" else { return nil }
         var cursor = index + 1
@@ -101,9 +101,7 @@ struct CMakeListsFile {
         return nil
     }
 
-    /// The index just past the comment starting at `index` — nil when none starts there. A `#` runs to
-    /// the end of the line unless it opens a bracket comment (`#[[ … ]]`, `#[=[ … ]=]`), which runs to
-    /// the matching close whatever lines it spans.
+    /// A line comment, or a bracket comment (`#[[ … ]]`, `#[=[ … ]=]`) spanning any number of lines.
     private func commentEnd(at index: Int) -> Int? {
         guard characters[index] == "#" else { return nil }
         guard let equalSigns = bracketOpening(at: index + 1) else {
@@ -120,7 +118,7 @@ struct CMakeListsFile {
         return characters.count
     }
 
-    /// The number of `=` in a `[`, `=`-run, `[` bracket opening at `index` — nil when none starts there.
+    /// The number of `=` in a `[=…=[` opening at `index`.
     private func bracketOpening(at index: Int) -> Int? {
         guard index < characters.count, characters[index] == "[" else { return nil }
         var cursor = index + 1
@@ -134,6 +132,5 @@ private extension Character {
 
     var isCMakeIdentifier: Bool { isLetter || isNumber || self == "_" }
 
-    /// This character lowercased, left as it is when lowercasing it is not a single character.
     var lowercasedCharacter: Character { lowercased().count == 1 ? Character(lowercased()) : self }
 }

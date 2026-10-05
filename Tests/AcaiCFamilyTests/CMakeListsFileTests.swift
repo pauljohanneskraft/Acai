@@ -1,13 +1,11 @@
 import Testing
 @testable import AcaiCFamily
 
-/// `add_subdirectory()` is the one CMake command that composes a project from parts, so it is read
-/// from the listfile's text: its first argument alone, in either case, past comments and quotes.
 @Suite("C-family: CMakeLists.txt add_subdirectory()")
 struct CMakeListsFileTests {
 
     private func subdirectories(_ source: String) -> [CMakeListsFile.Subdirectory] {
-        CMakeListsFile(source: source).subdirectories
+        CMakeListsFile(source: source).subdirectories.map(\.directory)
     }
 
     @Test func readsEveryDeclaredDirectoryInOrder() {
@@ -17,9 +15,10 @@ struct CMakeListsFileTests {
         add_subdirectory(ui)
         """
         #expect(subdirectories(source) == [.literal("core"), .literal("ui")])
+        #expect(CMakeListsFile(source: source).subdirectories.map(\.line) == [2, 3])
     }
 
-    /// `add_subdirectory(<dir> <binary_dir>)`: only the first argument is a source directory.
+    /// `<binary_dir>` is a build-output location, not a source directory.
     @Test func readsOnlyTheFirstArgument() {
         #expect(subdirectories("add_subdirectory(core build/core)") == [.literal("core")])
     }
@@ -52,6 +51,10 @@ struct CMakeListsFileTests {
         #expect(subdirectories(source) == [.literal("real")])
     }
 
+    @Test func aCommentBeforeTheFirstArgumentIsSkipped() {
+        #expect(subdirectories("add_subdirectory( # the core\n  core)") == [.literal("core")])
+    }
+
     @Test func theCommandNameInsideAQuotedArgumentNamesNothing() {
         let source = """
         message("add_subdirectory(core) is how a part is added")
@@ -64,8 +67,6 @@ struct CMakeListsFileTests {
         #expect(subdirectories("add_subdirectory()").isEmpty)
     }
 
-    /// Every form CMake expands at configure time is reported as computed, since the directory it
-    /// names cannot be known from the text.
     @Test func variablesEnvironmentLookupsAndGeneratorExpressionsAreComputed() {
         #expect(subdirectories("add_subdirectory(${MODULE})") == [.computed(argument: "${MODULE}")])
         #expect(subdirectories("add_subdirectory($ENV{EXTRA})") == [.computed(argument: "$ENV{EXTRA}")])

@@ -10,8 +10,8 @@ import Foundation
 ///
 /// A detected root doesn't stop the descent, since Gradle and CMake nest, but a root's own source
 /// directories are not probed again as if they were new roots, and a source directory an ancestor
-/// already claimed for a language is not claimed a second time — unless that ancestor's own manifest
-/// declares the directory out of its build, in which case the nested root claims it instead.
+/// already claimed for a language is not claimed a second time — unless it is one of that ancestor's
+/// ``SourceSpec/nestedRootPaths``, which a root found there claims instead.
 ///
 /// Fixture and vendored-project directories (``nonRootDirectories``) are not walked for roots, so a
 /// `Package.swift` sitting in a UI-test fixture is not merged into the codebase's own Swift sources.
@@ -112,9 +112,9 @@ private struct DiscoveryWalk {
         var spec = spec
         spec.sourceDirs = spec.sourceDirs.filter { !isClaimed($0, for: spec.language) }
         guard !spec.sourceDirs.isEmpty else { return }
-        let excluded = spec.excludedPaths.map(\.standardizedPath)
+        let nestedRoots = spec.nestedRootPaths.map(\.standardizedPath)
         let claimed = spec.sourceDirs.map {
-            ClaimedDirectory(path: $0.standardizedPath, excludedPaths: excluded)
+            ClaimedDirectory(path: $0.standardizedPath, nestedRootPaths: nestedRoots)
         }
         claimedDirs[spec.language, default: []].append(contentsOf: claimed)
         claimedSubtrees.append(contentsOf: claimed.filter { $0.path != directory.standardizedPath })
@@ -153,16 +153,12 @@ private struct DiscoveryWalk {
     }
 }
 
-/// A source directory a root claimed, together with the paths under it that the root's own manifest
-/// declares out of its build. An excluded path is not claimed, so a root sitting inside one is free to
-/// claim it — which is how a build system that composes a project from parts (CMake's
-/// `add_subdirectory()`, a manifest's exclusions) keeps each part's boundary.
 private struct ClaimedDirectory {
     let path: String
-    let excludedPaths: [String]
+    let nestedRootPaths: [String]
 
     func claims(_ candidate: String) -> Bool {
-        candidate.isInside(path) && !excludedPaths.contains { candidate.isInside($0) }
+        candidate.isInside(path) && !nestedRootPaths.contains { candidate.isInside($0) }
     }
 }
 

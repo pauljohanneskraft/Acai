@@ -15,6 +15,9 @@ public struct SourceSpec {
     /// Paths under ``sourceDirs`` a build system's manifest declares out of the build. A path is
     /// excluded together with everything below it.
     public var excludedPaths: [URL]
+    /// Paths under ``sourceDirs`` the manifest composes from projects of their own. Discovery lets a
+    /// root found there claim them; their files are never excluded, so with no such root they stay here.
+    public var nestedRootPaths: [URL]
     /// Problems found while discovering this spec — a manifest whose layout could not be read in
     /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
     /// ``HealthCheck`` reflects them.
@@ -26,6 +29,7 @@ public struct SourceSpec {
         root: URL,
         detector: String = "",
         excludedPaths: [URL] = [],
+        nestedRootPaths: [URL] = [],
         diagnostics: [ParseDiagnostic] = []
     ) {
         self.language = language
@@ -33,6 +37,7 @@ public struct SourceSpec {
         self.root = root
         self.detector = detector
         self.excludedPaths = excludedPaths
+        self.nestedRootPaths = nestedRootPaths
         self.diagnostics = diagnostics
     }
 

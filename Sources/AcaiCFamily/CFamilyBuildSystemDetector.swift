@@ -11,9 +11,7 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
 
     public let indicatorFiles: [String]
 
-    /// The listfiles whose `add_subdirectory()` calls compose a project from nested roots. Empty for a
-    /// build system that declares no such composition — Make and Meson nest by convention only, so
-    /// there is nothing to read.
+    /// The listfiles whose `add_subdirectory()` calls declare nested project roots.
     public let subdirectoryFiles: [String]
 
     public init(indicatorFiles: [String], subdirectoryFiles: [String] = []) {
@@ -51,9 +49,6 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
         return specs
     }
 
-    /// Presence is still measured over the whole tree, so a project whose own sources all live in
-    /// sub-projects is reported rather than overlooked. Its declared sub-project directories are
-    /// excluded from the files it owns, which is what leaves each of them free to be a root.
     private func spec(
         _ language: CodeArtifact.SourceLanguage, at root: URL, nested: NestedRoots
     ) -> SourceSpec {
@@ -61,28 +56,29 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
             language: language,
             sourceDirs: [root],
             root: root,
-            excludedPaths: nested.directories,
+            nestedRootPaths: nested.directories,
             diagnostics: nested.diagnostics)
     }
 
-    /// The sub-project directories the listfile composes this project from, and a diagnostic for every
-    /// declaration whose directory only CMake can resolve. A named directory carrying no listfile of
-    /// its own is no root, so it stays part of this one.
+    /// A declared directory without a listfile of its own is no root, so it stays part of this one.
     private func nestedRoots(at root: URL) -> NestedRoots {
         let indicator = IndicatorFiles(indicatorFiles)
+        let rootPath = root.standardizedFileURL.path
+        let rootPrefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
         var nested = NestedRoots()
         for file in subdirectoryFiles {
             guard let source = try? String(contentsOf: root.appending(path: file), encoding: .utf8)
             else { continue }
-            for subdirectory in CMakeListsFile(source: source).subdirectories {
-                switch subdirectory {
+            for declaration in CMakeListsFile(source: source).subdirectories {
+                switch declaration.directory {
                 case .literal(let path):
-                    let directory = path.hasPrefix("/")
-                        ? URL(filePath: path) : root.appending(path: path)
-                    guard indicator.present(at: directory) else { continue }
-                    nested.directories.append(directory.standardizedFileURL)
+                    let directory = (path.hasPrefix("/") ? URL(filePath: path) : root.appending(path: path))
+                        .standardizedFileURL
+                    guard directory.path.hasPrefix(rootPrefix), indicator.present(at: directory) else { continue }
+                    nested.directories.append(directory)
                 case .computed(let argument):
-                    nested.diagnostics.append(computedDirectoryDiagnostic(argument, in: file))
+                    nested.diagnostics.append(
+                        computedDirectoryDiagnostic(argument, in: file, line: declaration.line))
                 }
             }
         }
@@ -90,9 +86,9 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
         return nested
     }
 
-    private func computedDirectoryDiagnostic(_ argument: String, in file: String) -> ParseDiagnostic {
+    private func computedDirectoryDiagnostic(_ argument: String, in file: String, line: Int) -> ParseDiagnostic {
         ParseDiagnostic(
-            location: SourceLocation(filePath: file, line: 1, column: 1),
+            location: SourceLocation(filePath: file, line: line, column: 1),
             kind: .incompleteDiscovery,
             message: "add_subdirectory(\(argument)) in \(file) names a directory CMake expands at "
                 + "configure time, so it was not discovered as a project root of its own. Any sources "
@@ -111,8 +107,6 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
     }
 }
 
-/// What reading one project's listfiles found: the nested roots it declares, and what could not be
-/// read while looking. Both languages of one root report the same answer, so it is read once.
 private struct NestedRoots {
     var directories: [URL] = []
     var diagnostics: [ParseDiagnostic] = []

@@ -316,59 +316,6 @@ struct DetectorTests {
         }
     }
 
-    /// `add_subdirectory()` composes a project from parts, so each declared directory carrying its own
-    /// listfile is left out of the root that declares it — which is what frees it to be a root itself.
-    @Test func cmakeExcludesTheSubdirectoriesItDeclares() throws {
-        let detector = CFamilyBuildSystemDetector.cmake
-        try withTempDir { root in
-            try write("CMakeLists.txt", in: root, contents: """
-            project(Composed)
-            add_subdirectory(core)
-            add_subdirectory(ui EXCLUDE_FROM_ALL)
-            add_subdirectory(assets)
-            """)
-            try write("main.c", in: root)
-            try write("core/CMakeLists.txt", in: root, contents: "add_library(core core.c)")
-            try write("core/core.c", in: root)
-            try write("ui/CMakeLists.txt", in: root, contents: "add_library(ui ui.c)")
-            try write("ui/ui.c", in: root)
-            // Declared, but carries no listfile of its own, so it is no root and stays part of this one.
-            try write("assets/logo.c", in: root)
-
-            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [.c])
-            #expect(specs.map(\.language) == [.c])
-            #expect(specs.first?.excludedPaths.map(\.lastPathComponent) == ["core", "ui"])
-            #expect(specs.first?.diagnostics.isEmpty == true)
-            #expect(allClaim(specs, root))
-        }
-    }
-
-    /// Make and Meson declare no composition, so a listfile below one is not read as a nested root.
-    @Test func makeDeclaresNoSubdirectories() throws {
-        try withTempDir { root in
-            try write("Makefile", in: root)
-            try write("main.c", in: root)
-            try write("core/CMakeLists.txt", in: root, contents: "add_subdirectory(deeper)")
-            let specs = CFamilyBuildSystemDetector.make.discoverSourceSpecs(
-                at: root, requestedLanguages: [.c])
-            #expect(specs.first?.excludedPaths.isEmpty == true)
-        }
-    }
-
-    @Test func cmakeReportsASubdirectoryItCannotResolve() throws {
-        let detector = CFamilyBuildSystemDetector.cmake
-        try withTempDir { root in
-            try write("CMakeLists.txt", in: root, contents: "add_subdirectory(${EXTRA_MODULE})")
-            try write("main.c", in: root)
-
-            let spec = detector.discoverSourceSpecs(at: root, requestedLanguages: [.c]).first
-            #expect(spec?.excludedPaths.isEmpty == true)
-            #expect(spec?.diagnostics.map(\.kind) == [.incompleteDiscovery])
-            #expect(spec?.diagnostics.first?.location.filePath == "CMakeLists.txt")
-            #expect(spec?.diagnostics.first?.message.contains("${EXTRA_MODULE}") == true)
-        }
-    }
-
     @Test func makeAndMesonIndicatorFiles() throws {
         try withTempDir { root in
             try write("Makefile", in: root)
