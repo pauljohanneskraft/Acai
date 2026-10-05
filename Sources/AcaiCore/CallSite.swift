@@ -57,18 +57,52 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
 
     public var location: SourceLocation?
 
+    /// Constructs its receiver type, which may have only an implicit initializer to target.
+    public var isConstruction: Bool
+
     public init(
         receiver: CallReceiver,
         methodName: String,
-        location: SourceLocation? = nil
+        location: SourceLocation? = nil,
+        isConstruction: Bool = false
     ) {
         self.receiver = receiver
         self.methodName = methodName
         self.location = location
+        self.isConstruction = isConstruction
     }
 
     public var receiverType: String? {
         if case .type(let name) = receiver { return name }
         return nil
+    }
+
+    public var asConstruction: CallSite {
+        var copy = self
+        copy.isConstruction = true
+        return copy
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case receiver, methodName, location, isConstruction
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        receiver = try container.decode(CallReceiver.self, forKey: .receiver)
+        methodName = try container.decode(String.self, forKey: .methodName)
+        location = try container.decodeIfPresent(SourceLocation.self, forKey: .location)
+        isConstruction = try container.decodeIfPresent(Bool.self, forKey: .isConstruction) ?? false
+    }
+
+    /// Writes `isConstruction` only when set, keeping an ordinary call's encoding minimal.
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(receiver, forKey: .receiver)
+        try container.encode(methodName, forKey: .methodName)
+        try container.encodeIfPresent(location, forKey: .location)
+        if isConstruction {
+            try container.encode(isConstruction, forKey: .isConstruction)
+        }
     }
 }

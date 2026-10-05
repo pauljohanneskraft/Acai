@@ -45,7 +45,8 @@ struct CallSiteCollector {
             return CallSite(
                 receiver: resolved.receiver,
                 methodName: methodName,
-                location: sourceLocations.sourceLocation(of: node)
+                location: sourceLocations.sourceLocation(of: node),
+                isConstruction: methodName == "init"
             )
         }
         if let declRef = callee.as(DeclReferenceExprSyntax.self) {
@@ -54,7 +55,8 @@ struct CallSiteCollector {
                 return CallSite(
                     receiver: knownTypeNames.contains(name) ? .type(name) : .unresolvedTypeName(name),
                     methodName: "init",
-                    location: sourceLocations.sourceLocation(of: node)
+                    location: sourceLocations.sourceLocation(of: node),
+                    isConstruction: true
                 )
             }
             return implicitCall(named: name, node: node, propertyMap: propertyMap)

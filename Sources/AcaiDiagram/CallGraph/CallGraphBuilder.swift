@@ -100,7 +100,10 @@ private struct CallGraphAccumulator {
     ) {
         for site in callSites {
             total += 1
-            guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else { continue }
+            guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else {
+                if constructsTypeWithImplicitInitializer(site) { resolved += 1 }
+                continue
+            }
             resolved += 1
             let toID = ensureNode(for: target.type, methodName: target.methodName, inScope: target.inScope)
             weights[Pair(from: fromID, to: toID), default: 0] += 1
@@ -134,6 +137,15 @@ private struct CallGraphAccumulator {
             // `.type`; anything still deferred here is genuinely unresolvable.
             return nil
         }
+    }
+
+    /// A resolved construction with no declared initializer to target: there is no member for an edge,
+    /// but the call is understood, so it counts toward coverage.
+    private func constructsTypeWithImplicitInitializer(_ site: CallSite) -> Bool {
+        guard site.isConstruction, case .type(let receiver) = site.receiver,
+              case .resolved(let id) = identityResolver.resolve(receiver), let type = typesByID[id.value]
+        else { return false }
+        return !type.members.contains { $0.kind == .initializer }
     }
 
     // MARK: - Scope
