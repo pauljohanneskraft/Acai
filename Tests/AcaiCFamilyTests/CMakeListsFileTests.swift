@@ -52,6 +52,14 @@ struct CMakeListsFileTests {
         #expect(subdirectories(source) == [.literal("real")])
     }
 
+    @Test func theCommandNameInsideAQuotedArgumentNamesNothing() {
+        let source = """
+        message("add_subdirectory(core) is how a part is added")
+        add_subdirectory(real)
+        """
+        #expect(subdirectories(source) == [.literal("real")])
+    }
+
     @Test func anEmptyCallNamesNothing() {
         #expect(subdirectories("add_subdirectory()").isEmpty)
     }

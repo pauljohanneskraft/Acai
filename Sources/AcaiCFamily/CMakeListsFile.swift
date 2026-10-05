@@ -5,8 +5,9 @@ import Foundation
 /// CMake listfiles are programs, so this reads only the one command that composes a project from
 /// parts: `add_subdirectory(<dir> [<binary_dir>] [EXCLUDE_FROM_ALL])`. Just the first argument names a
 /// source directory — `EXCLUDE_FROM_ALL` concerns the default build target rather than whether the
-/// code exists, so it is not read. Comments are skipped, so a commented-out call names no
-/// sub-directory.
+/// code exists, so it is not read. Comments and quoted arguments are both skipped while searching, so
+/// a commented-out call names no sub-directory and neither does the command's own name inside a
+/// `message("…")`.
 struct CMakeListsFile {
 
     /// What one `add_subdirectory()` call names.
@@ -29,7 +30,7 @@ struct CMakeListsFile {
         var found: [Subdirectory] = []
         var index = 0
         while index < characters.count {
-            if let end = commentEnd(at: index) {
+            if let end = commentEnd(at: index) ?? stringLiteralEnd(at: index) {
                 index = end
             } else if let open = callOpening(at: index) {
                 let (subdirectory, end) = firstArgument(from: open)
@@ -82,6 +83,22 @@ struct CMakeListsFile {
             cursor += 1
         }
         return (text, min(cursor + 1, characters.count))
+    }
+
+    /// The index just past the quoted argument starting at `index` — nil when none starts there, and
+    /// nil for one that is never closed, which leaves the quote to be read as ordinary text.
+    private func stringLiteralEnd(at index: Int) -> Int? {
+        guard characters[index] == "\"" else { return nil }
+        var cursor = index + 1
+        while cursor < characters.count {
+            if characters[cursor] == "\\" {
+                cursor += 2
+                continue
+            }
+            if characters[cursor] == "\"" { return cursor + 1 }
+            cursor += 1
+        }
+        return nil
     }
 
     /// The index just past the comment starting at `index` — nil when none starts there. A `#` runs to
