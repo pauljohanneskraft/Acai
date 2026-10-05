@@ -35,6 +35,7 @@ struct GitWorktreeSync {
         let hub = hub
         return try await locks.run(for: hub) {
             try Task.checkCancellation()
+            let hubWasAlreadyCloned = hub.isCloned
             do {
                 try await hub.sync(ref: ref, depth: depth, onProgress: onProgress)
                 try Task.checkCancellation()
@@ -45,22 +46,23 @@ struct GitWorktreeSync {
                 try Task.checkCancellation()
                 return headSHA
             } catch {
-                discardAttachment(named: worktreeName, at: worktreeDirectory)
+                discardAttachment(
+                    named: worktreeName, at: worktreeDirectory, keepingHub: hubWasAlreadyCloned)
                 throw error
             }
         }
     }
 
-    /// Unwinds a half-finished `attachWorktree`, called while its hub lock is still held. The hub
-    /// goes too once no worktree is registered on it, which is the rule `removeWorktree` applies —
-    /// a concurrent `attachWorktree` either registered first (and keeps it) or re-clones afterwards.
-    private func discardAttachment(named worktreeName: String, at worktreeDirectory: URL) {
+    /// Unwinds a half-finished `attachWorktree`, called while its hub lock is still held: the
+    /// worktree it was registering is deregistered and its directory deleted. The hub goes with it
+    /// unless it was already on disk when the attach started — one another codebase is using, or
+    /// one this call only fetched, is left exactly as it was found.
+    private func discardAttachment(named worktreeName: String, at worktreeDirectory: URL, keepingHub: Bool) {
         let worktrees = GitWorktree(repositoryDirectory: hub.localPath)
         try? worktrees.remove(name: worktreeName)
         try? FileManager.default.removeItem(at: worktreeDirectory)
-        if let remaining = try? worktrees.list(), remaining.isEmpty {
-            try? FileManager.default.removeItem(at: hub.localPath)
-        }
+        guard !keepingHub else { return }
+        try? FileManager.default.removeItem(at: hub.localPath)
     }
 
     /// Moves an **already-registered** worktree at `worktreeDirectory` — used by `pull` (same
