@@ -66,6 +66,44 @@ struct JSCallSiteBroadeningTests {
         }
     }
 
+    /// `new Thing()` resolves to a call-site edge targeting `constructor`, the same way any other
+    /// call on a known type does — in both TS and JS, and for every overload of the constructor.
+    @Test(arguments: [true, false])
+    func capturesConstructorCall(isTypeScript: Bool) {
+        let source = """
+        class Thing {
+            constructor(x) {}
+        }
+        class Worker {
+            run() {
+                const a = new Thing();
+                const b = new Thing(1);
+            }
+        }
+        """
+        let artifact = JSCodeParser(isTypeScript: isTypeScript).parse(
+            source: source, fileName: isTypeScript ? "Worker.ts" : "Worker.js")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let sites = worker?.members.first { $0.name == "run" }?.callSites ?? []
+        #expect(sites.count == 2)
+        #expect(sites.allSatisfy { $0.methodName == "constructor" && $0.receiver == .type("Thing") })
+    }
+
+    /// A qualified `new ns.Thing()` names no provable type, so it records no edge rather than one
+    /// pointing at the namespace.
+    @Test func dropsQualifiedConstructorCall() {
+        let source = """
+        class Worker {
+            run() {
+                const a = new ns.Thing();
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.ts")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        #expect(worker?.members.first { $0.name == "run" }?.callSites.isEmpty == true)
+    }
+
     @Test func resolvesCallOnTypedParameter() {
         let source = """
         class Helper {
