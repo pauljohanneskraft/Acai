@@ -103,12 +103,12 @@ Two more shared collaborators cover the rest of a declaration's syntax:
   `.modifierInfo(for:in:)` — `AcaiJVM`'s `JavaExtractor` and `KotlinExtractor` each hold their own
   instance with a different lookup table.
 - `DocumentationReader(convention:commentNodeTypes:transparentParentTypes:skippedSiblingTypes:)`
-  finds the comment run above a declaration and hands it to a
+  finds the comment run directly above a declaration (a blank line ends it) and hands it to a
   [DocumentationComment](/documentation/acaicore/documentationcomment) — your language's convention
   as data: the line prefixes (`///`, `//!`) and block openings (`/**`, `/*!`) that mark a comment as
-  documentation, the decoration its continuation lines repeat, and the delimiters of a string literal
-  that *is* the documentation. Set `documentation` on each `TypeDeclaration`, `Member` and `EnumCase`
-  from `.documentation(above:in:)`; `DeclarationBuilder.mark` plus `.attachDocumentation(_:since:)`
+  documentation, the block's closing and the decoration its continuation lines repeat, and the
+  delimiters of a string literal that *is* the documentation. Set `documentation` on each `TypeDeclaration`, `Member` and `EnumCase`
+  from `.documentation(above:in:)`; `DeclarationBuilder.mark` plus `.attachDocumentation(since:_:)`
   does it for a top-level walk that may produce a type, a function or a variable. Name only the
   markers the language really uses — a `///` line in TypeScript is a compiler directive, and Python's
   documentation is not a comment at all but the first statement of the declaration's body, read with

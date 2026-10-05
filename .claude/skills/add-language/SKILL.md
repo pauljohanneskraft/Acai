@@ -116,7 +116,7 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
      around a `DocumentationComment` describing only the markers your language really uses, and set
      `documentation` on every `TypeDeclaration`, `Member` and `EnumCase` from
      `.documentation(above:in:)`. For a top-level walk, `DeclarationBuilder.mark` and
-     `.attachDocumentation(_:since:)` cover whichever of a type/function/variable it produced. A
+     `.attachDocumentation(since:_:)` cover whichever of a type/function/variable it produced. A
      language whose documentation lives inside the declaration's body rather than above it reads it
      with `.prose(fromLiteral:)` — see `AcaiPython`'s `PythonDocstring`.
    - Reach for the shared pieces before writing your own: `TypeNamePrepass` (the declared-type
