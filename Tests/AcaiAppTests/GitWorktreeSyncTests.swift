@@ -183,6 +183,49 @@ struct GitWorktreeSyncTests {
         #expect(FileManager.default.fileExists(atPath: existing.appendingPathComponent("README.md").path))
     }
 
+    @Test("A failed first attach leaves neither the hub it cloned nor a worktree behind")
+    func failedAttachDiscardsTheHubItCloned() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "does-not-exist", hubStoreDirectory: hubStoreDirectory,
+            locks: GitRepositoryLocks())
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+
+        await #expect(throws: (any Error).self) { try await sync.attachWorktree(named: "codebase-1", at: worktree) }
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(!FileManager.default.fileExists(atPath: sync.hub.localPath.path))
+    }
+
+    @Test("A failed attach against a shared hub leaves the hub and its other worktrees intact")
+    func failedAttachKeepsTheSharedHub() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let locks = GitRepositoryLocks()
+        let existing = root.appendingPathComponent("existing", isDirectory: true)
+        try await GitWorktreeSync(
+            transportURL: source, ref: "main", hubStoreDirectory: hubStoreDirectory, locks: locks
+        ).attachWorktree(named: "codebase-0", at: existing)
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "does-not-exist", hubStoreDirectory: hubStoreDirectory, locks: locks)
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+
+        await #expect(throws: (any Error).self) { try await sync.attachWorktree(named: "codebase-1", at: worktree) }
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(try GitWorktree(repositoryDirectory: sync.hub.localPath).list() == ["codebase-0"])
+        #expect(FileManager.default.fileExists(atPath: existing.appendingPathComponent("README.md").path))
+    }
+
     // MARK: - Helpers
 
     private func makeTempDirectory() throws -> URL {
