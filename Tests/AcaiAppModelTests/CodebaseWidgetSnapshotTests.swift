@@ -63,7 +63,7 @@ struct CodebaseWidgetSnapshotTests {
     func newerFormatVersionIsDropped() throws {
         let store = try store()
         var list = CodebaseWidgetSnapshotList(snapshots: [
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai")
         ])
         list.formatVersion = CodebaseWidgetSnapshotList.currentFormatVersion + 1
         try store.save(list)
@@ -75,7 +75,7 @@ struct CodebaseWidgetSnapshotTests {
     func updateLeavesOtherCodebases() {
         var list = CodebaseWidgetSnapshotList(snapshots: [
             CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
-            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other"),
+            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other")
         ])
         list.update(CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai", typeCount: 9))
 
@@ -96,7 +96,7 @@ struct CodebaseWidgetSnapshotTests {
     func deletedCodebaseIsPruned() {
         var list = CodebaseWidgetSnapshotList(snapshots: [
             CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
-            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other"),
+            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other")
         ])
         list.removeAll(except: [second])
 
@@ -107,10 +107,10 @@ struct CodebaseWidgetSnapshotTests {
     func saveOverwrites() throws {
         let store = try store()
         try store.save(CodebaseWidgetSnapshotList(snapshots: [
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai")
         ]))
         try store.save(CodebaseWidgetSnapshotList(snapshots: [
-            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other"),
+            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other")
         ]))
 
         #expect(store.load().snapshots.map(\.codebaseID) == [second])
@@ -131,12 +131,12 @@ struct CodebaseWidgetSnapshotMergingTests {
         let list = CodebaseWidgetSnapshotList(snapshots: [
             CodebaseWidgetSnapshot(
                 codebaseID: first, codebaseName: "Acai", analysedAt: analysed, typeCount: 12,
-                findingCount: 3, criticalFindingCount: 1),
+                findingCount: 3, criticalFindingCount: 1)
         ])
         let merged = list.merging([
             CodebaseWidgetSnapshot(
                 codebaseID: first, codebaseName: "Acai", analysedAt: analysed, isOutOfDate: true,
-                freshnessCheckedAt: checked),
+                freshnessCheckedAt: checked)
         ])
 
         let snapshot = merged.snapshot(for: first)
@@ -152,10 +152,10 @@ struct CodebaseWidgetSnapshotMergingTests {
         let list = CodebaseWidgetSnapshotList(snapshots: [
             CodebaseWidgetSnapshot(
                 codebaseID: first, codebaseName: "Acai", analysedAt: analysed, isOutOfDate: true,
-                freshnessCheckedAt: checked),
+                freshnessCheckedAt: checked)
         ])
         let merged = list.merging([
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai", analysedAt: analysed, typeCount: 12),
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai", analysedAt: analysed, typeCount: 12)
         ])
 
         #expect(merged.snapshot(for: first)?.isOutOfDate == true)
@@ -168,11 +168,11 @@ struct CodebaseWidgetSnapshotMergingTests {
         let list = CodebaseWidgetSnapshotList(snapshots: [
             CodebaseWidgetSnapshot(
                 codebaseID: first, codebaseName: "Acai", analysedAt: analysed, isOutOfDate: true,
-                freshnessCheckedAt: checked, typeCount: 12, findingCount: 3),
+                freshnessCheckedAt: checked, typeCount: 12, findingCount: 3)
         ])
         let merged = list.merging([
             CodebaseWidgetSnapshot(
-                codebaseID: first, codebaseName: "Acai", analysedAt: analysed.addingTimeInterval(60)),
+                codebaseID: first, codebaseName: "Acai", analysedAt: analysed.addingTimeInterval(60))
         ])
 
         let snapshot = merged.snapshot(for: first)
@@ -186,10 +186,10 @@ struct CodebaseWidgetSnapshotMergingTests {
     func deletedCodebaseIsDropped() {
         let list = CodebaseWidgetSnapshotList(snapshots: [
             CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai", analysedAt: analysed),
-            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other", analysedAt: analysed),
+            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other", analysedAt: analysed)
         ])
         let merged = list.merging([
-            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other", analysedAt: analysed),
+            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other", analysedAt: analysed)
         ])
 
         #expect(merged.snapshots.map(\.codebaseID) == [second])
@@ -198,10 +198,10 @@ struct CodebaseWidgetSnapshotMergingTests {
     @Test("A renamed codebase takes the new name, not the stored one")
     func renameTakesEffect() {
         let list = CodebaseWidgetSnapshotList(snapshots: [
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Old", analysedAt: analysed, typeCount: 12),
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Old", analysedAt: analysed, typeCount: 12)
         ])
         let merged = list.merging([
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "New", analysedAt: analysed),
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "New", analysedAt: analysed)
         ])
 
         #expect(merged.snapshot(for: first)?.codebaseName == "New")
@@ -211,7 +211,7 @@ struct CodebaseWidgetSnapshotMergingTests {
     @Test("A codebase the list has never seen is added as it arrives")
     func newCodebaseIsAdded() {
         let merged = CodebaseWidgetSnapshotList().merging([
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai")
         ])
 
         #expect(merged.snapshots.map(\.codebaseName) == ["Acai"])

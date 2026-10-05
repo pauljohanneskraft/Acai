@@ -38,7 +38,7 @@ struct CodebaseWidgetPresentationTests {
     func configuredCodebaseWins() {
         let presentation = CodebaseWidgetPresentation(list: CodebaseWidgetSnapshotList(snapshots: [
             snapshot(first, "Acai", analysedAt: analysed),
-            snapshot(second, "Other", analysedAt: analysed.addingTimeInterval(60)),
+            snapshot(second, "Other", analysedAt: analysed.addingTimeInterval(60))
         ]))
         #expect(presentation.state(codebaseID: first).snapshot?.codebaseID == first)
     }
@@ -47,7 +47,7 @@ struct CodebaseWidgetPresentationTests {
     func unconfiguredShowsMostRecent() {
         let presentation = CodebaseWidgetPresentation(list: CodebaseWidgetSnapshotList(snapshots: [
             snapshot(first, "Acai", analysedAt: analysed),
-            snapshot(second, "Other", analysedAt: analysed.addingTimeInterval(60)),
+            snapshot(second, "Other", analysedAt: analysed.addingTimeInterval(60))
         ]))
         #expect(presentation.state(codebaseID: nil).snapshot?.codebaseID == second)
     }
@@ -56,7 +56,7 @@ struct CodebaseWidgetPresentationTests {
     func unconfiguredWithNoAnalysisStillShowsOne() {
         let presentation = CodebaseWidgetPresentation(list: CodebaseWidgetSnapshotList(snapshots: [
             snapshot(second, "Other"),
-            snapshot(first, "Acai"),
+            snapshot(first, "Acai")
         ]))
         #expect(presentation.state(codebaseID: nil) == .notAnalysed(snapshot(first, "Acai")))
     }
@@ -65,7 +65,7 @@ struct CodebaseWidgetPresentationTests {
     func tiesBreakOnName() {
         let presentation = CodebaseWidgetPresentation(list: CodebaseWidgetSnapshotList(snapshots: [
             snapshot(second, "Other", analysedAt: analysed),
-            snapshot(first, "Acai", analysedAt: analysed),
+            snapshot(first, "Acai", analysedAt: analysed)
         ]))
         #expect(presentation.state(codebaseID: nil).snapshot?.codebaseName == "Acai")
     }

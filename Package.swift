@@ -80,7 +80,7 @@ mcpOptionalDependencies.append(.target(name: "AcaiGit", condition: .when(platfor
 // MARK: WidgetKit widget showing a codebase's last-analysis state. Depends only on
 // `AcaiAppModel` — an extension links as little as it can, and the snapshot it reads is
 // written by the app into the App Group container. The `App/` extension target is a shell
-// around `AcaiWidgetBundle`, like the app targets are around `AcaiApp`.
+// around `CodebaseStateWidget`, like the app targets are around `AcaiApp`.
 optionalProducts.append(
     .library(name: "AcaiWidget", targets: ["AcaiWidget"])
 )

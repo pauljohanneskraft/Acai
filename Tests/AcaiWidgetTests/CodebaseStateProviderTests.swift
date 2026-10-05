@@ -67,7 +67,7 @@ struct CodebaseWidgetEntityQueryTests {
         var query = CodebaseWidgetEntityQuery()
         query.snapshots = { [
             CodebaseWidgetSnapshot(codebaseID: self.second, codebaseName: "Zebra"),
-            CodebaseWidgetSnapshot(codebaseID: self.first, codebaseName: "Acai"),
+            CodebaseWidgetSnapshot(codebaseID: self.first, codebaseName: "Acai")
         ] }
         return query
     }
