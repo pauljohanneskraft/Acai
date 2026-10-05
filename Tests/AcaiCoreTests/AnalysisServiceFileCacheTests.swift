@@ -139,24 +139,37 @@ struct AnalysisServiceFileCacheTests {
         #expect(fixture.storedFragments?.fragment(for: surviving) != nil)
     }
 
+    enum ForeignStamp: CaseIterable, Sendable {
+        case toolVersion, executable, schemaVersion
+    }
+
     /// A rebuild can change parser output without bumping `toolVersion`, so the executable counts too.
-    @Test(arguments: [
-        ToolBuild(toolVersion: "not-\(AcaiConstants.standard.toolVersion)", executable: Bundle.main.executableURL),
-        ToolBuild(toolVersion: AcaiConstants.standard.toolVersion, executable: nil)
-    ])
-    func aCacheFromADifferentBuildIsIgnoredEntirely(foreignBuild: ToolBuild) async throws {
-        #expect(foreignBuild != .current)
+    @Test(arguments: ForeignStamp.allCases)
+    func aCacheWithAForeignStampIsIgnoredEntirely(stamp: ForeignStamp) async throws {
         let fixture = try makeFixture()
         defer { fixture.remove() }
         let parser = CountingParser()
         let service = AnalysisService(parsers: [parser])
 
-        // A fragment whose fingerprint matches the file on disk exactly, so only the build stamp can
-        // be what makes it unusable.
+        let otherExecutable = fixture.root.appendingPathComponent("other-executable")
+        try write("not the running executable", to: otherExecutable, modifiedSecondsAgo: 7200)
+        let current = ToolBuild.current
+        let build = switch stamp {
+        case .toolVersion:
+            ToolBuild(toolVersion: "not-\(current.toolVersion)", executable: Bundle.main.executableURL)
+        case .executable:
+            ToolBuild(toolVersion: current.toolVersion, executable: otherExecutable)
+        case .schemaVersion:
+            current
+        }
+        let schemaVersion = CodeArtifact.currentSchemaVersion + (stamp == .schemaVersion ? 1 : 0)
+
+        // A fragment whose fingerprint matches the file on disk exactly, so only the stamp can be what
+        // makes it unusable.
         let fingerprint = try #require(SourceFileFingerprint(
             file: fixture.root.appendingPathComponent("A.fx"), relativeTo: fixture.root))
         let foreign = ParsedFileCache(
-            build: foreignBuild,
+            build: build, schemaVersion: schemaVersion,
             entriesByRelativePath: [fingerprint.relativePath: fingerprint.entry(for: CodeArtifact(
                 metadata: .init(sourceLanguage: .init(rawValue: "fixture"))))])
         try fixture.store.writeFileCache(foreign, forResolvedPath: fixture.root.resolvingSymlinksInPath().path)
