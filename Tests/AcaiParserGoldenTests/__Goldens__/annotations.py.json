@@ -800,10 +800,10 @@
                 "filePath" : "annotations.py",
                 "line" : 22
               },
-              "methodName" : "Engine",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Engine"
                 }
               }
             },
@@ -814,10 +814,10 @@
                 "filePath" : "annotations.py",
                 "line" : 26
               },
-              "methodName" : "Engine",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Engine"
                 }
               }
             },
@@ -828,10 +828,10 @@
                 "filePath" : "annotations.py",
                 "line" : 26
               },
-              "methodName" : "Wheel",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Wheel"
                 }
               }
             },
@@ -1294,10 +1294,10 @@
                 "filePath" : "annotations.py",
                 "line" : 46
               },
-              "methodName" : "Wheel",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Wheel"
                 }
               }
             }

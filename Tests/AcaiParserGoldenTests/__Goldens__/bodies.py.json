@@ -216,10 +216,10 @@
                 "filePath" : "bodies.py",
                 "line" : 15
               },
-              "methodName" : "Sink",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Sink"
                 }
               }
             }
@@ -702,10 +702,10 @@
                 "filePath" : "bodies.py",
                 "line" : 39
               },
-              "methodName" : "Cache",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Cache"
                 }
               }
             }
@@ -760,10 +760,10 @@
                 "filePath" : "bodies.py",
                 "line" : 42
               },
-              "methodName" : "Logger",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Logger"
                 }
               }
             }
@@ -1269,10 +1269,10 @@
                 "filePath" : "bodies.py",
                 "line" : 49
               },
-              "methodName" : "Cache",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Cache"
                 }
               }
             },
@@ -1283,10 +1283,10 @@
                 "filePath" : "bodies.py",
                 "line" : 50
               },
-              "methodName" : "Repository",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Repository"
                 }
               }
             }
@@ -1901,10 +1901,10 @@
                 "filePath" : "bodies.py",
                 "line" : 79
               },
-              "methodName" : "Cache",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Cache"
                 }
               }
             },
@@ -2161,10 +2161,10 @@
                 "filePath" : "bodies.py",
                 "line" : 91
               },
-              "methodName" : "Cache",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Cache"
                 }
               }
             }
@@ -2219,10 +2219,10 @@
                 "filePath" : "bodies.py",
                 "line" : 94
               },
-              "methodName" : "Cache",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Cache"
                 }
               }
             },
@@ -2233,10 +2233,10 @@
                 "filePath" : "bodies.py",
                 "line" : 95
               },
-              "methodName" : "Logger",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Logger"
                 }
               }
             }
@@ -2927,10 +2927,10 @@
                 "filePath" : "bodies.py",
                 "line" : 135
               },
-              "methodName" : "Cache",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Cache"
                 }
               }
             }
