@@ -27,7 +27,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     private(set) var pendingOpen: Task<Void, Never>?
-    private var storeSubscriptions: Set<AnyCancellable> = []
+    var storeSubscriptions: Set<AnyCancellable> = []
     let analyzers: CodebaseAnalyzerProviding
     let comparisonSources: ComparisonArtifactSourcing
     let checkouts: LocalCheckoutInspecting
@@ -58,6 +58,7 @@ final class ProjectBrowserViewModel: ObservableObject {
                 MainActor.assumeIsolated { self?.dropAnalysis(codebaseID: codebaseID) }
             }
             .store(in: &storeSubscriptions)
+        observeMemoryPressure()
     }
 
     /// Selects an item created in this same turn. Selecting it alongside `persistChanges()`'s animated
@@ -159,7 +160,18 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// codebase and stamped with its `lastIndexed` so a reindex invalidates it. Not `@Published`: it
     /// is a pure derivation of the stored artifact filled lazily on read (often during a view update),
     /// so mutating it must not trigger `objectWillChange`.
-    private var displayArtifactCache: [UUID: (stamp: Date?, artifact: CodeArtifact)] = [:]
+    var displayArtifactCache: [UUID: (stamp: Date?, artifact: CodeArtifact)] = [:]
+    /// Use order of `displayArtifactCache`'s keys. Four is the detail view plus the few codebases a
+    /// project screen reads from; `displayedCodebaseIDs` keeps whatever the selection needs beyond it.
+    var displayArtifactRecency = RecencyOrder<UUID>(capacity: 4)
+    /// Use order of the comparison caches' keys, bounding how many parsed snapshots a session that
+    /// steps through revision after revision accumulates. Not `@Published`: it is recorded on read
+    /// too, including reads during a view update. Four is two pull-request comparisons' worth of
+    /// snapshots, so flipping back to the previous one doesn't re-parse it.
+    var comparisonRecency = RecencyOrder<ComparisonKey>(capacity: 4)
+    /// Use order of `resolvedMergeBases`' keys. A resolved merge-base is one SHA, so this bound is
+    /// about not growing without end rather than about memory.
+    var mergeBaseRecency = RecencyOrder<MergeBaseKey>(capacity: 32)
 
     func generatedDiagram(for diagramID: UUID) -> GeneratedDiagram? {
         store.generatedDiagrams[diagramID]
@@ -353,12 +365,17 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard let semantic = store.artifact(for: codebaseID) else { return nil }
         let stamp = codebase(for: codebaseID)?.lastIndexed
         if let cached = displayArtifactCache[codebaseID], cached.stamp == stamp {
+            displayArtifactRecency.use(codebaseID)
             return cached.artifact
         }
         let display = CodebaseAnalyzer()
             .flattenedForDisplay(semantic)
             .filteringGeneratedTypes(using: semantic.standardLanguageResolver)
         displayArtifactCache[codebaseID] = (stamp, display)
+        displayArtifactRecency.use(codebaseID)
+        for evicted in displayArtifactRecency.overflow(retaining: displayedCodebaseIDs) {
+            displayArtifactCache.removeValue(forKey: evicted)
+        }
         return display
     }
 
