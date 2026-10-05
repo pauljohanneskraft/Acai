@@ -47,9 +47,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// `case`s, `catch`es, short-circuit `&&`/`||`, ternaries). `nil` when not computed, so an
     /// aggregate metric can tell "no branches" from "not measured".
     public var cyclomaticComplexity: Int?
-    /// What the author wrote about this member, as prose: the documentation written against the
-    /// declaration with the markup that only marked it as documentation stripped. `nil` when the
-    /// declaration carries none — a plain comment nearby is not documentation.
+    /// The declaration's documentation as prose, markers stripped. `nil` when it carries none.
     public var documentation: String?
 
     public init(
