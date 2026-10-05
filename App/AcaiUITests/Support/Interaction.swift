@@ -63,13 +63,10 @@ extension XCUIElement {
         var window: CGRect?
         // Checked at least once even if a slow existence query used up the deadline.
         repeat {
-            // `isHittable` fails the test outright, rather than returning false, on a frame it can't hit.
-            if exists, !frame.isEmpty {
-                let windowFrame = window ?? XCUIApplication().windows.firstMatch.frame
-                window = windowFrame
-                if !windowFrame.contains(frame) { return }
-                if isHittable { return }
-            }
+            if isHittable { return }
+            let windowFrame = window ?? XCUIApplication().windows.firstMatch.frame
+            window = windowFrame
+            if exists, !frame.isEmpty, !windowFrame.contains(frame) { return }
             // `XCUIElement` isn't KVO-compliant, so a predicate expectation would latch its first read.
             Thread.sleep(forTimeInterval: 0.25)
         } while Date() < deadline
