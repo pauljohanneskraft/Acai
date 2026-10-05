@@ -99,11 +99,13 @@ private struct CallGraphAccumulator {
         callSites: [CallSite], callerType: TypeDeclaration?, fromID: String, inScopeIDs: Set<String>
     ) {
         for site in callSites {
-            total += 1
             guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else {
+                guard !site.isSpeculative else { continue }
+                total += 1
                 if constructsTypeWithImplicitInitializer(site) { resolved += 1 }
                 continue
             }
+            total += 1
             resolved += 1
             let toID = ensureNode(for: target.type, methodName: target.methodName, inScope: target.inScope)
             weights[Pair(from: fromID, to: toID), default: 0] += 1

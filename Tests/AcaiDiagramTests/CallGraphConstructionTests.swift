@@ -52,6 +52,22 @@ struct CallGraphConstructionTests {
         #expect(graph.coverage.resolved == 0)
     }
 
+    @Test func anUnresolvedSpeculativeSiteIsNotCounted() {
+        let graph = CallGraphBuilder().build(from: artifact(
+            constructedMembers: [],
+            site: CallSite(receiver: .type("ThirdPartyJSON"), methodName: "subscript", isSpeculative: true)))
+        #expect(graph.coverage.total == 0)
+    }
+
+    @Test func aResolvedSpeculativeSiteIsAnEdge() {
+        let graph = CallGraphBuilder().build(from: artifact(
+            constructedMembers: [Member(name: "subscript", kind: .subscript, accessLevel: .internal)],
+            site: CallSite(receiver: .type("B"), methodName: "subscript", isSpeculative: true)))
+        #expect(graph.coverage.resolved == 1)
+        #expect(graph.coverage.total == 1)
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "B.subscript", weight: 1)])
+    }
+
     @Test func theConstructionMarkerIsEncodedOnlyWhenSet() throws {
         let construction = CallSite(receiver: .type("B"), methodName: "init", isConstruction: true)
         let call = CallSite(receiver: .type("B"), methodName: "work")

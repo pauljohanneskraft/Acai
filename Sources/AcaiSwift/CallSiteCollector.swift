@@ -78,7 +78,7 @@ struct CallSiteCollector {
         else { return nil }
         return CallSite(
             receiver: resolved.receiver, methodName: "subscript",
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node), isSpeculative: true
         )
     }
 

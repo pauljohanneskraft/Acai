@@ -36,6 +36,7 @@ extension SwiftCodeParser {
                     "updatensview", "updateuiview",
                     "dismantlensview", "dismantleuiview"
                 ]),
+            // `CallSiteCollector` records a caller edge for every construction and project-type subscript.
             deadCodeMemberKinds: [.method, .initializer, .subscript]
         )
     }

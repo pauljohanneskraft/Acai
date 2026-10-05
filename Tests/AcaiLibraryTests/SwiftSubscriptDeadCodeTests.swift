@@ -34,4 +34,16 @@ struct SwiftSubscriptDeadCodeTests {
             artifact: artifact, languages: artifact.standardLanguageResolver).report
         #expect(!report.candidates.map(\.id).contains("Matrix.subscript"))
     }
+
+    @Test func aSubscriptOnATypeOutsideTheProjectLeavesCoverageAlone() {
+        let artifact = SwiftCodeParser().parse(source: """
+        import SwiftyJSON
+        struct User {
+            let payload: JSON
+            func name() -> JSON { payload["name"] }
+        }
+        """, fileName: "User.swift").resolvingCallSiteReceivers()
+        let graph = CallGraphBuilder().build(from: artifact)
+        #expect(graph.coverage.total == 0)
+    }
 }
