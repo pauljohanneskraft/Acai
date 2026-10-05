@@ -7,7 +7,7 @@ import AcaiCore
 struct SelectorEditor: View {
     let title: LocalizedStringResource
     @Binding var selector: AcaiQuality.Selector
-    var identifierPrefix = "selector"
+    var identifierPrefix: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: .spacingXS) {
@@ -53,6 +53,6 @@ struct SelectorEditor: View {
     }
 
     private func identifier(_ facet: String) -> String {
-        "\(identifierPrefix).\(facet)"
+        identifierPrefix.map { "\($0).\(facet)" } ?? ""
     }
 }
