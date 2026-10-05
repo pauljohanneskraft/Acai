@@ -49,7 +49,8 @@ public struct PackageLayoutModel: Sendable {
             nodeSizes: diagram.nodes.map { ($0.id, Self.estimatedSize(for: $0)) },
             edges: diagram.edges.map { ($0.from, $0.to) },
             positionOverrides: positionOverrides,
-            groups: projects
+            groups: projects,
+            margin: projects.isEmpty ? 0 : Self.titleStrip
         )
         framesByID = layout.framesByID
         contentSize = layout.contentSize
