@@ -59,6 +59,27 @@ struct ModuleMapTests {
         #expect(map.module(forFilePath: "vendor/sdk/Sources/Net/B.swift") == "sdk/Net")
     }
 
+    @Test func rootsSharingALastComponentAreNamedByTheirShortestDistinctPath() {
+        let paths = ["apps/api/Sources/Core/A.swift", "services/api/Sources/Core/B.swift", "web/src/app.ts"]
+        let map = ModuleMap(roots: ["apps/api", "services/api", "web"], filePaths: paths)
+        #expect(paths.map(map.module(forFilePath:)) == ["apps/api/Core", "services/api/Core", "web"])
+        #expect(map.project(ofModule: "apps/api/Core") == "apps/api")
+        #expect(map.project(ofModule: "services/api/Core") == "services/api")
+        #expect(map.project(ofModule: "web") == "web")
+    }
+
+    @Test func theAnalysedFolderAndANestedRootOfTheSameNameStayApart() {
+        let map = ModuleMap(roots: [".", "tools/root"], filePaths: [])
+        #expect(map.module(forFilePath: "Sources/App/A.swift") == "root/App")
+        #expect(map.module(forFilePath: "tools/root/Sources/App/A.swift") == "tools/root/App")
+    }
+
+    @Test func aModuleOutsideEveryRootHasNoProject() {
+        let map = ModuleMap(roots: ["app-ios", "web"], filePaths: ["scripts/build.py"])
+        #expect(map.module(forFilePath: "scripts/build.py") == "scripts")
+        #expect(map.project(ofModule: "scripts") == nil)
+    }
+
     /// A location that never reached `metadata.filePaths` is resolved on demand, not missed.
     @Test func aPathTheMapWasNotBuiltWithStillResolves() {
         let map = ModuleMap(roots: ["app-ios", "web"], filePaths: [])

@@ -50,6 +50,11 @@ struct QualifiedModuleSelectorTests {
         #expect(graph().moduleNames.filter(selector.matchesModule(named:)) == ["web/api", "web/ui"])
     }
 
+    @Test func aProjectNamedByItsPathIsAddressedTheSameWay() {
+        let names = ["apps/api/Core", "apps/api/UI", "services/api/Core"]
+        #expect(names.filter(Selector(module: "apps/api/*").matchesModule(named:)) == ["apps/api/Core", "apps/api/UI"])
+    }
+
     /// The bare name is deliberately no longer enough: it is exactly the ambiguity the qualification
     /// exists to remove.
     @Test func theBareModuleNameNoLongerMatchesEitherProject() {

@@ -11,10 +11,7 @@
 /// projects and paths without a recognisable anchor collapse to a single group (``fallbackGroup``),
 /// which still renders as one package box.
 ///
-/// A folder holding several projects needs more than the anchor: two projects each with a `Core`
-/// target derive the same name from their paths. ``productName(forFilePath:inRoot:)`` qualifies the
-/// anchor-derived name with the project root the file was discovered under; ``ModuleMap`` decides
-/// per artifact when that is needed.
+/// ``ModuleMap`` decides per artifact whether a name is qualified with its project root.
 public struct ModuleResolver: Sendable {
 
     /// A directory name that locates the module within a path: the module is the directory
@@ -36,16 +33,10 @@ public struct ModuleResolver: Sendable {
         }
     }
 
-    /// What the anchor scan found, kept separate from the name it produces because the three
-    /// outcomes fall back differently: a qualified name drops to its root's name where an
-    /// unqualified one drops to the leading directory.
     private enum AnchorMatch {
-        /// An anchor located the module's directory component.
         case module(String)
-        /// An anchor matched, but it sits at the path's head — a single-module layout with no
-        /// module component to name.
+        /// An anchor at the path's head: a single-module layout with no module component.
         case single
-        /// No anchor appears in the path.
         case none
     }
 
@@ -82,16 +73,11 @@ public struct ModuleResolver: Sendable {
         }
     }
 
-    /// The module name qualified by the project root `filePath` was discovered under, as
-    /// `<root name>/<anchor-derived name>`. A file whose root holds no anchor is the root itself,
-    /// so every file of a single-module project shares one name.
-    ///
-    /// `root` is relative to the analysed folder, as `CodeArtifact.DiscoveredRoot/path` records it;
-    /// `"."` (the analysed folder itself) is named ``fallbackGroup``, since the folder has no name
-    /// of its own in a relative path.
-    public func productName(forFilePath filePath: String, inRoot root: String) -> String {
+    /// `<project>/<anchor-derived name>`, or just `<project>` when the file's path below `root`
+    /// holds no anchor. `project` defaults to ``projectName(ofRoot:)``.
+    public func productName(forFilePath filePath: String, inRoot root: String, project: String? = nil) -> String {
         let rootComponents = root.pathComponentsIgnoringDots
-        let name = rootComponents.last ?? fallbackGroup
+        let name = project ?? projectName(ofRoot: root)
         let fileComponents = filePath.pathComponentsIgnoringDots
         let relative =
             fileComponents.starts(with: rootComponents)
@@ -125,16 +111,13 @@ public struct ModuleResolver: Sendable {
 }
 
 extension ModuleResolver {
-    /// How a root path is named as a project: its last component, or ``fallbackGroup`` for `"."`
-    /// (the analysed folder itself), which has no name of its own in a relative path.
+    /// The root's last component, or ``fallbackGroup`` for `"."`, which has no name in a relative path.
     public func projectName(ofRoot root: String) -> String {
         root.pathComponentsIgnoringDots.last ?? fallbackGroup
     }
 }
 
 extension String {
-    /// The path's components with `.` and empty segments dropped, so a leading `./` or `/` never
-    /// shifts the anchor scan.
     public var pathComponentsIgnoringDots: [String] {
         split(separator: "/", omittingEmptySubsequences: true).map(String.init).filter { $0 != "." }
     }

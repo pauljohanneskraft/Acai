@@ -1,6 +1,6 @@
 // MARK: - Project Roots
 
-/// The project roots an artifact was discovered at, ordered so that a root nested inside another
+/// The project roots an artifact was discovered at, deepest first so a root nested inside another
 /// claims its own files rather than being swallowed by its ancestor.
 public struct ProjectRoots: Sendable {
 
@@ -21,38 +21,41 @@ public struct ProjectRoots: Sendable {
         let components = filePath.pathComponentsIgnoringDots
         return paths.first { components.starts(with: $0.pathComponentsIgnoringDots) }
     }
+
+    /// Each root's project name: the shortest trailing part of its path no other root ends in, so
+    /// `apps/api` and `services/api` stay two projects. `"."` is named `analysedFolder`.
+    public func projectNames(analysedFolder: String) -> [String: String] {
+        let components = Dictionary(uniqueKeysWithValues: paths.map { path in
+            let parts = path.pathComponentsIgnoringDots
+            return (path, parts.isEmpty ? [analysedFolder] : parts)
+        })
+        return components.mapValues { parts in
+            let length = (1...parts.count).first { length in
+                let suffix = parts.suffix(length)
+                return components.values.filter { $0.count >= length && $0.suffix(length) == suffix }.count == 1
+            }
+            return parts.suffix(length ?? parts.count).joined(separator: "/")
+        }
+    }
 }
 
 // MARK: - Module Map
 
-/// Every source file's build module, resolved once for a whole artifact.
+/// Every source file's build module, resolved once per artifact.
 ///
-/// Two things it does that ``ModuleResolver`` cannot on its own:
-///
-/// - **It knows how many projects the folder holds.** A path anchor alone names `Core` for two
-///   projects that each declare one, collapsing them into a single box. With more than one root in
-///   `metadata.discoveredRoots`, every module is qualified as `<root name>/<module>`; with one root
-///   the name is exactly what the anchor derives, so a single-project analysis is unchanged.
-/// - **It resolves each path once.** Callers used to ask ``ModuleResolver`` per member inside a
-///   double loop, re-splitting the same path for every member of every type. This is built once per
-///   artifact and handed to the metrics engine, the quality graph and the diagram builders.
-///
-/// A path the map was not built with still resolves — it is computed on demand rather than answered
-/// wrongly — so a location that never reached `metadata.filePaths` is not a silent miss.
-///
-/// Enrichment is deliberately not a caller: its module key is an internal disambiguation tier of
-/// `TypeIdentityResolver`, which indexes by the *unqualified* name, and the two have to agree.
+/// With more than one root in `metadata.discoveredRoots`, every module is qualified as
+/// `<project>/<module>`; with one root the name is exactly what ``ModuleResolver`` derives.
+/// Enrichment deliberately keeps the unqualified name, which `TypeIdentityResolver` indexes by.
 public struct ModuleMap: Sendable {
 
     public let resolver: ModuleResolver
 
-    /// `true` when the artifact holds more than one project root, so module names carry their
-    /// root's. The grouping surfaces read this to decide whether a project box is meaningful.
+    /// `true` when the artifact holds more than one project root, so module names carry their project.
     public let isRootQualified: Bool
 
     private let roots: ProjectRoots
-    private let modulesByFilePath: [String: String]
-    private let projectsByModule: [String: String]
+    private let projectsByRoot: [String: String]
+    private var modulesByFilePath: [String: String]
 
     public init(artifact: CodeArtifact, resolver: ModuleResolver = .standard) {
         self.init(
@@ -62,30 +65,19 @@ public struct ModuleMap: Sendable {
         )
     }
 
-    /// - Parameter roots: project root paths relative to the analysed folder, as
-    ///   `CodeArtifact/DiscoveredRoot` records them.
-    /// - Parameter filePaths: the paths to resolve up front. Any other path is resolved on demand.
+    /// - Parameter filePaths: the paths to resolve up front; any other path is resolved on demand.
     public init(roots: [String], filePaths: [String], resolver: ModuleResolver = .standard) {
-        let roots = ProjectRoots(roots)
-        let qualified = roots.count > 1
+        self.resolver = resolver
+        self.roots = ProjectRoots(roots)
+        self.isRootQualified = self.roots.count > 1
+        self.projectsByRoot = isRootQualified ? self.roots.projectNames(analysedFolder: resolver.fallbackGroup) : [:]
+        self.modulesByFilePath = [:]
         var modules: [String: String] = [:]
-        var projects: [String: String] = [:]
         modules.reserveCapacity(filePaths.count)
         for filePath in filePaths where modules[filePath] == nil {
-            guard qualified, let root = roots.enclosing(filePath) else {
-                modules[filePath] = resolver.productName(forFilePath: filePath)
-                continue
-            }
-            let module = resolver.productName(forFilePath: filePath, inRoot: root)
-            modules[filePath] = module
-            projects[module] = resolver.projectName(ofRoot: root)
+            modules[filePath] = module(forFilePath: filePath)
         }
-
-        self.resolver = resolver
-        self.isRootQualified = qualified
-        self.roots = roots
         self.modulesByFilePath = modules
-        self.projectsByModule = projects
     }
 
     public func module(forFilePath filePath: String) -> String {
@@ -93,20 +85,17 @@ public struct ModuleMap: Sendable {
         guard isRootQualified, let root = roots.enclosing(filePath) else {
             return resolver.productName(forFilePath: filePath)
         }
-        return resolver.productName(forFilePath: filePath, inRoot: root)
+        return resolver.productName(forFilePath: filePath, inRoot: root, project: projectsByRoot[root])
     }
 
-    /// The project a module belongs to, or `nil` when the artifact holds a single root and module
-    /// names are therefore unqualified.
+    /// The project a qualified module belongs to; `nil` for an unqualified one.
     public func project(ofModule module: String) -> String? {
-        guard isRootQualified else { return nil }
-        if let known = projectsByModule[module] { return known }
-        guard let separator = module.firstIndex(of: "/") else { return module }
-        return String(module[module.startIndex..<separator])
+        projectsByRoot.values
+            .filter { module == $0 || module.hasPrefix("\($0)/") }
+            .max { $0.count < $1.count }
     }
 
-    /// Each type's module keyed by type id — the form `ModuleAttribution`, the metrics engine and
-    /// the diagram builders all need.
+    /// Each type's module keyed by type id.
     public func modules(ofTypes types: [TypeDeclaration]) -> [String: String] {
         var result: [String: String] = [:]
         result.reserveCapacity(types.count)
