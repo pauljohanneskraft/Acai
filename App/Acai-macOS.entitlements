@@ -17,5 +17,11 @@
 	bookmark (`SecurityScopedBookmark`), which macOS refuses to mint or resolve without this. -->
 	<key>com.apple.security.files.bookmarks.app-scope</key>
 	<true/>
+	<!-- The container the app writes `CodebaseWidgetSnapshots.json` into and the widget extension
+	reads it out of (`AppGroupContainer.standard`). The identifier has to match on both sides. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.de.kraftsoftware.Acai</string>
+	</array>
 </dict>
 </plist>

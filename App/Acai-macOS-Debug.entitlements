@@ -28,5 +28,11 @@
 	<array>
 		<string>/private/tmp/</string>
 	</array>
+	<!-- The container the app writes `CodebaseWidgetSnapshots.json` into and the widget extension
+	reads it out of (`AppGroupContainer.standard`). The identifier has to match on both sides. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.de.kraftsoftware.Acai</string>
+	</array>
 </dict>
 </plist>

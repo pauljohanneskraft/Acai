@@ -77,6 +77,24 @@ optionalTargets.append(
 cliOptionalDependencies.append(.target(name: "AcaiGit", condition: .when(platforms: [.macOS])))
 mcpOptionalDependencies.append(.target(name: "AcaiGit", condition: .when(platforms: [.macOS])))
 
+// MARK: WidgetKit widget showing a codebase's last-analysis state. Depends only on
+// `AcaiAppModel` — an extension links as little as it can, and the snapshot it reads is
+// written by the app into the App Group container. The `App/` extension target is a shell
+// around `AcaiWidgetBundle`, like the app targets are around `AcaiApp`.
+optionalProducts.append(
+    .library(name: "AcaiWidget", targets: ["AcaiWidget"])
+)
+optionalTargets.append(
+    .target(
+        name: "AcaiWidget",
+        dependencies: ["AcaiAppModel"],
+        resources: [.process("Resources/Localizable.xcstrings")]
+    )
+)
+optionalTargets.append(
+    .testTarget(name: "AcaiWidgetTests", dependencies: ["AcaiWidget", "AcaiAppModel"])
+)
+
 // A library (not an executable): the real app entry points live in the XcodeGen-generated
 // project under `App/`, one per platform, each owning its own Info.plist/entitlements/asset
 // catalog and just instantiating `ProjectBrowserView` from this library. See `App/project.yml`.
