@@ -35,6 +35,8 @@ for ARTIFACT in $ARTIFACTS; do
         continue
     fi
     FOUND=1
+    # `*.captured.png` is the real capture a below-threshold state kept beside the golden copy it
+    # uploaded as `<state>.png`; it exists to be looked at, never to be installed as a golden.
     while IFS= read -r CAPTURE; do
         RELATIVE="${CAPTURE#"$STAGING/$ARTIFACT/"}"
         TARGET="$GOLDENS/$PLATFORM/$RELATIVE"
@@ -45,7 +47,7 @@ for ARTIFACT in $ARTIFACTS; do
             cp "$CAPTURE" "$TARGET"
             echo "  updated    $PLATFORM/$RELATIVE"
         fi
-    done < <(find "$STAGING/$ARTIFACT" -name '*.png')
+    done < <(find "$STAGING/$ARTIFACT" -name '*.png' ! -name '*.captured.png')
 done
 
 [ "$FOUND" -eq 1 ] || { echo "No screenshot artifacts on run $RUN_ID." >&2; exit 1; }
