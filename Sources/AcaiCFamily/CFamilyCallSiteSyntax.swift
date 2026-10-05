@@ -15,10 +15,13 @@ struct CFamilyCallSiteSyntax: CallSiteSyntax {
     /// - `receiver.method(args)` / `receiver->method(args)` where `receiver` is a known property,
     /// - `this->method(args)` — a call on the enclosing instance,
     /// - `Type::method(args)` where `Type` is a known type (static call),
-    /// - `function(args)` where `function` is a declared free function / same-type method.
+    /// - `function(args)` where `function` is a declared free function / same-type method,
+    /// plus the construction shapes ``constructionCallSite(_:scope:)`` recognises, which C++ spells
+    /// as a declaration rather than a call.
     /// Anything else (chained accesses, calls on unknown receivers) is dropped to keep resolution
     /// certain and the diagrams free of phantom participants.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
+        if let construction = constructionCallSite(node, scope: scope) { return construction }
         guard node.nodeType == "call_expression",
               let function = node.child(byFieldName: "function")
         else { return nil }
@@ -29,12 +32,18 @@ struct CFamilyCallSiteSyntax: CallSiteSyntax {
         case "qualified_identifier":
             return qualifiedCallSite(function, scope: scope, location: node.location(in: context))
         case "identifier":
-            // Bare `foo(args)` — a C free function, or (C++) an implicit `this->foo()` sibling call.
-            // Tagged `.selfDispatch`: the call-graph builder tries the enclosing type first, then
-            // falls back to a free function.
+            // `Thing(args)` — a temporary, resolving to the constructor like any other construction.
+            // Otherwise a C free function, or (C++) an implicit `this->foo()` sibling call, tagged
+            // `.selfDispatch`: the call-graph builder tries the enclosing type first, then falls
+            // back to a free function.
             let name = function.text(in: context)
-            guard declaredFunctionNames.contains(name) else { return nil }
-            return CallSite(receiver: .selfDispatch, methodName: name, location: node.location(in: context))
+            guard scope.knownTypeNames.contains(name) || declaredFunctionNames.contains(name) else {
+                return nil
+            }
+            return scope.bareCall(
+                named: name, implicitSelf: true, constructorMethodName: { $0 },
+                location: node.location(in: context)
+            )
         default:
             return nil
         }
@@ -55,6 +64,58 @@ struct CFamilyCallSiteSyntax: CallSiteSyntax {
         return scope.resolvedCallSite(
             receiverName: receiver.text(in: context), methodName: methodName, location: location
         )
+    }
+
+    /// C++ has no call syntax for construction: `Thing t;`, `Thing t(1);`, `Thing t{1};` and
+    /// `Thing t[3];` are `declaration` nodes, and `new Thing(…)` is a `new_expression`. Each
+    /// resolves to the matching constructor, whose member is named after the type itself.
+    private func constructionCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
+        switch node.nodeType {
+        case "new_expression":
+            return constructorCallSite(
+                of: node.child(byFieldName: "type"), scope: scope, location: node.location(in: context))
+        case "declaration":
+            guard let declarator = node.child(byFieldName: "declarator"), constructs(declarator) else {
+                return nil
+            }
+            return constructorCallSite(
+                of: node.child(byFieldName: "type"), scope: scope, location: node.location(in: context))
+        default:
+            return nil
+        }
+    }
+
+    /// Whether a declarator binds a value of the declared type itself, rather than a pointer or
+    /// reference to one (`Thing* p;`) or a function prototype (`Thing makeIt();`), neither of which
+    /// constructs anything. `Thing t = Thing(1);` is excluded here as well: its initializer is a
+    /// `call_expression` the walker resolves in its own right, so matching the declaration too
+    /// would record the one construction twice.
+    private func constructs(_ declarator: Node) -> Bool {
+        switch declarator.nodeType {
+        case "identifier":
+            return true
+        case "array_declarator":
+            return declarator.child(byFieldName: "declarator")?.nodeType == "identifier"
+        case "init_declarator":
+            guard declarator.child(byFieldName: "declarator")?.nodeType == "identifier",
+                  let value = declarator.child(byFieldName: "value")
+            else { return false }
+            return value.nodeType == "argument_list" || value.nodeType == "initializer_list"
+        default:
+            return false
+        }
+    }
+
+    /// A construction's target, resolved the same way a static `Thing::method()` call would be. A
+    /// template or qualified spelling keeps only its last component, so `std::vector<Thing> v;`
+    /// asks about `vector` and is dropped for not naming a known type.
+    private func constructorCallSite(
+        of typeNode: Node?, scope: CallSiteScope, location: SourceLocation
+    ) -> CallSite? {
+        guard let typeNode, let reference = typeReferences.baseTypeReference(typeNode) else { return nil }
+        let name = typeReferences.lastComponent(of: reference.name)
+        guard !name.isEmpty else { return nil }
+        return scope.resolvedCallSite(receiverName: name, methodName: name, location: location)
     }
 
     private func qualifiedCallSite(
