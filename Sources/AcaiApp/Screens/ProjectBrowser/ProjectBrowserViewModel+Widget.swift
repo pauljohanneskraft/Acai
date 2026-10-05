@@ -1,18 +1,16 @@
 import Foundation
-import AcaiRender
 
 extension ProjectBrowserViewModel {
     /// Shares every codebase's state with the widget extension, which cannot read a codebase's
-    /// folder itself. Gathers on the main actor — the stores it reads are main-actor state — and
-    /// writes off it.
+    /// folder itself. Gathers only what is cheap to read on the main actor; the snapshot's counts
+    /// are derived from the analysis inside the publisher, off it.
     func publishWidgetSnapshots() {
-        let snapshots = store.projects.flatMap { project in
-            project.codebases.map { widgetSnapshot(for: $0) }
+        let inputs = store.projects.flatMap { project in
+            project.codebases.map {
+                CodebaseWidgetInput(snapshot: widgetSnapshot(for: $0), analysis: analysis(for: $0.id))
+            }
         }
-        let publisher = CodebaseWidgetPublisher()
-        Task.detached(priority: .utility) {
-            publisher.publish(snapshots)
-        }
+        Task { await CodebaseWidgetPublisher.shared.publish(inputs) }
     }
 
     private func widgetSnapshot(for codebase: Codebase) -> CodebaseWidgetSnapshot {
@@ -25,14 +23,6 @@ extension ProjectBrowserViewModel {
         if let checked = freshnessCheck(for: codebase.id) {
             snapshot.isOutOfDate = checked.freshness == .stale
             snapshot.freshnessCheckedAt = checked.checkedAt
-        }
-        if let analysis = analysis(for: codebase.id) {
-            snapshot.typeCount = analysis.metrics.counts.totalTypes
-            let findings = AtlasFindings(
-                quality: analysis.quality, deadCode: analysis.deadCode, health: analysis.health
-            ).findings
-            snapshot.findingCount = findings.count
-            snapshot.criticalFindingCount = findings.count(where: { $0.severity == .critical })
         }
         return snapshot
     }

@@ -256,3 +256,4 @@ schemes:
         - package: Acai/AcaiCoreTests
         - package: Acai/AcaiAppModelTests
         - package: Acai/AcaiAppTests
+        - package: Acai/AcaiWidgetTests

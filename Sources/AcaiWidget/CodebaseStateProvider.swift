@@ -22,15 +22,21 @@ struct CodebaseStateProvider: AppIntentTimelineProvider {
     }
 
     func timeline(for configuration: SelectCodebaseIntent, in context: Context) async -> Timeline<CodebaseStateEntry> {
+        makeTimeline(for: configuration)
+    }
+
+    /// The `Context`-free half of the two above, which is all the state depends on.
+    /// `TimelineProviderContext` has no initializer, so this is also the seam the tests drive.
+    func entry(for configuration: SelectCodebaseIntent) -> CodebaseStateEntry {
+        let state = CodebaseWidgetPresentation(list: loadList()).state(codebaseID: configuration.codebase?.id)
+        return CodebaseStateEntry(date: Date(), state: state)
+    }
+
+    func makeTimeline(for configuration: SelectCodebaseIntent) -> Timeline<CodebaseStateEntry> {
         let entry = entry(for: configuration)
         return Timeline(
             entries: [entry],
             policy: .after(entry.date.addingTimeInterval(Self.refreshInterval)))
-    }
-
-    private func entry(for configuration: SelectCodebaseIntent) -> CodebaseStateEntry {
-        let state = CodebaseWidgetPresentation(list: loadList()).state(codebaseID: configuration.codebase?.id)
-        return CodebaseStateEntry(date: Date(), state: state)
     }
 }
 

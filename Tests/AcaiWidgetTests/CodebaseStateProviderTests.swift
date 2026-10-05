@@ -22,40 +22,37 @@ struct CodebaseStateProviderTests {
             freshnessCheckedAt: Date(timeIntervalSince1970: 1_700_000_100), typeCount: 12, findingCount: 3)
     }
 
-    @Test("The timeline carries the configured codebase's state and refreshes on the hour")
-    func timelineCarriesConfiguredState() async {
+    @Test("The timeline carries the configured codebase's state, and one entry refreshed on the hour")
+    func timelineCarriesConfiguredState() {
         let entity = CodebaseWidgetEntity(id: codebaseID, name: "Acai")
-        let timeline = await provider([analysedSnapshot]).timeline(
-            for: SelectCodebaseIntent(codebase: entity), in: .init())
+        let timeline = provider([analysedSnapshot]).makeTimeline(for: SelectCodebaseIntent(codebase: entity))
 
         #expect(timeline.entries.count == 1)
-        let entry = timeline.entries[0]
-        #expect(entry.state == .analysed(analysedSnapshot))
+        #expect(timeline.entries.first?.state == .analysed(analysedSnapshot))
         #expect(CodebaseStateProvider.refreshInterval == 60 * 60)
     }
 
     @Test("An unconfigured widget still has a state to show")
-    func unconfiguredWidgetHasState() async {
-        let entry = await provider([analysedSnapshot]).snapshot(for: SelectCodebaseIntent(), in: .init())
+    func unconfiguredWidgetHasState() {
+        let entry = provider([analysedSnapshot]).entry(for: SelectCodebaseIntent())
         #expect(entry.state.snapshot?.codebaseID == codebaseID)
     }
 
     @Test("With nothing shared, the entry says so rather than naming a codebase")
-    func nothingSharedEntry() async {
-        let entry = await provider([]).snapshot(for: SelectCodebaseIntent(), in: .init())
-        #expect(entry.state == .nothingShared)
+    func nothingSharedEntry() {
+        #expect(provider([]).entry(for: SelectCodebaseIntent()).state == .nothingShared)
     }
 
     @Test("The entry's deep link opens the codebase shown, not the app's front door")
-    func entryDeepLinksToItsCodebase() async {
-        let entry = await provider([analysedSnapshot]).snapshot(for: SelectCodebaseIntent(), in: .init())
+    func entryDeepLinksToItsCodebase() {
+        let entry = provider([analysedSnapshot]).entry(for: SelectCodebaseIntent())
         #expect(entry.state.snapshot?.address.url.absoluteString == "acai://codebase/\(codebaseID.uuidString)")
     }
 
     @Test("The gallery placeholder stands in for a real analysis rather than an empty state")
     func placeholderLooksAnalysed() {
-        let entry = provider([]).placeholder(in: .init())
-        #expect(entry.state.snapshot?.analysedAt != nil)
+        #expect(CodebaseWidgetSnapshot.placeholder.analysedAt != nil)
+        #expect(CodebaseWidgetSnapshot.placeholder.findingCount != nil)
     }
 }
 
