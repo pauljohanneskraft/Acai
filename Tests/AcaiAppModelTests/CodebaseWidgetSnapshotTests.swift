@@ -116,3 +116,104 @@ struct CodebaseWidgetSnapshotTests {
         #expect(store.load().snapshots.map(\.codebaseID) == [second])
     }
 }
+
+/// `CodebaseWidgetSnapshotList.merging(_:)`: the app learns a codebase's date, its counts and its
+/// freshness at three separate moments, so whichever writes second must not erase the others.
+@Suite("CodebaseWidgetSnapshotList merging")
+struct CodebaseWidgetSnapshotMergingTests {
+    private let first = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!
+    private let second = UUID(uuidString: "22222222-2222-4222-8222-222222222222")!
+    private let analysed = Date(timeIntervalSince1970: 1_700_000_000)
+    private let checked = Date(timeIntervalSince1970: 1_700_000_500)
+
+    @Test("Counts recorded for the same analysis survive a write that doesn't know them")
+    func countsSurviveAFreshnessOnlyWrite() {
+        let list = CodebaseWidgetSnapshotList(snapshots: [
+            CodebaseWidgetSnapshot(
+                codebaseID: first, codebaseName: "Acai", analysedAt: analysed, typeCount: 12,
+                findingCount: 3, criticalFindingCount: 1),
+        ])
+        let merged = list.merging([
+            CodebaseWidgetSnapshot(
+                codebaseID: first, codebaseName: "Acai", analysedAt: analysed, isOutOfDate: true,
+                freshnessCheckedAt: checked),
+        ])
+
+        let snapshot = merged.snapshot(for: first)
+        #expect(snapshot?.typeCount == 12)
+        #expect(snapshot?.findingCount == 3)
+        #expect(snapshot?.criticalFindingCount == 1)
+        #expect(snapshot?.isOutOfDate == true)
+        #expect(snapshot?.freshnessCheckedAt == checked)
+    }
+
+    @Test("Freshness recorded for the same analysis survives a write that only knows the counts")
+    func freshnessSurvivesACountsOnlyWrite() {
+        let list = CodebaseWidgetSnapshotList(snapshots: [
+            CodebaseWidgetSnapshot(
+                codebaseID: first, codebaseName: "Acai", analysedAt: analysed, isOutOfDate: true,
+                freshnessCheckedAt: checked),
+        ])
+        let merged = list.merging([
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai", analysedAt: analysed, typeCount: 12),
+        ])
+
+        #expect(merged.snapshot(for: first)?.isOutOfDate == true)
+        #expect(merged.snapshot(for: first)?.freshnessCheckedAt == checked)
+        #expect(merged.snapshot(for: first)?.typeCount == 12)
+    }
+
+    @Test("A reindex drops the previous analysis's counts instead of carrying them forward")
+    func reindexDropsStaleCounts() {
+        let list = CodebaseWidgetSnapshotList(snapshots: [
+            CodebaseWidgetSnapshot(
+                codebaseID: first, codebaseName: "Acai", analysedAt: analysed, isOutOfDate: true,
+                freshnessCheckedAt: checked, typeCount: 12, findingCount: 3),
+        ])
+        let merged = list.merging([
+            CodebaseWidgetSnapshot(
+                codebaseID: first, codebaseName: "Acai", analysedAt: analysed.addingTimeInterval(60)),
+        ])
+
+        let snapshot = merged.snapshot(for: first)
+        #expect(snapshot?.typeCount == nil)
+        #expect(snapshot?.findingCount == nil)
+        #expect(snapshot?.isOutOfDate == false)
+        #expect(snapshot?.freshnessCheckedAt == nil)
+    }
+
+    @Test("A codebase the app no longer has is dropped")
+    func deletedCodebaseIsDropped() {
+        let list = CodebaseWidgetSnapshotList(snapshots: [
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai", analysedAt: analysed),
+            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other", analysedAt: analysed),
+        ])
+        let merged = list.merging([
+            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other", analysedAt: analysed),
+        ])
+
+        #expect(merged.snapshots.map(\.codebaseID) == [second])
+    }
+
+    @Test("A renamed codebase takes the new name, not the stored one")
+    func renameTakesEffect() {
+        let list = CodebaseWidgetSnapshotList(snapshots: [
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Old", analysedAt: analysed, typeCount: 12),
+        ])
+        let merged = list.merging([
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "New", analysedAt: analysed),
+        ])
+
+        #expect(merged.snapshot(for: first)?.codebaseName == "New")
+        #expect(merged.snapshot(for: first)?.typeCount == 12)
+    }
+
+    @Test("A codebase the list has never seen is added as it arrives")
+    func newCodebaseIsAdded() {
+        let merged = CodebaseWidgetSnapshotList().merging([
+            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
+        ])
+
+        #expect(merged.snapshots.map(\.codebaseName) == ["Acai"])
+    }
+}

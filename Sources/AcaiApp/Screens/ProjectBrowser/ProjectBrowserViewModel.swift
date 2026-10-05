@@ -70,6 +70,7 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     func persistChanges() {
         store.save()
+        publishWidgetSnapshots()
         // `withAnimation` isn't cosmetic: without an active transaction, removing a row from the
         // sidebar's `List`/`DisclosureGroup` outline can leave stale "ghost" child rows behind until
         // an unrelated selection change forces a full reload.
@@ -227,6 +228,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         // view's `.task` will have re-fired for the new token.
         guard analysisToken(for: codebaseID) == token else { return }
         analyses[codebaseID] = .ready(token, analysis)
+        publishWidgetSnapshots()
     }
 
     /// Drops a codebase's cached analysis in every window, forcing a recompute. Used when a change the
@@ -255,7 +257,10 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     private enum FreshnessState {
         case computing(FreshnessToken)
-        case ready(FreshnessToken, CodebaseFreshness)
+        /// The check's own time is kept, not read as "now" when something later asks: the widget
+        /// says when the code was last compared against the analysis, so an old check must not
+        /// present itself as a fresh one.
+        case ready(FreshnessToken, CodebaseFreshness, Date)
     }
 
     /// In-memory only — recomputed on demand rather than persisted.
@@ -267,7 +272,13 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     func freshness(for codebaseID: UUID) -> CodebaseFreshness? {
-        if case .ready(_, let freshness) = freshnessStates[codebaseID] { return freshness }
+        freshnessCheck(for: codebaseID)?.freshness
+    }
+
+    func freshnessCheck(for codebaseID: UUID) -> (freshness: CodebaseFreshness, checkedAt: Date)? {
+        if case .ready(_, let freshness, let checkedAt) = freshnessStates[codebaseID] {
+            return (freshness, checkedAt)
+        }
         return nil
     }
 
@@ -279,7 +290,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     func ensureFreshnessLoaded(codebaseID: UUID) async {
         let token = freshnessToken(for: codebaseID)
         switch freshnessStates[codebaseID] {
-        case .ready(let cached, _) where cached == token:
+        case .ready(let cached, _, _) where cached == token:
             return
         case .computing(let cached) where cached == token:
             return
@@ -308,7 +319,8 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard !Task.isCancelled else { return }
         // A reindex during the computation supersedes this result.
         guard freshnessToken(for: codebaseID) == token else { return }
-        freshnessStates[codebaseID] = .ready(token, current == indexedFingerprint ? .fresh : .stale)
+        freshnessStates[codebaseID] = .ready(token, current == indexedFingerprint ? .fresh : .stale, Date())
+        publishWidgetSnapshots()
     }
 
     // MARK: - Freeform Diagram CRUD

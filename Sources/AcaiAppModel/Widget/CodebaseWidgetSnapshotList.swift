@@ -31,4 +31,26 @@ public struct CodebaseWidgetSnapshotList: Codable, Equatable, Sendable {
     public mutating func removeAll(except codebaseIDs: Set<UUID>) {
         snapshots.removeAll { !codebaseIDs.contains($0.codebaseID) }
     }
+
+    /// Replaces the list with `incoming` — one entry per codebase the app still has, so a deleted
+    /// one stops being offered — while keeping the counts and freshness a previous write recorded
+    /// for the *same* analysis. The app learns a codebase's date, its counts and its freshness at
+    /// three different moments, and whichever writes second must not erase the others; a count
+    /// recorded against an older analysis is dropped rather than carried forward as current.
+    public func merging(_ incoming: [CodebaseWidgetSnapshot]) -> CodebaseWidgetSnapshotList {
+        CodebaseWidgetSnapshotList(snapshots: incoming.map { incoming in
+            guard let existing = snapshot(for: incoming.codebaseID),
+                  existing.analysedAt == incoming.analysedAt
+            else { return incoming }
+            var merged = incoming
+            merged.typeCount = incoming.typeCount ?? existing.typeCount
+            merged.findingCount = incoming.findingCount ?? existing.findingCount
+            merged.criticalFindingCount = incoming.criticalFindingCount ?? existing.criticalFindingCount
+            if incoming.freshnessCheckedAt == nil {
+                merged.isOutOfDate = existing.isOutOfDate
+                merged.freshnessCheckedAt = existing.freshnessCheckedAt
+            }
+            return merged
+        })
+    }
 }
