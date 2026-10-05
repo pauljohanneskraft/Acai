@@ -4,6 +4,7 @@ enum DiagramEmptyReason: String, Sendable {
     case codebase
     case scope
     case filter
+    case scopeAndFilter
 }
 
 struct DiagramEmptyScopeOverlay<NothingOfThisKind: View>: View {
@@ -31,6 +32,14 @@ struct DiagramEmptyScopeOverlay<NothingOfThisKind: View>: View {
                     systemImage: "line.3.horizontal.decrease.circle",
                     undoTitle: .app("View.DiagramEmptyScopeOverlay.ClearFilter"),
                     undoSystemImage: "line.3.horizontal.decrease.circle.fill"
+                )
+            case .scopeAndFilter:
+                undoable(
+                    title: .app("View.DiagramEmptyScopeOverlay.NothingMatchesThisScopeAndFilter"),
+                    detail: .app("View.DiagramEmptyScopeOverlay.ScopeAndFilterHidEverything"),
+                    systemImage: "scope",
+                    undoTitle: .app("View.DiagramEmptyScopeOverlay.ResetScopeAndFilter"),
+                    undoSystemImage: "arrow.uturn.backward"
                 )
             }
         }

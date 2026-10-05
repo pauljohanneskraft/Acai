@@ -67,11 +67,16 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
 
     private func resolvedEmptyReason() -> DiagramEmptyReason {
         guard graph.nodes.isEmpty else { return .codebase }
-        if scope != .wholeCodebase, !build(scope: .wholeCodebase, filter: filter).graph.nodes.isEmpty {
-            return .scope
-        }
-        if filter != nil, !build(scope: scope, filter: nil).graph.nodes.isEmpty { return .filter }
+        let isScoped = scope != .wholeCodebase
+        let isFiltered = filter != nil
+        if isScoped, hasNodes(scope: .wholeCodebase, filter: filter) { return .scope }
+        if isFiltered, hasNodes(scope: scope, filter: nil) { return .filter }
+        if isScoped, isFiltered, hasNodes(scope: .wholeCodebase, filter: nil) { return .scopeAndFilter }
         return .codebase
+    }
+
+    private func hasNodes(scope: CallGraphScope, filter: AcaiQuality.Selector?) -> Bool {
+        !build(scope: scope, filter: filter).graph.nodes.isEmpty
     }
 
     var isDeltaMode: Bool { diff != nil }

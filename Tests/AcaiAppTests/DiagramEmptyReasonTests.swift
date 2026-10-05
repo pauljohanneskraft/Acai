@@ -130,13 +130,68 @@ struct DiagramEmptyReasonTests {
         #expect(viewModel.emptyReason == .codebase)
     }
 
-    @Test("When no single undo would bring types back, neither is offered")
-    func classDiagramBlamesTheCodebaseWhenNoSingleUndoHelps() {
+    @Test("When only undoing both the focus and the filter brings types back, both are reported")
+    func classDiagramScopeAndFilterAreReportedTogether() {
         var configuration = ClassDiagramConfiguration()
         configuration.filter = matchesNothing
         configuration.focus = FocusConfiguration(rootTypeName: "ZzNoSuchType")
         let viewModel = ClassDiagramViewModel(
             codebase: codebase(), artifact: artifact(), configuration: configuration)
+        #expect(viewModel.nodes.isEmpty)
+        #expect(viewModel.emptyReason == .scopeAndFilter)
+    }
+
+    @Test("A focus and a filter over a codebase with no types at all blame the codebase")
+    func classDiagramScopeAndFilterOverAnEmptyCodebaseBlamesTheCodebase() {
+        var configuration = ClassDiagramConfiguration()
+        configuration.filter = matchesNothing
+        configuration.focus = FocusConfiguration(rootTypeName: "ZzNoSuchType")
+        let viewModel = ClassDiagramViewModel(
+            codebase: codebase(), artifact: emptyArtifact(), configuration: configuration)
+        #expect(viewModel.emptyReason == .codebase)
+    }
+
+    @Test("Undoing the scope and filter together clears both, and neither touches Hide Generated Types")
+    func classDiagramWideningKeepsHideGeneratedTypes() {
+        var configuration = ClassDiagramConfiguration()
+        configuration.filter = matchesNothing
+        configuration.minimumAccessLevel = .public
+        configuration.focus = FocusConfiguration(rootTypeName: "ZzNoSuchType")
+        configuration.hideGeneratedTypes = true
+
+        let filterCleared = configuration.widened(undoing: .filter)
+        #expect(filterCleared.filter == nil)
+        #expect(filterCleared.minimumAccessLevel == nil)
+        #expect(filterCleared.focus != nil)
+        #expect(filterCleared.hideGeneratedTypes)
+
+        let bothCleared = configuration.widened(undoing: .scopeAndFilter)
+        #expect(bothCleared.filter == nil)
+        #expect(bothCleared.minimumAccessLevel == nil)
+        #expect(bothCleared.focus == nil)
+        #expect(bothCleared.hideGeneratedTypes)
+    }
+
+    @Test("A codebase of only generated types is not blamed on the filter")
+    func classDiagramHiddenGeneratedTypesBlameTheCodebase() {
+        let generatedOnly = CodeArtifact(
+            metadata: .init(sourceLanguage: .dart, filePaths: ["lib/user.g.dart"]),
+            types: [
+                TypeDeclaration(
+                    id: "User", name: "User", qualifiedName: "User", kind: .class, accessLevel: .public,
+                    location: SourceLocation(filePath: "lib/user.g.dart", line: 1, column: 1)
+                )
+            ]
+        )
+        var shown = ClassDiagramConfiguration()
+        shown.hideGeneratedTypes = false
+        #expect(!ClassDiagramViewModel(codebase: codebase(), artifact: generatedOnly, configuration: shown)
+            .nodes.isEmpty)
+
+        var configuration = ClassDiagramConfiguration()
+        configuration.filter = matchesNothing
+        let viewModel = ClassDiagramViewModel(
+            codebase: codebase(), artifact: generatedOnly, configuration: configuration)
         #expect(viewModel.nodes.isEmpty)
         #expect(viewModel.emptyReason == .codebase)
     }
@@ -173,10 +228,18 @@ struct DiagramEmptyReasonTests {
         #expect(viewModel.emptyReason == .codebase)
     }
 
-    @Test("When no single undo would bring call sites back, neither is offered")
-    func callGraphBlamesTheCodebaseWhenNoSingleUndoHelps() {
+    @Test("When only undoing both the scope and the filter brings call sites back, both are reported")
+    func callGraphScopeAndFilterAreReportedTogether() {
         let viewModel = CallGraphViewModel(
             artifact: artifact(), scope: .type("ZzNoSuchType"), filter: matchesNothing)
+        #expect(viewModel.isEmpty)
+        #expect(viewModel.emptyReason == .scopeAndFilter)
+    }
+
+    @Test("A scope and a filter over a codebase with no calls at all blame the codebase")
+    func callGraphScopeAndFilterOverAnEmptyCodebaseBlamesTheCodebase() {
+        let viewModel = CallGraphViewModel(
+            artifact: emptyArtifact(), scope: .type("ZzNoSuchType"), filter: matchesNothing)
         #expect(viewModel.isEmpty)
         #expect(viewModel.emptyReason == .codebase)
     }

@@ -70,7 +70,8 @@ extension ClassDiagramConfiguration {
         case .filter:
             widened.filter = nil
             widened.minimumAccessLevel = nil
-            widened.hideGeneratedTypes = false
+        case .scopeAndFilter:
+            widened = self.widened(undoing: .scope).widened(undoing: .filter)
         case .codebase:
             break
         }

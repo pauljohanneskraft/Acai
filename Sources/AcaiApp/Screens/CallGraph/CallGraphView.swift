@@ -255,6 +255,9 @@ private struct CallGraphCanvasView: View {
             onApplyScope(.wholeCodebase)
         case .filter:
             filterBinding.wrappedValue = nil
+        case .scopeAndFilter:
+            filterBinding.wrappedValue = nil
+            onApplyScope(.wholeCodebase)
         case .codebase:
             break
         }

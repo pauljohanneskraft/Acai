@@ -144,7 +144,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     private func resolvedEmptyReason(in renderArtifact: CodeArtifact) -> DiagramEmptyReason {
         guard model.nodes.isEmpty else { return .codebase }
-        let undos: [DiagramEmptyReason] = configuration.isFocused ? [.scope, .filter] : [.filter]
+        let undos: [DiagramEmptyReason] = configuration.isFocused ? [.scope, .filter, .scopeAndFilter] : [.filter]
         return undos.first { undo in
             !DiagramLayoutModel(
                 artifact: renderArtifact, configuration: configuration.widened(undoing: undo),
