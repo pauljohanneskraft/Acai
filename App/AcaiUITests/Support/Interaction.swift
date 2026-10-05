@@ -145,6 +145,29 @@ extension XCUIElement {
         destination.waitOrFail("the destination of tapping \(description)", file: file, line: line)
     }
 
+    /// Performs an idempotent reveal gesture — a context-menu long press or right-click, a swipe
+    /// action — and repeats it only while `destination` hasn't appeared. Only for a gesture that
+    /// reveals; never for one that acts.
+    ///
+    /// A gesture that is synthesised but whose presentation never opens is the same dropped-interaction
+    /// defect `tap(_:until:)` covers, and re-opening a menu or re-swiping a row duplicates nothing. The
+    /// retry stops early once something covers the element, though: that means the gesture did land and
+    /// its presentation is still settling, so gesturing again would hit the presentation rather than the
+    /// element, and waiting out `destination`'s own full budget is the better move.
+    func reveal(
+        _ description: String, until destination: XCUIElement, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line, _ gesture: @MainActor (XCUIElement) -> Void
+    ) {
+        for _ in 0..<attempts {
+            waitUntilReady(description, file: file, line: line)
+            SystemBanners().dismiss(file: file, line: line)
+            gesture(self)
+            if destination.waitForExistence(timeout: .uiTransition / Double(attempts)) { return }
+            if !exists || !isHittable { break }
+        }
+        destination.waitOrFail("the destination of revealing \(description)", file: file, line: line)
+    }
+
     /// Waits for `self` to go away, failing immediately with `failure`'s label if that appears first —
     /// for an operation whose success dismisses its own screen and whose failure shows an alert.
     func waitForDisappearanceOrFail(

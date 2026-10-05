@@ -62,8 +62,7 @@ class DiagramScreenBase {
         }
         // Opening the sidebar restores the tab it was last on, which is usually this one already.
         if content.exists { return }
-        tab.tapWhenReady("the sidebar's \(name) tab", file: file, line: line)
-        content.waitOrFail("the diagram's \(name) tab", file: file, line: line)
+        tab.tap("the sidebar's \(name) tab", until: content, file: file, line: line)
     }
 
     /// Re-layout (Class Diagram) / entry-point-or-scope Apply (Sequence, State, Call Graph) — call
