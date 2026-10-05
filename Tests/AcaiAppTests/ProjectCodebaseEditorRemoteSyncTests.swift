@@ -198,6 +198,36 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
     }
 
+    /// The activity's Cancel has to stop the clone itself, not just what the interface does with
+    /// its result: no codebase, nothing left on disk, and no error — a cancel is not a failure.
+    @Test func cancellingACloneLeavesNoCodebaseAndNothingOnDisk() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let store = ProjectStore(baseDir: root.appendingPathComponent("store"))
+        let mayStart = AsyncGate()
+        let editor = makeEditor(store: store, remoteService: GatedCloneRemoteService(mayStart: mayStart))
+        let projectID = editor.addProject(title: "Demo", subtitle: "")
+
+        let clone = Task {
+            await editor.addRemoteCodebase(
+                to: projectID, name: "widgets", remoteURL: remote.directory, ref: "main", refKind: .branch)
+        }
+        try await Eventually().waitUntil("the clone is registered as an activity") {
+            !store.activityCenter.operations.isEmpty
+        }
+        let operation = try #require(store.activityCenter.operations.first)
+        store.activityCenter.cancel(operation.id)
+        // Only now may the attach run at all, so "cancelled before it cloned" is a fact of the test.
+        await mayStart.open()
+        await clone.value
+
+        #expect(store.projects.first?.codebases.isEmpty == true)
+        #expect(directoryNames(in: store.gitWorktreesDir).isEmpty)
+        #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
+        #expect(store.lastError == nil)
+    }
+
     private func directoryNames(in directory: URL) -> [String] {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
         return names.filter { !$0.hasPrefix(".") }
@@ -207,9 +237,16 @@ struct ProjectCodebaseEditorRemoteSyncTests {
 /// `LiveGitRemoteService`, but the clone parks once the worktree is on disk so a test can mutate
 /// the project list in the window `addRemoteCodebase` suspends in.
 private struct GatedCloneRemoteService: GitRemoteService {
+    /// Parks the attach *before* it does anything, so a test can cancel the activity while the
+    /// clone provably hasn't started. `nil` lets it run straight through to `attached`.
+    let mayStart: AsyncGate?
     let attached = AsyncGate()
     let mayFinish = AsyncGate()
     private let live = LiveGitRemoteService()
+
+    init(mayStart: AsyncGate? = nil) {
+        self.mayStart = mayStart
+    }
 
     func listRemote(_ endpoint: RemoteEndpoint) async throws -> GitRemoteListing.Result {
         try await live.listRemote(endpoint)
@@ -220,6 +257,9 @@ private struct GatedCloneRemoteService: GitRemoteService {
         _ target: RemoteCheckoutTarget, destination: GitWorktreeDestination,
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> (headSHA: String, remoteURL: URL) {
+        if let mayStart {
+            await mayStart.wait()
+        }
         let result = try await live.attachWorktree(target, destination: destination, onProgress: onProgress)
         await attached.open()
         await mayFinish.wait()
