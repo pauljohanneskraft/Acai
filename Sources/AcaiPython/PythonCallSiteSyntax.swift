@@ -18,11 +18,15 @@ struct PythonCallSiteSyntax: CallSiteSyntax {
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
         guard node.nodeType == "call", let funcNode = node.child(byFieldName: "function") else { return nil }
 
-        // Bare call `name(...)`: no receiver type recorded, so the diagram layers resolve it to a
-        // top-level function (or drop it, e.g. builtins/constructors).
+        // Bare call `name(...)`: a declared type name is a construction, which resolves through
+        // `CallSiteScope.bareCall`'s constructor opt-in to that type's fixed `__init__` member.
+        // Anything else records no receiver type, so the diagram layers resolve it to a top-level
+        // function or drop it (e.g. a builtin); Python has no implicit receiver, so it stays `.free`
+        // rather than `.selfDispatch`.
         if funcNode.nodeType == "identifier" {
-            return CallSite(
-                receiver: .free, methodName: funcNode.text(in: context), location: node.location(in: context)
+            return scope.bareCall(
+                named: funcNode.text(in: context), implicitSelf: false,
+                constructorMethodName: { _ in "__init__" }, location: node.location(in: context)
             )
         }
 
