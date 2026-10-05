@@ -334,16 +334,13 @@ struct DeadCodeMemberKindAuditTests {
     @Test func aPythonConstructionResolvesToAnInitEdgeWhileAnUncalledInitIsStillExempt() {
         let artifact = PythonCodeParser().parse(source: """
         class Called:
-            def __init__(self):
-                pass
+            def __init__(self): pass
 
         class Uncalled:
-            def __init__(self):
-                pass
+            def __init__(self): pass
 
         class Worker:
-            def run(self):
-                Called()
+            def run(self): Called()
         """, fileName: "worker.py")
 
         let graph = CallGraphBuilder().build(from: artifact)
@@ -353,33 +350,6 @@ struct DeadCodeMemberKindAuditTests {
             artifact: artifact, languages: artifact.standardLanguageResolver).report
         #expect(report.scannedKinds.contains(.initializer))
         #expect(!report.candidates.map(\.id).contains("Uncalled.__init__"))
-    }
-
-    /// An inherited `__init__` resolves exactly the way an inherited regular method does — which is
-    /// to say neither resolves, since `CallGraphBuilder` matches a `.type` receiver against that
-    /// type's own members and walks no supertype chain. Both call sites are still *recorded* against
-    /// `Child`, so they count in `coverage`'s denominator. Pinned as a pair: should inherited-member
-    /// resolution ever arrive, the constructor must come with it rather than need its own case.
-    @Test func anInheritedPythonInitResolvesLikeAnInheritedMethod() throws {
-        let sites = try callSites("""
-        class Base:
-            def __init__(self):
-                pass
-
-            def shared(self):
-                pass
-
-        class Child(Base):
-            pass
-
-        class Worker:
-            def run(self):
-                made = Child()
-                made.shared()
-        """, in: "run", of: PythonCodeParser(), fileName: "worker.py")
-
-        #expect(sites.map(\.receiver) == [.type("Child"), .type("Child")])
-        #expect(sites.map(\.methodName) == ["__init__", "shared"])
     }
 
     /// The end-to-end consequence for Dart's named constructors: a called one is not reported, while

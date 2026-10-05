@@ -237,4 +237,31 @@ struct PythonCallSiteTests {
         #expect(topLevel?.callSites.map(\.receiver) == [.type("Widget")])
         #expect(topLevel?.callSites.map(\.methodName) == ["__init__"])
     }
+
+    /// An inherited `__init__` is recorded against the subclass exactly as an inherited regular
+    /// method is, so the two resolve or fail to resolve together: `CallGraphBuilder` matches a
+    /// `.type` receiver against that type's own members and walks no supertype chain, leaving both
+    /// of these in `coverage`'s denominator. Pinned as a pair — should inherited-member resolution
+    /// ever arrive, the constructor should come with it rather than need a case of its own.
+    @Test func inheritedInitializerIsRecordedLikeAnInheritedMethod() {
+        let source = """
+        class Base:
+            def __init__(self):
+                pass
+
+            def shared(self):
+                pass
+
+        class Child(Base):
+            pass
+
+        class Worker:
+            def run(self):
+                made = Child()
+                made.shared()
+        """
+        let sites = callSites(source, method: "run")
+        #expect(sites.map(\.receiver) == [.type("Child"), .type("Child")])
+        #expect(sites.map(\.methodName) == ["__init__", "shared"])
+    }
 }
