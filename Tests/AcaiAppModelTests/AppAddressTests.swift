@@ -2,40 +2,36 @@ import Foundation
 import Testing
 @testable import AcaiAppModel
 
-/// `AppAddress`: the `acai://<kind>/<uuid>` deep link the app and the widget both speak.
-@Suite("AppAddress")
+/// `AppAddress`'s own parsing and formatting. What an address *resolves to* in the app is
+/// `AcaiAppTests`' `AppAddressResolutionTests`.
+@Suite("App addresses")
 struct AppAddressTests {
-    private let id = UUID(uuidString: "7F6C1C1E-4F3A-4B7D-9C2E-1A2B3C4D5E6F")!
-
-    @Test("Every kind round-trips through its URL")
-    func everyKindRoundTrips() throws {
-        for address in [AppAddress.project(id), .codebase(id), .diagram(id)] {
-            #expect(AppAddress(url: address.url) == address)
-        }
+    @Test(arguments: [AppAddress.project(UUID()), .codebase(UUID()), .diagram(UUID())])
+    func urlRoundTrips(_ address: AppAddress) {
+        #expect(AppAddress(url: address.url) == address)
     }
 
-    @Test("A codebase address spells out the scheme, host and id")
-    func codebaseAddressSpelling() {
-        #expect(AppAddress.codebase(id).url.absoluteString == "acai://codebase/\(id.uuidString)")
+    @Test func urlHasTheDocumentedShape() {
+        let id = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+        #expect(AppAddress.codebase(id).url.absoluteString == "acai://codebase/22222222-2222-2222-2222-222222222222")
     }
 
-    @Test("The host is matched case-insensitively, as a pasted link may not preserve case")
-    func hostIsCaseInsensitive() {
-        #expect(AppAddress(url: URL(string: "acai://CODEBASE/\(id.uuidString)")!) == .codebase(id))
+    @Test func parsingIgnoresTheCaseOfSchemeKindAndID() throws {
+        let url = try #require(URL(string: "ACAI://Diagram/33333333-3333-3333-3333-33333333333a"))
+        #expect(AppAddress(url: url) == .diagram(UUID(uuidString: "33333333-3333-3333-3333-33333333333A")!))
     }
 
-    @Test("A foreign scheme, unknown kind, non-UUID id, query or fragment is not an address")
-    func malformedURLsAreRejected() {
-        let rejected = [
-            "https://codebase/\(id.uuidString)",
-            "acai://finding/\(id.uuidString)",
-            "acai://codebase/not-a-uuid",
-            "acai://codebase/\(id.uuidString)/extra",
-            "acai://codebase/\(id.uuidString)?x=1",
-            "acai://codebase/\(id.uuidString)#x",
-        ]
-        for string in rejected {
-            #expect(AppAddress(url: URL(string: string)!) == nil, "\(string) should not parse")
-        }
+    @Test(arguments: [
+        "https://codebase/22222222-2222-2222-2222-222222222222",
+        "acai://codebase/not-a-uuid",
+        "acai://codebase/22222222-2222-2222-2222-222222222222/extra",
+        "acai://codebase",
+        "acai://repository/22222222-2222-2222-2222-222222222222",
+        "acai://codebase/22222222-2222-2222-2222-222222222222?x=1",
+        "acai://codebase/22222222-2222-2222-2222-222222222222#x"
+    ])
+    func malformedURLsAreRejected(_ string: String) throws {
+        let url = try #require(URL(string: string))
+        #expect(AppAddress(url: url) == nil)
     }
 }
