@@ -50,7 +50,7 @@ struct CMakeNestedRootTests {
             try write("CMakeLists.txt", in: root, contents: """
             project(Composed)
             add_subdirectory(core)
-            add_subdirectory(ui EXCLUDE_FROM_ALL)
+            add_subdirectory(ui ${CMAKE_BINARY_DIR}/ui-build EXCLUDE_FROM_ALL)
             add_subdirectory(assets)
             """)
             try write("main.c", in: root)
