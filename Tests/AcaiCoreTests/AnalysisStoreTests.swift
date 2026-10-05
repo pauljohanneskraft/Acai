@@ -150,7 +150,7 @@ struct AnalysisStoreTests {
 
     private func makeFileCache() -> ParsedFileCache {
         ParsedFileCache(
-            toolVersion: AcaiConstants.standard.toolVersion, entriesByRelativePath: ["Foo.swift": makeFileCacheEntry()])
+            build: .current, entriesByRelativePath: ["Foo.swift": makeFileCacheEntry()])
     }
 
     @Test func fileCacheRoundTripsThroughTheStore() throws {

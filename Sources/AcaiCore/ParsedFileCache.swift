@@ -12,17 +12,17 @@ struct ParsedFileCache: Codable, Equatable, Sendable {
     }
 
     private var formatVersion: Int
-    private var toolVersion: String
+    private var build: ToolBuild
     private var entriesByRelativePath: [String: Entry]
 
-    init(toolVersion: String, entriesByRelativePath: [String: Entry] = [:]) {
+    init(build: ToolBuild, entriesByRelativePath: [String: Entry] = [:]) {
         self.formatVersion = Self.currentFormatVersion
-        self.toolVersion = toolVersion
+        self.build = build
         self.entriesByRelativePath = entriesByRelativePath
     }
 
-    func isWritten(byToolVersion toolVersion: String) -> Bool {
-        formatVersion == Self.currentFormatVersion && self.toolVersion == toolVersion
+    func isWritten(by build: ToolBuild) -> Bool {
+        formatVersion == Self.currentFormatVersion && self.build == build
     }
 
     func fragment(for fingerprint: SourceFileFingerprint) -> CodeArtifact? {

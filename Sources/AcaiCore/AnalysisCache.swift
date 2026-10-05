@@ -8,7 +8,7 @@ public struct AnalysisCache: Sendable {
 
     private let store: AnalysisStore?
     private let resolvedPath: String
-    private let toolVersion = AcaiConstants.standard.toolVersion
+    private let build = ToolBuild.current
 
     /// `path` is the standardized, symlink-resolved path ``AnalysisStore`` keys entries on.
     public init(store: AnalysisStore = .standard, forResolvedPath path: String) {
@@ -28,15 +28,15 @@ public struct AnalysisCache: Sendable {
     func reusableFragments() -> ParsedFileCache? {
         guard let store else { return nil }
         guard let stored = store.lookupFileCache(forResolvedPath: resolvedPath),
-              stored.isWritten(byToolVersion: toolVersion)
-        else { return ParsedFileCache(toolVersion: toolVersion) }
+              stored.isWritten(by: build)
+        else { return ParsedFileCache(build: build) }
         return stored
     }
 
     /// Best effort: a failed write only costs the next analysis a cold parse.
     func save(_ entries: [String: ParsedFileCache.Entry]) {
         try? store?.writeFileCache(
-            ParsedFileCache(toolVersion: toolVersion, entriesByRelativePath: entries), forResolvedPath: resolvedPath
+            ParsedFileCache(build: build, entriesByRelativePath: entries), forResolvedPath: resolvedPath
         )
     }
 }
