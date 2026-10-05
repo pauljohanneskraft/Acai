@@ -69,6 +69,45 @@ struct ProjectRootDiscoveryTests {
         }
     }
 
+    // MARK: - A project composed from nested roots
+
+    /// A CMake project built from parts: the folder and each `add_subdirectory()` it declares are
+    /// roots of their own, rather than the top-level listfile swallowing the whole tree.
+    @Test func cmakeSubdirectoriesAreRootsOfTheirOwn() throws {
+        try withTempDir { base in
+            try write("CMakeLists.txt", in: base, contents: """
+            project(Composed)
+            add_subdirectory(core)
+            add_subdirectory(ui)
+            """)
+            try write("main.c", in: base, contents: "int main(void) { return 0; }")
+            try write("core/CMakeLists.txt", in: base, contents: "add_library(core core.c)")
+            try write("core/core.c", in: base, contents: "int core(void) { return 1; }")
+            try write("ui/CMakeLists.txt", in: base, contents: "add_library(ui ui.c)")
+            try write("ui/ui.c", in: base, contents: "int ui(void) { return 2; }")
+
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [.c])
+            #expect(roots(specs, relativeTo: base) == [
+                "./CFamilyBuildSystemDetector",
+                "core/CFamilyBuildSystemDetector",
+                "ui/CFamilyBuildSystemDetector"
+            ])
+        }
+    }
+
+    /// A listfile nothing declares is not a root: CMake does not build it, so neither does discovery.
+    @Test func anUndeclaredNestedListfileIsNotARoot() throws {
+        try withTempDir { base in
+            try write("CMakeLists.txt", in: base, contents: "project(Single)")
+            try write("main.c", in: base, contents: "int main(void) { return 0; }")
+            try write("vendor/CMakeLists.txt", in: base, contents: "add_library(v v.c)")
+            try write("vendor/v.c", in: base, contents: "int v(void) { return 1; }")
+
+            let specs = discovery.discoverSourceSpecs(in: base, requestedLanguages: [.c])
+            #expect(roots(specs, relativeTo: base) == ["./CFamilyBuildSystemDetector"])
+        }
+    }
+
     // MARK: - Fixture and vendored projects
 
     /// The shape this repository has: a UI-test fixture package outside the real package's
