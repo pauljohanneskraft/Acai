@@ -10,19 +10,21 @@ import AcaiDiagram
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
 
-    /// Java, Kotlin and Dart now also scan `.initializer` — each has its own dedicated pair of tests
-    /// below pinning the parser behaviour that justifies it. Every other built-in language still
-    /// scans methods only.
+    static let initializerScanning: Set<CodeArtifact.SourceLanguage> = [.java, .kotlin, .dart, .python]
+
+    /// Java, Kotlin, Dart and Python now also scan `.initializer` — each has its own dedicated pair
+    /// of tests below pinning the parser behaviour that justifies it. Every other built-in language
+    /// still scans methods only.
     @Test(arguments: AnalysisService.standardParsers
         .map(\.language)
-        .filter { $0 != .java && $0 != .kotlin && $0 != .dart })
+        .filter { !Self.initializerScanning.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
     }
 
-    @Test(arguments: [CodeArtifact.SourceLanguage.java, .kotlin, .dart])
-    func javaKotlinAndDartAlsoScanInitializers(language: CodeArtifact.SourceLanguage) throws {
+    @Test(arguments: Self.initializerScanning.sorted { $0.rawValue < $1.rawValue })
+    func javaKotlinDartAndPythonAlsoScanInitializers(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer])
     }
@@ -168,9 +170,11 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!kinds.values.contains(.subscript))
     }
 
-    /// Why Python declines `.initializer`: a construction is recorded, but as a free call named after
-    /// the class, which no `Thing.__init__` edge can come from.
-    @Test func pythonRecordsAConstructionAsAFreeCallNamedAfterTheClass() throws {
+    /// Why Python now accepts `.initializer`: a construction reaches the shared
+    /// `CallSiteScope.bareCall`, which resolves it to the initializer's fixed `__init__` member
+    /// instead of recording a free call named after the class, which no `Thing.__init__` edge could
+    /// have come from.
+    @Test func pythonRecordsAConstructorCall() throws {
         let sites = try callSites("""
         class Thing:
             def __init__(self):
@@ -180,8 +184,8 @@ struct DeadCodeMemberKindAuditTests {
                 made = Thing()
         """, in: "use", of: PythonCodeParser(), fileName: "thing.py")
 
-        #expect(sites.map(\.receiver) == [.free])
-        #expect(sites.map(\.methodName) == ["Thing"])
+        #expect(sites.map(\.receiver) == [.type("Thing")])
+        #expect(sites.map(\.methodName) == ["__init__"])
     }
 
     @Test func pythonExtractsGetItemAsAMethod() throws {
@@ -319,6 +323,63 @@ struct DeadCodeMemberKindAuditTests {
             artifact: artifact, languages: artifact.standardLanguageResolver).report
         #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled"))
         #expect(!report.candidates.map(\.id).contains("_Called._Called"))
+    }
+
+    /// The end-to-end consequence for Python, which differs from the three languages above: the
+    /// construction resolves to a real `Thing.use -> Thing.__init__` edge, but an *uncalled*
+    /// `__init__` is still not reported. `__init__` is a dunder, and `PythonName` maps dunders to
+    /// `.public`, which `DeadCodeScan` exempts as API reachable from outside the analysed sources —
+    /// so for Python the opt-in widens the report's `scannedKinds` and feeds the call graph without
+    /// ever producing an initializer candidate. Pinned so the divergence is deliberate.
+    @Test func aPythonConstructionResolvesToAnInitEdgeWhileAnUncalledInitIsStillExempt() {
+        let artifact = PythonCodeParser().parse(source: """
+        class Called:
+            def __init__(self):
+                pass
+
+        class Uncalled:
+            def __init__(self):
+                pass
+
+        class Worker:
+            def run(self):
+                Called()
+        """, fileName: "worker.py")
+
+        let graph = CallGraphBuilder().build(from: artifact)
+        #expect(graph.edges.contains { $0.from == "Worker.run" && $0.to == "Called.__init__" })
+
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.scannedKinds.contains(.initializer))
+        #expect(!report.candidates.map(\.id).contains("Uncalled.__init__"))
+    }
+
+    /// An inherited `__init__` resolves exactly the way an inherited regular method does — which is
+    /// to say neither resolves, since `CallGraphBuilder` matches a `.type` receiver against that
+    /// type's own members and walks no supertype chain. Both call sites are still *recorded* against
+    /// `Child`, so they count in `coverage`'s denominator. Pinned as a pair: should inherited-member
+    /// resolution ever arrive, the constructor must come with it rather than need its own case.
+    @Test func anInheritedPythonInitResolvesLikeAnInheritedMethod() throws {
+        let sites = try callSites("""
+        class Base:
+            def __init__(self):
+                pass
+
+            def shared(self):
+                pass
+
+        class Child(Base):
+            pass
+
+        class Worker:
+            def run(self):
+                made = Child()
+                made.shared()
+        """, in: "run", of: PythonCodeParser(), fileName: "worker.py")
+
+        #expect(sites.map(\.receiver) == [.type("Child"), .type("Child")])
+        #expect(sites.map(\.methodName) == ["__init__", "shared"])
     }
 
     /// The end-to-end consequence for Dart's named constructors: a called one is not reported, while

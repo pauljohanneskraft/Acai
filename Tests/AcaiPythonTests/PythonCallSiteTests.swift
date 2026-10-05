@@ -186,4 +186,55 @@ struct PythonCallSiteTests {
         let sites = callSites(source, method: "run")
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
     }
+
+    /// A construction of a class declared in the file targets its `__init__`, so an initializer can
+    /// be reached by a call edge like any other member.
+    @Test func constructionTargetsTheInitializer() {
+        let source = """
+        class Widget:
+            def __init__(self):
+                pass
+
+        class Worker:
+            def run(self):
+                made = Widget()
+        """
+        let sites = callSites(source, method: "run")
+        #expect(sites.map(\.receiver) == [.type("Widget")])
+        #expect(sites.map(\.methodName) == ["__init__"])
+    }
+
+    /// A bare call to anything that is not a declared type is unchanged: Python has no implicit
+    /// receiver, so it stays `.free` for the diagram layers to match against a top-level function
+    /// rather than being tagged `.selfDispatch`.
+    @Test func bareCallToANonTypeStaysFree() {
+        let source = """
+        def helper():
+            pass
+
+        class Worker:
+            def run(self):
+                helper()
+                len([])
+        """
+        let sites = callSites(source, method: "run")
+        #expect(sites.map(\.receiver) == [.free, .free])
+        #expect(sites.map(\.methodName) == ["helper", "len"])
+    }
+
+    /// A module-level construction resolves too — `moduleScope()` carries the same declared type
+    /// names, so the synthetic `<top-level>` member records the edge.
+    @Test func moduleLevelConstructionTargetsTheInitializer() {
+        let source = """
+        class Widget:
+            def __init__(self):
+                pass
+
+        widget = Widget()
+        """
+        let artifact = parser.parse(source: source, fileName: "test.py")
+        let topLevel = artifact.freestandingFunctions.first { $0.name == "<top-level>" }
+        #expect(topLevel?.callSites.map(\.receiver) == [.type("Widget")])
+        #expect(topLevel?.callSites.map(\.methodName) == ["__init__"])
+    }
 }
