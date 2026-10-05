@@ -1,9 +1,4 @@
-/// Wraps a package diagram's module boxes in one cluster per project, so a folder holding several
-/// projects draws each module inside the project that declares it rather than side by side with a
-/// same-named module from somewhere else.
-///
-/// Nodes whose `project` is `nil` — every node of a single-project folder — are emitted flat, which
-/// is byte-for-byte what the renderers produced before clusters existed.
+/// One DOT cluster per project; nodes without a project are emitted flat.
 struct PackageProjectClusters {
     let theme: DiagramTheme?
 
@@ -20,7 +15,7 @@ struct PackageProjectClusters {
             if let theme {
                 out += "    color=\"\(theme.nodeBorderColor)\";\n    fontcolor=\"\(theme.fontColor)\";\n"
             }
-            out += (grouped[project] ?? []).map(node).joined()
+            out += (grouped[project] ?? []).map { "  " + node($0) }.joined()
             out += "  }\n\n"
         }
         return out

@@ -22,8 +22,6 @@ public struct PackageLayoutModel: Sendable {
         public let weight: Int
     }
 
-    /// A labelled box around one project's modules, drawn behind them. Empty for a folder with a
-    /// single project, where every module shares the one project and a box says nothing.
     public struct ProjectBox: Identifiable, Sendable {
         public let id: String
         public let label: String
@@ -35,8 +33,7 @@ public struct PackageLayoutModel: Sendable {
     public let contentSize: CGSize
     public let projectBoxes: [ProjectBox]
 
-    /// The node-free strip each box reserves at its top for its title tab, matching
-    /// `GroupingBoxView`'s own tab so the tab never draws over the box's first module.
+    /// Room around a project's modules for `GroupingBoxView`'s title tab.
     private static let titleStrip: CGFloat = 30
 
     private let framesByID: [String: CGRect]

@@ -80,8 +80,6 @@ struct StatisticDetailBuilder {
         guard let path = artifact.flattened().lazy.compactMap({ $0.location?.filePath })
             .first(where: { modules.module(forFilePath: $0) == module })
         else { return nil }
-        // The last component of a qualified `<project>/<module>` name is the directory to find; the
-        // project prefix is already on the path ahead of it.
         let leaf = module.pathComponentsIgnoringDots.last ?? module
         let parts = path.pathComponentsIgnoringDots
         if let index = parts.firstIndex(of: leaf) {

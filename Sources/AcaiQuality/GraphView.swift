@@ -30,8 +30,6 @@ public struct GraphView: Sendable {
     public let nodes: [Node]
     public let relationships: [Relationship]
     public let metrics: CodeMetrics
-    /// The artifact's file-to-module map, resolved once here and shared with everything built on
-    /// this view (`CycleFinder`, the starter rules) so all of them name a module the same way.
     public let modules: ModuleMap
 
     private let nodesByID: [String: Node]
@@ -78,7 +76,6 @@ public struct GraphView: Sendable {
     /// The set of modules that contain at least one node, sorted for deterministic reporting.
     public var moduleNames: [String] { Set(nodes.map(\.module)).sorted() }
 
-    /// The projects those modules belong to, sorted; empty when the artifact holds a single root
-    /// and module names are unqualified.
+    /// Empty when the artifact holds a single root.
     public var projectNames: [String] { Set(nodes.compactMap { modules.project(ofModule: $0.module) }).sorted() }
 }

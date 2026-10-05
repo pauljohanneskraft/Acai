@@ -117,8 +117,6 @@ extension CodeArtifact {
         computeMetrics(modules: ModuleMap(artifact: self))
     }
 
-    /// The same metrics against an already-built file-to-module map, so a caller that needs the map
-    /// for its own grouping resolves every path once rather than twice.
     public func computeMetrics(modules: ModuleMap) -> CodeMetrics {
         let flat = Self.allTypes(types)
         let identity = TypeIdentityResolver(types: types)
@@ -248,8 +246,7 @@ extension CodeArtifact {
     ) -> [CodeMetrics.ModuleCoupling] {
         let idToModule = modules.modules(ofTypes: flat)
         var moduleTypes: [String: [TypeDeclaration]] = [:]
-        // Grouped by each type's own file rather than by `idToModule`, which keeps one entry per id:
-        // two types sharing an id must still each count toward the module they were declared in.
+        // By each type's own file, not `idToModule`: two types sharing an id each count in their module.
         for type in flat {
             moduleTypes[modules.module(forFilePath: type.location?.filePath ?? ""), default: []].append(type)
         }

@@ -11,8 +11,7 @@ public struct ModuleAttribution: Sendable {
     private let modules: ModuleMap
     private let idToModule: [String: String]
 
-    /// - Parameter modules: the artifact's resolved file-to-module map, which an edge's `origin`
-    ///   path is looked up in.
+    /// - Parameter modules: resolves an edge's `origin` path to its module.
     /// - Parameter idToModule: each in-codebase type id mapped to its declaring module. Edge
     ///   endpoints not in the map are external and resolve to `nil`.
     public init(modules: ModuleMap, idToModule: [String: String]) {

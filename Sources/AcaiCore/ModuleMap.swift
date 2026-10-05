@@ -41,11 +41,8 @@ public struct ProjectRoots: Sendable {
 
 // MARK: - Module Map
 
-/// Every source file's build module, resolved once per artifact.
-///
-/// With more than one root in `metadata.discoveredRoots`, every module is qualified as
-/// `<project>/<module>`; with one root the name is exactly what ``ModuleResolver`` derives.
-/// Enrichment deliberately keeps the unqualified name, which `TypeIdentityResolver` indexes by.
+/// Every source file's build module, resolved once per artifact: `<project>/<module>` when
+/// `metadata.discoveredRoots` holds more than one root, otherwise exactly what ``ModuleResolver`` derives.
 public struct ModuleMap: Sendable {
 
     public let resolver: ModuleResolver

@@ -1,8 +1,4 @@
-/// Groups a package diagram's module declarations into one Mermaid subgraph per project, the
-/// counterpart of `PackageProjectClusters` for the flowchart renderers.
-///
-/// Nodes whose `project` is `nil` — every node of a single-project folder — are declared at the top
-/// level, so a single-project diagram is unchanged.
+/// One Mermaid subgraph per project; nodes without a project are declared at the top level.
 struct PackageProjectSubgraphs {
 
     /// - Parameter node: renders one module's declaration, without indentation.

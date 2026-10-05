@@ -11,9 +11,7 @@ struct DirectedGraphLayout {
     let contentSize: CGSize
 
     /// `edges` must already be oriented for `LayerAssignment` (which lifts edge *targets* toward
-    /// the top) — callers reverse where needed. `groups` keys a node id to its group path, laying
-    /// each group out contiguously; `margin` surrounds the nodes with room for the group boxes.
-    /// `positionOverrides` are node centres in the coordinates of the returned frames.
+    /// the top) — callers reverse where needed. `positionOverrides` are centres in the frames' coordinates.
     init(
         nodeSizes: [(id: String, size: CGSize)],
         edges: [(from: String, to: String)],
@@ -34,8 +32,7 @@ struct DirectedGraphLayout {
         if groups.isEmpty {
             positions = engine.layout(nodes: inputs, edges: edgeInputs).positions
         } else {
-            // The grouped engine pads its output, so it is moved to the origin before an override
-            // (recorded against the unpadded frames) joins it.
+            // Unpadded, to match the frames an override was recorded against.
             let padded = engine.layoutByGroup(nodes: inputs, edges: edgeInputs).positions
             let corner = padded.minCorner(sizes: sizeByID)
             positions = padded.mapValues { CGPoint(x: $0.x - corner.x, y: $0.y - corner.y) }

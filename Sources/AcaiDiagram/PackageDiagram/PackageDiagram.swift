@@ -12,9 +12,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
     public struct Node: Codable, Hashable, Sendable, Identifiable {
         public var id: String
         public var name: String
-        /// The project this module belongs to, when the analysed folder held more than one — the
-        /// outer box the module is drawn inside. `nil` for a single-project folder, where every
-        /// module shares the one project and an outer box says nothing.
+        /// The outer box the module is drawn inside; `nil` when the analysed folder holds one project.
         public var project: String?
         public var typeCount: Int
         /// Afferent coupling (Ca): external types that depend on this module.
@@ -26,9 +24,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         /// Abstractness `A = abstractTypes / totalTypes`.
         public var abstractness: Double
 
-        /// The module's own name, without the `project` prefix that a multi-project folder
-        /// qualifies `name` with — what a box drawn inside its project's box should read, since the
-        /// project already labels that box. Equal to `name` for a single-project folder.
+        /// `name` without its `project` prefix, which the enclosing project box already shows.
         public var moduleName: String {
             guard let project, name.hasPrefix("\(project)/") else { return name }
             return String(name.dropFirst(project.count + 1))
