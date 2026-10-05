@@ -99,6 +99,10 @@ struct CompareGitPanel: View {
     @State private var availableRefs: [GitCheckout.Ref] = []
     @State private var changeRequests: [ChangeRequest] = []
     @State private var fullHistoryPhase: AsyncOperationPhase = .idle
+    @State private var pickerPhase: AsyncOperationPhase = .idle
+    /// Retrying replaces this, so the reload runs as the view's own `.task` — cancelled when the
+    /// popover or sheet goes away, which a `Task { }` started from the button would not be.
+    @State private var pickerReloadToken = UUID()
     @State private var isEditingCustomRef = false
     @State private var customRefText = ""
 
@@ -129,10 +133,7 @@ struct CompareGitPanel: View {
                 .accessibilityIdentifier("delta.ref.\(row.testIdentifier)")
             }
             .listStyle(.plain)
-            .task {
-                availableRefs = await model.comparisonRefs(codebaseID: diagram.codebaseID)
-                await loadChangeRequests()
-            }
+            .task(id: pickerReloadToken) { await loadPicker() }
             .frame(minHeight: 150, maxHeight: 260)
             // The nav-bar Clear button lives on a different view instance and can't reach
             // `isEditingCustomRef` directly, so sync it from the model when comparison turns off.
@@ -141,6 +142,7 @@ struct CompareGitPanel: View {
             }
 
             VStack(alignment: .leading, spacing: .spacingM) {
+                pickerStatus
                 if isEditingCustomRef {
                     TextField(text: $customRefText) {
                         Text(.app("View.CompareGitPanel.RefPlaceholder"))
@@ -324,16 +326,42 @@ struct CompareGitPanel: View {
         .accessibilityIdentifier("delta.changedFile.\(entry.filePath)")
     }
 
+    /// Laid out by the enclosing stack rather than wrapped in one of its own: an idle phase has to
+    /// take up no room at all, and a wrapper would still claim the stack's spacing.
+    @ViewBuilder
+    private var pickerStatus: some View {
+        AsyncOperationStatusView(identifierPrefix: "delta.picker", phase: pickerPhase)
+        if case .failed = pickerPhase {
+            Button(.app("View.CompareGitPanel.Retry")) { pickerReloadToken = UUID() }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("delta.picker.retryButton")
+        }
+    }
+
+    /// A failed refs or change-request load otherwise rendered exactly like a repository with
+    /// nothing to compare against, with nothing to tap to try again.
+    private func loadPicker() async {
+        pickerPhase = .loading(.app("View.CompareGitPanel.LoadingRevisions"))
+        do {
+            availableRefs = try await model.comparisonRefs(codebaseID: diagram.codebaseID)
+            changeRequests = try await loadedChangeRequests()
+            pickerPhase = .loaded
+        } catch {
+            pickerPhase = .failed(String(localized: LoadFailure(error: error).message))
+        }
+    }
+
     /// Offered when the codebase's remote is on a host whose provider lists change requests —
-    /// whether the app cloned it or it's a local folder tracking it. Best-effort: a failure (not
-    /// signed in, no network) just leaves those rows empty.
-    private func loadChangeRequests() async {
+    /// whether the app cloned it or it's a local folder tracking it. No remote and no stored
+    /// credential are both "none to list" rather than a failure; a rejected or dropped request is
+    /// thrown, since those are the ones the reader can act on.
+    private func loadedChangeRequests() async throws -> [ChangeRequest] {
         guard let codebase = model.codebase(for: diagram.codebaseID),
               case .github(let owner, let repo) = codebase.repository?.host,
               let credential = GitHubTokenStore().load()?.credential
-        else { return }
-        changeRequests = (try? await GitHubHostingServiceResolver().resolve().pullRequests(
-            credential: credential, owner: owner, repo: repo)) ?? []
+        else { return [] }
+        return try await GitHubHostingServiceResolver().resolve().pullRequests(
+            credential: credential, owner: owner, repo: repo)
     }
 }
 

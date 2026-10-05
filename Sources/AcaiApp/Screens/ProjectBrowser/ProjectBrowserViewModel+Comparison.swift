@@ -73,15 +73,21 @@ extension ProjectBrowserViewModel {
         comparisonReviewedFindings[diagramID] = reviewed
     }
 
-    /// The codebase's branches and tags for the Compare panel's list. Best-effort: a folder outside
-    /// any repository yields none, leaving the list with HEAD and Custom.
-    func comparisonRefs(codebaseID: UUID) async -> [GitCheckout.Ref] {
+    /// The codebase's branches and tags for the Compare panel's list. A folder outside any
+    /// repository yields none, leaving the list with HEAD and Custom — that is genuinely nothing to
+    /// compare against. Every other failure is thrown, so the panel can say so instead of showing
+    /// the same empty list.
+    func comparisonRefs(codebaseID: UUID) async throws -> [GitCheckout.Ref] {
         guard let codebase = codebase(for: codebaseID) else { return [] }
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
         let directory = URL(fileURLWithPath: codebase.directoryPath)
         let checkouts = checkouts
-        return await Task.detached(priority: .userInitiated) {
-            (try? await access.whileAccessible { try checkouts.refs(in: directory) }) ?? []
+        return try await Task.detached(priority: .userInitiated) {
+            do {
+                return try await access.whileAccessible { try checkouts.refs(in: directory) }
+            } catch GitCheckout.Failure.notAGitRepository {
+                return []
+            }
         }.value
     }
 

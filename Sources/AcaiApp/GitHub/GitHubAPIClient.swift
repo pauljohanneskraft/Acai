@@ -25,9 +25,13 @@ struct GitHubAPIClient {
 
     private var baseURL: URL { URL(string: "https://api.github.com")! }
 
-    enum Failure: LocalizedError {
+    /// `rateLimited` and `unauthorized` are kept apart from `http` because the reader's next step
+    /// differs: wait for the window to reset, or sign in again.
+    enum Failure: LocalizedError, Equatable {
         case http(Int, String)
         case decoding(String)
+        case rateLimited(resetAt: Date?)
+        case unauthorized
 
         var errorDescription: String? {
             switch self {
@@ -35,7 +39,17 @@ struct GitHubAPIClient {
                 String(localized: .app("Error.GitHubAPIClient.Http \(status) \(message)"))
             case .decoding(let message):
                 String(localized: .app("Error.GitHubAPIClient.Decoding \(message)"))
+            case .rateLimited(let resetAt):
+                rateLimitDescription(resetAt: resetAt)
+            case .unauthorized:
+                String(localized: .app("Error.GitHubAPIClient.Unauthorized"))
             }
+        }
+
+        private func rateLimitDescription(resetAt: Date?) -> String {
+            guard let resetAt else { return String(localized: .app("Error.GitHubAPIClient.RateLimited")) }
+            let when = resetAt.formatted(.relative(presentation: .named))
+            return String(localized: .app("Error.GitHubAPIClient.RateLimitedUntil \(when)"))
         }
     }
 
@@ -138,15 +152,33 @@ struct GitHubAPIClient {
     }
 
     private func validate(_ response: URLResponse, data: Data) throws {
-        guard let http = response as? HTTPURLResponse else { return }
-        guard (200..<300).contains(http.statusCode) else {
-            let message = String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
-            throw Failure.http(http.statusCode, message)
-        }
+        guard let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) else { return }
+        if http.statusCode == 401 { throw Failure.unauthorized }
+        if http.isGitHubRateLimited { throw Failure.rateLimited(resetAt: http.gitHubRateLimitResetAt) }
+        throw Failure.http(http.statusCode, String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)")
     }
 }
 
 extension HTTPURLResponse {
+    /// GitHub reports a spent quota as 403 (primary limit) or 429 (secondary) carrying
+    /// `x-ratelimit-remaining: 0`. A 403 without that header is an ordinary permission failure, so
+    /// the header — not the status alone — is what tells the two apart.
+    var isGitHubRateLimited: Bool {
+        guard statusCode == 403 || statusCode == 429 else { return false }
+        return value(forHTTPHeaderField: "x-ratelimit-remaining") == "0"
+    }
+
+    /// `x-ratelimit-reset` is epoch seconds; `retry-after`, sent for secondary limits, is seconds
+    /// from now. Neither present degrades to `nil`, which drops the reset time from the message
+    /// rather than inventing one.
+    var gitHubRateLimitResetAt: Date? {
+        if let raw = value(forHTTPHeaderField: "x-ratelimit-reset"), let seconds = Double(raw) {
+            return Date(timeIntervalSince1970: seconds)
+        }
+        guard let raw = value(forHTTPHeaderField: "retry-after"), let seconds = Double(raw) else { return nil }
+        return Date(timeIntervalSinceNow: seconds)
+    }
+
     var gitHubOAuthScopes: [String]? {
         guard let raw = value(forHTTPHeaderField: "X-OAuth-Scopes"), !raw.isEmpty else { return nil }
         return raw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
