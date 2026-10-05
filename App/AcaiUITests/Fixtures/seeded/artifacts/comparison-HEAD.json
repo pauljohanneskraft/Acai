@@ -9,10 +9,14 @@
     "discoveredRoots" : [
       {
         "detector" : "SwiftPackageManagerDetector",
+        "isFallback" : false,
         "languages" : [
           "swift"
         ],
-        "path" : "."
+        "path" : ".",
+        "sourceDirs" : [
+          "Sources\/SampleSwiftPackage"
+        ]
       }
     ],
     "filePaths" : [

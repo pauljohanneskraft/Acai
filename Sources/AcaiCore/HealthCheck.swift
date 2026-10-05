@@ -13,6 +13,13 @@ public struct HealthCheck: Sendable {
         public var countsByKind: [String: Int]
         /// Every diagnostic, each carrying its `SourceLocation` for a precise jump target.
         public var diagnostics: [ParseDiagnostic]
+        /// The scope the parse ran over, in discovery order; empty for a single file parsed directly.
+        public var discoveredRoots: [CodeArtifact.DiscoveredRoot] = []
+
+        /// No build system's manifest was recognised anywhere, so the file set is an extension match.
+        public var isFallbackOnly: Bool {
+            !discoveredRoots.isEmpty && discoveredRoots.allSatisfy(\.isFallback)
+        }
     }
 
     /// The compact form of ``Report`` other commands embed in their own output: the score and
@@ -53,7 +60,8 @@ public struct HealthCheck: Sendable {
             countsByKind: countsByKind,
             diagnostics: diagnostics.sorted {
                 ($0.location.filePath, $0.location.line) < ($1.location.filePath, $1.location.line)
-            })
+            },
+            discoveredRoots: artifact.metadata.discoveredRoots)
     }
 
     public var summary: Summary {
