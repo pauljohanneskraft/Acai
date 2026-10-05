@@ -12,16 +12,19 @@ struct SwiftDocumentationReader {
 
     func documentation(of node: some SyntaxProtocol) -> String? {
         var comments: [String] = []
+        var newlines = 0
         for piece in node.leadingTrivia.reversed() {
             switch piece {
             case .docLineComment(let text), .lineComment(let text),
                  .docBlockComment(let text), .blockComment(let text):
                 comments.insert(text, at: 0)
+                newlines = 0
             case .spaces, .tabs, .carriageReturns, .formfeeds, .verticalTabs:
                 continue
             case .newlines(let count), .carriageReturnLineFeeds(let count):
-                // A blank line ends the run, including one between the run and the declaration.
-                guard count < 2 else { return convention.prose(fromLeading: comments) }
+                // A blank line, even one holding indentation, ends the run.
+                newlines += count
+                guard newlines < 2 else { return convention.prose(fromLeading: comments) }
             default:
                 return convention.prose(fromLeading: comments)
             }

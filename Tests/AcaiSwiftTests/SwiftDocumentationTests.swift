@@ -136,4 +136,9 @@ struct SwiftDocumentationTests {
         #expect(types.first { $0.name == "Zoo" }?.documentation == nil)
         #expect(types.first { $0.name == "Keeper" }?.documentation == "The keeper.")
     }
+
+    @Test func aBlankLineHoldingIndentationDetachesToo() {
+        let types = artifact("/// A file header.\n    \nstruct Zoo {}\n").types
+        #expect(types.first?.documentation == nil)
+    }
 }
