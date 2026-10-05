@@ -63,10 +63,16 @@ extension XCUIElement {
         var window: CGRect?
         // Checked at least once even if a slow existence query used up the deadline.
         repeat {
-            if isHittable { return }
-            let windowFrame = window ?? XCUIApplication().windows.firstMatch.frame
-            window = windowFrame
-            if exists, !frame.isEmpty, !windowFrame.contains(frame) { return }
+            // The frame guard comes before the hit test, not after it: `isHittable` derives an
+            // activation point from the frame and, on one it cannot derive from, fails the test on the
+            // spot instead of returning `false`. A control caught mid-layout is what this loop exists
+            // to sleep past, so it must not be hit-tested until it has a frame to be hit at.
+            if exists, !frame.isEmpty {
+                let windowFrame = window ?? XCUIApplication().windows.firstMatch.frame
+                window = windowFrame
+                if !windowFrame.contains(frame) { return }
+                if isHittable { return }
+            }
             // `XCUIElement` isn't KVO-compliant, so a predicate expectation would latch its first read.
             Thread.sleep(forTimeInterval: 0.25)
         } while Date() < deadline
