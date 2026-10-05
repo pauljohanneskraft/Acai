@@ -27,9 +27,10 @@ extension DartExtractor {
     @discardableResult
     private mutating func processTopLevelTypeNode(_ child: Node, nodeType: String) -> Bool {
         let mark = declarations.mark
+        let reader = documentation
+        let context = context
         defer {
-            declarations.attachDocumentation(
-                documentation.documentation(above: child, in: context), since: mark)
+            declarations.attachDocumentation(since: mark) { reader.documentation(above: child, in: context) }
         }
         if let typeDecl = extractTopLevelType(child, nodeType: nodeType) {
             declarations.types.append(typeDecl)

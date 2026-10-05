@@ -78,11 +78,11 @@ public struct DeclarationBuilder: Sendable {
     /// Documents every top-level declaration added since `mark` — a walk over one source node can
     /// yield a type, a function or a variable, and the prose above it documents whichever it was.
     ///
-    /// A declaration that already carries documentation keeps it: a walk that descends through a
-    /// wrapper (a conditional-compilation block, a namespace) reaches the inner declaration first,
-    /// and what was written against it is the more specific answer.
-    public mutating func attachDocumentation(_ prose: String?, since mark: Mark) {
-        guard let prose else { return }
+    /// A declaration that already carries documentation keeps it, as the more specific answer.
+    /// `prose` is only read when the walk added something.
+    public mutating func attachDocumentation(since mark: Mark, _ prose: () -> String?) {
+        guard mark.types < types.count || mark.freestandingFunctions < freestandingFunctions.count
+            || mark.globalVariables < globalVariables.count, let prose = prose() else { return }
         for index in mark.types..<types.count where types[index].documentation == nil {
             types[index].documentation = prose
         }

@@ -30,7 +30,7 @@ struct CFamilyExtractor {
         convention: DocumentationComment(
             linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"], blockClosing: "*/", continuationMarker: "*"
         ),
-        transparentParentTypes: ["declaration", "field_declaration", "type_definition"]
+        transparentParentTypes: ["declaration", "field_declaration", "type_definition", "linkage_specification"]
     )
 
     var declarations = DeclarationBuilder()
@@ -108,12 +108,28 @@ struct CFamilyExtractor {
         }
     }
 
+    /// What is written above a namespace, a linkage block or a conditional-compilation block (an
+    /// include guard's file header) documents the block, not each declaration inside it.
     private mutating func visitTopLevel(_ node: Node) {
-        let mark = declarations.mark
-        defer {
-            declarations.attachDocumentation(
-                documentation.documentation(above: node, in: context), since: mark)
+        switch node.nodeType {
+        case "namespace_definition":
+            visitNamespace(node)
+        case "linkage_specification":
+            visitChildrenAsTopLevel(node)
+        case "preproc_ifdef", "preproc_if", "preproc_else", "preproc_elif", "preproc_elifdef":
+            // Include guards (`#ifndef FOO_H … #endif`) and conditional compilation wrap their
+            // guarded declarations as children; descend so those declarations are still seen.
+            visitChildrenAsTopLevel(node)
+        default:
+            let mark = declarations.mark
+            visitTopLevelEntity(node)
+            let reader = documentation
+            let context = context
+            declarations.attachDocumentation(since: mark) { reader.documentation(above: node, in: context) }
         }
+    }
+
+    private mutating func visitTopLevelEntity(_ node: Node) {
         switch node.nodeType {
         case "declaration":
             visitTopLevelDeclaration(node)
@@ -123,16 +139,8 @@ struct CFamilyExtractor {
             if let function = extractFunctionDefinition(node, defaultAccess: .public) {
                 declarations.freestandingFunctions.append(function)
             }
-        case "namespace_definition":
-            visitNamespace(node)
         case "template_declaration":
             visitTemplate(node)
-        case "linkage_specification":
-            visitChildrenAsTopLevel(node)
-        case "preproc_ifdef", "preproc_if", "preproc_else", "preproc_elif", "preproc_elifdef":
-            // Include guards (`#ifndef FOO_H … #endif`) and conditional compilation wrap their
-            // guarded declarations as children; descend so those declarations are still seen.
-            visitChildrenAsTopLevel(node)
         default:
             appendTopLevelSpecifier(node)
         }

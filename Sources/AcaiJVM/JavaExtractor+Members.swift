@@ -154,7 +154,9 @@ extension JavaExtractor {
             enumCases: context.enumCases.count
         )
         appendBodyChild(role, child: child, nodeType: nodeType, context: &context)
-        guard let prose = documentation.documentation(above: child, in: self.context) else { return }
+        guard context.members.count > before.members || context.nestedTypes.count > before.nestedTypes
+            || context.enumCases.count > before.enumCases,
+            let prose = documentation.documentation(above: child, in: self.context) else { return }
         for index in before.members..<context.members.count {
             context.members[index].documentation = prose
         }

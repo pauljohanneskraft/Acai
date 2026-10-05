@@ -131,6 +131,35 @@ struct CFamilyDocumentationTests {
         #expect(artifact.freestandingFunctions.first?.documentation == nil)
     }
 
+    @Test func documentationAboveAnIncludeGuardOrANamespaceStaysOnTheBlock() {
+        let header = cParser.parse(source: """
+        /** @file zoo.h The zoo. */
+        #ifndef ZOO_H
+        #define ZOO_H
+        int feed(void);
+        #endif
+        """, fileName: "zoo.h")
+        #expect(header.freestandingFunctions.first?.documentation == nil)
+
+        let namespaced = cppParser.parse(source: """
+        /** The zoo's namespace. */
+        namespace zoo {
+        class Keeper {};
+        }
+        """, fileName: "zoo.cpp")
+        #expect(namespaced.types.first { $0.name == "Keeper" }?.documentation == nil)
+    }
+
+    @Test func documentationAboveASingleDeclarationLinkageBlockReachesIt() {
+        let artifact = cppParser.parse(source: """
+        /** Feeds everyone. */
+        extern "C" int feed(void);
+        """, fileName: "zoo.cpp")
+        let feed = artifact.freestandingFunctions.first { $0.name == "feed" }
+            ?? artifact.globalVariables.first { $0.name == "feed" }
+        #expect(feed?.documentation == "Feeds everyone.")
+    }
+
     @Test func aTrailingCommentDocumentsTheFieldBeforeItNotAfter() {
         let artifact = cParser.parse(source: """
         struct Zoo {

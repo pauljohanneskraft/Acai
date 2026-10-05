@@ -60,7 +60,8 @@ extension CFamilyExtractor {
         nestedTypes: inout [TypeDeclaration],
         from nestedIndex: Int
     ) {
-        guard let prose = documentation.documentation(above: child, in: context) else { return }
+        guard memberIndex < members.count || nestedIndex < nestedTypes.count,
+              let prose = documentation.documentation(above: child, in: context) else { return }
         for index in memberIndex..<members.count where members[index].documentation == nil {
             members[index].documentation = prose
         }

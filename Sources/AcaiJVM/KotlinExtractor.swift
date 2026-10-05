@@ -90,10 +90,12 @@ extension KotlinExtractor {
     ]
 
     mutating func walkSourceFile(_ node: Node) {
+        let reader = documentation
+        let context = context
         for (child, action) in NodeDispatch(Self.sourceFileDispatch).matches(in: node) {
             let mark = declarations.mark
             performSourceFileAction(action, on: child)
-            declarations.attachDocumentation(documentation.documentation(above: child, in: context), since: mark)
+            declarations.attachDocumentation(since: mark) { reader.documentation(above: child, in: context) }
         }
     }
 
