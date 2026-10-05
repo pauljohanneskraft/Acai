@@ -20,13 +20,7 @@ struct GitWorktreeSync {
     /// Syncs the shared hub clone to `ref` (cloning it first if this is the first codebase ever to
     /// reference this remote) and registers a brand-new linked worktree, checked out always
     /// detached. Returns the resolved commit SHA.
-    ///
-    /// All-or-nothing: cancelling or failing anywhere in here leaves nothing on disk for the
-    /// codebase that never came into existence, so a caller handed a `CancellationError` has
-    /// nothing to clean up. The cancellation checks bracket the two steps that take real time —
-    /// waiting for the hub's lock and the transfer itself — so a clone called off while queued
-    /// behind another never starts, and one called off mid-transfer stops at
-    /// `GitClone`'s next progress callback.
+    /// All-or-nothing: a cancel or failure leaves behind neither the worktree nor a hub this call cloned.
     @discardableResult
     func attachWorktree(
         named worktreeName: String, at worktreeDirectory: URL, depth: GitHistoryDepth = .full,
@@ -53,10 +47,7 @@ struct GitWorktreeSync {
         }
     }
 
-    /// Unwinds a half-finished `attachWorktree`, called while its hub lock is still held: the
-    /// worktree it was registering is deregistered and its directory deleted. The hub goes with it
-    /// unless it was already on disk when the attach started — one another codebase is using, or
-    /// one this call only fetched, is left exactly as it was found.
+    /// Must run under the hub's lock.
     private func discardAttachment(named worktreeName: String, at worktreeDirectory: URL, keepingHub: Bool) {
         let worktrees = GitWorktree(repositoryDirectory: hub.localPath)
         try? worktrees.remove(name: worktreeName)

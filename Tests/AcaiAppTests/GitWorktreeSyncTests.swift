@@ -125,9 +125,6 @@ struct GitWorktreeSyncTests {
             transportURL: source, ref: "main", hubStoreDirectory: hubStoreDirectory, locks: locks)
         let worktree = root.appendingPathComponent("worktree", isDirectory: true)
 
-        // The hub's lock is held across the whole window the attach is cancelled in, so "cancelled
-        // before it could clone" is a fact of the test rather than a race against a fixture clone
-        // that finishes in milliseconds.
         let holdingLock = AsyncGate()
         let mayRelease = AsyncGate()
         let holder = Task {
@@ -147,6 +144,43 @@ struct GitWorktreeSyncTests {
         #expect(!FileManager.default.fileExists(atPath: worktree.path))
         #expect(!sync.hub.isCloned)
         #expect(!FileManager.default.fileExists(atPath: sync.hub.localPath.path))
+    }
+
+    @Test("A cancelled attach leaves the shared hub and its other worktrees as it found them")
+    func cancellingAnAttachKeepsTheSharedHub() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let locks = GitRepositoryLocks()
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "main", hubStoreDirectory: hubStoreDirectory, locks: locks)
+        let existing = root.appendingPathComponent("existing", isDirectory: true)
+        try await sync.attachWorktree(named: "codebase-0", at: existing)
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+
+        let holdingLock = AsyncGate()
+        let mayRelease = AsyncGate()
+        let holder = Task {
+            try await locks.run(for: sync.hub) {
+                await holdingLock.open()
+                await mayRelease.wait()
+            }
+        }
+        await holdingLock.wait()
+
+        let attach = Task { try await sync.attachWorktree(named: "codebase-1", at: worktree) }
+        attach.cancel()
+        await mayRelease.open()
+        try await holder.value
+
+        await #expect(throws: CancellationError.self) { try await attach.value }
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(try GitWorktree(repositoryDirectory: sync.hub.localPath).list() == ["codebase-0"])
+        #expect(FileManager.default.fileExists(atPath: existing.appendingPathComponent("README.md").path))
     }
 
     // MARK: - Helpers

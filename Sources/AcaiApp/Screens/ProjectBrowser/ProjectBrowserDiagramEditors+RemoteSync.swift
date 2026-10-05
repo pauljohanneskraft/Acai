@@ -28,9 +28,7 @@ extension ProjectCodebaseEditor {
             ) { onProgress in
                 try await remoteService.attachWorktree(target, destination: destination, onProgress: onProgress)
             }
-            // Cancelled. `attachWorktree` unwinds itself, but a cancel landing in the instant
-            // between it returning and that result being discarded leaves a worktree nothing will
-            // ever reference — so take that down too rather than leaving it for the next sweep.
+            // A cancel can land after the attach finished, leaving its worktree on disk.
             guard let (headSHA, persistedRemoteURL) = cloneResult else {
                 await removeWorktree(
                     codebaseID: codebaseID,
