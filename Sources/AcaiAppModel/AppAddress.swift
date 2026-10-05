@@ -2,14 +2,17 @@ import Foundation
 
 /// A stable, shareable address of a project, codebase or diagram: `acai://<kind>/<uuid>`.
 /// A diagram address covers generated and freeform diagrams alike — their ids never collide.
-enum AppAddress: Hashable, Codable, Sendable {
+///
+/// Lives here rather than in `AcaiApp` because the widget extension builds the address it opens
+/// on tap without linking the app library.
+public enum AppAddress: Hashable, Codable, Sendable {
     case project(UUID)
     case codebase(UUID)
     case diagram(UUID)
 
-    static let scheme = "acai"
+    public static let scheme = "acai"
 
-    init?(url: URL) {
+    public init?(url: URL) {
         guard url.scheme?.lowercased() == Self.scheme,
               let host = url.host(percentEncoded: false)?.lowercased(),
               url.query == nil, url.fragment == nil
@@ -28,7 +31,7 @@ enum AppAddress: Hashable, Codable, Sendable {
         }
     }
 
-    var url: URL {
+    public var url: URL {
         var components = URLComponents()
         components.scheme = Self.scheme
         components.host = kind
@@ -37,7 +40,7 @@ enum AppAddress: Hashable, Codable, Sendable {
         return url
     }
 
-    var id: UUID {
+    public var id: UUID {
         switch self {
         case .project(let id), .codebase(let id), .diagram(let id):
             id
