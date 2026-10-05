@@ -80,6 +80,10 @@ targets:
   # the same way the app targets are shells around `AcaiApp` — except for `AppIntents.xcstrings`,
   # which has to be *here*: App Intents metadata resolves an intent's static strings from the main
   # bundle, which for an extension is the extension's own, not the app's.
+  #
+  # `PRODUCT_MODULE_NAME` is spelled out because the shell's Swift module would otherwise be named
+  # after `PRODUCT_NAME`, colliding with the `AcaiWidget` library it imports: two targets emitting
+  # `AcaiWidget.swiftmodule` into one products directory. The bundle stays `AcaiWidget.appex`.
   AcaiWidget-iOS:
     type: app-extension
     platform: iOS
@@ -94,6 +98,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: AcaiWidget
+        PRODUCT_MODULE_NAME: AcaiWidgetExtension
         PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.Widget
         DEVELOPMENT_TEAM: TJSHMGE2VX
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -117,6 +122,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: AcaiWidget
+        PRODUCT_MODULE_NAME: AcaiWidgetExtension
         PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.Widget
         DEVELOPMENT_TEAM: TJSHMGE2VX
         SWIFT_VERSION: "6.0"
