@@ -1,0 +1,154 @@
+import Foundation
+import Testing
+import AcaiCore
+@testable import AcaiApp
+
+/// Gives every ref its own one-type artifact, so each `(directory, ref)` is a distinct cache entry.
+private struct RefNamedComparisonSource: ComparisonArtifactSourcing, ComparisonArtifactProviding {
+    var ref = ""
+
+    func provider(codebaseID: UUID, ref: String, directory: URL) -> ComparisonArtifactProviding {
+        RefNamedComparisonSource(ref: ref)
+    }
+
+    func artifact(analyzer: CodebaseAnalyzing, fileFilter: FileFilter?) -> CodeArtifact {
+        CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: ["\(ref).swift"]),
+            types: [TypeDeclaration(id: ref, name: ref, qualifiedName: ref, kind: .class, accessLevel: .public)])
+    }
+}
+
+@Suite("Comparison cache eviction", .timeLimit(.minutes(1)))
+@MainActor
+struct ComparisonCacheEvictionTests {
+    private let baseDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("acai-comparison-cache-\(UUID().uuidString)", isDirectory: true)
+
+    private func makeModel(
+        checkouts: FakeCheckoutInspector = FakeCheckoutInspector()
+    ) throws -> (ProjectBrowserViewModel, diagramID: UUID) {
+        let store = ProjectStore(baseDir: baseDir)
+        let model = ProjectBrowserViewModel(
+            store: store, comparisonSources: RefNamedComparisonSource(), checkouts: checkouts)
+        let projectID = model.editing.addProject(title: "Demo", subtitle: "")
+        model.editing.addCodebase(to: projectID, name: "Demo", directoryURL: baseDir)
+        let codebaseID = try #require(store.projects.first?.codebases.first?.id)
+        let diagramID = try #require(
+            model.diagrams.add(to: projectID, codebaseID: codebaseID, content: .packageDiagram))
+        model.selection = .generatedDiagram(diagramID)
+        return (model, diagramID)
+    }
+
+    /// Picks `ref` as the diagram's comparison and loads its snapshot, the way the compare panel does.
+    private func compare(_ model: ProjectBrowserViewModel, diagramID: UUID, against ref: String) async throws {
+        model.updateComparisonGitRef(diagramID: diagramID, ref: ref)
+        let diagram = try #require(model.generatedDiagram(for: diagramID))
+        await model.ensureComparisonLoaded(for: diagram)
+        _ = model.comparisonArtifact(for: diagram)
+    }
+
+    @Test func steppingThroughRevisionsEvictsTheOldestSnapshots() async throws {
+        let (model, diagramID) = try makeModel()
+        let capacity = model.comparisonRecency.capacity
+        let refs = (1...capacity + 2).map { "r\($0)" }
+
+        for ref in refs {
+            try await compare(model, diagramID: diagramID, against: ref)
+        }
+
+        #expect(model.comparisonArtifacts.count == capacity)
+        #expect(model.comparisonRecency.ordered.map(\.ref) == Array(refs.suffix(capacity)))
+        // The comparison the diagram is showing is the newest, so it is still there.
+        #expect(model.comparisonArtifact(for: try #require(model.generatedDiagram(for: diagramID))) != nil)
+        for evicted in refs.prefix(2) {
+            #expect(!model.comparisonArtifacts.keys.contains { $0.ref == evicted })
+        }
+    }
+
+    @Test func anEvictedSnapshotIsDroppedWithItsDerivationsAndIsReloadableOnReturn() async throws {
+        let (model, diagramID) = try makeModel()
+        let capacity = model.comparisonRecency.capacity
+        let first = "r1"
+        for ref in (1...capacity + 1).map({ "r\($0)" }) {
+            try await compare(model, diagramID: diagramID, against: ref)
+            if ref == first {
+                await model.ensureComparisonAnalysisLoaded(for: try #require(model.generatedDiagram(for: diagramID)))
+            }
+        }
+
+        #expect(!model.comparisonDisplayCache.keys.contains { $0.ref == first })
+        #expect(!model.comparisonAnalyses.keys.contains { $0.ref == first })
+
+        // Going back to it reloads rather than showing an empty comparison.
+        try await compare(model, diagramID: diagramID, against: first)
+        let diagram = try #require(model.generatedDiagram(for: diagramID))
+        #expect(model.comparisonArtifact(for: diagram)?.types.map(\.id) == [first])
+        #expect(model.comparisonError == nil)
+    }
+
+    @Test func memoryPressurePurgesEverySnapshotButTheOneOnScreen() async throws {
+        let (model, diagramID) = try makeModel()
+        try await compare(model, diagramID: diagramID, against: "old")
+        try await compare(model, diagramID: diagramID, against: "current")
+        #expect(model.comparisonArtifacts.count == 2)
+
+        model.purgeCachesUnderMemoryPressure()
+
+        #expect(model.comparisonArtifacts.keys.map(\.ref) == ["current"])
+        #expect(model.comparisonRecency.ordered.map(\.ref) == ["current"])
+    }
+
+    @Test func aPullRequestComparisonKeepsBothItsSidesAndItsMergeBase() async throws {
+        let (model, diagramID) = try makeModel(checkouts: FakeCheckoutInspector(mergeBase: "merge-base"))
+        model.selectComparisonPullRequest(diagramID: diagramID, base: "main", head: "feature")
+        await model.ensureComparisonLoaded(for: try #require(model.generatedDiagram(for: diagramID)))
+
+        model.purgeCachesUnderMemoryPressure()
+
+        #expect(model.comparisonArtifacts.keys.map(\.ref).sorted() == ["feature", "merge-base"])
+        #expect(Array(model.resolvedMergeBases.values) == ["merge-base"])
+    }
+}
+
+@Suite("Recency order")
+struct RecencyOrderTests {
+    @Test func reusingAKeyMakesItTheNewest() {
+        var order = RecencyOrder<String>(capacity: 2)
+        for key in ["a", "b", "a", "c"] {
+            order.use(key)
+        }
+
+        #expect(order.overflow(retaining: []) == ["b"])
+        #expect(order.ordered == ["a", "c"])
+    }
+
+    @Test func aKeyInUseIsKeptEvenWhenItIsTheOldest() {
+        var order = RecencyOrder<String>(capacity: 2)
+        for key in ["a", "b", "c", "d"] {
+            order.use(key)
+        }
+
+        #expect(order.overflow(retaining: ["a"]) == ["b", "c"])
+        #expect(order.ordered == ["a", "d"])
+    }
+
+    @Test func aCacheStaysOverItsBoundRatherThanEvictingWhatIsInUse() {
+        var order = RecencyOrder<String>(capacity: 1)
+        for key in ["a", "b", "c"] {
+            order.use(key)
+        }
+
+        #expect(order.overflow(retaining: ["a", "b", "c"]).isEmpty)
+        #expect(order.ordered == ["a", "b", "c"])
+    }
+
+    @Test func aPurgeKeepsOnlyWhatIsInUse() {
+        var order = RecencyOrder<String>(capacity: 4)
+        for key in ["a", "b", "c"] {
+            order.use(key)
+        }
+
+        #expect(order.purge(retaining: ["b"]) == ["a", "c"])
+        #expect(order.ordered == ["b"])
+    }
+}

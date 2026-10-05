@@ -252,6 +252,16 @@ final class ProjectBrowserViewModel: ObservableObject {
         analyses.removeValue(forKey: codebaseID)
     }
 
+    /// Drops the cached analysis of every codebase the current selection isn't showing; one still
+    /// being computed is left alone, since dropping its marker only buys a duplicate recompute.
+    func purgeAnalysesNotOnScreen() {
+        let displayed = displayedCodebaseIDs
+        analyses = analyses.filter { entry in
+            if case .computing = entry.value { return true }
+            return displayed.contains(entry.key)
+        }
+    }
+
     // MARK: - Codebase freshness
 
     /// `nil` from `freshness(for:)` means not yet checked, or no fingerprint to compare against.

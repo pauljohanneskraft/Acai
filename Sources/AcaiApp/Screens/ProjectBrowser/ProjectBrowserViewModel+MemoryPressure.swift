@@ -38,6 +38,7 @@ extension ProjectBrowserViewModel {
     /// re-loaded behind the compare panel's loading indicator, or re-derived, on next access.
     func purgeCachesUnderMemoryPressure() {
         purgeComparisonCaches()
+        purgeAnalysesNotOnScreen()
         for evicted in displayArtifactRecency.purge(retaining: displayedCodebaseIDs) {
             displayArtifactCache.removeValue(forKey: evicted)
         }
