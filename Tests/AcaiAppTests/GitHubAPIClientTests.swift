@@ -113,6 +113,79 @@ struct GitHubNetworkingTests {
         #expect(capturedRequest.value?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
     }
 
+    /// A spent quota and a rejected token each need a different next step from the reader, so
+    /// neither may arrive as an undifferentiated `http` failure.
+    @Test func aSpentPrimaryRateLimitCarriesItsResetTime() async throws {
+        let resetAt = Date(timeIntervalSince1970: 1_800_000_000)
+        MockURLProtocol.handler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 403, httpVersion: nil,
+                headerFields: [
+                    "x-ratelimit-remaining": "0",
+                    "x-ratelimit-reset": String(Int(resetAt.timeIntervalSince1970))
+                ])!
+            return (response, Data("API rate limit exceeded".utf8))
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let client = makeClient(credential: .personalAccessToken("t"))
+        await #expect(throws: GitHubAPIClient.Failure.rateLimited(resetAt: resetAt)) {
+            _ = try await client.pullRequests(owner: "acme", repo: "widgets")
+        }
+    }
+
+    @Test func aSecondaryRateLimitFallsBackToRetryAfter() async throws {
+        MockURLProtocol.handler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 429, httpVersion: nil,
+                headerFields: ["x-ratelimit-remaining": "0", "retry-after": "60"])!
+            return (response, Data("slow down".utf8))
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let client = makeClient(credential: .personalAccessToken("t"))
+        let thrown = await #expect(throws: GitHubAPIClient.Failure.self) {
+            _ = try await client.pullRequests(owner: "acme", repo: "widgets")
+        }
+        guard case .rateLimited(let resetAt) = try #require(thrown) else {
+            Issue.record("expected a rate-limit failure, got \(String(describing: thrown))")
+            return
+        }
+        let seconds = try #require(resetAt).timeIntervalSinceNow
+
+        #expect(seconds > 30 && seconds <= 60)
+    }
+
+    /// GitHub answers an ordinary permission failure with 403 too — without the quota header, so it
+    /// must not be reported as "try again when the limit resets".
+    @Test func aForbiddenResponseWithQuotaLeftStaysAnOrdinaryFailure() async throws {
+        MockURLProtocol.handler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 403, httpVersion: nil,
+                headerFields: ["x-ratelimit-remaining": "4999"])!
+            return (response, Data("Resource not accessible".utf8))
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let client = makeClient(credential: .personalAccessToken("t"))
+        await #expect(throws: GitHubAPIClient.Failure.http(403, "Resource not accessible")) {
+            _ = try await client.pullRequests(owner: "acme", repo: "widgets")
+        }
+    }
+
+    @Test func aRejectedCredentialSurfacesAsUnauthorized() async throws {
+        MockURLProtocol.handler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: nil, headerFields: nil)!
+            return (response, Data("Bad credentials".utf8))
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let client = makeClient(credential: .personalAccessToken("expired"))
+        await #expect(throws: GitHubAPIClient.Failure.unauthorized) {
+            _ = try await client.pullRequests(owner: "acme", repo: "widgets")
+        }
+    }
+
     @Test func httpErrorStatusSurfacesAsFailure() async throws {
         MockURLProtocol.handler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!
