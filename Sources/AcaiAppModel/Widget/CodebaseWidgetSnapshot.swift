@@ -1,20 +1,13 @@
 import Foundation
 
-/// What a codebase looked like at the end of its last analysis, as the widget shows it. Written by
-/// the app, read by the widget extension, which has no access to the codebase's folder and so can
-/// only ever report this snapshot rather than live state.
+/// A codebase as of its last analysis, written by the app for a widget that can never see live state.
 public struct CodebaseWidgetSnapshot: Codable, Equatable, Sendable, Identifiable {
     public var codebaseID: UUID
     public var codebaseName: String
-    /// `nil` for a codebase that has never been analysed — the widget offers analysing it instead
-    /// of reporting an age it doesn't have.
     public var analysedAt: Date?
-    /// The revision the analysis reflects, when it isn't the working tree (`Codebase.pinnedRevision`).
     public var analysedRevision: String?
-    /// Whether the code had changed since the analysis, as of `freshnessCheckedAt`. The widget
-    /// cannot recompute this itself, so an unchecked snapshot claims nothing.
+    /// Meaningful only once `freshnessCheckedAt` is set.
     public var isOutOfDate = false
-    /// When the app last compared the code against the analysis. `nil` means never.
     public var freshnessCheckedAt: Date?
     public var typeCount: Int?
     public var findingCount: Int?

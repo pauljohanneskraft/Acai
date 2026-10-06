@@ -4,8 +4,7 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
-	<!-- The only thing the extension needs: read access to the snapshot the app shares. It parses
-	nothing and opens no folder, so it gets neither network nor file access. -->
+	<!-- Must match `AppGroupContainer.standard`; the extension needs no network or file access. -->
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.de.kraftsoftware.Acai</string>

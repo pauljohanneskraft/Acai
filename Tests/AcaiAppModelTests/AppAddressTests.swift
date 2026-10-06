@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiAppModel
 
-/// `AppAddress`'s own parsing and formatting. What an address *resolves to* in the app is
-/// `AcaiAppTests`' `AppAddressResolutionTests`.
+/// What an address resolves to in the app is `AppAddressResolutionTests`.
 @Suite("App addresses")
 struct AppAddressTests {
     @Test(arguments: [AppAddress.project(UUID()), .codebase(UUID()), .diagram(UUID())])

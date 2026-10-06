@@ -2,9 +2,6 @@ import Foundation
 
 /// A stable, shareable address of a project, codebase or diagram: `acai://<kind>/<uuid>`.
 /// A diagram address covers generated and freeform diagrams alike — their ids never collide.
-///
-/// Lives here rather than in `AcaiApp` because the widget extension builds the address it opens
-/// on tap without linking the app library.
 public enum AppAddress: Hashable, Codable, Sendable {
     case project(UUID)
     case codebase(UUID)

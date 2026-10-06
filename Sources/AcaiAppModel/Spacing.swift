@@ -1,7 +1,6 @@
 import Foundation
 
-/// The one spacing scale every Acai interface uses, rather than a magic number per view. Lives
-/// here so the app and the widget extension share a scale instead of each keeping its own.
+/// The one spacing scale the app and the widget share.
 extension CGFloat {
     public static let spacingXXS: CGFloat = 2
     public static let spacingXS: CGFloat = 4

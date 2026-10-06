@@ -1,14 +1,10 @@
 import Foundation
 
-/// What the widget should show for a given configuration, decided over the shared snapshot list.
-/// Pure, so the decision is unit-testable without a widget host.
+/// Which of the widget's states to show, decided over the shared snapshots.
 public struct CodebaseWidgetPresentation: Sendable {
     public enum State: Equatable, Sendable {
-        /// The app has never shared anything — it has not been opened, or holds no codebase yet.
         case nothingShared
-        /// The widget names a codebase the app no longer has.
         case codebaseMissing
-        /// The codebase exists but has never been analysed.
         case notAnalysed(CodebaseWidgetSnapshot)
         case analysed(CodebaseWidgetSnapshot)
 
@@ -28,8 +24,7 @@ public struct CodebaseWidgetPresentation: Sendable {
         self.list = list
     }
 
-    /// `codebaseID` is `nil` for a widget the user hasn't configured yet, which shows the codebase
-    /// analysed most recently rather than nothing at all.
+    /// An unconfigured widget (`nil`) shows the codebase analysed most recently.
     public func state(codebaseID: UUID?) -> State {
         guard !list.snapshots.isEmpty else { return .nothingShared }
         guard let snapshot = chosen(codebaseID: codebaseID) else { return .codebaseMissing }
@@ -41,8 +36,7 @@ public struct CodebaseWidgetPresentation: Sendable {
         return list.snapshot(for: codebaseID)
     }
 
-    /// Ties break on name so an unconfigured widget doesn't flip between two codebases analysed in
-    /// the same instant, and a list of never-analysed codebases still shows one.
+    /// Ties break on name, so an unconfigured widget never flips between two codebases.
     private var mostRecentlyAnalysed: CodebaseWidgetSnapshot? {
         list.snapshots.max { left, right in
             if left.analysedAt != right.analysedAt {

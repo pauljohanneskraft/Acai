@@ -70,20 +70,11 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
-        # The App Group shared with the widget extension. The iOS app had no entitlements file at
-        # all until it had something to share.
         CODE_SIGN_ENTITLEMENTS: Acai-iOS.entitlements
     scheme:
       gatherCoverageData: false
 
-  # The widget extension, one per platform. A shell around `AcaiWidget`'s `CodebaseStateWidget`,
-  # the same way the app targets are shells around `AcaiApp` — except for `AppIntents.xcstrings`,
-  # which has to be *here*: App Intents metadata resolves an intent's static strings from the main
-  # bundle, which for an extension is the extension's own, not the app's.
-  #
-  # `PRODUCT_MODULE_NAME` is spelled out because the shell's Swift module would otherwise be named
-  # after `PRODUCT_NAME`, colliding with the `AcaiWidget` library it imports: two targets emitting
-  # `AcaiWidget.swiftmodule` into one products directory. The bundle stays `AcaiWidget.appex`.
+  # A shell around `AcaiWidget`; `PRODUCT_MODULE_NAME` keeps its module from colliding with that library's.
   AcaiWidget-iOS:
     type: app-extension
     platform: iOS

@@ -1,11 +1,6 @@
 import Foundation
 
-/// Reads/writes the widget's snapshot list as one JSON file in the App Group container, following
-/// `FilterPresetStore`: sorted-keys pretty-printed encoding, and an atomic write so the widget
-/// process can never read a half-written file.
-///
-/// A file it cannot read or decode is dropped, not migrated — the widget then shows its
-/// "nothing shared yet" state, which the app corrects on the next analysis.
+/// One atomically written JSON file; an unreadable or newer file is dropped, not migrated.
 public struct CodebaseWidgetSnapshotStore: Sendable {
     public let containerURL: URL
 
@@ -13,7 +8,6 @@ public struct CodebaseWidgetSnapshotStore: Sendable {
         self.containerURL = containerURL
     }
 
-    /// `nil` when the process holds no App Group entitlement.
     public init?(container: AppGroupContainer) {
         guard let url = container.url else { return nil }
         self.init(containerURL: url)
@@ -23,7 +17,6 @@ public struct CodebaseWidgetSnapshotStore: Sendable {
         containerURL.appendingPathComponent("CodebaseWidgetSnapshots.json")
     }
 
-    /// Does file I/O — call off the main actor.
     public func load() -> CodebaseWidgetSnapshotList {
         guard let data = try? Data(contentsOf: fileURL),
               let decoded = try? JSONDecoder().decode(CodebaseWidgetSnapshotList.self, from: data),
@@ -32,7 +25,6 @@ public struct CodebaseWidgetSnapshotStore: Sendable {
         return decoded
     }
 
-    /// Does file I/O — call off the main actor.
     public func save(_ list: CodebaseWidgetSnapshotList) throws {
         try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true)
         let encoder = JSONEncoder()

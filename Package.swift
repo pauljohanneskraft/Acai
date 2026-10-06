@@ -77,10 +77,7 @@ optionalTargets.append(
 cliOptionalDependencies.append(.target(name: "AcaiGit", condition: .when(platforms: [.macOS])))
 mcpOptionalDependencies.append(.target(name: "AcaiGit", condition: .when(platforms: [.macOS])))
 
-// MARK: WidgetKit widget showing a codebase's last-analysis state. Depends only on
-// `AcaiAppModel` — an extension links as little as it can, and the snapshot it reads is
-// written by the app into the App Group container. The `App/` extension target is a shell
-// around `CodebaseStateWidget`, like the app targets are around `AcaiApp`.
+// MARK: The codebase-state widget; only `AcaiAppModel`, so the extension links as little as it can.
 optionalProducts.append(
     .library(name: "AcaiWidget", targets: ["AcaiWidget"])
 )

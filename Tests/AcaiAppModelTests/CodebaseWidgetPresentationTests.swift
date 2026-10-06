@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiAppModel
 
-/// `CodebaseWidgetPresentation`: which codebase the widget shows, and in which state.
 @Suite("CodebaseWidgetPresentation")
 struct CodebaseWidgetPresentationTests {
     private let first = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!

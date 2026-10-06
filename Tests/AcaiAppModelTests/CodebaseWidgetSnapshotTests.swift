@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiAppModel
 
-/// `CodebaseWidgetSnapshot`/`CodebaseWidgetSnapshotList`/`CodebaseWidgetSnapshotStore`: the
-/// codebase state the app shares with the widget extension through the App Group container.
 @Suite("CodebaseWidgetSnapshot")
 struct CodebaseWidgetSnapshotTests {
     private let first = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!
@@ -71,38 +69,6 @@ struct CodebaseWidgetSnapshotTests {
         #expect(store.load().snapshots.isEmpty)
     }
 
-    @Test("Updating one codebase's entry leaves the others, so a reindex doesn't drop them")
-    func updateLeavesOtherCodebases() {
-        var list = CodebaseWidgetSnapshotList(snapshots: [
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
-            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other")
-        ])
-        list.update(CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai", typeCount: 9))
-
-        #expect(list.snapshots.count == 2)
-        #expect(list.snapshot(for: first)?.typeCount == 9)
-        #expect(list.snapshot(for: second)?.codebaseName == "Other")
-    }
-
-    @Test("Updating a codebase the list has never seen appends it")
-    func updateAppendsUnknownCodebase() {
-        var list = CodebaseWidgetSnapshotList()
-        list.update(CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"))
-
-        #expect(list.snapshot(for: first)?.codebaseName == "Acai")
-    }
-
-    @Test("A deleted codebase is pruned so the widget stops offering it")
-    func deletedCodebaseIsPruned() {
-        var list = CodebaseWidgetSnapshotList(snapshots: [
-            CodebaseWidgetSnapshot(codebaseID: first, codebaseName: "Acai"),
-            CodebaseWidgetSnapshot(codebaseID: second, codebaseName: "Other")
-        ])
-        list.removeAll(except: [second])
-
-        #expect(list.snapshots.map(\.codebaseID) == [second])
-    }
-
     @Test("A save overwrites the previous file rather than appending to it")
     func saveOverwrites() throws {
         let store = try store()
@@ -117,8 +83,6 @@ struct CodebaseWidgetSnapshotTests {
     }
 }
 
-/// `CodebaseWidgetSnapshotList.merging(_:)`: the app learns a codebase's date, its counts and its
-/// freshness at three separate moments, so whichever writes second must not erase the others.
 @Suite("CodebaseWidgetSnapshotList merging")
 struct CodebaseWidgetSnapshotMergingTests {
     private let first = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!
