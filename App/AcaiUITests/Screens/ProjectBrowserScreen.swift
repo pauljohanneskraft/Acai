@@ -98,7 +98,7 @@ final class ProjectBrowserScreen {
 
     /// Opens an `acai://` address the way another app would. The app must already be showing a screen:
     /// the caller waits for one first. On iOS, `relaunching` delivers it to a fresh launch instead of
-    /// the running app, whose status bar the system would otherwise show with a link back.
+    /// the running app, whose layout the system's delivery shifts down by a status bar's height.
     func openLink(
         _ address: String, relaunching: Bool = false, file: StaticString = #filePath, line: UInt = #line
     ) {
