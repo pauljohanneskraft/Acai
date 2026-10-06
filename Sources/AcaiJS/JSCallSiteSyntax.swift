@@ -19,10 +19,8 @@ struct JSCallSiteSyntax: CallSiteSyntax {
         if node.nodeType == "new_expression" {
             guard let ctor = node.child(byFieldName: "constructor"), ctor.nodeType == "identifier"
             else { return nil }
-            return scope.resolvedCallSite(
-                receiverName: ctor.text(in: context), methodName: "constructor",
-                location: node.location(in: context)
-            )
+            return scope.constructionCallSite(
+                typeName: ctor.text(in: context), methodName: "constructor", location: node.location(in: context))
         }
 
         guard node.nodeType == "call_expression",

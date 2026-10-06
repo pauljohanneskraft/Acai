@@ -816,6 +816,7 @@
           "callSites" : [
             {
               "isConstruction" : true,
+              "isSpeculative" : true,
               "location" : {
                 "column" : 77,
                 "endLine" : 42,
