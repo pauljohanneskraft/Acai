@@ -20,13 +20,6 @@ extension ProjectBrowserViewModel {
         let head: String
     }
 
-    /// A comparison change rebuilds the whole diagram. Made in the tap's own run-loop turn, that rebuild
-    /// lands before the compare sheet commits its touch-release animation and leaves the sheet frozen
-    /// at its pressed, slightly enlarged scale — so a tap in the sheet defers it by one turn.
-    func changeComparisonAfterTouchRelease(_ change: @escaping @MainActor (ProjectBrowserViewModel) -> Void) {
-        DispatchQueue.main.async { change(self) }
-    }
-
     /// Drops saved positions since the rendered element set changes, and exits pull-request mode.
     func updateComparisonGitRef(diagramID: UUID, ref: String?) {
         reportComparison(nil)
