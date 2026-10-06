@@ -4,8 +4,6 @@ import WidgetKit
 @testable import AcaiWidget
 @testable import AcaiAppModel
 
-/// `CodebaseStateProvider`: what the widget's timeline carries, over an injected snapshot list
-/// rather than a real App Group container.
 @Suite("CodebaseStateProvider")
 struct CodebaseStateProviderTests {
     private let codebaseID = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!
@@ -56,8 +54,6 @@ struct CodebaseStateProviderTests {
     }
 }
 
-/// `CodebaseWidgetEntityQuery`: the codebase choice the widget's configuration offers, read from
-/// the shared snapshots because the app isn't running when the picker opens.
 @Suite("CodebaseWidgetEntityQuery")
 struct CodebaseWidgetEntityQueryTests {
     private let first = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!

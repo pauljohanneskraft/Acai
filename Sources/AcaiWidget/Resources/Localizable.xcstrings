@@ -287,24 +287,46 @@
         }
       }
     },
-    "View.CodebaseFreshnessView.Analysed": {
+    "View.CodebaseFreshnessView.Analysed %@": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Analysiert"
+            "value": "Analysiert %@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Analysed"
+            "value": "Analysed %@"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Analysé"
+            "value": "Analysé %@"
+          }
+        }
+      }
+    },
+    "View.CodebaseFreshnessView.Checked %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuletzt geprüft %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked for changes %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifications vérifiées %@"
           }
         }
       }
@@ -314,19 +336,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seitdem nicht geprüft"
+            "value": "Änderungen nicht geprüft"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not checked since"
+            "value": "Changes not checked"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Non vérifié depuis"
+            "value": "Modifications non vérifiées"
           }
         }
       }

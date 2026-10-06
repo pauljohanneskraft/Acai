@@ -1,8 +1,7 @@
 import SwiftUI
 import WidgetKit
 
-/// A codebase's state as of its last analysis. Tapping it opens that codebase (`widgetURL`),
-/// not the app's front door.
+/// A codebase's state as of its last analysis; tapping it opens that codebase.
 public struct CodebaseStateWidget: Widget {
     public static let kind = "CodebaseStateWidget"
 

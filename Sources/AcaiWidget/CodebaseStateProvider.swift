@@ -3,12 +3,9 @@ import WidgetKit
 import AcaiAppModel
 
 struct CodebaseStateProvider: AppIntentTimelineProvider {
-    /// How long before the entry is rebuilt. Nothing here changes on its own — the app reloads the
-    /// timeline when it writes a new snapshot — but the relative "last analysed" age does, so the
-    /// entry is refreshed on the hour rather than left to drift.
+    /// The app reloads timelines when it writes; this only bounds how long a missed reload lasts.
     static let refreshInterval: TimeInterval = 60 * 60
 
-    /// Injected in tests; the real provider reads the App Group container.
     var loadList: @Sendable () -> CodebaseWidgetSnapshotList = {
         CodebaseWidgetSnapshotStore(container: .standard)?.load() ?? CodebaseWidgetSnapshotList()
     }
@@ -18,15 +15,16 @@ struct CodebaseStateProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: SelectCodebaseIntent, in context: Context) async -> CodebaseStateEntry {
-        entry(for: configuration)
+        let entry = entry(for: configuration)
+        // The gallery previews what the widget does, even before the app has shared anything.
+        return context.isPreview && entry.state == .nothingShared ? placeholder(in: context) : entry
     }
 
     func timeline(for configuration: SelectCodebaseIntent, in context: Context) async -> Timeline<CodebaseStateEntry> {
         makeTimeline(for: configuration)
     }
 
-    /// The `Context`-free half of the two above, which is all the state depends on.
-    /// `TimelineProviderContext` has no initializer, so this is also the seam the tests drive.
+    /// `Context` has no initializer, so tests drive this half.
     func entry(for configuration: SelectCodebaseIntent) -> CodebaseStateEntry {
         let state = CodebaseWidgetPresentation(list: loadList()).state(codebaseID: configuration.codebase?.id)
         return CodebaseStateEntry(date: Date(), state: state)
@@ -41,9 +39,10 @@ struct CodebaseStateProvider: AppIntentTimelineProvider {
 }
 
 extension CodebaseWidgetSnapshot {
-    /// Stands in while the widget gallery renders a preview, before any real snapshot is readable.
-    static let placeholder = CodebaseWidgetSnapshot(
-        codebaseID: UUID(), codebaseName: "Açaí", analysedAt: Date(timeIntervalSince1970: 1_700_000_000),
-        freshnessCheckedAt: Date(timeIntervalSince1970: 1_700_000_000), typeCount: 128, findingCount: 4,
-        criticalFindingCount: 1)
+    static var placeholder: CodebaseWidgetSnapshot {
+        let analysedAt = Date().addingTimeInterval(-2 * 60 * 60)
+        return CodebaseWidgetSnapshot(
+            codebaseID: UUID(), codebaseName: "Açaí", analysedAt: analysedAt, freshnessCheckedAt: analysedAt,
+            typeCount: 128, findingCount: 4, criticalFindingCount: 1)
+    }
 }

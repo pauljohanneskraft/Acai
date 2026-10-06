@@ -1,26 +1,30 @@
 import SwiftUI
 import AcaiAppModel
 
-/// How much the last analysis found. A count the app has not computed is left out rather than
-/// shown as zero, which would read as "found nothing".
+/// A count the app hasn't computed is left out, since "0 findings" would claim it found nothing.
 struct CodebaseCountsView: View {
     let snapshot: CodebaseWidgetSnapshot
+    var showsAll = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: .spacingXXS) {
-            if let typeCount = snapshot.typeCount {
+            if showsAll, let typeCount = snapshot.typeCount {
                 Text(.widget("View.CodebaseCountsView.Types \(typeCount)"))
             }
             if let findingCount = snapshot.findingCount {
                 findings(findingCount)
             }
-            if snapshot.hasParseErrors {
-                Text(.widget("View.CodebaseCountsView.ParseErrors"))
-                    .foregroundStyle(.orange)
+            if showsAll, snapshot.hasParseErrors {
+                Label {
+                    Text(.widget("View.CodebaseCountsView.ParseErrors"))
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange)
+                }
             }
         }
         .font(.caption)
         .foregroundStyle(.secondary)
+        .lineLimit(2)
     }
 
     @ViewBuilder

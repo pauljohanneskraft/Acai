@@ -4,10 +4,12 @@ import AcaiAppModel
 
 struct CodebaseStateWidgetView: View {
     let entry: CodebaseStateEntry
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
         content
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .accessibilityElement(children: .combine)
             .widgetURL(entry.state.snapshot?.address.url)
     }
 
@@ -25,19 +27,18 @@ struct CodebaseStateWidgetView: View {
         case .notAnalysed(let snapshot):
             CodebaseNotAnalysedView(snapshot: snapshot)
         case .analysed(let snapshot):
-            CodebaseAnalysedView(snapshot: snapshot)
+            CodebaseAnalysedView(snapshot: snapshot, isCompact: family == .systemSmall)
         }
     }
 }
 
-/// The empty and error states: a widget cannot show a retry button, so each says which action in
-/// the app resolves it rather than only that something is absent.
+/// A widget has no retry button, so each empty state names the action in the app that resolves it.
 struct CodebaseStateUnavailableView: View {
     let message: LocalizedStringResource
     let systemImage: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: .spacingXXS) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             Image(systemName: systemImage)
                 .font(.title3)
                 .foregroundStyle(.secondary)
@@ -45,6 +46,7 @@ struct CodebaseStateUnavailableView: View {
             Text(message)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .minimumScaleFactor(0.8)
         }
     }
 }
@@ -53,7 +55,7 @@ struct CodebaseNotAnalysedView: View {
     let snapshot: CodebaseWidgetSnapshot
 
     var body: some View {
-        VStack(alignment: .leading, spacing: .spacingXXS) {
+        VStack(alignment: .leading, spacing: .spacingXS) {
             CodebaseNameView(name: snapshot.codebaseName)
             Text(.widget("View.CodebaseStateWidgetView.NotAnalysed"))
                 .font(.caption)
@@ -61,25 +63,44 @@ struct CodebaseNotAnalysedView: View {
             Spacer(minLength: 0)
             Text(.widget("View.CodebaseStateWidgetView.AnalyseInApp"))
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
+                .minimumScaleFactor(0.8)
+                .layoutPriority(1)
         }
     }
 }
 
 struct CodebaseAnalysedView: View {
     let snapshot: CodebaseWidgetSnapshot
+    let isCompact: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: .spacingS) {
-            CodebaseNameView(name: snapshot.codebaseName)
-            CodebaseFreshnessView(snapshot: snapshot)
-            CodebaseCountsView(snapshot: snapshot)
+        VStack(alignment: .leading, spacing: .spacingXS) {
+            if isCompact {
+                CodebaseNameView(name: snapshot.codebaseName)
+                CodebaseStatusLabel(snapshot: snapshot)
+                CodebaseFreshnessView(snapshot: snapshot)
+                CodebaseCountsView(snapshot: snapshot)
+            } else {
+                HStack(alignment: .top, spacing: .spacingM) {
+                    VStack(alignment: .leading, spacing: .spacingXS) {
+                        CodebaseNameView(name: snapshot.codebaseName)
+                        CodebaseStatusLabel(snapshot: snapshot)
+                        CodebaseFreshnessView(snapshot: snapshot, showsCheckAndRevision: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    CodebaseCountsView(snapshot: snapshot, showsAll: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
             Spacer(minLength: 0)
-            // The whole point of the footnote: a widget that showed these numbers without it would
-            // read as live state, which it never is.
+            // Without it the numbers would read as live state, which the widget never has.
             Text(.widget("View.CodebaseStateWidgetView.AsOfLastAnalysis"))
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .layoutPriority(1)
         }
     }
 }
@@ -88,9 +109,9 @@ struct CodebaseNameView: View {
     let name: String
 
     var body: some View {
-        // A codebase's name is content, never translated.
         Text(verbatim: name)
             .font(.headline)
-            .lineLimit(2)
+            .lineLimit(1)
+            .accessibilityAddTraits(.isHeader)
     }
 }

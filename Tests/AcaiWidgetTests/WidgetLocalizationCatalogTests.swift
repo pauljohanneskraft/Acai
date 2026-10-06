@@ -1,11 +1,7 @@
 import Foundation
 import Testing
 
-/// The widget ships in English, German and French, and only Xcode compiles an `.xcstrings`, so a
-/// missing identifier or translation is invisible under `swift build` and reaches users as raw
-/// text. Mirrors what `AcaiAppTests`' `LocalizationCatalogTests` does for the app, over the
-/// widget's two catalogs: the module's own chrome, and the extension target's App Intents strings
-/// (which must live there, since App Intents metadata resolves them from the main bundle).
+/// The app's `LocalizationCatalogTests`, over the widget's own catalog and the extension's App Intents one.
 @Suite("Widget localization catalogs", .timeLimit(.minutes(1)))
 struct WidgetLocalizationCatalogTests {
     private static let shippedLanguages: Set<String> = ["en", "de", "fr"]
@@ -28,7 +24,7 @@ struct WidgetLocalizationCatalogTests {
     @Test("Every identifier the views use exists in the widget's own catalog, exactly once")
     func everyChromeIdentifierExists() throws {
         let keys = Set(try catalogStrings(at: chromeCatalog).keys)
-        for identifier in try identifiers(matching: #"\.widget\("([^"]+)"\)"#) {
+        for identifier in try chromeIdentifiers() {
             #expect(keys.contains(identifier), "'\(identifier)' is missing from the widget catalog")
         }
     }
@@ -44,7 +40,7 @@ struct WidgetLocalizationCatalogTests {
 
     @Test("No catalog entry is unused, so a reworded view can't leave a stale identifier behind")
     func noCatalogEntryIsUnused() throws {
-        let used = try identifiers(matching: #"\.widget\("([^"]+)"\)"#)
+        let used = try chromeIdentifiers()
         for key in try catalogStrings(at: chromeCatalog).keys {
             #expect(used.contains(key), "'\(key)' is in the catalog but no view uses it")
         }
@@ -79,18 +75,23 @@ struct WidgetLocalizationCatalogTests {
         }
     }
 
-    @Test("A key with a placeholder spells it %lld, matching how the views interpolate a count")
-    func placeholdersAreIntegerFormatted() throws {
+    @Test("A key's placeholders are %lld for a count or %@ for an interpolated Text, as the views produce them")
+    func placeholdersMatchTheViews() throws {
         for key in try catalogStrings(at: chromeCatalog).keys where key.contains("%") {
             let specifiers = key.components(separatedBy: "%").dropFirst()
             for specifier in specifiers {
-                #expect(specifier.hasPrefix("lld"), "'\(key)' uses a placeholder other than %lld")
+                let isExpected = specifier.hasPrefix("lld") || specifier.hasPrefix("@")
+                #expect(isExpected, "'\(key)' uses an unexpected placeholder")
             }
         }
     }
 
-    /// Every `stringUnit` value reachable in one language: the flat one, each plural form, and each
-    /// substitution's plural forms.
+    private func chromeIdentifiers() throws -> Set<String> {
+        try identifiers(matching: #"\.widget\("([^"]+)"\)"#)
+            .union(identifiers(matching: #"Text\(widget: "([^"]+)"\)"#, placeholder: "%@"))
+    }
+
+    /// The flat value, each plural form, and each substitution's plural forms.
     private func resolvedValues(in localization: [String: Any]) -> [(String, String)] {
         var values: [(String, String)] = []
         if let unit = localization["stringUnit"] as? [String: Any], let value = unit["value"] as? String {
@@ -120,9 +121,8 @@ struct WidgetLocalizationCatalogTests {
         return try #require(catalog["strings"] as? [String: [String: Any]])
     }
 
-    /// Identifiers at every call site, with an interpolation rewritten to the `%lld` the catalog
-    /// key carries — `.widget("View.Foo.Types \(count)")` looks up `View.Foo.Types %lld`.
-    private func identifiers(matching pattern: String) throws -> Set<String> {
+    /// `.widget("View.Foo.Types \(count)")` looks up `View.Foo.Types %lld`.
+    private func identifiers(matching pattern: String, placeholder: String = "%lld") throws -> Set<String> {
         let regex = try NSRegularExpression(pattern: pattern)
         let interpolation = try NSRegularExpression(pattern: #"\\\([^)]+\)"#)
         var found: Set<String> = []
@@ -133,7 +133,7 @@ struct WidgetLocalizationCatalogTests {
                 guard let captured = Range(match.range(at: 1), in: source) else { continue }
                 let raw = String(source[captured])
                 found.insert(interpolation.stringByReplacingMatches(
-                    in: raw, range: NSRange(raw.startIndex..., in: raw), withTemplate: "%lld"))
+                    in: raw, range: NSRange(raw.startIndex..., in: raw), withTemplate: placeholder))
             }
         }
         return found

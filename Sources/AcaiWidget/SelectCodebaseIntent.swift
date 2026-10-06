@@ -1,9 +1,7 @@
 import AppIntents
 import Foundation
 
-/// Which codebase the widget shows. Its static strings live in the widget extension target's
-/// `AppIntents.xcstrings`, not this module's catalog: App Intents metadata resolves them from the
-/// main bundle, which for an extension is the extension's own.
+/// Its strings live in the extension target's `AppIntents.xcstrings`: App Intents resolves them from the main bundle.
 struct SelectCodebaseIntent: WidgetConfigurationIntent {
     static let title = LocalizedStringResource("Intent.SelectCodebase.Title", table: "AppIntents")
     static let description = IntentDescription(

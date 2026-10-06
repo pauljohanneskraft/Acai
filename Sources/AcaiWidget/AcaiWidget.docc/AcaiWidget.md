@@ -1,7 +1,7 @@
 # ``AcaiWidget``
 
-A codebase's state as of its last analysis, on the Home Screen, Lock Screen widget gallery or
-macOS Notification Centre.
+A codebase's state as of its last analysis, on the iOS and iPadOS Home Screen or the macOS desktop
+and Notification Centre.
 
 ## Overview
 
@@ -33,7 +33,12 @@ codebase and the widget only ever reads.
 So the widget cannot discover that code has changed; it can only report whether the app had found
 it changed the last time it looked. That is why every analysed state carries an explicit "as of the
 last analysis" footnote, and why a codebase the app has never compared against its analysis says
-"not checked since" rather than claiming either freshness or drift.
+"Changes not checked" rather than claiming either freshness or drift. The medium widget also says
+when that check ran, and every age ("Analysed 2 hours ago") is kept current by the system between
+timeline reloads rather than frozen when the entry was built.
+
+The shared file holds each codebase's name, pinned revision, dates and counts — no source, paths or
+findings text — and a file the widget can't decode, or one written by a newer app, is ignored.
 
 ## Choosing a codebase
 

@@ -2,8 +2,7 @@ import AppIntents
 import Foundation
 import AcaiAppModel
 
-/// A codebase the widget can be pointed at. Built from the snapshot file rather than the app's
-/// store: the configuration has to offer a choice while the app isn't running.
+/// Read from the shared snapshots, since the picker opens while the app isn't running.
 struct CodebaseWidgetEntity: AppEntity {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(
         name: LocalizedStringResource("Intent.CodebaseWidgetEntity.TypeName", table: "AppIntents"))
@@ -18,7 +17,6 @@ struct CodebaseWidgetEntity: AppEntity {
 }
 
 struct CodebaseWidgetEntityQuery: EntityStringQuery {
-    /// Injected in tests; the real query reads the App Group container.
     var snapshots: @Sendable () -> [CodebaseWidgetSnapshot] = {
         CodebaseWidgetSnapshotStore(container: .standard)?.load().snapshots ?? []
     }
