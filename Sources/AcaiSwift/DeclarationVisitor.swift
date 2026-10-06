@@ -27,13 +27,14 @@ final class DeclarationVisitor: SyntaxVisitor {
     /// forward-declared siblings.
     init(
         sourceLocations: SourceLocationResolver, knownTypeNames: Set<String> = [],
-        protocolProperties: [String: [String: String]] = [:]
+        builtInTypeNames: Set<String> = [], protocolProperties: [String: [String: String]] = [:]
     ) {
         self.sourceLocations = sourceLocations
         self.protocolProperties = protocolProperties
         self.typeDeclarations = TypeDeclarationExtractor(sourceLocations: sourceLocations)
         self.members = MemberExtractor(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
-        self.scope = CallSiteTracker(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
+        self.scope = CallSiteTracker(
+            knownTypeNames: knownTypeNames, builtInTypeNames: builtInTypeNames, sourceLocations: sourceLocations)
         declarations.declaredTypeNames = knownTypeNames
         super.init(viewMode: .sourceAccurate)
     }
@@ -286,6 +287,13 @@ final class DeclarationVisitor: SyntaxVisitor {
 
     override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
         scope.recordCallSite(
+            from: node, scope: functionBodyDepth > 0 ? .functionBody : (typeStack.isEmpty ? .fileScope : .other),
+            enclosingTypeName: typeStack.last?.name, topLevelGlobalPropertyMap: topLevelGlobalPropertyMap())
+        return .visitChildren
+    }
+
+    override func visit(_ node: SubscriptCallExprSyntax) -> SyntaxVisitorContinueKind {
+        scope.recordSubscriptCallSite(
             from: node, scope: functionBodyDepth > 0 ? .functionBody : (typeStack.isEmpty ? .fileScope : .other),
             enclosingTypeName: typeStack.last?.name, topLevelGlobalPropertyMap: topLevelGlobalPropertyMap())
         return .visitChildren
