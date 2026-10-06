@@ -205,6 +205,13 @@ final class ProjectBrowserViewModel: ObservableObject {
         return nil
     }
 
+    /// Unlike `analysis(for:)`, `nil` while the cached result predates a reindex or configuration change.
+    func currentAnalysis(for codebaseID: UUID) -> CodebaseAnalysis? {
+        guard case .ready(let token, let analysis) = analyses[codebaseID], token == analysisToken(for: codebaseID)
+        else { return nil }
+        return analysis
+    }
+
     /// Computes and caches a codebase's analysis on a background thread. A no-op when a matching
     /// (same token) result is already cached or in flight.
     func ensureAnalysisLoaded(codebaseID: UUID) async {
@@ -257,9 +264,7 @@ final class ProjectBrowserViewModel: ObservableObject {
 
     private enum FreshnessState {
         case computing(FreshnessToken)
-        /// The check's own time is kept, not read as "now" when something later asks: the widget
-        /// says when the code was last compared against the analysis, so an old check must not
-        /// present itself as a fresh one.
+        /// Keeps when the check ran, so the widget never presents an old check as a new one.
         case ready(FreshnessToken, CodebaseFreshness, Date)
     }
 
@@ -275,11 +280,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         freshnessCheck(for: codebaseID)?.freshness
     }
 
+    /// `nil` too while the last check predates a reindex.
     func freshnessCheck(for codebaseID: UUID) -> (freshness: CodebaseFreshness, checkedAt: Date)? {
-        if case .ready(_, let freshness, let checkedAt) = freshnessStates[codebaseID] {
-            return (freshness, checkedAt)
-        }
-        return nil
+        guard case .ready(let token, let freshness, let checkedAt) = freshnessStates[codebaseID],
+              token == freshnessToken(for: codebaseID)
+        else { return nil }
+        return (freshness, checkedAt)
     }
 
     func showsStaleBanner(codebaseID: UUID) -> Bool {

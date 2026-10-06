@@ -2,30 +2,17 @@ import Foundation
 import WidgetKit
 import AcaiRender
 
-/// What the app knows about one codebase when it publishes. Deriving the widget's snapshot from it
-/// walks a whole findings report, so the inputs are carried off the main actor and the derivation
-/// happens there.
+/// One codebase as the app knows it when publishing; `analysis` is `nil` until computed, never zero counts.
 struct CodebaseWidgetInput: Sendable {
-    /// Everything readable straight off the stored codebase and its freshness check.
     let snapshot: CodebaseWidgetSnapshot
-    /// `nil` until the codebase's analysis has been computed, which is why the snapshot's counts
-    /// are optional rather than zero.
     let analysis: CodebaseAnalysis?
 }
 
-/// Writes what the widget extension shows into the App Group container, then asks WidgetKit to
-/// rebuild its timelines.
-///
-/// An actor because the app publishes from three places as it learns things, and two writes that
-/// interleaved would let the later-read one lose the earlier's counts; serialising them means each
-/// merge sees the previous write. Its work is off the main actor by construction.
+/// Writes the widget's snapshots into the App Group container; an actor so each merge sees the previous write.
 actor CodebaseWidgetPublisher {
-    static let shared = CodebaseWidgetPublisher()
-
-    /// `nil` when the process holds no App Group entitlement, which is how a build without one
-    /// presents itself; publishing then does nothing rather than failing.
     private let store: CodebaseWidgetSnapshotStore?
     private let reloadTimelines: @Sendable () -> Void
+    private let submissions: AsyncStream<[CodebaseWidgetInput]>.Continuation
 
     init(
         store: CodebaseWidgetSnapshotStore? = CodebaseWidgetSnapshotStore(container: .standard),
@@ -33,14 +20,26 @@ actor CodebaseWidgetPublisher {
     ) {
         self.store = store
         self.reloadTimelines = reloadTimelines
+        // Newest-only, in submission order: a burst coalesces and an older state never lands after a newer one.
+        let (stream, submissions) = AsyncStream.makeStream(
+            of: [CodebaseWidgetInput].self, bufferingPolicy: .bufferingNewest(1))
+        self.submissions = submissions
+        Task.detached(priority: .utility) { [weak self] in
+            for await inputs in stream {
+                await self?.publish(inputs)
+            }
+        }
     }
 
-    /// `inputs` is one entry per codebase the app still has, so a deleted one stops being offered.
-    /// Counts and freshness recorded against the same analysis survive an entry that doesn't carry
-    /// them — see `CodebaseWidgetSnapshotList.merging(_:)`.
-    ///
-    /// A write failure is swallowed deliberately: a widget still showing its previous state is not
-    /// worth an alert over an operation the user never asked for.
+    deinit {
+        submissions.finish()
+    }
+
+    nonisolated func submit(_ inputs: [CodebaseWidgetInput]) {
+        submissions.yield(inputs)
+    }
+
+    /// A failed write is dropped: the widget keeps its previous state rather than alerting over background work.
     func publish(_ inputs: [CodebaseWidgetInput]) {
         guard let store else { return }
         let current = store.load()
