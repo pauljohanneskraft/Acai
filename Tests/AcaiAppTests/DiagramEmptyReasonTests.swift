@@ -196,6 +196,14 @@ struct DiagramEmptyReasonTests {
         #expect(viewModel.emptyReason == .codebase)
     }
 
+    @Test("A search matching nothing dims the canvas but never empties it, so it needs no Clear Search")
+    func classDiagramSearchNeverEmptiesTheCanvas() {
+        let viewModel = ClassDiagramViewModel(codebase: codebase(), artifact: artifact())
+        viewModel.searchQuery = "ZzNoSuchType"
+        #expect(viewModel.searchMatchIDs.isEmpty)
+        #expect(!viewModel.nodes.isEmpty)
+    }
+
     // MARK: - Call graph
 
     @Test("A whole-codebase call graph with no resolved calls blames the codebase")

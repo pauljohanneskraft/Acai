@@ -187,13 +187,28 @@ class DiagramScreenBase {
     // MARK: - Filter (`DiagramFilterSection`, shared by every generated diagram type)
 
     var filterTypeGlobField: XCUIElement { app.textFields["diagram.filter.selector.typeGlob"] }
+    var filterModuleGlobField: XCUIElement { app.textFields["diagram.filter.selector.module"] }
 
-    func filterTypes(
-        matching glob: String, expecting: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+    /// Types a glob nothing matches into `field` (the type glob by default), then closes the sidebar, which on
+    /// compact width is a sheet covering the overlay's button.
+    func filterEverythingAway(
+        using field: XCUIElement? = nil, hiding node: XCUIElement, file: StaticString = #filePath, line: UInt = #line
     ) {
-        revealInSettings(filterTypeGlobField, "the filter's type-glob field", file: file, line: line)
-        filterTypeGlobField.clearAndTypeText(glob, file: file, line: line)
-        expecting.waitOrFail("the canvas to settle after filtering to '\(glob)'", file: file, line: line)
+        let field = field ?? filterTypeGlobField
+        let overlay = emptyScopeOverlay("filter")
+        revealInSettings(field, "the filter's glob field", file: file, line: line)
+        field.clearAndTypeText("ZzNoSuchMatch*", file: file, line: line)
+        overlay.waitOrFail("the empty-scope overlay after filtering everything away", file: file, line: line)
+        XCTAssertFalse(node.exists, "the filter should have hidden every node", file: file, line: line)
+        closeSidebar(file: file, line: line)
+        overlay.waitOrFail("the empty-scope overlay on the uncovered canvas", file: file, line: line)
+    }
+
+    func clearEmptyFilter(restoring node: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        emptyScopeActionButton.tapWhenReady("the empty canvas's Clear Filter button", file: file, line: line)
+        node.waitOrFail("a node after clearing the filter", file: file, line: line)
+        emptyScopeOverlay("filter")
+            .waitForDisappearanceOrFail("the empty-scope overlay after clearing the filter", file: file, line: line)
     }
 
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)

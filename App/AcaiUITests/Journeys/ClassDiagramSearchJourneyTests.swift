@@ -57,27 +57,8 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
             XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should survive dismissing search")
         }
 
-        filterEverythingAwayAndBack(diagram)
-    }
-
-    private func filterEverythingAwayAndBack(
-        _ diagram: ClassDiagramScreen, file: StaticString = #filePath, line: UInt = #line
-    ) {
-        diagram.filterTypes(
-            matching: "ZzNoSuchType*", expecting: diagram.emptyScopeOverlay("filter"), file: file, line: line
-        )
-        XCTAssertFalse(
-            diagram.typeNode(named: "Base").exists, "the filter should have hidden every node", file: file, line: line
-        )
-        diagram.closeSidebar(file: file, line: line)
-        diagram.emptyScopeOverlay("filter")
-            .waitOrFail("the empty-scope overlay on the uncovered canvas", file: file, line: line)
+        diagram.filterEverythingAway(hiding: diagram.typeNode(named: "Base"))
         validateScreenshot("ClassDiagram", state: "filteredToNothing")
-
-        diagram.emptyScopeActionButton.tapWhenReady("the empty canvas's Clear Filter button", file: file, line: line)
-        diagram.typeNode(named: "Base")
-            .waitOrFail("the Base type node after clearing the filter", file: file, line: line)
-        diagram.emptyScopeOverlay("filter")
-            .waitForDisappearanceOrFail("the empty-scope overlay after clearing the filter", file: file, line: line)
+        diagram.clearEmptyFilter(restoring: diagram.typeNode(named: "Base"))
     }
 }
