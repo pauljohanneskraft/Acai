@@ -89,7 +89,12 @@ optionalTargets.append(
     )
 )
 optionalTargets.append(
-    .testTarget(name: "AcaiWidgetTests", dependencies: ["AcaiWidget", "AcaiAppModel"])
+    .testTarget(
+        name: "AcaiWidgetTests",
+        dependencies: ["AcaiWidget", "AcaiAppModel", "AcaiPNGComparison"],
+        // Render snapshot goldens and captures, read and written by file path.
+        exclude: ["__Snapshots__", "__RecordedSnapshots__"]
+    )
 )
 
 // A library (not an executable): the real app entry points live in the XcodeGen-generated

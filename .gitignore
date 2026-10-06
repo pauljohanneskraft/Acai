@@ -7,6 +7,9 @@ App/Acai.xcodeproj
 # ScreenshotComparator's recording output (App/AcaiUITests/Support/ScreenshotComparator.swift) —
 # never committed; the committed goldens stay under App/AcaiUITests/__Snapshots__/.
 App/AcaiUITests/__RecordedSnapshots__/
+# The widget's render captures; the directory itself stays so SwiftPM can exclude it.
+Tests/AcaiWidgetTests/__RecordedSnapshots__/*
+!Tests/AcaiWidgetTests/__RecordedSnapshots__/.gitkeep
 
 # Xcode
 #

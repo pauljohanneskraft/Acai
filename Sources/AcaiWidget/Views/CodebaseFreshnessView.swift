@@ -24,6 +24,7 @@ struct CodebaseStatusLabel: View {
         .font(.caption.weight(.medium))
         .labelStyle(.titleAndIcon)
         .lineLimit(1)
+        .minimumScaleFactor(0.75)
     }
 }
 
