@@ -161,16 +161,8 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// is a pure derivation of the stored artifact filled lazily on read (often during a view update),
     /// so mutating it must not trigger `objectWillChange`.
     var displayArtifactCache: [UUID: (stamp: Date?, artifact: CodeArtifact)] = [:]
-    /// Use order of `displayArtifactCache`'s keys. Four is the detail view plus the few codebases a
-    /// project screen reads from; `displayedCodebaseIDs` keeps whatever the selection needs beyond it.
-    var displayArtifactRecency = RecencyOrder<UUID>(capacity: 4)
-    /// Use order of the comparison caches' keys, bounding how many parsed snapshots a session that
-    /// steps through revision after revision accumulates. Not `@Published`: it is recorded on read
-    /// too, including reads during a view update. Four is two pull-request comparisons' worth of
-    /// snapshots, so flipping back to the previous one doesn't re-parse it.
+    /// Not `@Published`: recorded on read, including during a view update. Four is two PR comparisons.
     var comparisonRecency = RecencyOrder<ComparisonKey>(capacity: 4)
-    /// Use order of `resolvedMergeBases`' keys. A resolved merge-base is one SHA, so this bound is
-    /// about not growing without end rather than about memory.
     var mergeBaseRecency = RecencyOrder<MergeBaseKey>(capacity: 32)
 
     func generatedDiagram(for diagramID: UUID) -> GeneratedDiagram? {
@@ -375,17 +367,12 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard let semantic = store.artifact(for: codebaseID) else { return nil }
         let stamp = codebase(for: codebaseID)?.lastIndexed
         if let cached = displayArtifactCache[codebaseID], cached.stamp == stamp {
-            displayArtifactRecency.use(codebaseID)
             return cached.artifact
         }
         let display = CodebaseAnalyzer()
             .flattenedForDisplay(semantic)
             .filteringGeneratedTypes(using: semantic.standardLanguageResolver)
         displayArtifactCache[codebaseID] = (stamp, display)
-        displayArtifactRecency.use(codebaseID)
-        for evicted in displayArtifactRecency.overflow(retaining: displayedCodebaseIDs) {
-            displayArtifactCache.removeValue(forKey: evicted)
-        }
         return display
     }
 

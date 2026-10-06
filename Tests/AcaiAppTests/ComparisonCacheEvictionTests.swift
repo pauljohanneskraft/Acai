@@ -110,6 +110,54 @@ struct ComparisonCacheEvictionTests {
     }
 }
 
+@Suite("Display artifact cache under memory pressure")
+@MainActor
+struct DisplayArtifactCacheTests {
+    private let baseDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("acai-display-cache-\(UUID().uuidString)", isDirectory: true)
+
+    private func makeModel(codebaseCount: Int) throws -> (ProjectBrowserViewModel, [UUID]) {
+        let model = ProjectBrowserViewModel(store: ProjectStore(baseDir: baseDir))
+        let projectID = model.editing.addProject(title: "Demo", subtitle: "")
+        for index in 0..<codebaseCount {
+            model.editing.addCodebase(
+                to: projectID, name: "C\(index)", directoryURL: baseDir.appendingPathComponent("c\(index)"))
+        }
+        let ids = try #require(model.store.projects.first?.codebases.map(\.id))
+        for id in ids {
+            model.store.artifacts[id] = CodeArtifact(
+                metadata: .init(sourceLanguage: .swift, filePaths: ["A.swift"]),
+                types: [TypeDeclaration(id: "A", name: "A", qualifiedName: "A", kind: .class, accessLevel: .public)])
+        }
+        return (model, ids)
+    }
+
+    // Quick Open reads every codebase's display artifact over an unrelated selection.
+    @Test func readingManyCodebasesOffScreenKeepsEveryDerivation() throws {
+        let (model, ids) = try makeModel(codebaseCount: 6)
+        model.selection = nil
+
+        for id in ids {
+            _ = model.artifact(for: id)
+        }
+
+        #expect(Set(model.displayArtifactCache.keys) == Set(ids))
+    }
+
+    @Test func memoryPressureKeepsOnlyTheDisplayedCodebasesDerivation() throws {
+        let (model, ids) = try makeModel(codebaseCount: 3)
+        for id in ids {
+            _ = model.artifact(for: id)
+        }
+        model.selection = .codebase(ids[1])
+
+        model.purgeCachesUnderMemoryPressure()
+
+        #expect(Array(model.displayArtifactCache.keys) == [ids[1]])
+        #expect(model.artifact(for: ids[0]) != nil)
+    }
+}
+
 @Suite("Recency order")
 struct RecencyOrderTests {
     @Test func reusingAKeyMakesItTheNewest() {

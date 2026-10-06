@@ -39,9 +39,8 @@ extension ProjectBrowserViewModel {
     func purgeCachesUnderMemoryPressure() {
         purgeComparisonCaches()
         purgeAnalysesNotOnScreen()
-        for evicted in displayArtifactRecency.purge(retaining: displayedCodebaseIDs) {
-            displayArtifactCache.removeValue(forKey: evicted)
-        }
+        let displayedCodebases = displayedCodebaseIDs
+        displayArtifactCache = displayArtifactCache.filter { displayedCodebases.contains($0.key) }
     }
 
     /// The codebases the current selection renders from.
