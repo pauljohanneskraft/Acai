@@ -108,11 +108,29 @@ public struct AnalysisStore: Sendable {
         return destination
     }
 
-    /// Removes the stored entry for `path`, under whatever file name it lives at. A no-op when
-    /// nothing is stored for this path.
+    /// Removes the stored entry for `path`, under whatever file name it lives at, together with its
+    /// per-file parse cache. A no-op when nothing is stored for this path.
     public func removeEntry(forResolvedPath path: String) throws {
+        try? FileManager.default.removeItem(at: fileCacheURL(forResolvedPath: path))
         guard let url = existingEntryURL(forResolvedPath: path) else { return }
         try FileManager.default.removeItem(at: url)
+    }
+
+    // MARK: - Per-file parse cache
+
+    func lookupFileCache(forResolvedPath path: String) -> ParsedFileCache? {
+        guard let data = try? Data(contentsOf: fileCacheURL(forResolvedPath: path)) else { return nil }
+        return try? JSONDecoder().decode(ParsedFileCache.self, from: data)
+    }
+
+    func writeFileCache(_ cache: ParsedFileCache, forResolvedPath path: String) throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONEncoder().encode(cache).write(to: fileCacheURL(forResolvedPath: path), options: .atomic)
+    }
+
+    /// Not `.json`, so `allEntryURLs()` never mistakes it for an entry.
+    private func fileCacheURL(forResolvedPath path: String) -> URL {
+        directory.appendingPathComponent("\(PathDigest(path).hex).filecache")
     }
 
     // MARK: - Private
