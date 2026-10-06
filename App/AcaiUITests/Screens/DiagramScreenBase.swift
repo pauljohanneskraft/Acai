@@ -189,8 +189,7 @@ class DiagramScreenBase {
     var filterTypeGlobField: XCUIElement { app.textFields["diagram.filter.selector.typeGlob"] }
     var filterModuleGlobField: XCUIElement { app.textFields["diagram.filter.selector.module"] }
 
-    /// Types a glob nothing matches into `field` (the type glob by default), then closes the sidebar, which on
-    /// compact width is a sheet covering the overlay's button.
+    /// Closes the sidebar afterwards: on compact width it's a sheet over the overlay's button.
     func filterEverythingAway(
         using field: XCUIElement? = nil, hiding node: XCUIElement, file: StaticString = #filePath, line: UInt = #line
     ) {
