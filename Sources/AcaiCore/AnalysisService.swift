@@ -188,7 +188,7 @@ public struct AnalysisService: Sendable {
                     ))
                 }
             }
-            .removingDuplicates { $0 }
+            .removingDuplicates { $0.standardizedFileURL.path }
             .filter { !spec.excludes($0) }
             .filter { url in
                 let path = url.relativePath(from: rootURL)
