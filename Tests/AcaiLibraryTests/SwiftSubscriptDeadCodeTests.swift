@@ -3,8 +3,35 @@ import AcaiCore
 import AcaiDiagram
 @testable import AcaiLibrary
 
-@Suite("Swift subscript dead-code scan")
+@Suite("Swift initializer and subscript dead-code scan")
 struct SwiftSubscriptDeadCodeTests {
+    @Test func aCalledSwiftInitializerIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = SwiftCodeParser().parse(source: """
+        class Called { init() {} }
+        class Uncalled { init() {} }
+        class Worker {
+            public func use() { _ = Called() }
+        }
+        """, fileName: "Thing.swift")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id) == ["Uncalled.init"])
+    }
+
+    /// Opting `.initializer` and `.subscript` in doesn't relax the method scan.
+    @Test func anUnusedMethodIsStillReportedAlongsideTheNewKinds() {
+        let artifact = SwiftCodeParser().parse(source: """
+        class Thing {
+            init(unused: Int) {}
+            subscript(i: Int) -> Int { 0 }
+            private func unusedMethod() {}
+        }
+        """, fileName: "Thing.swift")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).sorted() == ["Thing.init", "Thing.subscript", "Thing.unusedMethod"])
+    }
+
     @Test func aCalledSwiftSubscriptIsNotReportedWhileAnUncalledOneIs() {
         let artifact = SwiftCodeParser().parse(source: """
         class Called { subscript(i: Int) -> Int { 0 } }

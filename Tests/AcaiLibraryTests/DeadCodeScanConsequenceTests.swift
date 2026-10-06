@@ -11,35 +11,6 @@ import AcaiDiagram
 @Suite("Dead-code scan consequences")
 struct DeadCodeScanConsequenceTests {
 
-    /// A called Swift initializer is not reported, while an uncalled one on an otherwise identical
-    /// sibling type still is.
-    @Test func aCalledSwiftInitializerIsNotReportedWhileAnUncalledOneIs() {
-        let artifact = SwiftCodeParser().parse(source: """
-        class Called { init() {} }
-        class Uncalled { init() {} }
-        class Worker {
-            public func use() { _ = Called() }
-        }
-        """, fileName: "Thing.swift")
-        let report = DeadCodeScan(
-            artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id) == ["Uncalled.init"])
-    }
-
-    /// Opting `.initializer` and `.subscript` in doesn't relax the method scan.
-    @Test func anUnusedMethodIsStillReportedAlongsideTheNewKinds() {
-        let artifact = SwiftCodeParser().parse(source: """
-        class Thing {
-            init(unused: Int) {}
-            subscript(i: Int) -> Int { 0 }
-            private func unusedMethod() {}
-        }
-        """, fileName: "Thing.swift")
-        let report = DeadCodeScan(
-            artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).sorted() == ["Thing.init", "Thing.subscript", "Thing.unusedMethod"])
-    }
-
     /// The end-to-end consequence for Java: a called constructor is not reported, while an uncalled
     /// one now is. Java's package-private default keeps both out of the public-API exemption.
     @Test func aCalledJavaConstructorIsNotReportedWhileAnUncalledOneIs() {
