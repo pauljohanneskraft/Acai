@@ -96,7 +96,9 @@ struct ComparisonCacheEvictionTests {
         #expect(model.comparisonError == nil)
     }
 
-    private func panelStatus(_ model: ProjectBrowserViewModel, diagramID: UUID) throws -> ComparePanelState.Status? {
+    private func panelStatus(
+        _ model: ProjectBrowserViewModel, diagramID: UUID
+    ) throws -> ComparePanelState.Status? {
         let diagram = try #require(model.generatedDiagram(for: diagramID))
         return ComparePanelState(
             comparisonGitRef: diagram.comparisonGitRef,
@@ -111,7 +113,8 @@ struct ComparisonCacheEvictionTests {
         let (model, firstID) = try makeModel()
         let project = try #require(model.store.projects.first)
         let codebaseID = try #require(project.codebases.first?.id)
-        let secondID = try #require(model.diagrams.add(to: project.id, codebaseID: codebaseID, content: .packageDiagram))
+        let second = model.diagrams.add(to: project.id, codebaseID: codebaseID, content: .packageDiagram)
+        let secondID = try #require(second)
         try await compare(model, diagramID: firstID, against: "first")
 
         model.selection = .generatedDiagram(secondID)

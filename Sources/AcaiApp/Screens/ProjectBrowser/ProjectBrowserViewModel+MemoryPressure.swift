@@ -6,14 +6,12 @@ import UIKit
 
 #if os(macOS)
 extension Notification.Name {
-    /// macOS has no memory-warning notification, so the memory-pressure `DispatchSource` posts this
-    /// one and both platforms purge through the same subscription.
+    /// Posted by the macOS memory-pressure source, which has no system notification of its own.
     static let memoryPressure = Notification.Name("AcaiMemoryPressure")
 }
 #endif
 
 extension ProjectBrowserViewModel {
-    /// Subscribes to the system's memory-pressure signal for as long as this view model lives.
     func observeMemoryPressure() {
         #if os(macOS)
         let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
@@ -33,9 +31,7 @@ extension ProjectBrowserViewModel {
             .store(in: &storeSubscriptions)
     }
 
-    /// Drops every cached snapshot, derivation and analysis the current selection isn't rendering
-    /// from. What is on screen stays, so nothing the user is looking at degrades; anything dropped is
-    /// re-loaded behind the compare panel's loading indicator, or re-derived, on next access.
+    /// Keeps only what the current selection renders from; the rest reloads or re-derives on next access.
     func purgeCachesUnderMemoryPressure() {
         purgeComparisonCaches()
         purgeAnalysesNotOnScreen()
@@ -43,7 +39,6 @@ extension ProjectBrowserViewModel {
         displayArtifactCache = displayArtifactCache.filter { displayedCodebases.contains($0.key) }
     }
 
-    /// The codebases the current selection renders from.
     var displayedCodebaseIDs: Set<UUID> {
         switch selection {
         case .codebase(let id), .query(let id):

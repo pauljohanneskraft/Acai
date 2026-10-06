@@ -220,8 +220,7 @@ extension ProjectBrowserViewModel {
         let analysis = await Task.detached(priority: .userInitiated) {
             CodebaseAnalysis(artifact: semantic, configuration: configuration)
         }.value
-        // An eviction while this ran would leave the analysis behind as the only trace of a snapshot
-        // nothing can read any more.
+        // The snapshot may have been evicted while this ran.
         guard comparisonArtifacts[key] != nil else { return }
         comparisonAnalyses[key] = analysis
     }
@@ -232,8 +231,7 @@ extension ProjectBrowserViewModel {
 
     // MARK: - Bounding what the comparisons keep in memory
 
-    /// The snapshots and merge-base the diagram on screen renders from. Neither eviction nor the
-    /// memory-pressure purge takes these: the user is looking at them.
+    /// Never evicted or purged: the diagram on screen renders from these.
     var displayedComparison: (snapshots: Set<ComparisonKey>, mergeBases: Set<MergeBaseKey>) {
         guard case .generatedDiagram(let diagramID) = selection,
               let diagram = generatedDiagram(for: diagramID)
@@ -245,7 +243,6 @@ extension ProjectBrowserViewModel {
         return (snapshots, [MergeBaseKey(directory: directory, base: baseRef, head: ref)])
     }
 
-    /// Drops the least recently used comparisons past the caches' bounds.
     func evictComparisonOverflow() {
         let displayed = displayedComparison
         for key in comparisonRecency.overflow(retaining: displayed.snapshots) {
@@ -256,7 +253,6 @@ extension ProjectBrowserViewModel {
         }
     }
 
-    /// Drops every cached comparison except the one on screen.
     func purgeComparisonCaches() {
         let displayed = displayedComparison
         for key in comparisonRecency.purge(retaining: displayed.snapshots) {

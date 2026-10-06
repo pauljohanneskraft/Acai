@@ -244,8 +244,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         analyses.removeValue(forKey: codebaseID)
     }
 
-    /// Drops the cached analysis of every codebase the current selection isn't showing; one still
-    /// being computed is left alone, since dropping its marker only buys a duplicate recompute.
+    /// An in-flight analysis is kept: dropping its marker would only start a duplicate recompute.
     func purgeAnalysesNotOnScreen() {
         let displayed = displayedCodebaseIDs
         analyses = analyses.filter { entry in
