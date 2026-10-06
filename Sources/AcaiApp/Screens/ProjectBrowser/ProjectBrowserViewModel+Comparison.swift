@@ -20,9 +20,7 @@ extension ProjectBrowserViewModel {
         let head: String
     }
 
-    /// A comparison change rebuilds the whole diagram. Made in the tap's own run-loop turn, that rebuild
-    /// lands before the compare sheet commits its touch-release animation and leaves the sheet frozen
-    /// at its pressed, slightly enlarged scale — so a tap in the sheet defers it by one turn.
+    /// Rebuilding the diagram in the tap's own turn freezes the compare sheet at its pressed scale.
     func changeComparisonAfterTouchRelease(_ change: @escaping @MainActor (ProjectBrowserViewModel) -> Void) {
         DispatchQueue.main.async { change(self) }
     }
