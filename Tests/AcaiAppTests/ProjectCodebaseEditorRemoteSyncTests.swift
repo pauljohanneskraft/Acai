@@ -198,6 +198,58 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
     }
 
+    @Test func cancellingACloneLeavesNoCodebaseAndNothingOnDisk() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let store = ProjectStore(baseDir: root.appendingPathComponent("store"))
+        let mayStart = AsyncGate()
+        let editor = makeEditor(store: store, remoteService: GatedCloneRemoteService(mayStart: mayStart))
+        let projectID = editor.addProject(title: "Demo", subtitle: "")
+
+        let clone = Task {
+            await editor.addRemoteCodebase(
+                to: projectID, name: "widgets", remoteURL: remote.directory, ref: "main", refKind: .branch)
+        }
+        try await Eventually().waitUntil("the clone is registered as an activity") {
+            !store.activityCenter.operations.isEmpty
+        }
+        let operation = try #require(store.activityCenter.operations.first)
+        store.activityCenter.cancel(operation.id)
+        await mayStart.open()
+        await clone.value
+
+        #expect(store.projects.first?.codebases.isEmpty == true)
+        #expect(directoryNames(in: store.gitWorktreesDir).isEmpty)
+        #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
+        #expect(store.lastError == nil)
+    }
+
+    @Test func cancellingACloneAfterItsWorktreeLandedLeavesNothingOnDisk() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let store = ProjectStore(baseDir: root.appendingPathComponent("store"))
+        let service = GatedCloneRemoteService()
+        let editor = makeEditor(store: store, remoteService: service)
+        let projectID = editor.addProject(title: "Demo", subtitle: "")
+
+        let clone = Task {
+            await editor.addRemoteCodebase(
+                to: projectID, name: "widgets", remoteURL: remote.directory, ref: "main", refKind: .branch)
+        }
+        try await service.attached.wait(timeout: .seconds(30))
+        let operation = try #require(store.activityCenter.operations.first)
+        store.activityCenter.cancel(operation.id)
+        await service.mayFinish.open()
+        await clone.value
+
+        #expect(store.projects.first?.codebases.isEmpty == true)
+        #expect(directoryNames(in: store.gitWorktreesDir).isEmpty)
+        #expect(directoryNames(in: store.gitRepositoriesDir).isEmpty)
+        #expect(store.lastError == nil)
+    }
+
     private func directoryNames(in directory: URL) -> [String] {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
         return names.filter { !$0.hasPrefix(".") }
@@ -207,9 +259,14 @@ struct ProjectCodebaseEditorRemoteSyncTests {
 /// `LiveGitRemoteService`, but the clone parks once the worktree is on disk so a test can mutate
 /// the project list in the window `addRemoteCodebase` suspends in.
 private struct GatedCloneRemoteService: GitRemoteService {
+    let mayStart: AsyncGate?
     let attached = AsyncGate()
     let mayFinish = AsyncGate()
     private let live = LiveGitRemoteService()
+
+    init(mayStart: AsyncGate? = nil) {
+        self.mayStart = mayStart
+    }
 
     func listRemote(_ endpoint: RemoteEndpoint) async throws -> GitRemoteListing.Result {
         try await live.listRemote(endpoint)
@@ -220,6 +277,9 @@ private struct GatedCloneRemoteService: GitRemoteService {
         _ target: RemoteCheckoutTarget, destination: GitWorktreeDestination,
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> (headSHA: String, remoteURL: URL) {
+        if let mayStart {
+            await mayStart.wait()
+        }
         let result = try await live.attachWorktree(target, destination: destination, onProgress: onProgress)
         await attached.open()
         await mayFinish.wait()
