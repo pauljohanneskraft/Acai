@@ -65,7 +65,7 @@ public struct ProjectDiscovery: Sendable {
     ) -> [SourceSpec] {
         fallback.discoverSourceSpecs(at: rootURL, requestedLanguages: requestedLanguages)
             .filter { !claimed.contains($0.language) }
-            .map { $0.detected(by: fallback) }
+            .map { $0.detected(by: fallback, asFallback: true) }
     }
 }
 

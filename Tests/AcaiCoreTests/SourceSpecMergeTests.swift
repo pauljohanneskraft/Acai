@@ -55,6 +55,18 @@ struct SourceSpecMergeTests {
         #expect(one.merging(two).nestedRootPaths.map(\.lastPathComponent) == ["core", "ui"])
     }
 
+    /// `isFallback` describes how one root was found, so a merged spec keeps the first root's rather
+    /// than implying the whole language was guessed. The per-root truth is in
+    /// `metadata.discoveredRoots`, which is built before merging.
+    @Test func mergingKeepsTheFirstRootsFallbackFlag() {
+        var guessed = spec("guessed", dirs: ["."])
+        guessed.isFallback = true
+        let claimed = spec("claimed", dirs: ["Sources"])
+
+        #expect(claimed.merging(guessed).isFallback == false)
+        #expect(guessed.merging(claimed).isFallback)
+    }
+
     @Test func mergedByLanguageFoldsOnlyWithinALanguage() {
         let kotlin = SourceSpec(
             language: .kotlin,
