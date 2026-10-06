@@ -25,6 +25,7 @@ struct CodebaseCountsView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .lineLimit(2)
+        .minimumScaleFactor(0.8)
     }
 
     @ViewBuilder

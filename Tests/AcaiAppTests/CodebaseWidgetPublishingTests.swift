@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 import Testing
 @testable import AcaiApp
 
@@ -63,8 +62,8 @@ struct CodebaseWidgetPublishingTests {
         defer { try? FileManager.default.removeItem(at: baseDir) }
         let model = try await makeIndexedModel()
         let snapshotStore = CodebaseWidgetSnapshotStore(containerURL: baseDir.appendingPathComponent("group"))
-        let reloads = Mutex(0)
-        let publisher = CodebaseWidgetPublisher(store: snapshotStore) { reloads.withLock { $0 += 1 } }
+        let reloads = ReloadCounter()
+        let publisher = CodebaseWidgetPublisher(store: snapshotStore) { reloads.increment() }
 
         await publisher.publish(model.widgetInputs())
         await publisher.publish(model.widgetInputs())
@@ -73,6 +72,17 @@ struct CodebaseWidgetPublishingTests {
         #expect(published.typeCount == 2)
         #expect(published.findingCount != nil)
         #expect(published.freshnessCheckedAt != nil)
-        #expect(reloads.withLock { $0 } == 1)
+        #expect(reloads.count == 1)
+    }
+}
+
+private final class ReloadCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    var count: Int { lock.withLock { value } }
+
+    func increment() {
+        lock.withLock { value += 1 }
     }
 }

@@ -7,15 +7,26 @@ struct CodebaseStateWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
+        CodebaseStateContentView(state: entry.state, isCompact: family == .systemSmall)
+            .widgetURL(entry.state.snapshot?.address.url)
+    }
+}
+
+struct CodebaseStateContentView: View {
+    let state: CodebaseWidgetPresentation.State
+    let isCompact: Bool
+
+    var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .accessibilityElement(children: .combine)
-            .widgetURL(entry.state.snapshot?.address.url)
+            // A widget's size is fixed, so beyond this every line truncates to a word; VoiceOver reads it in full.
+            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
     @ViewBuilder
     private var content: some View {
-        switch entry.state {
+        switch state {
         case .nothingShared:
             CodebaseStateUnavailableView(
                 message: .widget("View.CodebaseStateWidgetView.NothingShared"),
@@ -27,7 +38,7 @@ struct CodebaseStateWidgetView: View {
         case .notAnalysed(let snapshot):
             CodebaseNotAnalysedView(snapshot: snapshot)
         case .analysed(let snapshot):
-            CodebaseAnalysedView(snapshot: snapshot, isCompact: family == .systemSmall)
+            CodebaseAnalysedView(snapshot: snapshot, isCompact: isCompact)
         }
     }
 }

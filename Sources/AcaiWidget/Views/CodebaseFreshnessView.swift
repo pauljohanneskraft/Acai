@@ -51,6 +51,7 @@ struct CodebaseFreshnessView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .lineLimit(1)
+        .minimumScaleFactor(0.8)
     }
 }
 

@@ -10,7 +10,7 @@ public struct AppGroupContainer: Sendable {
         self.identifier = identifier
     }
 
-    /// `nil` without the App Group entitlement, and always off Apple platforms.
+    /// `nil` without the entitlement on iOS (macOS returns a path regardless), and always off Apple platforms.
     public var url: URL? {
         #if canImport(Darwin)
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier)
