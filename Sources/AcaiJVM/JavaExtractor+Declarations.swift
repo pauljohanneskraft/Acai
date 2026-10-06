@@ -27,7 +27,8 @@ extension JavaExtractor {
                     _ = declarations.enter(namespace: name)
                 }
             case .extractType:
-                if let nodeType = child.nodeType, let typeDecl = extractTopLevelType(child, nodeType: nodeType) {
+                if let nodeType = child.nodeType, var typeDecl = extractTopLevelType(child, nodeType: nodeType) {
+                    typeDecl.documentation = documentation.documentation(above: child, in: context)
                     declarations.types.append(typeDecl)
                 }
             }
