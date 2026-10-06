@@ -21082,19 +21082,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aufrufe werden über explizit typisierte Property-Empfänger verfolgt; "
+            "value" : "Aufrufe werden über explizit typisierte Property-Empfänger verfolgt."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calls are followed through explicitly-typed property receivers; "
+            "value" : "Calls are followed through explicitly-typed property receivers."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les appels sont suivis via des récepteurs de propriété explicitement typés ; "
+            "value" : "Les appels sont suivis via des récepteurs de propriété explicitement typés."
           }
         }
       }
