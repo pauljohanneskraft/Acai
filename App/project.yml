@@ -84,8 +84,15 @@ targets:
     dependencies:
       - package: Acai
         product: AcaiWidget
-    info:
+    info: &widgetInfo
       path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Açaí
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_NAME: AcaiWidget
@@ -108,8 +115,7 @@ targets:
     dependencies:
       - package: Acai
         product: AcaiWidget
-    info:
-      path: Widget/Info.plist
+    info: *widgetInfo
     settings:
       base:
         PRODUCT_NAME: AcaiWidget
