@@ -17,13 +17,20 @@ public struct ProjectBrowserView: View {
     let windowAddress: Binding<AppAddress?>?
 
     @EnvironmentObject var browserWindows: BrowserWindows
-    // Published below as a focused scene object, so macOS's ⌘K reaches the key window's own — see
-    // `QuickOpenPresenter`'s doc comment.
+    // See `QuickOpenPresenter` for why macOS's is per window — published below as a focused scene
+    // object, so ⇧⌘O reaches the key window's own — and iOS's comes from the scene.
+    #if os(macOS)
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
+    #else
+    @EnvironmentObject private var quickOpenPresenter: QuickOpenPresenter
+    #endif
     // iPad/iPhone have no `Settings` scene to reach via ⌘, — a gear icon opens the same content
     // as a sheet instead. Shared (not local `@State`) so `NewCodebaseSheet`'s "Sign in to GitHub
     // in Settings" button can open it too — see `SettingsPresenter`'s own doc comment.
     @EnvironmentObject private var settingsPresenter: SettingsPresenter
+    // Scene-level, because ⌘/ comes from `KeyboardShortcutCommands` — a menu command sits outside this
+    // view hierarchy, so it cannot reach a `@State` here. Settings has its own route to the same panel.
+    @EnvironmentObject private var keyboardShortcutsPresenter: KeyboardShortcutsPresenter
     @State var windowToken = UUID()
     @State var collapsedProjects = Set<UUID>()
     @State var renamingDiagramID: UUID?
@@ -116,9 +123,9 @@ public struct ProjectBrowserView: View {
         .onOpenURL { url in openLink(url) }
         .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
         .onDisappear { browserWindows.windowClosed(windowToken) }
-        .focusedSceneObject(quickOpenPresenter)
         .focusedSceneValue(\.browserWindowActions, windowActions)
         #if os(macOS)
+        .focusedSceneObject(quickOpenPresenter)
         .background {
             HostingWindowReader { window in
                 browserWindows.windowOpened(windowToken) { [weak window] in
@@ -131,9 +138,21 @@ public struct ProjectBrowserView: View {
         }
         #endif
         #if !os(macOS)
+        // ⌘/ from a hardware keyboard; touch reaches the same panel from Settings.
+        .sheet(isPresented: $keyboardShortcutsPresenter.isPresented) {
+            KeyboardShortcutsPanel()
+        }
         .sheet(isPresented: $settingsPresenter.isPresented) {
             SettingsSheet()
                 .environmentObject(model)
+        }
+        // One view presents one sheet at a time. A shortcut that fires over another sheet would
+        // otherwise leave its flag set with nothing shown, and every later press would be a no-op.
+        .onChange(of: keyboardShortcutsPresenter.isPresented) { _, shown in
+            if shown, presentedSheetCount > 1 { keyboardShortcutsPresenter.isPresented = false }
+        }
+        .onChange(of: quickOpenPresenter.isPresented) { _, shown in
+            if shown, presentedSheetCount > 1 { quickOpenPresenter.isPresented = false }
         }
         #endif
         .modifier(ExportPresentation(model: model))
@@ -171,6 +190,15 @@ public struct ProjectBrowserView: View {
             Text(.app("View.ProjectBrowserView.DeletesDiagramsCachedAnalysis"))
         }
     }
+
+    #if !os(macOS)
+    private var presentedSheetCount: Int {
+        [
+            newProjectPresented, quickOpenPresenter.isPresented,
+            settingsPresenter.isPresented, keyboardShortcutsPresenter.isPresented
+        ].filter { $0 }.count
+    }
+    #endif
 
     // MARK: - Sidebar (Left Column)
 

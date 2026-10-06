@@ -77,8 +77,10 @@ extension KeyboardShortcutReference {
     static let cancelDialog = KeyboardShortcutReference(
         id: "cancelDialog", shortcut: .cancelAction,
         name: .app("KeyboardShortcutReference.CancelDialog"))
+    // ⇧⌘O (Xcode's Open Quickly) on every platform, so the panel, the README and the docs carry no
+    // platform qualifier and a reader of either platform's reference is told the same key.
     static let quickOpen = KeyboardShortcutReference(
-        id: "quickOpen", shortcut: KeyboardShortcut("k", modifiers: .command),
+        id: "quickOpen", shortcut: KeyboardShortcut("o", modifiers: [.command, .shift]),
         name: .app("KeyboardShortcutReference.QuickOpen"))
     static let openInNewWindow = KeyboardShortcutReference(
         id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),
@@ -87,7 +89,8 @@ extension KeyboardShortcutReference {
         id: "copyLink", shortcut: KeyboardShortcut("c", modifiers: [.command, .option]),
         name: .app("KeyboardShortcutReference.CopyLink"))
     static let keyboardShortcuts = KeyboardShortcutReference(
-        id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: [.command, .shift]),
+        // Not ⇧⌘/: iPadOS keeps that for itself, and the Mac and iPad share one set of keys.
+        id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: .command),
         name: .app("KeyboardShortcutReference.KeyboardShortcuts"))
 }
 
@@ -96,7 +99,8 @@ extension KeyboardShortcutReference {
         let id: String
         let title: LocalizedStringResource
         let shortcuts: [KeyboardShortcutReference]
-        /// Bound only inside macOS menu commands; iOS/iPadOS reach these from the sidebar instead.
+        /// The feature behind these shortcuts is macOS-only, so the panel hides the group elsewhere and
+        /// `KeyboardShortcutReferenceTests` lets their menu command be attached on macOS only.
         var isMacOSOnly = false
     }
 
@@ -112,15 +116,11 @@ extension KeyboardShortcutReference {
         Group(
             id: "dialogs", title: .app("KeyboardShortcutReference.Dialogs"),
             shortcuts: [.confirmDialog, .cancelDialog]),
-        Group(
-            id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen],
-            isMacOSOnly: true),
+        Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
         Group(
             id: "windows", title: .app("KeyboardShortcutReference.Windows"),
             shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),
-        Group(
-            id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts],
-            isMacOSOnly: true)
+        Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
     ]
 
     static let groups: [Group] = {
