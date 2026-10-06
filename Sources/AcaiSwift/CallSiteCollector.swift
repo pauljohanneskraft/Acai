@@ -16,12 +16,15 @@ struct CallSiteCollector {
     /// Simple names of every type declared in the file, used to recognise `TypeName.method()`
     /// static calls.
     let knownTypeNames: Set<String>
+    /// The language's primitive and collection type names, whose subscripts are never the project's.
+    private let builtInTypeNames: Set<String>
 
     private let sourceLocations: SourceLocationResolver
     private let values = SwiftValueClassifier()
 
-    init(knownTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
+    init(knownTypeNames: Set<String>, builtInTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
         self.knownTypeNames = knownTypeNames
+        self.builtInTypeNames = builtInTypeNames
         self.sourceLocations = sourceLocations
     }
 
@@ -42,13 +45,52 @@ struct CallSiteCollector {
             return CallSite(
                 receiver: resolved.receiver,
                 methodName: methodName,
-                location: sourceLocations.sourceLocation(of: node)
+                location: sourceLocations.sourceLocation(of: node),
+                isConstruction: methodName == "init"
             )
         }
         if let declRef = callee.as(DeclReferenceExprSyntax.self) {
-            return implicitCall(named: declRef.baseName.text, node: node, propertyMap: propertyMap)
+            let name = declRef.baseName.text
+            if isTypeName(name) {
+                return CallSite(
+                    receiver: knownTypeNames.contains(name) ? .type(name) : .unresolvedTypeName(name),
+                    methodName: "init",
+                    location: sourceLocations.sourceLocation(of: node),
+                    isConstruction: true
+                )
+            }
+            return implicitCall(named: name, node: node, propertyMap: propertyMap)
         }
         return nil
+    }
+
+    /// A subscript access (`receiver[index]`) on `self` or a named type. Most `x[i]` index an
+    /// `Array`/`Dictionary`, so a built-in receiver, or one whose type isn't named here, is dropped
+    /// rather than recorded as an unresolvable site that would lower the call graph's `coverage`.
+    func subscriptCallSite(
+        from node: SubscriptCallExprSyntax, propertyMap: [String: String],
+        enclosingTypeName: String?, knownLocalNames: Set<String> = []
+    ) -> CallSite? {
+        guard let resolved = resolveReceiver(
+            from: node.calledExpression, propertyMap: propertyMap,
+            enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames),
+              isSubscriptableProjectType(resolved.receiver)
+        else { return nil }
+        return CallSite(
+            receiver: resolved.receiver, methodName: "subscript",
+            location: sourceLocations.sourceLocation(of: node), isSpeculative: true
+        )
+    }
+
+    private func isSubscriptableProjectType(_ receiver: CallReceiver) -> Bool {
+        switch receiver {
+        case .selfDispatch:
+            return true
+        case .type(let name), .unresolvedTypeName(let name):
+            return knownTypeNames.contains(name) || (isTypeName(name) && !builtInTypeNames.contains(name))
+        case .free, .unknown, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
+            return false
+        }
     }
 
     /// A call site whose receiver is a local/guard-let/global binding previously deferred to a

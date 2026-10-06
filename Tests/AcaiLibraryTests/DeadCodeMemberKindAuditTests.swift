@@ -13,15 +13,20 @@ struct DeadCodeMemberKindAuditTests {
     static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
         [.java, .kotlin, .dart, .typeScript, .javaScript]
 
-    /// Java, Kotlin, Dart, TypeScript and JavaScript also scan `.initializer` — each has its own
-    /// dedicated pair of tests below pinning the parser behaviour that justifies it. Every other
-    /// built-in language still scans methods only.
+    /// Swift scans `.initializer` and `.subscript`; Java, Kotlin, Dart, TypeScript and JavaScript scan
+    /// `.initializer` — each has its own dedicated pair of tests below pinning the parser behaviour
+    /// that justifies it. Every other built-in language still scans methods only.
     @Test(arguments: AnalysisService.standardParsers
         .map(\.language)
-        .filter { !initializerScanningLanguages.contains($0) })
+        .filter { $0 != .swift && !initializerScanningLanguages.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
+    }
+
+    @Test func swiftScansMethodsInitializersAndSubscripts() throws {
+        let parser = try #require(AnalysisService.standardParsers.first { $0.language == .swift })
+        #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer, .subscript])
     }
 
     @Test(arguments: initializerScanningLanguages)
@@ -45,9 +50,9 @@ struct DeadCodeMemberKindAuditTests {
         return Dictionary(members.map { ($0.name, $0.kind) }) { first, _ in first }
     }
 
-    /// Why Swift declines `.initializer`: the dominant `Thing()` spelling is read as a construction and
-    /// dropped, so only the explicit `Thing.init(…)` form leaves an edge behind.
-    @Test func swiftRecordsAnExplicitInitCallButNotAConstruction() throws {
+    /// Why Swift opts `.initializer` in: both the dominant `Thing()` spelling and the explicit
+    /// `Thing.init(…)` form now leave a caller edge behind.
+    @Test func swiftRecordsBothAConstructionAndAnExplicitInitCall() throws {
         let sites = try callSites("""
         class Thing {
             init() {}
@@ -60,12 +65,13 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: SwiftCodeParser(), fileName: "Thing.swift")
 
-        #expect(sites.map(\.methodName) == ["init"])
-        #expect(sites.map(\.receiver) == [.type("Thing")])
+        #expect(sites.map(\.methodName) == ["init", "init"])
+        #expect(sites.map(\.receiver) == [.type("Thing"), .type("Thing")])
     }
 
-    /// Why Swift declines `.subscript`: a subscript access is not recorded at all, in any position.
-    @Test func swiftRecordsNoSubscriptAccess() throws {
+    /// Why Swift opts `.subscript` in: a subscript access on a same-file declared type now leaves a
+    /// caller edge behind, in both its `self` and property/local-receiver forms.
+    @Test func swiftRecordsSubscriptAccessOnALocallyDeclaredType() throws {
         let sites = try callSites("""
         class Thing {
             subscript(i: Int) -> Int { 0 }
@@ -77,7 +83,10 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: SwiftCodeParser(), fileName: "Thing.swift")
 
-        #expect(sites.isEmpty)
+        let subscriptSites = sites.filter { $0.methodName == "subscript" }
+        #expect(subscriptSites.count == 2)
+        #expect(subscriptSites.contains { $0.receiver == .type("Thing") })
+        #expect(subscriptSites.contains { $0.receiver == .selfDispatch })
     }
 
     /// Why Kotlin now accepts `.initializer`: a bare construction reaches the shared

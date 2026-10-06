@@ -11,8 +11,23 @@ import AcaiDiagram
 @Suite("Dead-code scan consequences")
 struct DeadCodeScanConsequenceTests {
 
-    /// An uncalled Swift initializer and subscript are not reported, while an uncalled method still is.
-    @Test func aSwiftInitializerAndSubscriptAreNotReportedWhileAMethodIs() {
+    /// A called Swift initializer is not reported, while an uncalled one on an otherwise identical
+    /// sibling type still is.
+    @Test func aCalledSwiftInitializerIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = SwiftCodeParser().parse(source: """
+        class Called { init() {} }
+        class Uncalled { init() {} }
+        class Worker {
+            public func use() { _ = Called() }
+        }
+        """, fileName: "Thing.swift")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id) == ["Uncalled.init"])
+    }
+
+    /// Opting `.initializer` and `.subscript` in doesn't relax the method scan.
+    @Test func anUnusedMethodIsStillReportedAlongsideTheNewKinds() {
         let artifact = SwiftCodeParser().parse(source: """
         class Thing {
             init(unused: Int) {}
@@ -22,7 +37,7 @@ struct DeadCodeScanConsequenceTests {
         """, fileName: "Thing.swift")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id) == ["Thing.unusedMethod"])
+        #expect(report.candidates.map(\.id).sorted() == ["Thing.init", "Thing.subscript", "Thing.unusedMethod"])
     }
 
     /// The end-to-end consequence for Java: a called constructor is not reported, while an uncalled
