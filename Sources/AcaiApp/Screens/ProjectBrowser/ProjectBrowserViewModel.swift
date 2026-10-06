@@ -27,7 +27,7 @@ final class ProjectBrowserViewModel: ObservableObject {
     }
 
     private(set) var pendingOpen: Task<Void, Never>?
-    private var storeSubscriptions: Set<AnyCancellable> = []
+    var storeSubscriptions: Set<AnyCancellable> = []
     let analyzers: CodebaseAnalyzerProviding
     let comparisonSources: ComparisonArtifactSourcing
     let checkouts: LocalCheckoutInspecting
@@ -58,6 +58,7 @@ final class ProjectBrowserViewModel: ObservableObject {
                 MainActor.assumeIsolated { self?.dropAnalysis(codebaseID: codebaseID) }
             }
             .store(in: &storeSubscriptions)
+        observeMemoryPressure()
     }
 
     /// Selects an item created in this same turn. Selecting it alongside `persistChanges()`'s animated
@@ -159,7 +160,10 @@ final class ProjectBrowserViewModel: ObservableObject {
     /// codebase and stamped with its `lastIndexed` so a reindex invalidates it. Not `@Published`: it
     /// is a pure derivation of the stored artifact filled lazily on read (often during a view update),
     /// so mutating it must not trigger `objectWillChange`.
-    private var displayArtifactCache: [UUID: (stamp: Date?, artifact: CodeArtifact)] = [:]
+    var displayArtifactCache: [UUID: (stamp: Date?, artifact: CodeArtifact)] = [:]
+    /// Not `@Published`: recorded on read, including during a view update. Four is two PR comparisons.
+    var comparisonRecency = RecencyOrder<ComparisonKey>(capacity: 4)
+    var mergeBaseRecency = RecencyOrder<MergeBaseKey>(capacity: 32)
 
     func generatedDiagram(for diagramID: UUID) -> GeneratedDiagram? {
         store.generatedDiagrams[diagramID]
@@ -238,6 +242,15 @@ final class ProjectBrowserViewModel: ObservableObject {
     private func dropAnalysis(codebaseID: UUID) {
         analysisRevisions[codebaseID, default: 0] += 1
         analyses.removeValue(forKey: codebaseID)
+    }
+
+    /// An in-flight analysis is kept: dropping its marker would only start a duplicate recompute.
+    func purgeAnalysesNotOnScreen() {
+        let displayed = displayedCodebaseIDs
+        analyses = analyses.filter { entry in
+            if case .computing = entry.value { return true }
+            return displayed.contains(entry.key)
+        }
     }
 
     // MARK: - Codebase freshness

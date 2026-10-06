@@ -164,6 +164,51 @@ class DiagramScreenBase {
         )
     }
 
+    func closeSidebar(file: StaticString = #filePath, line: UInt = #line) {
+        if SnapshotPlatform().usesCompactLayout {
+            sidebarDoneButton.tapWhenReady("the sidebar's Done button", file: file, line: line)
+        } else {
+            tapSidebarToggle(file: file, line: line)
+        }
+        anySidebarContent.waitForDisappearanceOrFail(
+            "the diagram's sidebar after closing it", file: file, line: line
+        )
+    }
+
+    // MARK: - Empty scope (`DiagramEmptyScopeOverlay`, shared by every generated diagram type)
+
+    func emptyScopeOverlay(_ reason: String) -> XCUIElement {
+        app.descendants(matching: .any)["diagram.emptyScope.\(reason)"]
+    }
+
+    var emptyScopeActionButton: XCUIElement { app.buttons["diagram.emptyScope.actionButton"] }
+
+    // MARK: - Filter (`DiagramFilterSection`, shared by every generated diagram type)
+
+    var filterTypeGlobField: XCUIElement { app.textFields["diagram.filter.selector.typeGlob"] }
+    var filterModuleGlobField: XCUIElement { app.textFields["diagram.filter.selector.module"] }
+
+    /// Closes the sidebar afterwards: on compact width it's a sheet over the overlay's button.
+    func filterEverythingAway(
+        using field: XCUIElement? = nil, hiding node: XCUIElement, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let field = field ?? filterTypeGlobField
+        let overlay = emptyScopeOverlay("filter")
+        revealInSettings(field, "the filter's glob field", file: file, line: line)
+        field.clearAndTypeText("ZzNoSuchMatch*", file: file, line: line)
+        overlay.waitOrFail("the empty-scope overlay after filtering everything away", file: file, line: line)
+        XCTAssertFalse(node.exists, "the filter should have hidden every node", file: file, line: line)
+        closeSidebar(file: file, line: line)
+        overlay.waitOrFail("the empty-scope overlay on the uncovered canvas", file: file, line: line)
+    }
+
+    func clearEmptyFilter(restoring node: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        emptyScopeActionButton.tapWhenReady("the empty canvas's Clear Filter button", file: file, line: line)
+        node.waitOrFail("a node after clearing the filter", file: file, line: line)
+        emptyScopeOverlay("filter")
+            .waitForDisappearanceOrFail("the empty-scope overlay after clearing the filter", file: file, line: line)
+    }
+
     // MARK: - Compare vs git (`CompareOverlayButton`/`CompareGitPanel`, shared by every diagram type)
 
     var compareButton: XCUIElement { app.descendants(matching: .any)["delta.openButton"] }

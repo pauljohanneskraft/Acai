@@ -1,7 +1,7 @@
 import Foundation
 
 /// The `.gitignore` rules in effect under a project root, as the path predicate
-/// ``AnalysisService/analyzeProject(at:allowedLanguages:respectingGitignore:includingFile:)``
+/// ``AnalysisService/analyzeProject(at:allowedLanguages:respectingGitignore:reusing:includingFile:)``
 /// applies before a file is read.
 ///
 /// Agnostic by construction: `.gitignore` is a property of the repository, and this names no

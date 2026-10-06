@@ -20,6 +20,7 @@ struct GitWorktreeSync {
     /// Syncs the shared hub clone to `ref` (cloning it first if this is the first codebase ever to
     /// reference this remote) and registers a brand-new linked worktree, checked out always
     /// detached. Returns the resolved commit SHA.
+    /// All-or-nothing: a cancel or failure leaves behind neither the worktree nor a hub this call cloned.
     @discardableResult
     func attachWorktree(
         named worktreeName: String, at worktreeDirectory: URL, depth: GitHistoryDepth = .full,
@@ -27,12 +28,32 @@ struct GitWorktreeSync {
     ) async throws -> String {
         let hub = hub
         return try await locks.run(for: hub) {
-            try await hub.sync(ref: ref, depth: depth, onProgress: onProgress)
-            try GitWorktree(repositoryDirectory: hub.localPath).add(name: worktreeName, at: worktreeDirectory)
-            let checkout = try GitCheckout(directory: worktreeDirectory)
-            try checkout.switchToDetached(ref: ref)
-            return try checkout.headCommitSHA
+            try Task.checkCancellation()
+            let hubWasAlreadyCloned = hub.isCloned
+            do {
+                try await hub.sync(ref: ref, depth: depth, onProgress: onProgress)
+                try Task.checkCancellation()
+                try GitWorktree(repositoryDirectory: hub.localPath).add(name: worktreeName, at: worktreeDirectory)
+                let checkout = try GitCheckout(directory: worktreeDirectory)
+                try checkout.switchToDetached(ref: ref)
+                let headSHA = try checkout.headCommitSHA
+                try Task.checkCancellation()
+                return headSHA
+            } catch {
+                discardAttachment(
+                    named: worktreeName, at: worktreeDirectory, keepingHub: hubWasAlreadyCloned)
+                throw error
+            }
         }
+    }
+
+    /// Must run under the hub's lock.
+    private func discardAttachment(named worktreeName: String, at worktreeDirectory: URL, keepingHub: Bool) {
+        let worktrees = GitWorktree(repositoryDirectory: hub.localPath)
+        try? worktrees.remove(name: worktreeName)
+        try? FileManager.default.removeItem(at: worktreeDirectory)
+        guard !keepingHub else { return }
+        try? FileManager.default.removeItem(at: hub.localPath)
     }
 
     /// Moves an **already-registered** worktree at `worktreeDirectory` — used by `pull` (same
