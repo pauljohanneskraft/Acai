@@ -18,6 +18,16 @@ private struct RefNamedComparisonSource: ComparisonArtifactSourcing, ComparisonA
     }
 }
 
+private struct FailingComparisonSource: ComparisonArtifactSourcing, ComparisonArtifactProviding {
+    struct Unreadable: Error {}
+
+    func provider(codebaseID: UUID, ref: String, directory: URL) -> ComparisonArtifactProviding { self }
+
+    func artifact(analyzer: CodebaseAnalyzing, fileFilter: FileFilter?) throws -> CodeArtifact {
+        throw Unreadable()
+    }
+}
+
 @Suite("Comparison cache eviction", .timeLimit(.minutes(1)))
 @MainActor
 struct ComparisonCacheEvictionTests {
@@ -25,11 +35,11 @@ struct ComparisonCacheEvictionTests {
         .appendingPathComponent("acai-comparison-cache-\(UUID().uuidString)", isDirectory: true)
 
     private func makeModel(
-        checkouts: FakeCheckoutInspector = FakeCheckoutInspector()
+        checkouts: FakeCheckoutInspector = FakeCheckoutInspector(),
+        sources: ComparisonArtifactSourcing = RefNamedComparisonSource()
     ) throws -> (ProjectBrowserViewModel, diagramID: UUID) {
         let store = ProjectStore(baseDir: baseDir)
-        let model = ProjectBrowserViewModel(
-            store: store, comparisonSources: RefNamedComparisonSource(), checkouts: checkouts)
+        let model = ProjectBrowserViewModel(store: store, comparisonSources: sources, checkouts: checkouts)
         let projectID = model.editing.addProject(title: "Demo", subtitle: "")
         model.editing.addCodebase(to: projectID, name: "Demo", directoryURL: baseDir)
         let codebaseID = try #require(store.projects.first?.codebases.first?.id)
@@ -86,6 +96,36 @@ struct ComparisonCacheEvictionTests {
         #expect(model.comparisonError == nil)
     }
 
+    private func panelStatus(_ model: ProjectBrowserViewModel, diagramID: UUID) throws -> ComparePanelState.Status? {
+        let diagram = try #require(model.generatedDiagram(for: diagramID))
+        return ComparePanelState(
+            comparisonGitRef: diagram.comparisonGitRef,
+            comparisonBaseRef: diagram.comparisonBaseRef,
+            hasOldArtifact: model.comparisonArtifact(for: diagram) != nil,
+            hasNewArtifact: model.comparisonNewArtifact(for: diagram) != nil,
+            error: model.comparisonError
+        ).status
+    }
+
+    @Test func returningToADiagramWhoseComparisonWasEvictedShowsLoadingUntilItReloads() async throws {
+        let (model, firstID) = try makeModel()
+        let project = try #require(model.store.projects.first)
+        let codebaseID = try #require(project.codebases.first?.id)
+        let secondID = try #require(model.diagrams.add(to: project.id, codebaseID: codebaseID, content: .packageDiagram))
+        try await compare(model, diagramID: firstID, against: "first")
+
+        model.selection = .generatedDiagram(secondID)
+        for ref in (1...model.comparisonRecency.capacity).map({ "r\($0)" }) {
+            try await compare(model, diagramID: secondID, against: ref)
+        }
+        #expect(!model.comparisonArtifacts.keys.contains { $0.ref == "first" })
+
+        model.selection = .generatedDiagram(firstID)
+        #expect(try panelStatus(model, diagramID: firstID) == .loading)
+        await model.ensureComparisonLoaded(for: try #require(model.generatedDiagram(for: firstID)))
+        #expect(try panelStatus(model, diagramID: firstID) == .loaded)
+    }
+
     @Test func memoryPressurePurgesEverySnapshotButTheOneOnScreen() async throws {
         let (model, diagramID) = try makeModel()
         try await compare(model, diagramID: diagramID, against: "old")
@@ -107,6 +147,21 @@ struct ComparisonCacheEvictionTests {
 
         #expect(model.comparisonArtifacts.keys.map(\.ref).sorted() == ["feature", "merge-base"])
         #expect(Array(model.resolvedMergeBases.values) == ["merge-base"])
+    }
+
+    @Test func mergeBasesStayBoundedWhenTheirSnapshotsFailToLoad() async throws {
+        let (model, diagramID) = try makeModel(
+            checkouts: FakeCheckoutInspector(mergeBase: "merge-base"), sources: FailingComparisonSource())
+        let capacity = model.mergeBaseRecency.capacity
+
+        for index in 0...capacity {
+            model.selectComparisonPullRequest(diagramID: diagramID, base: "main", head: "feature-\(index)")
+            await model.ensureComparisonLoaded(for: try #require(model.generatedDiagram(for: diagramID)))
+        }
+
+        #expect(model.comparisonError != nil)
+        #expect(model.resolvedMergeBases.count == capacity)
+        #expect(model.resolvedMergeBases.keys.contains { $0.head == "feature-\(capacity)" })
     }
 }
 

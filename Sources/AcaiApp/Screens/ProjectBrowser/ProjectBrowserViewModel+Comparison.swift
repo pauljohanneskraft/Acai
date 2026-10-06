@@ -113,6 +113,7 @@ extension ProjectBrowserViewModel {
                 }.value
                 resolvedMergeBases[mergeBaseKey] = sha
                 mergeBaseRecency.use(mergeBaseKey)
+                evictComparisonOverflow()
             } catch {
                 reportComparison(error)
                 return
