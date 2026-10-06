@@ -58,8 +58,7 @@ extension ProjectBrowserView {
         } header: {
             HStack {
                 Button {
-                    let projectID = project.id
-                    model.afterTouchRelease { $0.selection = .project(projectID) }
+                    model.selection = .project(project.id)
                 } label: {
                     Label(project.title, systemImage: "tray.full")
                         .font(.headline)

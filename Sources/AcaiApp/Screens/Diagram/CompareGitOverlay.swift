@@ -83,7 +83,7 @@ struct CompareClearButton: View {
     var body: some View {
         Button(.app("View.CompareOverlayButton.Clear")) {
             let diagramID = diagram.id
-            model.afterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: nil) }
+            model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: nil) }
         }
         .disabled(diagram.comparisonGitRef == nil)
         .accessibilityIdentifier("delta.clearButton")
@@ -212,13 +212,13 @@ struct CompareGitPanel: View {
         switch row {
         case .head:
             isEditingCustomRef = false
-            model.afterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: "HEAD") }
+            model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: "HEAD") }
         case .ref(let ref):
             isEditingCustomRef = false
-            model.afterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: ref.name) }
+            model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: ref.name) }
         case .changeRequest(let pullRequest):
             isEditingCustomRef = false
-            model.afterTouchRelease {
+            model.changeComparisonAfterTouchRelease {
                 $0.selectComparisonPullRequest(
                     diagramID: diagramID, base: pullRequest.baseRef, head: pullRequest.headRef)
             }
