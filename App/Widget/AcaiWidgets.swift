@@ -1,5 +1,6 @@
-import WidgetKit
 import AcaiWidget
+import SwiftUI
+import WidgetKit
 
 @main
 struct AcaiWidgets: WidgetBundle {
