@@ -125,6 +125,14 @@ Index a codebase and return a summary: languages, type and relationship counts, 
 | `includeGenerated` | boolean | |
 | `health` | boolean | Return the full parse-health report (trust score + diagnostics with `file:line`) instead of the summary. |
 
+The `health: true` report also says which scope the parse ran over, under `discoveredRoots`: one
+entry per project root discovery claimed, each with its `path` (relative to the analysed folder,
+`"."` for the folder itself), the `detector` that claimed it, its `languages`, the `sourceDirs` it
+contributed, and `isFallback`. Read it when a codebase analyses to fewer types than you expect —
+every root reading `isFallback: true` means no build system's manifest was recognised anywhere, so
+the file set is an extension match over the tree rather than a manifest's declared scope, and a
+directory you expected to be in scope may simply never have been claimed.
+
 Deliberately returns a compact snapshot, not the full model — the whole artifact is far too large for a context window. Use the CLI's `acai analyze` if you want the complete JSON.
 
 > **Run `health: true` before trusting anything else.** A low score means the parse is incomplete, and every metric, cycle and diagram built on it is unreliable.
@@ -339,9 +347,10 @@ One parse per project path, shared by every tool in the process. This is what ma
 
 - **Keyed on the resolved path only.** Symlinks resolved, path standardised.
 - **Invalidated by a source-tree signature** — latest modification time, file count, and a content digest — not by a timer. Renames, moves and content swaps that preserve mtime are all caught. Build and dependency directories (`.build`, `.git`, `node_modules`, `DerivedData`, `Pods`, `__pycache__`, `.venv`, …) are skipped.
-- **`refresh: true`** forces a re-parse. Rarely needed, since the signature detects edits on its own.
+- **`refresh: true`** forces a re-parse. Rarely needed, since the signature detects edits on its own. It bypasses the per-file cache below as well.
 - **Lifetime is the process.** No eviction, no expiry. Cross-session baselines have to go through `acai store` on the CLI.
 - **Concurrent calls serialise safely.** Two simultaneous calls on an uncached project queue rather than parsing twice.
+- **A whole-tree signature miss doesn't mean a full reparse.** Underneath it, a per-file cache keyed on each file's own path, modification time and size lives alongside the project's entry in `~/.acai/analysis` — editing one file in a large project reparses only that file on the next call. Enrichment and cross-file resolution still run over the whole project, so a warm result is identical to a cold one. The cache is discarded wholesale whenever the tool is upgraded or rebuilt, and removed with the project's entry.
 - `path` may be a `.json` artifact instead of a directory — that's how `acai_diff` consumes baselines.
 
 > ⚠️ **`languages` is not part of the cache key.** Calling `acai_analyze(path: X, languages: ["swift"])` and then `acai_metrics(path: X, languages: ["kotlin"])` silently returns the **Swift-filtered** artifact — the language filter only takes effect on a cache miss. If you need to switch language filters on the same path, pass `refresh: true`. (`includeGenerated` is applied after the cache and is safe to vary freely.)

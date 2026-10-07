@@ -25,7 +25,9 @@ public struct CallGraphBuilder: Sendable {
 
     public func build(from artifact: CodeArtifact) -> CallGraph {
         var accumulator = CallGraphAccumulator(
-            types: artifact.flattened(), freeFunctions: artifact.freestandingFunctions)
+            types: artifact.flattened(),
+            freeFunctions: artifact.freestandingFunctions,
+            modules: ModuleMap(artifact: artifact))
         accumulator.run(scope: scope)
         return accumulator.makeGraph(title: title)
     }
@@ -39,6 +41,7 @@ private struct CallGraphAccumulator {
     private let freeFunctionNames: Set<String>
     private let allTypes: [TypeDeclaration]
     private let freeFunctions: [Member]
+    private let modules: ModuleMap
 
     private var nodes: [String: CallGraph.Node] = [:]
     private var weights: [Pair: Int] = [:]
@@ -47,9 +50,10 @@ private struct CallGraphAccumulator {
 
     private struct Pair: Hashable { let from: String; let to: String }
 
-    init(types: [TypeDeclaration], freeFunctions: [Member]) {
+    init(types: [TypeDeclaration], freeFunctions: [Member], modules: ModuleMap) {
         allTypes = types
         self.freeFunctions = freeFunctions
+        self.modules = modules
         identityResolver = TypeIdentityResolver(types: types)
         nodeIdentity = CallGraphNodeIdentity(types: types)
         typesByID = Dictionary(uniqueKeysWithValues: types.map { ($0.id, $0) })
@@ -99,8 +103,13 @@ private struct CallGraphAccumulator {
         callSites: [CallSite], callerType: TypeDeclaration?, fromID: String, inScopeIDs: Set<String>
     ) {
         for site in callSites {
+            guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else {
+                guard !site.isSpeculative else { continue }
+                total += 1
+                if constructsTypeWithImplicitInitializer(site) { resolved += 1 }
+                continue
+            }
             total += 1
-            guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else { continue }
             resolved += 1
             let toID = ensureNode(for: target.type, methodName: target.methodName, inScope: target.inScope)
             weights[Pair(from: fromID, to: toID), default: 0] += 1
@@ -136,6 +145,15 @@ private struct CallGraphAccumulator {
         }
     }
 
+    /// A resolved construction with no declared initializer to target: there is no member for an edge,
+    /// but the call is understood, so it counts toward coverage.
+    private func constructsTypeWithImplicitInitializer(_ site: CallSite) -> Bool {
+        guard site.isConstruction, case .type(let receiver) = site.receiver,
+              case .resolved(let id) = identityResolver.resolve(receiver), let type = typesByID[id.value]
+        else { return false }
+        return !type.members.contains { $0.kind == .initializer }
+    }
+
     // MARK: - Scope
 
     private func scopedTypes(_ scope: CallGraphScope) -> [TypeDeclaration] {
@@ -161,7 +179,7 @@ private struct CallGraphAccumulator {
     }
 
     private func moduleName(of location: SourceLocation?) -> String {
-        ModuleResolver.standard.productName(forFilePath: location?.filePath ?? "")
+        modules.module(forFilePath: location?.filePath ?? "")
     }
 
     // MARK: - Nodes

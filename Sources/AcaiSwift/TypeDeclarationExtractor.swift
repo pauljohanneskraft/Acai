@@ -7,6 +7,7 @@ struct TypeDeclarationExtractor {
 
     private let signatures = DeclarationSignatureExtractor()
     private let typeReferences = TypeReferenceExtractor()
+    private let documentation = SwiftDocumentationReader()
     private let sourceLocations: SourceLocationResolver
 
     init(sourceLocations: SourceLocationResolver) {
@@ -28,7 +29,8 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -47,7 +49,8 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -66,7 +69,8 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -88,7 +92,8 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -109,7 +114,8 @@ struct TypeDeclarationExtractor {
             annotations: signatures.extractAttributes(from: node.attributes),
             extensionOf: extendedName,
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -130,7 +136,8 @@ struct TypeDeclarationExtractor {
             inheritedTypes: [typeReferences.extractTypeReference(from: node.initializer.value)],
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -149,7 +156,8 @@ struct TypeDeclarationExtractor {
             inheritedTypes: typeReferences.extractInheritedTypes(from: node.inheritanceClause),
             annotations: signatures.extractAttributes(from: node.attributes),
             namespace: namespace,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 }

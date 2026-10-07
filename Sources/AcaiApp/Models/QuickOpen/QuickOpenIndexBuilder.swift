@@ -66,6 +66,7 @@ struct QuickOpenIndexBuilder: Sendable {
         guard let artifact = artifacts[codebase.id] else { return [] }
         var entries: [QuickOpenEntry] = []
         let types = artifact.flattened()
+        let modules = ModuleMap(artifact: artifact)
         var seenModules = Set<String>()
         for type in types {
             entries.append(QuickOpenEntry(
@@ -88,7 +89,7 @@ struct QuickOpenIndexBuilder: Sendable {
                     reference: .method(typeName: type.name, methodName: member.name)
                 ))
             }
-            let module = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
+            let module = modules.module(forFilePath: type.location?.filePath ?? "")
             if seenModules.insert(module).inserted {
                 entries.append(QuickOpenEntry(
                     id: "module:\(codebase.id):\(module)",

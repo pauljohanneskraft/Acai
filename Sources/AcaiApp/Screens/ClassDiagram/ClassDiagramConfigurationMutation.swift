@@ -23,6 +23,10 @@ struct ClassDiagramConfigEditor {
         viewModel.applyConfiguration(configuration, artifact: artifact)
     }
 
+    func clearEmptyScope(for reason: DiagramEmptyReason) {
+        mutate { $0 = $0.widened(undoing: reason) }
+    }
+
     /// Binding for a global visibility default. Flipping it also clears the matching per-type
     /// override map, so the toggle acts as a bulk reset for all individual type settings.
     func globalVisibility(
@@ -54,5 +58,23 @@ struct ClassDiagramConfigEditor {
                 mutate { $0[keyPath: overrideKeyPath][typeID] = newValue }
             }
         )
+    }
+}
+
+extension ClassDiagramConfiguration {
+    func widened(undoing reason: DiagramEmptyReason) -> ClassDiagramConfiguration {
+        var widened = self
+        switch reason {
+        case .scope:
+            widened.focus = nil
+        case .filter:
+            widened.filter = nil
+            widened.minimumAccessLevel = nil
+        case .scopeAndFilter:
+            widened = self.widened(undoing: .scope).widened(undoing: .filter)
+        case .codebase:
+            break
+        }
+        return widened
     }
 }

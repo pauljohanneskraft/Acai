@@ -23,9 +23,8 @@ final class NewSheetsScreenshotTests: UIJourneyTestCase {
         detail.emptyState.waitOrFail("the empty project's add prompt")
         validateScreenshot("ProjectDetail", state: "empty")
 
-        detail.addCodebaseButton.tapWhenReady("the empty project's Add Codebase prompt")
         let codebaseSheet = NewCodebaseSheetScreen(app: app)
-        codebaseSheet.localNameField.waitOrFail("the new codebase sheet's name field")
+        detail.addCodebaseButton.tap("the empty project's Add Codebase prompt", until: codebaseSheet.localNameField)
         validateScreenshot("NewCodebaseSheet", state: "localTabEmpty")
     }
 }

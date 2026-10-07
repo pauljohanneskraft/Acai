@@ -29,6 +29,7 @@ public struct SwiftCodeParser: CodeParser {
         protocolPropertyCollector.walk(sourceFile)
         let visitor = DeclarationVisitor(
             sourceLocations: sourceLocations, knownTypeNames: typeNameCollector.names,
+            builtInTypeNames: configuration.primitiveTypeNames.union(configuration.collectionTypeNames),
             protocolProperties: protocolPropertyCollector.propertiesByProtocol)
         visitor.walk(sourceFile)
         var artifact = visitor.buildArtifact()
