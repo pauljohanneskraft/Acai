@@ -55,16 +55,18 @@
       ],
       "callSites" : [
         {
+          "isConstruction" : true,
+          "isSpeculative" : true,
           "location" : {
             "column" : 9,
             "endLine" : 8,
             "filePath" : "classes.py",
             "line" : 8
           },
-          "methodName" : "TypeVar",
+          "methodName" : "__init__",
           "receiver" : {
-            "free" : {
-
+            "unresolvedTypeName" : {
+              "_0" : "TypeVar"
             }
           }
         }

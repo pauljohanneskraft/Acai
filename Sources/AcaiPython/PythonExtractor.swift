@@ -40,7 +40,10 @@ struct PythonExtractor {
         )
         assignmentSyntax = PythonAssignmentSyntax(context: context)
         callSites = CallSiteResolver(
-            syntax: PythonCallSiteSyntax(context: context, declaredTypeNames: declaredTypeNames)
+            syntax: PythonCallSiteSyntax(
+                context: context, declaredTypeNames: declaredTypeNames,
+                declaredFunctionNames: TypeNamePrepass(declarationNodeTypes: ["function_definition"])
+                    .names(in: root) { $0.child(byFieldName: "name").map { $0.text(in: context) } })
         )
         assignments = AssignmentResolver(syntax: assignmentSyntax)
         // Bare names and the `attribute` of a `self.<attr>` access are both `identifier` nodes.
