@@ -219,10 +219,12 @@ class DiagramScreenBase {
     var compareCustomRefField: XCUIElement { app.descendants(matching: .any)["delta.customRefField"] }
     var compareOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "delta") }
     var compareFindingsSummary: XCUIElement { app.descendants(matching: .any)["delta.findingsSummary"] }
+    var comparePickerOperation: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "delta.picker") }
 
-    /// The panel's controls aren't in the accessibility tree until this opens it.
+    /// Opens the panel and waits for its branches and change requests to finish loading.
     func openCompare(file: StaticString = #filePath, line: UInt = #line) {
         compareButton.tap("the Compare button", until: compareRefRow("HEAD"), file: file, line: line)
+        comparePickerOperation.waitUntilLoaded("Loading the compare panel's revisions", file: file, line: line)
     }
 
     /// Chooses `name` in the already-open compare panel and waits for the comparison to load.

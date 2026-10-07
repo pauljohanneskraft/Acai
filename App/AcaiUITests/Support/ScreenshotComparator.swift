@@ -25,6 +25,8 @@ struct ScreenshotComparator {
 
     private let comparisonSide = 256
     private let perCellDelta = 16
+    /// `Scripts/snapshots_accept.sh` skips this suffix, so a capture kept for inspection never becomes a golden.
+    private let capturedExtension = "captured.png"
 
     /// Where every `validate` call writes its capture — never `goldenDirectory` itself, which stays
     /// read-only. Mirrors its `<platform>/<viewType>/<state>` layout, so CI's uploaded folder drops
@@ -85,6 +87,7 @@ struct ScreenshotComparator {
         testCase.add(attachment)
 
         let rendered = screenshot.pngRepresentation
+        try? FileManager.default.removeItem(at: outputDirectory.appendingPathComponent("\(name).\(capturedExtension)"))
         guard let committed = try? Data(contentsOf: goldenDirectory.appendingPathComponent("\(name).png")) else {
             write(rendered, name: name)
             return "Missing golden \(name).png — a new screenshot state is red on its first CI run by design; "
@@ -101,9 +104,12 @@ struct ScreenshotComparator {
             return "Could not compute perceptual diff for \(name).png"
         }
 
-        // Below-threshold drift writes the committed golden's own bytes back, so an unchanged state
-        // produces no diff when CI's output is dropped over `__Snapshots__/`.
-        write(changed <= maxChangedFraction ? committed : rendered, name: name)
+        // Below threshold `<state>.png` is the golden's own bytes; the real capture is kept as `.captured.png`.
+        let withinThreshold = changed <= maxChangedFraction
+        write(withinThreshold ? committed : rendered, name: name)
+        if withinThreshold, rendered != committed {
+            write(rendered, name: name, extension: capturedExtension)
+        }
 
         let changedCells = Int(changed * Double(comparisonSide * comparisonSide))
         // One file per state, read by `Scripts/snapshot_drift_summary.sh` for the CI job summary.

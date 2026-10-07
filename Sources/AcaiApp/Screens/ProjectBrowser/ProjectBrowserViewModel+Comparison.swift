@@ -20,6 +20,11 @@ extension ProjectBrowserViewModel {
         let head: String
     }
 
+    /// Rebuilding the diagram in the tap's own turn freezes the compare sheet at its pressed scale.
+    func changeComparisonAfterTouchRelease(_ change: @escaping @MainActor (ProjectBrowserViewModel) -> Void) {
+        DispatchQueue.main.async { change(self) }
+    }
+
     /// Drops saved positions since the rendered element set changes, and exits pull-request mode.
     func updateComparisonGitRef(diagramID: UUID, ref: String?) {
         reportComparison(nil)
@@ -73,15 +78,18 @@ extension ProjectBrowserViewModel {
         comparisonReviewedFindings[diagramID] = reviewed
     }
 
-    /// The codebase's branches and tags for the Compare panel's list. Best-effort: a folder outside
-    /// any repository yields none, leaving the list with HEAD and Custom.
-    func comparisonRefs(codebaseID: UUID) async -> [GitCheckout.Ref] {
+    /// A folder outside any repository has no refs to offer; every other failure is thrown.
+    func comparisonRefs(codebaseID: UUID) async throws -> [GitCheckout.Ref] {
         guard let codebase = codebase(for: codebaseID) else { return [] }
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
         let directory = URL(fileURLWithPath: codebase.directoryPath)
         let checkouts = checkouts
-        return await Task.detached(priority: .userInitiated) {
-            (try? await access.whileAccessible { try checkouts.refs(in: directory) }) ?? []
+        return try await Task.detached(priority: .userInitiated) {
+            do {
+                return try await access.whileAccessible { try checkouts.refs(in: directory) }
+            } catch GitCheckout.Failure.notAGitRepository {
+                return []
+            }
         }.value
     }
 

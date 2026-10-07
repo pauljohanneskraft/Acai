@@ -31,10 +31,12 @@ public struct ModuleCouplingMermaidRenderer: MermaidRenderer {
         var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
         for node in diagram.nodes {
-            let safe = allocator.id(for: node.id)
-            idMap[node.id] = safe
-            lines.append("    \(safe)[\"\(nodeLabel(node).mermaidLabelEscaped)\"]")
+            idMap[node.id] = allocator.id(for: node.id)
         }
+        lines.append(
+            contentsOf: PackageProjectSubgraphs().lines(nodes: diagram.nodes) { node in
+                "\(idMap[node.id] ?? node.id)[\"\(nodeLabel(node).mermaidLabelEscaped)\"]"
+            })
 
         let breaches = diagram.stableDependencyBreaches
         var linkIndex = 0
@@ -66,7 +68,7 @@ public struct ModuleCouplingMermaidRenderer: MermaidRenderer {
     private func nodeLabel(_ node: PackageDiagram.Node) -> String {
         let types = node.typeCount == 1 ? "1 type" : "\(node.typeCount) types"
         return """
-            \(node.name)
+            \(node.moduleName)
             Ca=\(node.afferentCoupling) Ce=\(node.efferentCoupling)
             I=\(twoDecimals(node.instability)) A=\(twoDecimals(node.abstractness)) \
             D=\(twoDecimals(node.distanceFromMainSequence))
