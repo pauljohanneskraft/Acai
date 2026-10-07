@@ -102,7 +102,9 @@ public struct CallSiteScope: Sendable {
     ) -> CallSite? {
         if knownTypeNames.contains(name) {
             guard let constructorMethodName else { return nil }
-            return CallSite(receiver: .type(name), methodName: constructorMethodName(name), location: location)
+            return CallSite(
+                receiver: .type(name), methodName: constructorMethodName(name), location: location,
+                isConstruction: true)
         }
         return CallSite(receiver: implicitSelf ? .selfDispatch : .free, methodName: name, location: location)
     }

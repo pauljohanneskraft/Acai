@@ -10,15 +10,21 @@ import AcaiDiagram
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
 
-    /// Java, Kotlin and Dart now also scan `.initializer` — each has its own dedicated pair of tests
+    private static let languagesBeyondMethods: Set<CodeArtifact.SourceLanguage> = [.swift, .java, .kotlin, .dart]
+
+    /// Swift, Java, Kotlin and Dart scan beyond `.method` — each has its own dedicated pair of tests
     /// below pinning the parser behaviour that justifies it. Every other built-in language still
     /// scans methods only.
-    @Test(arguments: AnalysisService.standardParsers
-        .map(\.language)
-        .filter { $0 != .java && $0 != .kotlin && $0 != .dart })
+    @Test(arguments: AnalysisService.standardParsers.map(\.language)
+        .filter { !DeadCodeMemberKindAuditTests.languagesBeyondMethods.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
+    }
+
+    @Test func swiftScansMethodsInitializersAndSubscripts() throws {
+        let parser = try #require(AnalysisService.standardParsers.first { $0.language == .swift })
+        #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer, .subscript])
     }
 
     @Test(arguments: [CodeArtifact.SourceLanguage.java, .kotlin, .dart])
@@ -42,9 +48,9 @@ struct DeadCodeMemberKindAuditTests {
         return Dictionary(members.map { ($0.name, $0.kind) }) { first, _ in first }
     }
 
-    /// Why Swift declines `.initializer`: the dominant `Thing()` spelling is read as a construction and
-    /// dropped, so only the explicit `Thing.init(…)` form leaves an edge behind.
-    @Test func swiftRecordsAnExplicitInitCallButNotAConstruction() throws {
+    /// Why Swift opts `.initializer` in: both the dominant `Thing()` spelling and the explicit
+    /// `Thing.init(…)` form now leave a caller edge behind.
+    @Test func swiftRecordsBothAConstructionAndAnExplicitInitCall() throws {
         let sites = try callSites("""
         class Thing {
             init() {}
@@ -57,12 +63,13 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: SwiftCodeParser(), fileName: "Thing.swift")
 
-        #expect(sites.map(\.methodName) == ["init"])
-        #expect(sites.map(\.receiver) == [.type("Thing")])
+        #expect(sites.map(\.methodName) == ["init", "init"])
+        #expect(sites.map(\.receiver) == [.type("Thing"), .type("Thing")])
     }
 
-    /// Why Swift declines `.subscript`: a subscript access is not recorded at all, in any position.
-    @Test func swiftRecordsNoSubscriptAccess() throws {
+    /// Why Swift opts `.subscript` in: a subscript access on a same-file declared type now leaves a
+    /// caller edge behind, in both its `self` and property/local-receiver forms.
+    @Test func swiftRecordsSubscriptAccessOnALocallyDeclaredType() throws {
         let sites = try callSites("""
         class Thing {
             subscript(i: Int) -> Int { 0 }
@@ -74,7 +81,10 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: SwiftCodeParser(), fileName: "Thing.swift")
 
-        #expect(sites.isEmpty)
+        let subscriptSites = sites.filter { $0.methodName == "subscript" }
+        #expect(subscriptSites.count == 2)
+        #expect(subscriptSites.contains { $0.receiver == .type("Thing") })
+        #expect(subscriptSites.contains { $0.receiver == .selfDispatch })
     }
 
     /// Why Kotlin now accepts `.initializer`: a bare construction reaches the shared
@@ -242,9 +252,25 @@ struct DeadCodeMemberKindAuditTests {
         #expect(artifact.freestandingFunctions.filter { $0.name == "grid_resize" }.map(\.kind) == [.method])
     }
 
-    /// The end-to-end consequence, through the real registry rather than a fixture configuration: an
-    /// uncalled Swift initializer and subscript are not reported, while an uncalled method still is.
-    @Test func aSwiftInitializerAndSubscriptAreNotReportedWhileAMethodIs() {
+    /// The end-to-end consequence, through the real registry rather than a fixture configuration: a
+    /// called Swift initializer is not reported, while an uncalled one (on an otherwise identical
+    /// sibling type) still is — same bar #343 set for methods, now met for `.initializer`.
+    @Test func aCalledSwiftInitializerIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = SwiftCodeParser().parse(source: """
+        class Called { init() {} }
+        class Uncalled { init() {} }
+        class Worker {
+            public func use() { _ = Called() }
+        }
+        """, fileName: "Thing.swift")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id) == ["Uncalled.init"])
+    }
+
+    /// A method is still reported alongside the new kinds — opting `.initializer`/`.subscript` in
+    /// doesn't relax the existing method scan.
+    @Test func anUnusedMethodIsStillReportedAlongsideTheNewKinds() {
         let artifact = SwiftCodeParser().parse(source: """
         class Thing {
             init(unused: Int) {}
@@ -254,7 +280,7 @@ struct DeadCodeMemberKindAuditTests {
         """, fileName: "Thing.swift")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id) == ["Thing.unusedMethod"])
+        #expect(report.candidates.map(\.id).sorted() == ["Thing.init", "Thing.subscript", "Thing.unusedMethod"])
     }
 
     /// The end-to-end consequence for Java: a called constructor is not reported, while an uncalled

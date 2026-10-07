@@ -29,7 +29,8 @@ public struct DeadCodeScan: Sendable {
         /// subscripts and another doesn't still reports `subscripts` here. Reading it as "no
         /// candidate for this kind anywhere" is only safe when every language in the artifact agrees
         /// on `deadCodeMemberKinds` — true of most built-in languages (`[.method]`), but not Java,
-        /// Kotlin or Dart, which also scan `.initializer`.
+        /// Kotlin or Dart, which also scan `.initializer`, nor Swift, which also scans both
+        /// `.initializer` and `.subscript`.
         public var scannedKinds: [MemberKind]
         public var candidates: [Candidate]
     }
