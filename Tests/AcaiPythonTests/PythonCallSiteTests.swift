@@ -239,10 +239,10 @@ struct PythonCallSiteTests {
     }
 
     /// An inherited `__init__` is recorded against the subclass exactly as an inherited regular
-    /// method is, so the two resolve or fail to resolve together: `CallGraphBuilder` matches a
-    /// `.type` receiver against that type's own members and walks no supertype chain, leaving both
-    /// of these in `coverage`'s denominator. Pinned as a pair — should inherited-member resolution
-    /// ever arrive, the constructor should come with it rather than need a case of its own.
+    /// method is: `CallGraphBuilder` matches a `.type` receiver against that type's own members and
+    /// walks no supertype chain, so neither draws an edge to `Base`. Pinned as a pair — should
+    /// inherited-member resolution ever arrive, the constructor should come with it rather than need
+    /// a case of its own.
     @Test func inheritedInitializerIsRecordedLikeAnInheritedMethod() {
         let source = """
         class Base:

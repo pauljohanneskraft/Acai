@@ -10,6 +10,7 @@
       ],
       "callSites" : [
         {
+          "isConstruction" : true,
           "location" : {
             "column" : 23,
             "endLine" : 24,
