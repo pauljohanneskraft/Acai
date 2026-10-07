@@ -1,8 +1,8 @@
 import Foundation
 import AcaiCore
 
-/// Decodes a pre-baked `CodeArtifact` instead of parsing `url`'s contents — `url`/`fileFilter` are
-/// ignored.
+/// Decodes a pre-baked `CodeArtifact` instead of parsing `url`'s contents — `url`, `fileFilter` and
+/// `cache` are ignored.
 struct FixtureCodebaseAnalyzer: CodebaseAnalyzing {
     let artifactURL: URL
 
@@ -17,7 +17,9 @@ struct FixtureCodebaseAnalyzer: CodebaseAnalyzing {
         }
     }
 
-    func enrichedArtifact(at url: URL, fileFilter: FileFilter?) async throws -> CodeArtifact {
+    func enrichedArtifact(
+        at url: URL, fileFilter: FileFilter?, reusing cache: AnalysisCache
+    ) async throws -> CodeArtifact {
         do {
             return try JSONDecoder().decode(CodeArtifact.self, from: Data(contentsOf: artifactURL))
         } catch {

@@ -201,6 +201,16 @@ struct ClassDiagramView: View {
         .overlay {
             if let nodeLimitError = viewModel.nodeLimitError {
                 nodeLimitErrorState(message: nodeLimitError.message)
+            } else if viewModel.nodes.isEmpty {
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    ContentUnavailableView {
+                        Label(.app("View.ClassDiagramView.NoTypesToDiagram"), systemImage: "square.dashed")
+                    } description: {
+                        Text(.app("View.ClassDiagramView.NoTypesToDiagramDetail"))
+                    }
+                } onUndo: {
+                    editor.clearEmptyScope(for: viewModel.emptyReason)
+                }
             }
         }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't

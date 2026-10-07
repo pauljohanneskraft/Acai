@@ -11643,6 +11643,108 @@
         }
       }
     },
+    "View.DiscoveredRootsView.NoBuildSystemRecognised" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Build-System erkannt; nach Dateiendung analysiert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No build system recognised; analysed by file extension."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun système de build reconnu ; analyse par extension de fichier."
+          }
+        }
+      }
+    },
+    "View.DiscoveredRootsView.ProjectRoots %lld" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Projekt-Stammverzeichnis"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Projekt-Stammverzeichnisse"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld project root"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld project roots"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld racine de projet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld racines de projet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "View.DiscoveredRootsView.Sources %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quellen: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sources: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sources : %@"
+          }
+        }
+      }
+    },
     "View.FinderRevealable.CouldNotRevealInFinder" : {
       "localizations" : {
         "de" : {
@@ -21082,19 +21184,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aufrufe werden über explizit typisierte Property-Empfänger verfolgt; "
+            "value" : "Aufrufe werden über explizit typisierte Property-Empfänger verfolgt."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calls are followed through explicitly-typed property receivers; "
+            "value" : "Calls are followed through explicitly-typed property receivers."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les appels sont suivis via des récepteurs de propriété explicitement typés ; "
+            "value" : "Les appels sont suivis via des récepteurs de propriété explicitement typés."
           }
         }
       }
@@ -22833,6 +22935,402 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Afficher sous forme de diagramme"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingMatchesThisScope" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts entspricht diesem Bereich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches this scope"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien ne correspond à cette portée"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingMatchesThisFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts entspricht diesem Filter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches this filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien ne correspond à ce filtre"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ScopeHidEverything" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Bereich, auf den dieses Diagramm eingeschränkt ist, enthält nichts zum Zeichnen. Setze ihn zurück, um wieder die gesamte Codebase zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The scope this diagram is narrowed to contains nothing to draw. Reset it to see the whole codebase again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La portée à laquelle ce diagramme est restreint ne contient rien à dessiner. Réinitialisez-la pour revoir toute la codebase."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.FilterHidEverything" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Filter im Tab „Einstellungen“ hat alle Elemente ausgeblendet. Lösche ihn, um sie wieder zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The filter in the Settings tab hid every element. Clear it to see them again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le filtre de l’onglet Réglages a masqué tous les éléments. Effacez-le pour les revoir."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ResetScope" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bereich zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Scope"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser la portée"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ClearFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer le filtre"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.NothingMatchesThisScopeAndFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts entspricht diesem Bereich und Filter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches this scope and filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien ne correspond à cette portée et à ce filtre"
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ScopeAndFilterHidEverything" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Bereich und der Filter im Tab „Einstellungen“ haben zusammen alle Elemente ausgeblendet. Setze beide zurück, um wieder die gesamte Codebase zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together, the scope and the filter in the Settings tab hid every element. Reset both to see the whole codebase again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ensemble, la portée et le filtre de l’onglet Réglages ont masqué tous les éléments. Réinitialisez-les pour revoir toute la codebase."
+          }
+        }
+      }
+    },
+    "View.DiagramEmptyScopeOverlay.ResetScopeAndFilter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bereich und Filter zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Scope and Filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser la portée et le filtre"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramView.NoTypesToDiagram" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Typen zum Diagrammieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No types to diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun type à représenter"
+          }
+        }
+      }
+    },
+    "View.ClassDiagramView.NoTypesToDiagramDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Filter und kein Bereich blendet etwas aus – diese Codebase hat keine Typen, die Açaí darstellen kann, abgesehen von generierten Typen, falls „Generierte Typen ausblenden“ aktiv ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No filter or scope is hiding anything — this codebase has no types Açaí can diagram, apart from generated types while Hide Generated Types is on."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun filtre ni aucune portée ne masque quoi que ce soit : cette codebase n’a aucun type qu’Açaí puisse représenter, hormis les types générés tant que « Masquer les types générés » est activé."
+          }
+        }
+      }
+    },
+    "View.CallGraphCanvasView.EditConfiguration" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konfiguration bearbeiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Configuration"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier la configuration"
+          }
+        }
+      }
+    },
+    "View.CallGraphCanvasView.NoCallsResolved" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Aufrufe zum Diagrammieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No calls to diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun appel à représenter"
+          }
+        }
+      }
+    },
+    "View.CallGraphCanvasView.NoCallsResolvedDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Filter und kein Bereich blendet etwas aus – Açaí konnte in dieser Codebase keine Aufrufstellen auflösen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No filter or scope is hiding anything — Açaí could not resolve any call sites in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun filtre ni aucune portée ne masque quoi que ce soit : Açaí n’a pu résoudre aucun site d’appel dans cette codebase."
+          }
+        }
+      }
+    },
+    "View.PackageDiagramView.NoModules" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Module zum Diagrammieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No modules to diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun module à représenter"
+          }
+        }
+      }
+    },
+    "View.PackageDiagramView.NoModulesDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Filter blendet etwas aus – Açaí hat in dieser Codebase keine Build-Module gefunden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No filter is hiding anything — Açaí found no build modules in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun filtre ne masque quoi que ce soit : Açaí n’a trouvé aucun module de build dans cette codebase."
+          }
+        }
+      }
+    },
+    "View.StateDiagramView.NoStatesFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Zustände gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No states found"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun état trouvé"
+          }
+        }
+      }
+    },
+    "View.StateDiagramView.NoStatesFoundDetail" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Analyse ist abgeschlossen, hat aber keine Zustände für diese Variable gefunden. Wähle eine andere Variable oder erweitere deren Konfiguration."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The analysis finished but found no states for this variable. Pick a different variable, or widen its configuration."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’analyse s’est terminée mais n’a trouvé aucun état pour cette variable. Choisissez une autre variable, ou élargissez sa configuration."
           }
         }
       }

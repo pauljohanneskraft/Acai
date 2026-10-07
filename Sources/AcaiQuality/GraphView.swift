@@ -32,6 +32,7 @@ public struct GraphView: Sendable {
     public let nodes: [Node]
     public let relationships: [Relationship]
     public let metrics: CodeMetrics
+    public let modules: ModuleMap
 
     private let nodesByID: [String: Node]
 
@@ -41,9 +42,10 @@ public struct GraphView: Sendable {
         languageResolver: LanguageConfigurationResolver
     ) {
         let flat = artifact.flattened()
+        let modules = ModuleMap(artifact: artifact, resolver: moduleResolver)
         // Compute metrics up front so each node can be tagged with its metric-derived fields
         // (single source of truth — the node's `nestingDepth` comes from the metric, not a re-walk).
-        let metrics = artifact.computeMetrics()
+        let metrics = artifact.computeMetrics(modules: modules)
         let nestingByID = Dictionary(
             metrics.types.map { ($0.id, $0.nestingDepth) }, uniquingKeysWith: { first, _ in first })
         let nodes = flat.map { type in
@@ -51,7 +53,7 @@ public struct GraphView: Sendable {
                 id: type.id,
                 qualifiedName: type.qualifiedName,
                 unqualifiedID: type.unqualifiedID,
-                module: moduleResolver.productName(forFilePath: type.location?.filePath ?? ""),
+                module: modules.module(forFilePath: type.location?.filePath ?? ""),
                 kind: type.kind,
                 access: type.accessLevel,
                 language: type.sourceLanguage,
@@ -66,6 +68,7 @@ public struct GraphView: Sendable {
         self.nodes = nodes
         self.relationships = artifact.relationships
         self.metrics = metrics
+        self.modules = modules
         self.nodesByID = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
@@ -75,4 +78,7 @@ public struct GraphView: Sendable {
 
     /// The set of modules that contain at least one node, sorted for deterministic reporting.
     public var moduleNames: [String] { Set(nodes.map(\.module)).sorted() }
+
+    /// Empty when the artifact holds a single root.
+    public var projectNames: [String] { Set(nodes.compactMap { modules.project(ofModule: $0.module) }).sorted() }
 }

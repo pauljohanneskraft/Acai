@@ -146,6 +146,11 @@ struct PackageDiagramView: View {
             content: {
                 let layout = viewModel.layout
                 ZStack(alignment: .topLeading) {
+                    ForEach(layout.projectBoxes) { box in
+                        GroupingBoxView(label: box.label)
+                            .frame(width: box.rect.width, height: box.rect.height)
+                            .position(x: box.rect.midX, y: box.rect.midY)
+                    }
                     packageEdges(layout)
                     ForEach(layout.nodes) { node in
                         moduleNode(node)
@@ -153,6 +158,19 @@ struct PackageDiagramView: View {
                 }
             }
         )
+        .overlay {
+            if viewModel.isEmpty {
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    ContentUnavailableView {
+                        Label(.app("View.PackageDiagramView.NoModules"), systemImage: "shippingbox")
+                    } description: {
+                        Text(.app("View.PackageDiagramView.NoModulesDetail"))
+                    }
+                } onUndo: {
+                    filterBinding.wrappedValue = nil
+                }
+            }
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
@@ -186,7 +204,7 @@ struct PackageDiagramView: View {
 
     private func moduleNode(_ node: PackageLayoutModel.NodeFrame) -> some View {
         ContainerNodeView(
-            name: node.node.name,
+            name: node.node.moduleName,
             stereotype: "package",
             style: .package,
             isSelected: viewModel.selectedNodeIDs.contains(node.id),

@@ -23,12 +23,15 @@ struct MetadataRoundTripTests {
                 CodeArtifact.DiscoveredRoot(
                     path: ".",
                     detector: "SwiftPackageManagerDetector",
-                    languages: [.swift]
+                    languages: [.swift],
+                    sourceDirs: ["Sources", "Tests"]
                 ),
                 CodeArtifact.DiscoveredRoot(
                     path: "web",
-                    detector: "NodeDetector",
-                    languages: [.typeScript, .javaScript]
+                    detector: "FallbackDetector",
+                    languages: [.typeScript, .javaScript],
+                    sourceDirs: ["web"],
+                    isFallback: true
                 )
             ]
         )

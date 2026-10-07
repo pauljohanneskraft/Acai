@@ -49,24 +49,9 @@ final class ProjectBrowserScreen {
     /// Only exists on compact width, where a pushed detail screen covers the sidebar.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// Deletes through the row's own affordance: a context menu on macOS and iPad, a swipe action on
-    /// iPhone's compact width.
+    /// Deletes through the row's own affordance, then confirms.
     func deleteCodebase(_ row: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
-        row.waitUntilReady("the codebase's sidebar row", file: file, line: line)
-        SystemBanners().dismiss(file: file, line: line)
-        #if os(macOS)
-        row.rightClick()
-        // Window-scoped: the system Edit menu's own "Delete" item also matches an unscoped query.
-        let delete = app.windows.firstMatch.descendants(matching: .any)["Delete"]
-        #else
-        let delete = app.buttons["Delete"]
-        if SnapshotPlatform().usesCompactLayout {
-            row.swipeLeft()
-        } else {
-            row.press(forDuration: 1.5)
-        }
-        #endif
-        delete.tapWhenReady("the row's Delete action", file: file, line: line)
+        RowDeleteAffordance(app: app).tapDelete(on: row, "the codebase's sidebar row", file: file, line: line)
         deleteCodebaseConfirmButton.tapWhenReady("the codebase delete confirmation", file: file, line: line)
         row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
     }

@@ -18,7 +18,7 @@ struct JavaCallSiteSyntax: CallSiteSyntax {
            let typeName = JavaTypeReferenceResolver(context: context).extractTypeReference(typeNode)?.name,
            !typeName.isEmpty {
             return scope.resolvedCallSite(
-                receiverName: typeName, methodName: typeName, location: node.location(in: context))
+                receiverName: typeName, methodName: typeName, location: node.location(in: context))?.asConstruction
         }
 
         guard node.nodeType == "method_invocation",

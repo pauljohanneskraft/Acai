@@ -28,7 +28,13 @@ extension ProjectCodebaseEditor {
             ) { onProgress in
                 try await remoteService.attachWorktree(target, destination: destination, onProgress: onProgress)
             }
-            guard let (headSHA, persistedRemoteURL) = cloneResult else { return }
+            // A cancel can land after the attach finished, leaving its worktree on disk.
+            guard let (headSHA, persistedRemoteURL) = cloneResult else {
+                await removeWorktree(
+                    codebaseID: codebaseID,
+                    repository: CodebaseRepositoryReference(remoteURL: remoteURL, ref: ref))
+                return
+            }
             // The clone outlived its project. Nothing references the worktree that was just
             // attached, so take it down the same way deleting the codebase would rather than
             // leaving it for the next sweep, and say so instead of dropping it silently.
