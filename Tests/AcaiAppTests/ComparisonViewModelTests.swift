@@ -48,14 +48,22 @@ struct ComparisonViewModelTests {
     @Test func comparisonRefsComeFromTheCheckoutInspector() async throws {
         let (model, codebaseID, _) = try makeModel(checkouts: FakeCheckoutInspector(refs: refs, currentRef: "main"))
 
-        #expect(await model.comparisonRefs(codebaseID: codebaseID) == refs)
-        #expect(await model.comparisonRefs(codebaseID: UUID()).isEmpty)
+        #expect(try await model.comparisonRefs(codebaseID: codebaseID) == refs)
+        #expect(try await model.comparisonRefs(codebaseID: UUID()).isEmpty)
     }
 
     @Test func aFolderOutsideAnyRepositoryOffersNoRefs() async throws {
         let (model, codebaseID, _) = try makeModel(checkouts: FakeCheckoutInspector())
 
-        #expect(await model.comparisonRefs(codebaseID: codebaseID).isEmpty)
+        #expect(try await model.comparisonRefs(codebaseID: codebaseID).isEmpty)
+    }
+
+    @Test func anUnreadableRepositoryFailsRatherThanOfferingNoRefs() async throws {
+        let (model, codebaseID, _) = try makeModel(checkouts: FakeCheckoutInspector(refsAreUnreadable: true))
+
+        await #expect(throws: FakeCheckoutInspector.Unreadable.self) {
+            _ = try await model.comparisonRefs(codebaseID: codebaseID)
+        }
     }
 
     @Test func clearingTheComparisonRefDropsTheComparisonAndItsError() async throws {

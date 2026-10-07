@@ -214,10 +214,52 @@ private struct CallGraphCanvasView: View {
                 }
             }
         )
+        .overlay {
+            if viewModel.isEmpty {
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    noCallsState
+                } onUndo: {
+                    clearEmptyScope()
+                }
+            }
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
             CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
+        }
+    }
+
+    private var noCallsState: some View {
+        ContentUnavailableView {
+            Label(
+                .app("View.CallGraphCanvasView.NoCallsResolved"), systemImage: "point.3.connected.trianglepath.dotted"
+            )
+        } description: {
+            Text(.app("View.CallGraphCanvasView.NoCallsResolvedDetail"))
+        } actions: {
+            Button {
+                sidebarTab = .settings
+                showSidebar = true
+            } label: {
+                Label(.app("View.CallGraphCanvasView.EditConfiguration"), systemImage: "slider.horizontal.3")
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("diagram.emptyScope.editConfigurationButton")
+        }
+    }
+
+    private func clearEmptyScope() {
+        switch viewModel.emptyReason {
+        case .scope:
+            onApplyScope(.wholeCodebase)
+        case .filter:
+            filterBinding.wrappedValue = nil
+        case .scopeAndFilter:
+            filterBinding.wrappedValue = nil
+            onApplyScope(.wholeCodebase)
+        case .codebase:
+            break
         }
     }
 

@@ -16,6 +16,13 @@ extension CFamilyExtractor {
         // Call sites/assignments resolve after the loop so the scope reflects the full member set.
         var pendingBodies: [(index: Int, body: Node)] = []
         for child in body.namedChildren() {
+            let addedMembers = members.count
+            let addedNestedTypes = nestedTypes.count
+            defer {
+                attachDocumentation(
+                    above: child, members: &members, from: addedMembers,
+                    nestedTypes: &nestedTypes, from: addedNestedTypes)
+            }
             switch child.nodeType {
             case "access_specifier":
                 access = memberExtractor.accessLevel(from: child) ?? access
@@ -42,6 +49,25 @@ extension CFamilyExtractor {
             }
         }
         attachBodies(pendingBodies, to: &members)
+    }
+
+    /// Documents whatever this one body child produced: a member, several (one `field_declaration`
+    /// can list more than one), or a nested type.
+    private func attachDocumentation(
+        above child: Node,
+        members: inout [Member],
+        from memberIndex: Int,
+        nestedTypes: inout [TypeDeclaration],
+        from nestedIndex: Int
+    ) {
+        guard memberIndex < members.count || nestedIndex < nestedTypes.count,
+              let prose = documentation.documentation(above: child, in: context) else { return }
+        for index in memberIndex..<members.count where members[index].documentation == nil {
+            members[index].documentation = prose
+        }
+        for index in nestedIndex..<nestedTypes.count where nestedTypes[index].documentation == nil {
+            nestedTypes[index].documentation = prose
+        }
     }
 
     private func appendMethodDefinition(

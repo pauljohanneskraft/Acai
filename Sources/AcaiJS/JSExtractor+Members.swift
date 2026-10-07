@@ -16,7 +16,8 @@ extension JSExtractor {
 
         for child in bodyNode.children() {
             guard let childType = child.nodeType else { continue }
-            if let member = extractClassBodyMember(child, childType: childType, scope: scope, typeDecl: &typeDecl) {
+            if var member = extractClassBodyMember(child, childType: childType, scope: scope, typeDecl: &typeDecl) {
+                member.documentation = documentation.documentation(above: child, in: context)
                 typeDecl.members.append(member)
             }
         }
@@ -105,7 +106,7 @@ extension JSExtractor {
     /// body (mirroring how a nested top-level function there still feeds `freestandingFunctions`).
     func extractGlobalVariable(_ node: Node, name: String, isExported: Bool) -> Member {
         let value = node.child(byFieldName: "value")
-        return memberExtractor.globalVariable(
+        var member = memberExtractor.globalVariable(
             node, name: name, isExported: isExported,
             references: .init(
                 callSites: callSites.callSites(
@@ -114,6 +115,8 @@ extension JSExtractor {
                 referencedTypeNames: value?.referencedTypeNames(in: context) ?? []
             )
         )
+        member.documentation = documentation.documentation(above: node, in: context)
+        return member
     }
 
     // MARK: - Type Alias Declaration
@@ -165,9 +168,13 @@ extension JSExtractor {
                     if let valueChild = child.child(byFieldName: "value") {
                         rawValue = valueChild.text(in: context)
                     }
-                    typeDecl.enumCases.append(EnumCase(name: caseName, rawValue: rawValue))
+                    typeDecl.enumCases.append(EnumCase(
+                        name: caseName, rawValue: rawValue,
+                        documentation: documentation.documentation(above: child, in: context)))
                 } else if childType == "property_identifier" || childType == "identifier" {
-                    typeDecl.enumCases.append(EnumCase(name: child.text(in: context)))
+                    typeDecl.enumCases.append(EnumCase(
+                        name: child.text(in: context),
+                        documentation: documentation.documentation(above: child, in: context)))
                 }
             }
         }
@@ -205,7 +212,8 @@ extension JSExtractor {
         let nsDecl = TypeDeclaration(
             id: name, name: name, qualifiedName: name, kind: .module,
             accessLevel: isExported ? .public : .internal,
-            nestedTypes: nestedTypes
+            nestedTypes: nestedTypes,
+            documentation: documentation.documentation(above: node, in: context)
         )
         return [nsDecl]
     }
@@ -227,7 +235,8 @@ extension JSExtractor {
         return Member(
             name: name, kind: .method, accessLevel: isExported ? .public : .internal,
             modifiers: modifiers, type: returnType, parameters: params,
-            genericParameters: generics, location: nodeLoc, callSites: bodyCallSites)
+            genericParameters: generics, location: nodeLoc, callSites: bodyCallSites,
+            documentation: documentation.documentation(above: node, in: context))
     }
 
     // MARK: - Prototype Pattern Detection (JS only)

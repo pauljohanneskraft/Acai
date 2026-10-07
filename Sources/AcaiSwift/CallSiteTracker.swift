@@ -34,8 +34,9 @@ final class CallSiteTracker {
     private let signatures = DeclarationSignatureExtractor()
     private let sourceLocations: SourceLocationResolver
 
-    init(knownTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
-        self.callSites = CallSiteCollector(knownTypeNames: knownTypeNames, sourceLocations: sourceLocations)
+    init(knownTypeNames: Set<String>, builtInTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
+        self.callSites = CallSiteCollector(
+            knownTypeNames: knownTypeNames, builtInTypeNames: builtInTypeNames, sourceLocations: sourceLocations)
         self.sourceLocations = sourceLocations
     }
 
@@ -273,6 +274,37 @@ final class CallSiteTracker {
                     from: node, localReceiverOriginMap: topLevelGlobalReceiverOriginMap) {
                 // Its calls have nowhere to attach as a member, so they're recorded separately and
                 // given a synthetic reachable member in `buildArtifact()`.
+                topLevelCallSites.append(site)
+            }
+        case .other:
+            break
+        }
+    }
+
+    /// The `subscriptCallSite`-producing analogue of `recordCallSite`: no deferred/iteration-closure
+    /// resolution, since `CallSiteCollector.subscriptCallSite` never defers — it either resolves now
+    /// or is dropped.
+    func recordSubscriptCallSite(
+        from node: SubscriptCallExprSyntax, scope: CallSiteScope,
+        enclosingTypeName: String?, topLevelGlobalPropertyMap: @autoclosure () -> [String: String]
+    ) {
+        switch scope {
+        case .functionBody:
+            var receiverMap = callSiteState.propertyMap
+            if !callSiteState.parameterMap.isEmpty {
+                receiverMap.merge(callSiteState.parameterMap) { _, parameter in parameter }
+            }
+            if !callSiteState.localMap.isEmpty {
+                receiverMap.merge(callSiteState.localMap) { _, local in local }
+            }
+            if let site = callSites.subscriptCallSite(
+                from: node, propertyMap: receiverMap, enclosingTypeName: enclosingTypeName,
+                knownLocalNames: callSiteState.knownLocalNames) {
+                callSiteState.pendingCallSites.append(site)
+            }
+        case .fileScope:
+            if let site = callSites.subscriptCallSite(
+                from: node, propertyMap: topLevelGlobalPropertyMap(), enclosingTypeName: nil) {
                 topLevelCallSites.append(site)
             }
         case .other:

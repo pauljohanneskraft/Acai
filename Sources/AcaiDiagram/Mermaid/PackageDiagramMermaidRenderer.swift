@@ -30,10 +30,12 @@ public struct PackageDiagramMermaidRenderer: MermaidRenderer {
         var allocator = MermaidIDAllocator()
         var idMap: [String: String] = [:]
         for node in diagram.nodes {
-            let safe = allocator.id(for: node.id)
-            idMap[node.id] = safe
-            lines.append("    \(safe)[\"\(nodeLabel(node).mermaidLabelEscaped)\"]")
+            idMap[node.id] = allocator.id(for: node.id)
         }
+        lines.append(
+            contentsOf: PackageProjectSubgraphs().lines(nodes: diagram.nodes) { node in
+                "\(idMap[node.id] ?? node.id)[\"\(nodeLabel(node).mermaidLabelEscaped)\"]"
+            })
 
         // Link index tracks each emitted edge so an override can colour it via `linkStyle`.
         var linkIndex = 0
@@ -63,7 +65,7 @@ public struct PackageDiagramMermaidRenderer: MermaidRenderer {
         let instability = String(format: "%.2f", node.instability)
         let abstractness = String(format: "%.2f", node.abstractness)
         let types = node.typeCount == 1 ? "1 type" : "\(node.typeCount) types"
-        return "\(node.name)\nI=\(instability) A=\(abstractness)\n\(types)"
+        return "\(node.moduleName)\nI=\(instability) A=\(abstractness)\n\(types)"
     }
 
 }

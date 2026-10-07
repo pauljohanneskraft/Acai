@@ -92,7 +92,7 @@ public struct QualityEvaluator: Sendable {
     // MARK: - Cycles
 
     private func cycleViolations(_ graph: GraphView, rule: CycleRule) -> [Violation] {
-        let finder = CycleFinder(graph: graph, moduleResolver: moduleResolver)
+        let finder = CycleFinder(graph: graph)
         let scope: CycleFinder.Scope = rule.scope == .modules ? .modules : .types
         let label = scope == .modules ? "Module" : "Type"
         return finder.cycles(scope: scope).map { cycle in

@@ -20,6 +20,11 @@ extension ProjectBrowserViewModel {
         let head: String
     }
 
+    /// Rebuilding the diagram in the tap's own turn freezes the compare sheet at its pressed scale.
+    func changeComparisonAfterTouchRelease(_ change: @escaping @MainActor (ProjectBrowserViewModel) -> Void) {
+        DispatchQueue.main.async { change(self) }
+    }
+
     /// Drops saved positions since the rendered element set changes, and exits pull-request mode.
     func updateComparisonGitRef(diagramID: UUID, ref: String?) {
         reportComparison(nil)
@@ -73,15 +78,18 @@ extension ProjectBrowserViewModel {
         comparisonReviewedFindings[diagramID] = reviewed
     }
 
-    /// The codebase's branches and tags for the Compare panel's list. Best-effort: a folder outside
-    /// any repository yields none, leaving the list with HEAD and Custom.
-    func comparisonRefs(codebaseID: UUID) async -> [GitCheckout.Ref] {
+    /// A folder outside any repository has no refs to offer; every other failure is thrown.
+    func comparisonRefs(codebaseID: UUID) async throws -> [GitCheckout.Ref] {
         guard let codebase = codebase(for: codebaseID) else { return [] }
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
         let directory = URL(fileURLWithPath: codebase.directoryPath)
         let checkouts = checkouts
-        return await Task.detached(priority: .userInitiated) {
-            (try? await access.whileAccessible { try checkouts.refs(in: directory) }) ?? []
+        return try await Task.detached(priority: .userInitiated) {
+            do {
+                return try await access.whileAccessible { try checkouts.refs(in: directory) }
+            } catch GitCheckout.Failure.notAGitRepository {
+                return []
+            }
         }.value
     }
 
@@ -112,6 +120,8 @@ extension ProjectBrowserViewModel {
                     try await access.whileAccessible { try checkouts.mergeBase(baseRef, ref, in: url) }
                 }.value
                 resolvedMergeBases[mergeBaseKey] = sha
+                mergeBaseRecency.use(mergeBaseKey)
+                evictComparisonOverflow()
             } catch {
                 reportComparison(error)
                 return
@@ -128,7 +138,10 @@ extension ProjectBrowserViewModel {
         codebaseID: UUID, directory: String, url: URL, ref: String, fileFilter: FileFilter?
     ) async {
         let key = ComparisonKey(directory: directory, ref: ref)
-        guard comparisonArtifacts[key] == nil else { return }
+        if comparisonArtifacts[key] != nil {
+            comparisonRecency.use(key)
+            return
+        }
         do {
             let provider = comparisonSources.provider(codebaseID: codebaseID, ref: ref, directory: url)
             let analyzer = analyzers.analyzer(for: codebaseID)
@@ -140,6 +153,8 @@ extension ProjectBrowserViewModel {
                 }
             }.value
             comparisonArtifacts[key] = semantic
+            comparisonRecency.use(key)
+            evictComparisonOverflow()
             reportComparison(nil)
         } catch {
             reportComparison(error)
@@ -155,8 +170,9 @@ extension ProjectBrowserViewModel {
         guard let baseRef = diagram.comparisonBaseRef else {
             return ComparisonKey(directory: directory, ref: ref)
         }
-        guard let sha = resolvedMergeBases[MergeBaseKey(directory: directory, base: baseRef, head: ref)]
-        else { return nil }
+        let mergeBaseKey = MergeBaseKey(directory: directory, base: baseRef, head: ref)
+        guard let sha = resolvedMergeBases[mergeBaseKey] else { return nil }
+        mergeBaseRecency.use(mergeBaseKey)
         return ComparisonKey(directory: directory, ref: sha)
     }
 
@@ -174,6 +190,7 @@ extension ProjectBrowserViewModel {
     /// like-for-like (node ids must match the current side's display artifact).
     private func displayArtifact(for key: ComparisonKey) -> CodeArtifact? {
         guard let semantic = comparisonArtifacts[key] else { return nil }
+        comparisonRecency.use(key)
         if let cached = comparisonDisplayCache[key] { return cached }
         let display = CodebaseAnalyzer()
             .flattenedForDisplay(semantic)
@@ -195,7 +212,9 @@ extension ProjectBrowserViewModel {
     /// The historical-side counterpart of `semanticArtifact(for:)`, for recomputing findings
     /// against the comparison revision.
     func comparisonSemanticArtifact(for diagram: GeneratedDiagram) -> CodeArtifact? {
-        oldComparisonKey(for: diagram).flatMap { comparisonArtifacts[$0] }
+        guard let key = oldComparisonKey(for: diagram), let semantic = comparisonArtifacts[key] else { return nil }
+        comparisonRecency.use(key)
+        return semantic
     }
 
     /// Mirrors `ensureAnalysisLoaded`'s shape but against the historical "old" artifact instead of
@@ -209,10 +228,52 @@ extension ProjectBrowserViewModel {
         let analysis = await Task.detached(priority: .userInitiated) {
             CodebaseAnalysis(artifact: semantic, configuration: configuration)
         }.value
+        // The snapshot may have been evicted while this ran.
+        guard comparisonArtifacts[key] != nil else { return }
         comparisonAnalyses[key] = analysis
     }
 
     func comparisonAnalysis(for diagram: GeneratedDiagram) -> CodebaseAnalysis? {
         oldComparisonKey(for: diagram).flatMap { comparisonAnalyses[$0] }
+    }
+
+    // MARK: - Bounding what the comparisons keep in memory
+
+    /// Never evicted or purged: the diagram on screen renders from these.
+    var displayedComparison: (snapshots: Set<ComparisonKey>, mergeBases: Set<MergeBaseKey>) {
+        guard case .generatedDiagram(let diagramID) = selection,
+              let diagram = generatedDiagram(for: diagramID)
+        else { return ([], []) }
+        let snapshots = Set([oldComparisonKey(for: diagram), newComparisonKey(for: diagram)].compactMap { $0 })
+        guard let baseRef = diagram.comparisonBaseRef, let ref = diagram.comparisonGitRef,
+              let directory = codebase(for: diagram.codebaseID)?.directoryPath
+        else { return (snapshots, []) }
+        return (snapshots, [MergeBaseKey(directory: directory, base: baseRef, head: ref)])
+    }
+
+    func evictComparisonOverflow() {
+        let displayed = displayedComparison
+        for key in comparisonRecency.overflow(retaining: displayed.snapshots) {
+            dropComparison(key)
+        }
+        for key in mergeBaseRecency.overflow(retaining: displayed.mergeBases) {
+            resolvedMergeBases.removeValue(forKey: key)
+        }
+    }
+
+    func purgeComparisonCaches() {
+        let displayed = displayedComparison
+        for key in comparisonRecency.purge(retaining: displayed.snapshots) {
+            dropComparison(key)
+        }
+        for key in mergeBaseRecency.purge(retaining: displayed.mergeBases) {
+            resolvedMergeBases.removeValue(forKey: key)
+        }
+    }
+
+    private func dropComparison(_ key: ComparisonKey) {
+        comparisonArtifacts.removeValue(forKey: key)
+        comparisonDisplayCache.removeValue(forKey: key)
+        comparisonAnalyses.removeValue(forKey: key)
     }
 }

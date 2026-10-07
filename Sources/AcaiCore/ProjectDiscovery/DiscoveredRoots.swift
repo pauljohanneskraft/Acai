@@ -14,15 +14,32 @@ extension [SourceSpec] {
                 byKey[key] = CodeArtifact.DiscoveredRoot(
                     path: path.isEmpty ? "." : path,
                     detector: spec.detector,
-                    languages: [spec.language]
+                    languages: [spec.language],
+                    sourceDirs: spec.sourceDirPaths(relativeTo: base),
+                    isFallback: spec.isFallback
                 )
                 continue
             }
-            guard !existing.languages.contains(spec.language) else { continue }
-            existing.languages.append(spec.language)
+            existing.sourceDirs.append(
+                contentsOf: spec.sourceDirPaths(relativeTo: base).filter { !existing.sourceDirs.contains($0) })
+            if !existing.languages.contains(spec.language) {
+                existing.languages.append(spec.language)
+            }
             byKey[key] = existing
         }
         return order.compactMap { byKey[$0] }
+    }
+}
+
+extension SourceSpec {
+    /// This spec's source directories as paths relative to the analysed folder, deduplicated in
+    /// discovery order. The folder itself reads as `"."`, matching ``CodeArtifact/DiscoveredRoot``.
+    func sourceDirPaths(relativeTo base: URL) -> [String] {
+        var seen: Set<String> = []
+        return sourceDirs
+            .map { $0.relativePath(from: base) }
+            .map { $0.isEmpty ? "." : $0 }
+            .filter { seen.insert($0).inserted }
     }
 }
 
@@ -47,16 +64,19 @@ extension SourceSpec {
     /// mutated in place, so a field added to ``SourceSpec`` later has to say what merging means for
     /// it instead of being dropped from the second root onwards.
     ///
-    /// `root` and `detector` keep the first root's: a merged spec has several roots, and the full set
-    /// is recorded separately in `metadata.discoveredRoots`. `diagnostics` from every root survive the
-    /// merge, concatenated, so a problem found discovering the second root is never silently dropped.
+    /// `root`, `detector` and `isFallback` keep the first root's: a merged spec has several roots, and
+    /// the full set is recorded separately in `metadata.discoveredRoots`. `diagnostics` from every
+    /// root survive the merge, concatenated, so a problem found discovering the second root is never
+    /// silently dropped, and so do every root's `nestedRootPaths`.
     func merging(_ other: SourceSpec) -> SourceSpec {
         SourceSpec(
             language: language,
             sourceDirs: sourceDirs + other.sourceDirs,
             root: root,
             detector: detector,
-            diagnostics: diagnostics + other.diagnostics
+            nestedRootPaths: nestedRootPaths + other.nestedRootPaths,
+            diagnostics: diagnostics + other.diagnostics,
+            isFallback: isFallback
         )
     }
 }
