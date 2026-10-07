@@ -251,7 +251,6 @@ extension CodeArtifact {
         if let exact = flat.first(where: { $0.qualifiedName == name || $0.id == name }) {
             return exact.id
         }
-        // A plain suffix check first: the scope lookups below split the file path, too costly per type.
         let candidates = flat.filter { $0.name == name || $0.id.hasSuffix(name) }
         let extModule = ext.idScope.module
         let sameModuleMatches = candidates.filter {

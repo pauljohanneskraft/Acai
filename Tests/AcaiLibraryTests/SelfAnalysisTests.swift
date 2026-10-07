@@ -28,8 +28,14 @@ struct SelfAnalysisTests {
         #expect(duplicates.isEmpty, "duplicate type ids: \(duplicates.prefix(20))")
         #expect(types.count > 1_000)
         #expect(Set(types.map(\.idScope.module)).count >= 18)
-        #expect(types.contains { $0.id == "AcaiCLI.ThemeOption" })
-        #expect(types.contains { $0.id == "AcaiMCP.ThemeOption" })
+        // A generated `App/Acai.xcodeproj` is a second project root, which project-qualifies every module.
+        let modules = ModuleMap(artifact: artifact)
+        let themeOptions = types.filter { $0.name == "ThemeOption" }
+        let themeModules = themeOptions.compactMap { $0.module?.components(separatedBy: "/").last }
+        #expect(themeModules.sorted() == ["AcaiCLI", "AcaiMCP"])
+        #expect(themeOptions.allSatisfy {
+            $0.id == "\(modules.module(forFilePath: $0.location?.filePath ?? "")).ThemeOption"
+        })
 
         let callGraph = CallGraphBuilder().build(from: artifact)
         #expect(!callGraph.edges.isEmpty)
