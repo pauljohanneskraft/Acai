@@ -2647,24 +2647,46 @@
         }
       }
     },
-    "Error.LoadFailure.Detail %@" : {
+    "Error.LoadFailure.ServerUnresponsive" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Konnte nicht geladen werden: %@"
+            "value" : "Der Server hat nicht geantwortet. Versuche es gleich erneut."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Couldn’t load: %@"
+            "value" : "The server didn’t respond. Try again in a moment."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de charger : %@"
+            "value" : "Le serveur n’a pas répondu. Réessayez dans un instant."
+          }
+        }
+      }
+    },
+    "Error.LoadFailure.Unexpected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Laden ist ein Fehler aufgetreten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong while loading."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une erreur s’est produite lors du chargement."
           }
         }
       }
@@ -10855,6 +10877,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement des branches et des demandes de modification…"
+          }
+        }
+      }
+    },
+    "View.CompareGitPanel.ErrorDetails" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Détails"
           }
         }
       }

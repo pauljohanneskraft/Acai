@@ -15,21 +15,32 @@ struct LoadFailureTests {
         String(localized: LoadFailure(error: error).message)
     }
 
-    @Test(arguments: [URLError.Code.notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .timedOut])
-    func aRequestThatNeverReachedAServerReadsAsOffline(_ code: URLError.Code) {
+    @Test(arguments: [
+        URLError.Code.notConnectedToInternet, .networkConnectionLost, .dataNotAllowed, .cannotFindHost
+    ])
+    func aRequestThatNeverLeftTheDeviceReadsAsOffline(_ code: URLError.Code) {
         #expect(message(for: URLError(code)) == String(localized: .app("Error.LoadFailure.Offline")))
+        #expect(LoadFailure(error: URLError(code)).detail == nil)
     }
 
-    @Test func aRejectedRequestKeepsItsOwnDescriptionAsTheDetail() {
-        #expect(message(for: Rejected())
-            == String(localized: .app("Error.LoadFailure.Detail \("The server said no.")")))
+    @Test(arguments: [URLError.Code.timedOut, .cannotConnectToHost])
+    func aServerThatDidNotAnswerIsNotCalledOffline(_ code: URLError.Code) {
+        #expect(message(for: URLError(code)) == String(localized: .app("Error.LoadFailure.ServerUnresponsive")))
+        #expect(message(for: URLError(code)) != String(localized: .app("Error.LoadFailure.Offline")))
+        #expect(LoadFailure(error: URLError(code)).detail == nil)
     }
 
-    @Test func anErrorWithNoDescriptionOfItsOwnStillSaysSomething() {
+    @Test func anUnexpectedFailureKeepsItsOwnDescriptionForTheDisclosure() {
+        let failure = LoadFailure(error: Rejected())
+
+        #expect(String(localized: failure.message) == String(localized: .app("Error.LoadFailure.Unexpected")))
+        #expect(failure.detail == "The server said no.")
+    }
+
+    @Test func anErrorWithNoDescriptionOfItsOwnStillHasADetail() {
         let error = Bare()
 
-        #expect(message(for: error)
-            == String(localized: .app("Error.LoadFailure.Detail \(error.localizedDescription)")))
+        #expect(LoadFailure(error: error).detail == error.localizedDescription)
     }
 
     @Test(arguments: [
@@ -39,8 +50,7 @@ struct LoadFailureTests {
     ])
     func aSpentQuotaOrRejectedTokenIsShownAsItsOwnNextStep(_ failure: GitHubAPIClient.Failure) {
         #expect(message(for: failure) == String(localized: failure.message))
-        #expect(message(for: failure)
-            != String(localized: .app("Error.LoadFailure.Detail \(failure.errorDescription ?? "")")))
+        #expect(LoadFailure(error: failure).detail == nil)
     }
 
     @Test func aRateLimitSaysWhenItResetsWithTheSystemRelativeFormat() {
@@ -51,10 +61,10 @@ struct LoadFailureTests {
             == String(localized: .app("Error.GitHubAPIClient.RateLimitedUntil \(when)")))
     }
 
-    @Test func aPlainHTTPFailureKeepsTheGenericFrame() {
+    @Test func aPlainHTTPFailureIsUnexpectedWithTheResponseAsDetail() {
         let failure = GitHubAPIClient.Failure.http(403, "Resource not accessible")
 
-        #expect(message(for: failure)
-            == String(localized: .app("Error.LoadFailure.Detail \(failure.errorDescription ?? "")")))
+        #expect(message(for: failure) == String(localized: .app("Error.LoadFailure.Unexpected")))
+        #expect(LoadFailure(error: failure).detail == failure.errorDescription)
     }
 }

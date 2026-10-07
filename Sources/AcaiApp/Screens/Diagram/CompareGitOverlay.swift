@@ -100,6 +100,7 @@ struct CompareGitPanel: View {
     @State private var changeRequests: [ChangeRequest] = []
     @State private var fullHistoryPhase: AsyncOperationPhase = .idle
     @State private var pickerPhase: AsyncOperationPhase = .idle
+    @State private var pickerFailureDetail: String?
     /// Retry replaces this so the reload is the view's own `.task`, cancelled when the panel closes.
     @State private var pickerReloadToken = UUID()
     @State private var isEditingCustomRef = false
@@ -335,18 +336,34 @@ struct CompareGitPanel: View {
     @ViewBuilder
     private var pickerStatusRow: some View {
         switch pickerPhase {
-        case .loading, .failed:
+        case .loading:
+            AsyncOperationStatusView(identifierPrefix: "delta.picker", phase: pickerPhase)
+        case .failed:
             VStack(alignment: .leading, spacing: .spacingXS) {
                 AsyncOperationStatusView(identifierPrefix: "delta.picker", phase: pickerPhase)
-                if case .failed = pickerPhase {
-                    Button(.app("View.CompareGitPanel.Retry")) { pickerReloadToken = UUID() }
-                        .buttonStyle(.borderless)
-                        .accessibilityIdentifier("delta.picker.retryButton")
+                if let pickerFailureDetail {
+                    pickerFailureDetails(pickerFailureDetail)
                 }
+                Button(.app("View.CompareGitPanel.Retry")) { pickerReloadToken = UUID() }
+                    .buttonStyle(.borderless)
+                    .accessibilityIdentifier("delta.picker.retryButton")
             }
         case .idle, .loaded:
             EmptyView()
         }
+    }
+
+    private func pickerFailureDetails(_ detail: String) -> some View {
+        DisclosureGroup {
+            Text(verbatim: detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Text(.app("View.CompareGitPanel.ErrorDetails")).font(.caption)
+        }
+        .accessibilityIdentifier("delta.picker.errorDetails")
     }
 
     /// A cancelled run (dismissal, or a Retry that superseded it) leaves the state to whoever replaced it.
@@ -361,7 +378,9 @@ struct CompareGitPanel: View {
             pickerPhase = .loaded
         } catch {
             guard !Task.isCancelled else { return }
-            pickerPhase = .failed(String(localized: LoadFailure(error: error).message))
+            let failure = LoadFailure(error: error)
+            pickerFailureDetail = failure.detail
+            pickerPhase = .failed(String(localized: failure.message))
         }
     }
 
