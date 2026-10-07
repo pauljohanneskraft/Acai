@@ -82,7 +82,8 @@ struct CompareClearButton: View {
 
     var body: some View {
         Button(.app("View.CompareOverlayButton.Clear")) {
-            model.updateComparisonGitRef(diagramID: diagram.id, ref: nil)
+            let diagramID = diagram.id
+            model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: nil) }
         }
         .disabled(diagram.comparisonGitRef == nil)
         .accessibilityIdentifier("delta.clearButton")
@@ -99,6 +100,10 @@ struct CompareGitPanel: View {
     @State private var availableRefs: [GitCheckout.Ref] = []
     @State private var changeRequests: [ChangeRequest] = []
     @State private var fullHistoryPhase: AsyncOperationPhase = .idle
+    @State private var pickerPhase: AsyncOperationPhase = .idle
+    @State private var pickerFailureDetail: String?
+    /// Retry replaces this so the reload is the view's own `.task`, cancelled when the panel closes.
+    @State private var pickerReloadToken = UUID()
     @State private var isEditingCustomRef = false
     @State private var customRefText = ""
 
@@ -116,23 +121,15 @@ struct CompareGitPanel: View {
     var body: some View {
         let state = state
         VStack(alignment: .leading, spacing: .zero) {
-            List(state.rows) { row in
-                Button {
-                    select(row)
-                } label: {
-                    rowLabel(row, isSelected: row == state.selectedRow)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(row.accessibilityTitle)
-                .accessibilityValue(row.kindLabel ?? Text(verbatim: ""))
-                .accessibilityAddTraits(row == state.selectedRow ? .isSelected : [])
-                .accessibilityIdentifier("delta.ref.\(row.testIdentifier)")
+            List {
+                ForEach(state.rows.filter { $0 != .custom }) { rowButton($0, state: state) }
+                pickerStatusRow
+                rowButton(.custom, state: state)
             }
             .listStyle(.plain)
-            .task {
-                availableRefs = await model.comparisonRefs(codebaseID: diagram.codebaseID)
-                await loadChangeRequests()
-            }
+            // The loaded rows are their own visible outcome, so the list itself carries the marker.
+            .accessibilityIdentifier(pickerPhase == .loaded ? "delta.picker.loaded" : "delta.picker")
+            .task(id: pickerReloadToken) { await loadPicker() }
             .frame(minHeight: 150, maxHeight: 260)
             // The nav-bar Clear button lives on a different view instance and can't reach
             // `isEditingCustomRef` directly, so sync it from the model when comparison turns off.
@@ -165,6 +162,19 @@ struct CompareGitPanel: View {
         .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")") {
             await model.ensureComparisonAnalysisLoaded(for: diagram)
         }
+    }
+
+    private func rowButton(_ row: ComparePanelState.Row, state: ComparePanelState) -> some View {
+        Button {
+            select(row)
+        } label: {
+            rowLabel(row, isSelected: row == state.selectedRow)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(row.accessibilityTitle)
+        .accessibilityValue(row.kindLabel ?? Text(verbatim: ""))
+        .accessibilityAddTraits(row == state.selectedRow ? .isSelected : [])
+        .accessibilityIdentifier("delta.ref.\(row.testIdentifier)")
     }
 
     private func rowLabel(_ row: ComparePanelState.Row, isSelected: Bool) -> some View {
@@ -207,17 +217,20 @@ struct CompareGitPanel: View {
     }
 
     private func select(_ row: ComparePanelState.Row) {
+        let diagramID = diagram.id
         switch row {
         case .head:
             isEditingCustomRef = false
-            model.updateComparisonGitRef(diagramID: diagram.id, ref: "HEAD")
+            model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: "HEAD") }
         case .ref(let ref):
             isEditingCustomRef = false
-            model.updateComparisonGitRef(diagramID: diagram.id, ref: ref.name)
+            model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: ref.name) }
         case .changeRequest(let pullRequest):
             isEditingCustomRef = false
-            model.selectComparisonPullRequest(
-                diagramID: diagram.id, base: pullRequest.baseRef, head: pullRequest.headRef)
+            model.changeComparisonAfterTouchRelease {
+                $0.selectComparisonPullRequest(
+                    diagramID: diagramID, base: pullRequest.baseRef, head: pullRequest.headRef)
+            }
         case .custom:
             customRefText = diagram.comparisonGitRef ?? "HEAD"
             isEditingCustomRef = true
@@ -324,16 +337,65 @@ struct CompareGitPanel: View {
         .accessibilityIdentifier("delta.changedFile.\(entry.filePath)")
     }
 
-    /// Offered when the codebase's remote is on a host whose provider lists change requests —
-    /// whether the app cloned it or it's a local folder tracking it. Best-effort: a failure (not
-    /// signed in, no network) just leaves those rows empty.
-    private func loadChangeRequests() async {
+    @ViewBuilder
+    private var pickerStatusRow: some View {
+        switch pickerPhase {
+        case .loading:
+            AsyncOperationStatusView(identifierPrefix: "delta.picker", phase: pickerPhase)
+        case .failed:
+            VStack(alignment: .leading, spacing: .spacingXS) {
+                AsyncOperationStatusView(identifierPrefix: "delta.picker", phase: pickerPhase)
+                if let pickerFailureDetail {
+                    pickerFailureDetails(pickerFailureDetail)
+                }
+                Button(.app("View.CompareGitPanel.Retry")) { pickerReloadToken = UUID() }
+                    .buttonStyle(.borderless)
+                    .accessibilityIdentifier("delta.picker.retryButton")
+            }
+        case .idle, .loaded:
+            EmptyView()
+        }
+    }
+
+    private func pickerFailureDetails(_ detail: String) -> some View {
+        DisclosureGroup {
+            Text(verbatim: detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Text(.app("View.CompareGitPanel.ErrorDetails")).font(.caption)
+        }
+        .accessibilityIdentifier("delta.picker.errorDetails")
+    }
+
+    /// A cancelled run (dismissal, or a Retry that superseded it) leaves the state to whoever replaced it.
+    private func loadPicker() async {
+        pickerPhase = .loading(.app("View.CompareGitPanel.LoadingRevisions"))
+        do {
+            let refs = try await model.comparisonRefs(codebaseID: diagram.codebaseID)
+            let requests = try await loadedChangeRequests()
+            try Task.checkCancellation()
+            availableRefs = refs
+            changeRequests = requests
+            pickerPhase = .loaded
+        } catch {
+            guard !Task.isCancelled else { return }
+            let failure = LoadFailure(error: error)
+            pickerFailureDetail = failure.detail
+            pickerPhase = .failed(String(localized: failure.message))
+        }
+    }
+
+    /// No GitHub remote or no stored credential means none to list; a failed request is thrown.
+    private func loadedChangeRequests() async throws -> [ChangeRequest] {
         guard let codebase = model.codebase(for: diagram.codebaseID),
               case .github(let owner, let repo) = codebase.repository?.host,
               let credential = GitHubTokenStore().load()?.credential
-        else { return }
-        changeRequests = (try? await GitHubHostingServiceResolver().resolve().pullRequests(
-            credential: credential, owner: owner, repo: repo)) ?? []
+        else { return [] }
+        return try await GitHubHostingServiceResolver().resolve().pullRequests(
+            credential: credential, owner: owner, repo: repo)
     }
 }
 
