@@ -25,32 +25,38 @@ struct GitHubAPIClient {
 
     private var baseURL: URL { URL(string: "https://api.github.com")! }
 
-    /// `rateLimited` and `unauthorized` are kept apart from `http` because the reader's next step
-    /// differs: wait for the window to reset, or sign in again.
     enum Failure: LocalizedError, Equatable {
         case http(Int, String)
         case decoding(String)
         case rateLimited(resetAt: Date?)
         case unauthorized
 
-        var errorDescription: String? {
+        var message: LocalizedStringResource {
             switch self {
             case .http(let status, let message):
-                String(localized: .app("Error.GitHubAPIClient.Http \(status) \(message)"))
+                .app("Error.GitHubAPIClient.Http \(status) \(message)")
             case .decoding(let message):
-                String(localized: .app("Error.GitHubAPIClient.Decoding \(message)"))
-            case .rateLimited(let resetAt):
-                rateLimitDescription(resetAt: resetAt)
+                .app("Error.GitHubAPIClient.Decoding \(message)")
+            case .rateLimited(nil):
+                .app("Error.GitHubAPIClient.RateLimited")
+            case .rateLimited(let resetAt?):
+                .app("Error.GitHubAPIClient.RateLimitedUntil \(resetAt.formatted(.relative(presentation: .named)))")
             case .unauthorized:
-                String(localized: .app("Error.GitHubAPIClient.Unauthorized"))
+                .app("Error.GitHubAPIClient.Unauthorized")
             }
         }
 
-        private func rateLimitDescription(resetAt: Date?) -> String {
-            guard let resetAt else { return String(localized: .app("Error.GitHubAPIClient.RateLimited")) }
-            let when = resetAt.formatted(.relative(presentation: .named))
-            return String(localized: .app("Error.GitHubAPIClient.RateLimitedUntil \(when)"))
+        /// Already names the reader's next step — wait for the reset, or sign in again.
+        var isActionable: Bool {
+            switch self {
+            case .rateLimited, .unauthorized:
+                true
+            case .http, .decoding:
+                false
+            }
         }
+
+        var errorDescription: String? { String(localized: message) }
     }
 
     struct User: Decodable {
@@ -160,23 +166,26 @@ struct GitHubAPIClient {
 }
 
 extension HTTPURLResponse {
-    /// GitHub reports a spent quota as 403 (primary limit) or 429 (secondary) carrying
-    /// `x-ratelimit-remaining: 0`. A 403 without that header is an ordinary permission failure, so
-    /// the header — not the status alone — is what tells the two apart.
+    /// A 403 is a rate limit only with a spent quota or a `retry-after`; otherwise it is a permission failure.
     var isGitHubRateLimited: Bool {
-        guard statusCode == 403 || statusCode == 429 else { return false }
-        return value(forHTTPHeaderField: "x-ratelimit-remaining") == "0"
+        switch statusCode {
+        case 429:
+            true
+        case 403:
+            value(forHTTPHeaderField: "x-ratelimit-remaining") == "0"
+                || value(forHTTPHeaderField: "retry-after") != nil
+        default:
+            false
+        }
     }
 
-    /// `x-ratelimit-reset` is epoch seconds; `retry-after`, sent for secondary limits, is seconds
-    /// from now. Neither present degrades to `nil`, which drops the reset time from the message
-    /// rather than inventing one.
+    /// `retry-after` is seconds from now and takes precedence; `x-ratelimit-reset` is epoch seconds.
     var gitHubRateLimitResetAt: Date? {
-        if let raw = value(forHTTPHeaderField: "x-ratelimit-reset"), let seconds = Double(raw) {
-            return Date(timeIntervalSince1970: seconds)
+        if let raw = value(forHTTPHeaderField: "retry-after"), let seconds = Double(raw) {
+            return Date(timeIntervalSinceNow: seconds)
         }
-        guard let raw = value(forHTTPHeaderField: "retry-after"), let seconds = Double(raw) else { return nil }
-        return Date(timeIntervalSinceNow: seconds)
+        guard let raw = value(forHTTPHeaderField: "x-ratelimit-reset"), let seconds = Double(raw) else { return nil }
+        return Date(timeIntervalSince1970: seconds)
     }
 
     var gitHubOAuthScopes: [String]? {
