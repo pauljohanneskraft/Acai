@@ -15,6 +15,7 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
 
     @Published private(set) var graph: CallGraph
     @Published private(set) var filter: AcaiQuality.Selector?
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
     @Published var positionOverrides: [String: CGPoint] = [:]
     @Published var selectedNodeIDs: Set<String> = []
@@ -44,18 +45,38 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
+    var isEmpty: Bool { graph.nodes.isEmpty }
+
     private func rebuild() {
+        let built = build(scope: scope, filter: filter)
+        graph = built.graph
+        diff = built.diff
+        emptyReason = resolvedEmptyReason()
+    }
+
+    private func build(
+        scope: CallGraphScope, filter: AcaiQuality.Selector?
+    ) -> (graph: CallGraph, diff: CallGraphDiff?) {
         let callGraphFilter = CallGraphFilter(artifact: artifact, filter: filter)
         let new = callGraphFilter.apply(to: CallGraphBuilder(scope: scope).build(from: artifact))
-        if let comparisonArtifact {
-            let old = callGraphFilter.apply(to: CallGraphBuilder(scope: scope).build(from: comparisonArtifact))
-            let diff = CallGraphDiff(old: old, new: new)
-            self.diff = diff
-            self.graph = diff.union
-        } else {
-            self.diff = nil
-            self.graph = new
-        }
+        guard let comparisonArtifact else { return (new, nil) }
+        let old = callGraphFilter.apply(to: CallGraphBuilder(scope: scope).build(from: comparisonArtifact))
+        let diff = CallGraphDiff(old: old, new: new)
+        return (diff.union, diff)
+    }
+
+    private func resolvedEmptyReason() -> DiagramEmptyReason {
+        guard graph.nodes.isEmpty else { return .codebase }
+        let isScoped = scope != .wholeCodebase
+        let isFiltered = filter != nil
+        if isScoped, hasNodes(scope: .wholeCodebase, filter: filter) { return .scope }
+        if isFiltered, hasNodes(scope: scope, filter: nil) { return .filter }
+        if isScoped, isFiltered, hasNodes(scope: .wholeCodebase, filter: nil) { return .scopeAndFilter }
+        return .codebase
+    }
+
+    private func hasNodes(scope: CallGraphScope, filter: AcaiQuality.Selector?) -> Bool {
+        !build(scope: scope, filter: filter).graph.nodes.isEmpty
     }
 
     var isDeltaMode: Bool { diff != nil }

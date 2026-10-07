@@ -1,0 +1,18 @@
+{
+  "types": [
+    {
+      "name": "Box",
+      "kind": "class",
+      "access": "+",
+      "members": [
+        {
+          "name": "size",
+          "role": "method",
+          "access": "+",
+          "type": "#primitive",
+          "documentation": "How big it is."
+        }
+      ]
+    }
+  ]
+}

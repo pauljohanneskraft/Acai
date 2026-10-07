@@ -2,7 +2,15 @@ import Foundation
 import AcaiCore
 
 protocol CodebaseAnalyzing: Sendable {
-    func enrichedArtifact(at url: URL, fileFilter: FileFilter?) async throws -> CodeArtifact
+    func enrichedArtifact(at url: URL, fileFilter: FileFilter?, reusing cache: AnalysisCache) async throws
+        -> CodeArtifact
+}
+
+extension CodebaseAnalyzing {
+    /// Uncached — for a tree no later analysis revisits, like an extracted git revision.
+    func enrichedArtifact(at url: URL, fileFilter: FileFilter? = nil) async throws -> CodeArtifact {
+        try await enrichedArtifact(at: url, fileFilter: fileFilter, reusing: .disabled)
+    }
 }
 
 protocol CodebaseAnalyzerProviding: Sendable {

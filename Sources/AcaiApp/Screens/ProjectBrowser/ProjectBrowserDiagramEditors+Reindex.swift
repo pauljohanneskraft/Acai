@@ -52,6 +52,7 @@ extension ProjectCodebaseEditor {
         let revision = codebase.pinnedRevision
         let analyzer = analyzers.analyzer(for: codebaseID)
         let store = store
+        let analysisStore = store.analysisStore
         // `Task.detached` doesn't inherit cancellation, so the parse is cancelled explicitly when
         // the wrapping `run` task is; `AnalysisService` and `GitDiffSnapshot` both observe it.
         // The artifact is saved inside the closure so the row's spinner outlasts the write.
@@ -65,8 +66,9 @@ extension ProjectCodebaseEditor {
                 let (artifact, fingerprint) = try await access.withResolvedURL(
                     onRefresh: { refreshed = $0 },
                     { url in
-                        try await CodebaseIndexing(directory: url, revision: revision)
-                            .run(analyzer: analyzer, fileFilter: fileFilter)
+                        try await CodebaseIndexing(
+                            directory: url, revision: revision, analysisStore: analysisStore
+                        ).run(analyzer: analyzer, fileFilter: fileFilter)
                     }
                 )
                 return (artifact, fingerprint, refreshed)
@@ -128,13 +130,18 @@ extension ProjectCodebaseEditor {
 struct CodebaseIndexing {
     let directory: URL
     let revision: String?
+    /// Holds a working-tree reindex's per-file parse cache; a pinned revision's temporary
+    /// extraction is never cached.
+    let analysisStore: AnalysisStore
 
     func run(
         analyzer: CodebaseAnalyzing, fileFilter: FileFilter?
     ) async throws -> (CodeArtifact, CodeStateFingerprint) {
         let freshness = CodebaseFreshnessChecker(directoryPath: directory.path, revision: revision)
         guard let revision else {
-            let artifact = try await analyzer.enrichedArtifact(at: directory, fileFilter: fileFilter)
+            let artifact = try await analyzer.enrichedArtifact(
+                at: directory, fileFilter: fileFilter,
+                reusing: AnalysisCache(store: analysisStore, for: directory))
             return (artifact, freshness.currentFingerprint())
         }
         let snapshot = GitDiffSnapshot(directory: directory, reference: revision)

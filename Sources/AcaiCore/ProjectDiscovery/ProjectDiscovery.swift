@@ -10,7 +10,8 @@ import Foundation
 ///
 /// A detected root doesn't stop the descent, since Gradle and CMake nest, but a root's own source
 /// directories are not probed again as if they were new roots, and a source directory an ancestor
-/// already claimed for a language is not claimed a second time.
+/// already claimed for a language is not claimed a second time — unless it is one of that ancestor's
+/// ``SourceSpec/nestedRootPaths``, which a root found there claims instead.
 ///
 /// Fixture and vendored-project directories (``nonRootDirectories``) are not walked for roots, so a
 /// `Package.swift` sitting in a UI-test fixture is not merged into the codebase's own Swift sources.
@@ -78,8 +79,8 @@ private struct DiscoveryWalk {
 
     var specs: [SourceSpec] = []
     var withheldLanguages: Set<CodeArtifact.SourceLanguage> = []
-    private var claimedDirs: [CodeArtifact.SourceLanguage: [String]] = [:]
-    private var claimedSubtrees: [String] = []
+    private var claimedDirs: [CodeArtifact.SourceLanguage: [ClaimedDirectory]] = [:]
+    private var claimedSubtrees: [ClaimedDirectory] = []
 
     init(discovery: ProjectDiscovery, requestedLanguages: [CodeArtifact.SourceLanguage]) {
         self.discovery = discovery
@@ -111,19 +112,21 @@ private struct DiscoveryWalk {
         var spec = spec
         spec.sourceDirs = spec.sourceDirs.filter { !isClaimed($0, for: spec.language) }
         guard !spec.sourceDirs.isEmpty else { return }
-        claimedDirs[spec.language, default: []].append(contentsOf: spec.sourceDirs.map(\.standardizedPath))
-        claimedSubtrees.append(contentsOf: spec.sourceDirs.lazy
-            .map(\.standardizedPath)
-            .filter { $0 != directory.standardizedPath })
+        let nestedRoots = spec.nestedRootPaths.map(\.standardizedPath)
+        let claimed = spec.sourceDirs.map {
+            ClaimedDirectory(path: $0.standardizedPath, nestedRootPaths: nestedRoots)
+        }
+        claimedDirs[spec.language, default: []].append(contentsOf: claimed)
+        claimedSubtrees.append(contentsOf: claimed.filter { $0.path != directory.standardizedPath })
         specs.append(spec)
     }
 
     private func isClaimed(_ directory: URL, for language: CodeArtifact.SourceLanguage) -> Bool {
-        (claimedDirs[language] ?? []).contains { directory.standardizedPath.isInside($0) }
+        (claimedDirs[language] ?? []).contains { $0.claims(directory.standardizedPath) }
     }
 
     private func isInsideClaimedSubtree(_ directory: URL) -> Bool {
-        claimedSubtrees.contains { directory.standardizedPath.isInside($0) }
+        claimedSubtrees.contains { $0.claims(directory.standardizedPath) }
     }
 
     /// Visible, non-symlinked subdirectories in a stable order, minus the ones that cannot hold a
@@ -147,6 +150,15 @@ private struct DiscoveryWalk {
                 return values?.isDirectory == true && values?.isSymbolicLink != true
             }
             .sorted { $0.path < $1.path }
+    }
+}
+
+private struct ClaimedDirectory {
+    let path: String
+    let nestedRootPaths: [String]
+
+    func claims(_ candidate: String) -> Bool {
+        candidate.isInside(path) && !nestedRootPaths.contains { candidate.isInside($0) }
     }
 }
 

@@ -1,4 +1,5 @@
 import AcaiGit
+import AcaiTestSupport
 import Foundation
 import Testing
 @testable import AcaiApp
@@ -108,6 +109,121 @@ struct GitWorktreeSyncTests {
         #expect(!FileManager.default.fileExists(atPath: worktree.path))
         #expect(!sync.hub.isCloned)
         #expect(!FileManager.default.fileExists(atPath: sync.hub.localPath.path))
+    }
+
+    @Test("A clone cancelled while it waits for the hub's lock never touches the disk")
+    func cancellingAQueuedAttachLeavesNothingOnDisk() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let locks = GitRepositoryLocks()
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "main", hubStoreDirectory: hubStoreDirectory, locks: locks)
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+
+        let holdingLock = AsyncGate()
+        let mayRelease = AsyncGate()
+        let holder = Task {
+            try await locks.run(for: sync.hub) {
+                await holdingLock.open()
+                await mayRelease.wait()
+            }
+        }
+        await holdingLock.wait()
+
+        let attach = Task { try await sync.attachWorktree(named: "codebase-1", at: worktree) }
+        attach.cancel()
+        await mayRelease.open()
+        try await holder.value
+
+        await #expect(throws: CancellationError.self) { try await attach.value }
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(!sync.hub.isCloned)
+        #expect(!FileManager.default.fileExists(atPath: sync.hub.localPath.path))
+    }
+
+    @Test("A cancelled attach leaves the shared hub and its other worktrees as it found them")
+    func cancellingAnAttachKeepsTheSharedHub() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let locks = GitRepositoryLocks()
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "main", hubStoreDirectory: hubStoreDirectory, locks: locks)
+        let existing = root.appendingPathComponent("existing", isDirectory: true)
+        try await sync.attachWorktree(named: "codebase-0", at: existing)
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+
+        let holdingLock = AsyncGate()
+        let mayRelease = AsyncGate()
+        let holder = Task {
+            try await locks.run(for: sync.hub) {
+                await holdingLock.open()
+                await mayRelease.wait()
+            }
+        }
+        await holdingLock.wait()
+
+        let attach = Task { try await sync.attachWorktree(named: "codebase-1", at: worktree) }
+        attach.cancel()
+        await mayRelease.open()
+        try await holder.value
+
+        await #expect(throws: CancellationError.self) { try await attach.value }
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(try GitWorktree(repositoryDirectory: sync.hub.localPath).list() == ["codebase-0"])
+        #expect(FileManager.default.fileExists(atPath: existing.appendingPathComponent("README.md").path))
+    }
+
+    @Test("A failed first attach leaves neither the hub it cloned nor a worktree behind")
+    func failedAttachDiscardsTheHubItCloned() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "does-not-exist", hubStoreDirectory: hubStoreDirectory,
+            locks: GitRepositoryLocks())
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+
+        await #expect(throws: (any Error).self) { try await sync.attachWorktree(named: "codebase-1", at: worktree) }
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(!FileManager.default.fileExists(atPath: sync.hub.localPath.path))
+    }
+
+    @Test("A failed attach against a shared hub leaves the hub and its other worktrees intact")
+    func failedAttachKeepsTheSharedHub() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeFixtureRepository(at: source)
+
+        let hubStoreDirectory = root.appendingPathComponent("hub-store", isDirectory: true)
+        let locks = GitRepositoryLocks()
+        let existing = root.appendingPathComponent("existing", isDirectory: true)
+        try await GitWorktreeSync(
+            transportURL: source, ref: "main", hubStoreDirectory: hubStoreDirectory, locks: locks
+        ).attachWorktree(named: "codebase-0", at: existing)
+        let sync = GitWorktreeSync(
+            transportURL: source, ref: "does-not-exist", hubStoreDirectory: hubStoreDirectory, locks: locks)
+        let worktree = root.appendingPathComponent("worktree", isDirectory: true)
+
+        await #expect(throws: (any Error).self) { try await sync.attachWorktree(named: "codebase-1", at: worktree) }
+        #expect(!FileManager.default.fileExists(atPath: worktree.path))
+        #expect(try GitWorktree(repositoryDirectory: sync.hub.localPath).list() == ["codebase-0"])
+        #expect(FileManager.default.fileExists(atPath: existing.appendingPathComponent("README.md").path))
     }
 
     // MARK: - Helpers
