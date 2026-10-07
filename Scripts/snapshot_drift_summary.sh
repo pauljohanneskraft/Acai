@@ -11,9 +11,14 @@ OUT="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 # Wherever the comparator's `outputDirectory` resolved to on this platform.
 ROOTS=("/private/tmp/AcaiUITestSnapshots" "App/AcaiUITests/__RecordedSnapshots__")
 
+# Each `.drift` line plus its root, where that state's `.captured.png` would be; one row per state.
 DRIFTS=$(for ROOT in "${ROOTS[@]}"; do
-    [ -d "$ROOT" ] && find "$ROOT" -name '*.drift' -exec cat {} \; -exec echo \;
-done | grep -v '^$' | sort -u)
+    [ -d "$ROOT" ] || continue
+    while IFS= read -r FILE; do
+        LINE=$(cat "$FILE")
+        [ -n "$LINE" ] && printf '%s %s\n' "$LINE" "$ROOT"
+    done < <(find "$ROOT" -name '*.drift')
+done | sort -u -k1,1)
 
 if [ -z "$DRIFTS" ]; then
     echo "No screenshot comparisons ran." >> "$OUT"
@@ -25,10 +30,20 @@ fi
     echo
     echo "| State | Drift | Threshold | |"
     echo "|---|---:|---:|---|"
-    echo "$DRIFTS" | while read -r NAME DRIFT THRESHOLD CELLS; do
-        VERDICT=$(awk -v d="$DRIFT" -v t="$THRESHOLD" 'BEGIN { print (d <= t) ? "ok" : "❌ over" }')
+    echo "$DRIFTS" | while read -r NAME DRIFT THRESHOLD CELLS ROOT; do
+        if awk -v d="$DRIFT" -v t="$THRESHOLD" 'BEGIN { exit !(d > t) }'; then
+            VERDICT="❌ over"
+        elif [ -f "$ROOT/$NAME.captured.png" ]; then
+            VERDICT="ok — capture differs, kept as \`$NAME.captured.png\`"
+        else
+            VERDICT="ok"
+        fi
         printf '| `%s` | %s%% (%s cells) | %s%% | %s |\n' "$NAME" "$DRIFT" "$CELLS" "$THRESHOLD" "$VERDICT"
     done
     echo
     echo "Refresh goldens with \`Scripts/snapshots_accept.sh\` once the change is intentional."
+    echo
+    echo "A state under its threshold uploads the committed golden's own bytes as \`<state>.png\`, so"
+    echo "that file matching the golden says nothing about the run. Where the capture differed it is"
+    echo "uploaded beside it as \`<state>.captured.png\` — that one is the run's real pixels."
 } >> "$OUT"

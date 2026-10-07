@@ -20,6 +20,11 @@ extension ProjectBrowserViewModel {
         let head: String
     }
 
+    /// Rebuilding the diagram in the tap's own turn freezes the compare sheet at its pressed scale.
+    func changeComparisonAfterTouchRelease(_ change: @escaping @MainActor (ProjectBrowserViewModel) -> Void) {
+        DispatchQueue.main.async { change(self) }
+    }
+
     /// Drops saved positions since the rendered element set changes, and exits pull-request mode.
     func updateComparisonGitRef(diagramID: UUID, ref: String?) {
         reportComparison(nil)
