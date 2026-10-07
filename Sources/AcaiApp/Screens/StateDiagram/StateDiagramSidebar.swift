@@ -124,8 +124,11 @@ struct StateDiagramSidebar: View {
                             if !artifact.globalVariables.isEmpty {
                                 Text(.app("View.StateDiagramSidebar.GlobalVariables")).tag(Scope?.some(.globals))
                             }
-                            ForEach(typeNamesWithStoredProperties.filtered(by: scopeQuery), id: \.self) { name in
-                                Text(verbatim: name).tag(Scope?.some(.type(name)))
+                            let names = artifact.typeDisplayNames
+                            let scopeIDs = typeIDsWithStoredProperties(names)
+                                .filtered(by: scopeQuery, label: names.name(forID:))
+                            ForEach(scopeIDs, id: \.self) { id in
+                                Text(verbatim: names.name(forID: id)).tag(Scope?.some(.type(id)))
                             }
                         }
                         .labelsHidden()
@@ -224,15 +227,16 @@ struct StateDiagramSidebar: View {
         return result
     }
 
-    private var typeNamesWithStoredProperties: [String] {
-        typesWithStoredProperties.map(\.qualifiedName).uniqued().sorted()
+    private func typeIDsWithStoredProperties(_ names: TypeDisplayNames) -> [String] {
+        typesWithStoredProperties.map(\.id).uniqued()
+            .sorted { (names.name(forID: $0), $0) < (names.name(forID: $1), $1) }
     }
 
     private var draftVariableNames: [String] {
         let members: [Member]
         switch draftScope {
-        case .type(let qualifiedName):
-            members = typesWithStoredProperties.first { $0.qualifiedName == qualifiedName }?
+        case .type(let id):
+            members = typesWithStoredProperties.first { $0.id == id }?
                 .members.filter { $0.kind == .property && !$0.isComputed } ?? []
         case .globals:
             members = artifact.globalVariables

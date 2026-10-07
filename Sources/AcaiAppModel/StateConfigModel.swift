@@ -44,10 +44,16 @@ public struct StateConfigModel: Sendable {
 
     // MARK: - Lookups
 
-    /// Qualified (not simple) names so nested types are reachable and same-named types don't
-    /// collide.
-    public var typeNamesWithStoredProperties: [String] {
-        typesWithStoredProperties.map(\.qualifiedName).uniqued().sorted()
+    /// Labels each id in ``typeIDsWithStoredProperties``.
+    public var typeDisplayNames: TypeDisplayNames {
+        artifact.typeDisplayNames
+    }
+
+    /// Ids, not names, so nested and same-named types each stay reachable; ordered by their label.
+    public var typeIDsWithStoredProperties: [String] {
+        let names = typeDisplayNames
+        return typesWithStoredProperties.map(\.id).uniqued()
+            .sorted { (names.name(forID: $0), $0) < (names.name(forID: $1), $1) }
     }
 
     /// Plausible state holders first — an enum, boolean, integer or string property is what a state
@@ -55,8 +61,8 @@ public struct StateConfigModel: Sendable {
     public var variableNames: [String] {
         let members: [Member]
         switch scope {
-        case .type(let qualifiedName):
-            members = typesWithStoredProperties.first { $0.qualifiedName == qualifiedName }?
+        case .type(let id):
+            members = typesWithStoredProperties.first { $0.id == id }?
                 .members.filter { $0.kind == .property && !$0.isComputed } ?? []
         case .globals:
             members = artifact.globalVariables
@@ -69,7 +75,7 @@ public struct StateConfigModel: Sendable {
     }
 
     /// Mirrors `StateAnalysis.findType`, which recurses into `nestedTypes` and matches on
-    /// `qualifiedName`.
+    /// `qualifiedName`, which equals `id`.
     private var typesWithStoredProperties: [TypeDeclaration] {
         var result: [TypeDeclaration] = []
         func walk(_ types: [TypeDeclaration]) {

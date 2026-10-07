@@ -53,6 +53,9 @@ struct SeededFixtureContractTests {
             $0.target == "SampleSwiftPackage.Helper" && $0.source == "SampleSwiftPackage.Derived"
         })
         #expect(Set(artifact.types.map(\.name)) == ["Base", "Derived", "Helper", "Worker"])
+        // No two seeded types share a name, so every screen labels them as plainly as before module scoping.
+        #expect(Set(artifact.flattened().map(artifact.typeDisplayNames.name(for:)))
+            == ["Base", "Derived", "Helper", "Worker"])
     }
 
     private func canned(_ filename: String) throws -> CodeArtifact {

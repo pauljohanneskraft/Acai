@@ -82,12 +82,13 @@ struct QueryView: View {
             artifact: artifact, selector: filter.selector, members: filter.members,
             languageResolver: artifact.standardLanguageResolver
         ).rows
+        let names = artifact.typeDisplayNames
         return Group {
             if rows.isEmpty {
                 emptyState(reason: filter.emptyStateReason(hasAnyType: !artifact.types.isEmpty))
             } else {
                 List(rows, id: \.id) { row in
-                    typeRow(row, codebase: codebase)
+                    typeRow(row, displayName: names.name(forID: row.id), codebase: codebase)
                         .listRowSeparator(.hidden)
                 }
                 .accessibilityIdentifier("query.list")
@@ -153,13 +154,13 @@ struct QueryView: View {
 
     // MARK: - Rows
 
-    private func typeRow(_ row: TypeQuery.TypeRow, codebase: Codebase) -> some View {
+    private func typeRow(_ row: TypeQuery.TypeRow, displayName: String, codebase: Codebase) -> some View {
         VStack(alignment: .leading, spacing: .spacingXS) {
             HStack(spacing: .spacingS) {
                 Text(verbatim: row.kind.rawValue)
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
-                Text(verbatim: row.qualifiedName)
+                Text(verbatim: displayName)
                     .fontWeight(.medium)
                 Spacer()
                 if !filter.members.hasActiveFacet {
