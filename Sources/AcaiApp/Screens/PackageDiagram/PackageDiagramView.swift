@@ -153,6 +153,19 @@ struct PackageDiagramView: View {
                 }
             }
         )
+        .overlay {
+            if viewModel.isEmpty {
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    ContentUnavailableView {
+                        Label(.app("View.PackageDiagramView.NoModules"), systemImage: "shippingbox")
+                    } description: {
+                        Text(.app("View.PackageDiagramView.NoModulesDetail"))
+                    }
+                } onUndo: {
+                    filterBinding.wrappedValue = nil
+                }
+            }
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {

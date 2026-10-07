@@ -8,11 +8,9 @@ final class FreeformCheckpointJourneyTests: UIJourneyTestCase {
 
     func testAddNodeSaveCheckpointMutateThenRestore() throws {
         let detail = openSeededProject(analysis: .parsed)
-        let diagramRow = detail.freeformDiagramRow(id: freeformDiagramID)
-        diagramRow.tapWhenReady("the seeded freeform diagram's row")
-        diagramRow.waitForDisappearanceOrFail("the project screen after opening the freeform diagram")
-
         let screen = FreeformDiagramScreen(app: app)
+        detail.freeformDiagramRow(id: freeformDiagramID)
+            .tap("the seeded freeform diagram's row", until: screen.openedIndicator)
 
         // Tapping a catalog entry enters placement mode (ghost + cancel affordance appear)
         // instead of inserting immediately; the next canvas tap commits it.

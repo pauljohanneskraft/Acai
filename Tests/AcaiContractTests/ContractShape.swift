@@ -25,15 +25,18 @@ struct ContractShape: Codable, Equatable {
         var members: [Signature] = []
         var enumCases: [String] = []
         var nested: [Declaration] = []
+        /// The prose the author wrote against the declaration, markers stripped.
+        var documentation: String?
 
         enum CodingKeys: String, CodingKey {
-            case name, kind, access, modifiers, generics, annotations, supertypes, members, enumCases, nested
+            case name, kind, access, modifiers, generics, annotations, supertypes, members, enumCases,
+                 nested, documentation
         }
 
         init(
             name: String, kind: String, access: String, modifiers: [String] = [], generics: [String] = [],
             annotations: [String] = [], supertypes: [String] = [], members: [Signature] = [],
-            enumCases: [String] = [], nested: [Declaration] = []
+            enumCases: [String] = [], nested: [Declaration] = [], documentation: String? = nil
         ) {
             self.name = name
             self.kind = kind
@@ -45,6 +48,7 @@ struct ContractShape: Codable, Equatable {
             self.members = members
             self.enumCases = enumCases
             self.nested = nested
+            self.documentation = documentation
         }
 
         init(from decoder: any Decoder) throws {
@@ -59,6 +63,7 @@ struct ContractShape: Codable, Equatable {
             members = try container.decodeIfPresent([Signature].self, forKey: .members) ?? []
             enumCases = try container.decodeIfPresent([String].self, forKey: .enumCases) ?? []
             nested = try container.decodeIfPresent([Declaration].self, forKey: .nested) ?? []
+            documentation = try container.decodeIfPresent(String.self, forKey: .documentation)
         }
 
         func encode(to encoder: any Encoder) throws {
@@ -73,6 +78,7 @@ struct ContractShape: Codable, Equatable {
             try container.encodeIfNotEmpty(members, forKey: .members)
             try container.encodeIfNotEmpty(enumCases, forKey: .enumCases)
             try container.encodeIfNotEmpty(nested, forKey: .nested)
+            try container.encodeIfPresent(documentation, forKey: .documentation)
         }
     }
 
@@ -92,15 +98,17 @@ struct ContractShape: Codable, Equatable {
         /// `Receiver.method` for a resolved call, `.method` for a self-dispatch.
         var calls: [String] = []
         var reads: [String] = []
+        /// The prose the author wrote against the declaration, markers stripped.
+        var documentation: String?
 
         enum CodingKeys: String, CodingKey {
-            case name, role, access, modifiers, annotations, type, parameters, calls, reads
+            case name, role, access, modifiers, annotations, type, parameters, calls, reads, documentation
         }
 
         init(
             name: String, role: String, access: String, modifiers: [String] = [],
             annotations: [String] = [], type: String? = nil, parameters: [String] = [],
-            calls: [String] = [], reads: [String] = []
+            calls: [String] = [], reads: [String] = [], documentation: String? = nil
         ) {
             self.name = name
             self.role = role
@@ -111,6 +119,7 @@ struct ContractShape: Codable, Equatable {
             self.parameters = parameters
             self.calls = calls
             self.reads = reads
+            self.documentation = documentation
         }
 
         init(from decoder: any Decoder) throws {
@@ -124,6 +133,7 @@ struct ContractShape: Codable, Equatable {
             parameters = try container.decodeIfPresent([String].self, forKey: .parameters) ?? []
             calls = try container.decodeIfPresent([String].self, forKey: .calls) ?? []
             reads = try container.decodeIfPresent([String].self, forKey: .reads) ?? []
+            documentation = try container.decodeIfPresent(String.self, forKey: .documentation)
         }
 
         func encode(to encoder: any Encoder) throws {
@@ -137,6 +147,7 @@ struct ContractShape: Codable, Equatable {
             try container.encodeIfNotEmpty(parameters, forKey: .parameters)
             try container.encodeIfNotEmpty(calls, forKey: .calls)
             try container.encodeIfNotEmpty(reads, forKey: .reads)
+            try container.encodeIfPresent(documentation, forKey: .documentation)
         }
     }
 

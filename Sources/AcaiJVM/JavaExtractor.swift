@@ -23,6 +23,10 @@ struct JavaExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
+    let documentation = DocumentationReader(
+        convention: DocumentationComment(blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"),
+        commentNodeTypes: ["block_comment", "line_comment", "comment"]
+    )
 
     var declarations = DeclarationBuilder()
 

@@ -67,13 +67,14 @@ extension SourceSpec {
     /// `root`, `detector` and `isFallback` keep the first root's: a merged spec has several roots, and
     /// the full set is recorded separately in `metadata.discoveredRoots`. `diagnostics` from every
     /// root survive the merge, concatenated, so a problem found discovering the second root is never
-    /// silently dropped.
+    /// silently dropped, and so do every root's `nestedRootPaths`.
     func merging(_ other: SourceSpec) -> SourceSpec {
         SourceSpec(
             language: language,
             sourceDirs: sourceDirs + other.sourceDirs,
             root: root,
             detector: detector,
+            nestedRootPaths: nestedRootPaths + other.nestedRootPaths,
             diagnostics: diagnostics + other.diagnostics,
             isFallback: isFallback
         )
