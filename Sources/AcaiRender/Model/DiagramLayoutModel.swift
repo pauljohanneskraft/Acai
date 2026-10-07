@@ -66,13 +66,15 @@ public struct DiagramLayoutModel: Sendable {
         // Distinct types can share an id when a language doesn't qualify by module (e.g. two
         // top-level Python classes of the same name in different files); node ids must be unique
         // or downstream `Dictionary(uniqueKeysWithValues:)` layout maps trap. First wins.
+        let modules = ModuleMap(artifact: artifact)
         self.nodes = visibleTypes.map { type in
             let config = languages.configuration(for: type)
             return GeneratedDiagramNode(
                 from: type, configuration: configuration,
                 annotationStereotypes: config.annotationStereotypes,
                 collectionTypeNames: config.collectionTypeNames,
-                varianceKeywords: config.varianceKeywords
+                varianceKeywords: config.varianceKeywords,
+                modules: modules
             )
         }.removingDuplicates { $0.id }
 
