@@ -58,8 +58,6 @@ struct ComparisonViewModelTests {
         #expect(try await model.comparisonRefs(codebaseID: codebaseID).isEmpty)
     }
 
-    /// The distinction the Compare panel's error state rests on: nothing to compare against reads
-    /// as an empty list, a read that failed does not.
     @Test func anUnreadableRepositoryFailsRatherThanOfferingNoRefs() async throws {
         let (model, codebaseID, _) = try makeModel(checkouts: FakeCheckoutInspector(refsAreUnreadable: true))
 

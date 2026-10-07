@@ -10,8 +10,7 @@ struct FakeCheckoutInspector: LocalCheckoutInspecting {
     var refs: [GitCheckout.Ref]?
     var currentRef: String?
     var mergeBase: String?
-    /// A repository whose refs cannot be read — distinct from a `nil` `refs`, which is a folder
-    /// outside any repository. Callers tell those two apart, so the fake has to as well.
+    /// A repository whose refs cannot be read, as opposed to `nil` `refs` (no repository at all).
     var refsAreUnreadable = false
 
     func refs(in directory: URL) throws -> [GitCheckout.Ref] {

@@ -100,8 +100,7 @@ struct CompareGitPanel: View {
     @State private var changeRequests: [ChangeRequest] = []
     @State private var fullHistoryPhase: AsyncOperationPhase = .idle
     @State private var pickerPhase: AsyncOperationPhase = .idle
-    /// Retrying replaces this, so the reload runs as the view's own `.task` — cancelled when the
-    /// popover or sheet goes away, which a `Task { }` started from the button would not be.
+    /// Retry replaces this so the reload is the view's own `.task`, cancelled when the panel closes.
     @State private var pickerReloadToken = UUID()
     @State private var isEditingCustomRef = false
     @State private var customRefText = ""
@@ -120,19 +119,14 @@ struct CompareGitPanel: View {
     var body: some View {
         let state = state
         VStack(alignment: .leading, spacing: .zero) {
-            List(state.rows) { row in
-                Button {
-                    select(row)
-                } label: {
-                    rowLabel(row, isSelected: row == state.selectedRow)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(row.accessibilityTitle)
-                .accessibilityValue(row.kindLabel ?? Text(verbatim: ""))
-                .accessibilityAddTraits(row == state.selectedRow ? .isSelected : [])
-                .accessibilityIdentifier("delta.ref.\(row.testIdentifier)")
+            List {
+                ForEach(state.rows.filter { $0 != .custom }) { rowButton($0, state: state) }
+                pickerStatusRow
+                rowButton(.custom, state: state)
             }
             .listStyle(.plain)
+            // The loaded rows are their own visible outcome, so the list itself carries the marker.
+            .accessibilityIdentifier(pickerPhase == .loaded ? "delta.picker.loaded" : "delta.picker")
             .task(id: pickerReloadToken) { await loadPicker() }
             .frame(minHeight: 150, maxHeight: 260)
             // The nav-bar Clear button lives on a different view instance and can't reach
@@ -142,7 +136,6 @@ struct CompareGitPanel: View {
             }
 
             VStack(alignment: .leading, spacing: .spacingM) {
-                pickerStatus
                 if isEditingCustomRef {
                     TextField(text: $customRefText) {
                         Text(.app("View.CompareGitPanel.RefPlaceholder"))
@@ -167,6 +160,19 @@ struct CompareGitPanel: View {
         .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")") {
             await model.ensureComparisonAnalysisLoaded(for: diagram)
         }
+    }
+
+    private func rowButton(_ row: ComparePanelState.Row, state: ComparePanelState) -> some View {
+        Button {
+            select(row)
+        } label: {
+            rowLabel(row, isSelected: row == state.selectedRow)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(row.accessibilityTitle)
+        .accessibilityValue(row.kindLabel ?? Text(verbatim: ""))
+        .accessibilityAddTraits(row == state.selectedRow ? .isSelected : [])
+        .accessibilityIdentifier("delta.ref.\(row.testIdentifier)")
     }
 
     private func rowLabel(_ row: ComparePanelState.Row, isSelected: Bool) -> some View {
@@ -326,35 +332,40 @@ struct CompareGitPanel: View {
         .accessibilityIdentifier("delta.changedFile.\(entry.filePath)")
     }
 
-    /// Laid out by the enclosing stack rather than wrapped in one of its own: an idle phase has to
-    /// take up no room at all, and a wrapper would still claim the stack's spacing.
     @ViewBuilder
-    private var pickerStatus: some View {
-        AsyncOperationStatusView(identifierPrefix: "delta.picker", phase: pickerPhase)
-        if case .failed = pickerPhase {
-            Button(.app("View.CompareGitPanel.Retry")) { pickerReloadToken = UUID() }
-                .buttonStyle(.borderless)
-                .accessibilityIdentifier("delta.picker.retryButton")
+    private var pickerStatusRow: some View {
+        switch pickerPhase {
+        case .loading, .failed:
+            VStack(alignment: .leading, spacing: .spacingXS) {
+                AsyncOperationStatusView(identifierPrefix: "delta.picker", phase: pickerPhase)
+                if case .failed = pickerPhase {
+                    Button(.app("View.CompareGitPanel.Retry")) { pickerReloadToken = UUID() }
+                        .buttonStyle(.borderless)
+                        .accessibilityIdentifier("delta.picker.retryButton")
+                }
+            }
+        case .idle, .loaded:
+            EmptyView()
         }
     }
 
-    /// A failed refs or change-request load otherwise rendered exactly like a repository with
-    /// nothing to compare against, with nothing to tap to try again.
+    /// A cancelled run (dismissal, or a Retry that superseded it) leaves the state to whoever replaced it.
     private func loadPicker() async {
         pickerPhase = .loading(.app("View.CompareGitPanel.LoadingRevisions"))
         do {
-            availableRefs = try await model.comparisonRefs(codebaseID: diagram.codebaseID)
-            changeRequests = try await loadedChangeRequests()
+            let refs = try await model.comparisonRefs(codebaseID: diagram.codebaseID)
+            let requests = try await loadedChangeRequests()
+            try Task.checkCancellation()
+            availableRefs = refs
+            changeRequests = requests
             pickerPhase = .loaded
         } catch {
+            guard !Task.isCancelled else { return }
             pickerPhase = .failed(String(localized: LoadFailure(error: error).message))
         }
     }
 
-    /// Offered when the codebase's remote is on a host whose provider lists change requests —
-    /// whether the app cloned it or it's a local folder tracking it. No remote and no stored
-    /// credential are both "none to list" rather than a failure; a rejected or dropped request is
-    /// thrown, since those are the ones the reader can act on.
+    /// No GitHub remote or no stored credential means none to list; a failed request is thrown.
     private func loadedChangeRequests() async throws -> [ChangeRequest] {
         guard let codebase = model.codebase(for: diagram.codebaseID),
               case .github(let owner, let repo) = codebase.repository?.host,

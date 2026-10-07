@@ -73,10 +73,7 @@ extension ProjectBrowserViewModel {
         comparisonReviewedFindings[diagramID] = reviewed
     }
 
-    /// The codebase's branches and tags for the Compare panel's list. A folder outside any
-    /// repository yields none, leaving the list with HEAD and Custom — that is genuinely nothing to
-    /// compare against. Every other failure is thrown, so the panel can say so instead of showing
-    /// the same empty list.
+    /// A folder outside any repository has no refs to offer; every other failure is thrown.
     func comparisonRefs(codebaseID: UUID) async throws -> [GitCheckout.Ref] {
         guard let codebase = codebase(for: codebaseID) else { return [] }
         let access = ScopedResourceAccess(path: codebase.directoryPath, bookmark: codebase.securityScopedBookmark)
