@@ -35,6 +35,7 @@ for ARTIFACT in $ARTIFACTS; do
         continue
     fi
     FOUND=1
+    # `*.captured.png` is a below-threshold state's real capture, kept for inspection only.
     while IFS= read -r CAPTURE; do
         RELATIVE="${CAPTURE#"$STAGING/$ARTIFACT/"}"
         TARGET="$GOLDENS/$PLATFORM/$RELATIVE"
@@ -45,7 +46,7 @@ for ARTIFACT in $ARTIFACTS; do
             cp "$CAPTURE" "$TARGET"
             echo "  updated    $PLATFORM/$RELATIVE"
         fi
-    done < <(find "$STAGING/$ARTIFACT" -name '*.png')
+    done < <(find "$STAGING/$ARTIFACT" -name '*.png' ! -name '*.captured.png')
 done
 
 [ "$FOUND" -eq 1 ] || { echo "No screenshot artifacts on run $RUN_ID." >&2; exit 1; }

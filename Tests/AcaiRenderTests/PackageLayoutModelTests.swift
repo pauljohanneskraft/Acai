@@ -73,6 +73,40 @@ struct PackageLayoutModelTests {
         #expect(second.frame(for: "Util") == frame)
     }
 
+    private func twoProjects() -> PackageDiagram {
+        func node(_ project: String, _ module: String) -> PackageDiagram.Node {
+            .init(id: "\(project)/\(module)", name: "\(project)/\(module)", project: project, typeCount: 1,
+                  afferentCoupling: 0, efferentCoupling: 0, instability: 0, abstractness: 0)
+        }
+        return PackageDiagram(
+            nodes: [node("alpha", "App"), node("alpha", "Core"), node("beta", "Core")],
+            edges: [.init(from: "alpha/App", to: "alpha/Core", weight: 1)]
+        )
+    }
+
+    @Test func projectBoxesStayInsideTheContent() {
+        let layout = PackageLayoutModel(diagram: twoProjects())
+        #expect(layout.projectBoxes.map(\.label) == ["alpha", "beta"])
+        for box in layout.projectBoxes {
+            #expect(box.rect.minX >= -0.001 && box.rect.minY >= -0.001, "\(box.id) starts off-canvas")
+            #expect(box.rect.maxX <= layout.contentSize.width + 0.001)
+            #expect(box.rect.maxY <= layout.contentSize.height + 0.001)
+        }
+    }
+
+    @Test(arguments: [false, true])
+    func aDraggedModuleLandsWhereItWasDropped(grouped: Bool) {
+        let diagram = grouped ? twoProjects() : diagram()
+        let initial = PackageLayoutModel(diagram: diagram)
+        let anchor = initial.nodes.map(\.rect).min { ($0.minX, $0.minY) < ($1.minX, $1.minY) }!
+        let moved = initial.nodes.first { $0.rect != anchor }!
+        let drop = CGPoint(x: moved.rect.midX + 10, y: moved.rect.midY + 10)
+
+        let relaid = PackageLayoutModel(diagram: diagram, positionOverrides: [moved.id: drop])
+        let frame = relaid.frame(for: moved.id)!
+        #expect(abs(frame.midX - drop.x) < 0.001 && abs(frame.midY - drop.y) < 0.001)
+    }
+
     @Test func cyclicDependenciesDoNotHang() {
         let cyclic = PackageDiagram(
             nodes: [

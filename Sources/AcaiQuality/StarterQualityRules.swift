@@ -12,9 +12,9 @@ public struct StarterQualityRules {
     private let graph: GraphView
     private let moduleCycles: [CycleFinder.Cycle]
 
-    public init(graph: GraphView, moduleResolver: ModuleResolver = .standard) {
+    public init(graph: GraphView) {
         self.graph = graph
-        self.moduleCycles = CycleFinder(graph: graph, moduleResolver: moduleResolver).cycles(scope: .modules)
+        self.moduleCycles = CycleFinder(graph: graph).cycles(scope: .modules)
     }
 
     public var yaml: String {
