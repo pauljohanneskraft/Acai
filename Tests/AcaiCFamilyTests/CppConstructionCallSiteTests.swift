@@ -54,7 +54,7 @@ struct CppConstructionCallSiteTests {
         };
         """)
         #expect(sites == [CallSite(receiver: .type("Thing"), methodName: "Thing",
-                                   location: sites.first?.location)])
+                                   location: sites.first?.location, isConstruction: true)])
     }
 
     /// `Thing t = Thing(1);` constructs once. The initializer is a `call_expression` the walker

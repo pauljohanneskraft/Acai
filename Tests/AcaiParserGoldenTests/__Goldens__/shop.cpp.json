@@ -1152,6 +1152,7 @@
           ],
           "callSites" : [
             {
+              "isConstruction" : true,
               "location" : {
                 "column" : 17,
                 "endLine" : 64,
@@ -1347,6 +1348,7 @@
               ],
               "callSites" : [
                 {
+                  "isConstruction" : true,
                   "location" : {
                     "column" : 39,
                     "endLine" : 49,

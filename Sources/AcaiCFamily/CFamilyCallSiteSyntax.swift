@@ -111,16 +111,16 @@ struct CFamilyCallSiteSyntax: CallSiteSyntax {
         }
     }
 
-    /// A construction's target, resolved the same way a static `Thing::method()` call would be. A
-    /// template or qualified spelling keeps only its last component, so `std::vector<Thing> v;`
-    /// asks about `vector` and is dropped for not naming a known type.
+    /// A construction's target. A template or qualified spelling keeps only its last component, so
+    /// `std::vector<Thing> v;` asks about `vector` and is dropped for not naming a type, while
+    /// `QString s;` is kept as speculative and leaves coverage untouched unless it is a project type.
     private func constructorCallSite(
         of typeNode: Node?, scope: CallSiteScope, location: SourceLocation
     ) -> CallSite? {
         guard let typeNode, let reference = typeReferences.baseTypeReference(typeNode) else { return nil }
         let name = typeReferences.lastComponent(of: reference.name)
         guard !name.isEmpty else { return nil }
-        return scope.resolvedCallSite(receiverName: name, methodName: name, location: location)
+        return scope.constructionCallSite(typeName: name, methodName: name, location: location)
     }
 
     private func qualifiedCallSite(
