@@ -15,6 +15,7 @@ struct PythonExtractor {
     private let callSites: CallSiteResolver
     private let assignments: AssignmentResolver
     private let fieldReads: FieldReadResolver
+    private let docstring: PythonDocstring
 
     private var declarations = DeclarationBuilder()
 
@@ -48,6 +49,7 @@ struct PythonExtractor {
         assignments = AssignmentResolver(syntax: assignmentSyntax)
         // Bare names and the `attribute` of a `self.<attr>` access are both `identifier` nodes.
         fieldReads = FieldReadResolver(context: context, identifierTypes: ["identifier"])
+        docstring = PythonDocstring(context: context)
 
         declarations.declaredTypeNames = declaredTypeNames
     }
@@ -162,6 +164,7 @@ extension PythonExtractor {
                 accessLevel: PythonName(name).accessLevel
             )
         )
+        decl.documentation = docstring.documentation(of: node)
 
         if let body = node.child(byFieldName: "body") {
             let outer = declarations.enter(namespace: qualified)
@@ -289,7 +292,7 @@ extension PythonExtractor {
         let name = node.child(byFieldName: "name").map { $0.text(in: context) } ?? "_anonymous"
         let body = node.child(byFieldName: "body")
 
-        return memberExtractor.callable(
+        var member = memberExtractor.callable(
             node,
             signature: .init(
                 decorators: decorators, parameters: params, returnType: returnType,
@@ -301,5 +304,7 @@ extension PythonExtractor {
                 fieldReads: fieldReads.reads(in: body, scope: scope)
             )
         )
+        member.documentation = docstring.documentation(of: node)
+        return member
     }
 }

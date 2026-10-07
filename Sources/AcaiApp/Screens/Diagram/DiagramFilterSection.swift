@@ -25,7 +25,10 @@ struct DiagramFilterSection: View {
 
     var body: some View {
         Section(.app("View.DiagramFilterSection.Filter")) {
-            SelectorEditor(title: .app("View.DiagramFilterSection.ShowOnly"), selector: nonOptionalFilter)
+            SelectorEditor(
+                title: .app("View.DiagramFilterSection.ShowOnly"), selector: nonOptionalFilter,
+                identifierPrefix: "diagram.filter.selector"
+            )
             presetControls
             AsyncOperationStatusView(identifierPrefix: "diagramFilter.presetSave", phase: presetSavePhase)
         }

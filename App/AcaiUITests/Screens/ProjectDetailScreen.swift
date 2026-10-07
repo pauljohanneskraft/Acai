@@ -93,12 +93,11 @@ final class ProjectDetailScreen {
     #if os(macOS)
     /// Waits for the diagram to show in the window it opened, which becomes the frontmost one.
     func openFreeformDiagramInNewWindow(id: String, file: StaticString = #filePath, line: UInt = #line) {
-        let row = freeformDiagramRow(id: id)
-        row.waitUntilReady("the freeform diagram's row", file: file, line: line)
-        row.rightClick()
         // Window-scoped: the File menu's own "Open in New Window" item also matches an unscoped query.
-        app.windows.firstMatch.descendants(matching: .any)["Open in New Window"]
-            .tapWhenReady("the row's Open in New Window action", file: file, line: line)
+        let openInNewWindow = app.windows.firstMatch.descendants(matching: .any)["Open in New Window"]
+        freeformDiagramRow(id: id)
+            .reveal("the freeform diagram's row", until: openInNewWindow, file: file, line: line) { $0.rightClick() }
+        openInNewWindow.tapWhenReady("the row's Open in New Window action", file: file, line: line)
         app.windows.firstMatch.descendants(matching: .any)["diagram.checkpointsButton"]
             .waitOrFail("the freeform diagram in its own window", file: file, line: line)
     }
