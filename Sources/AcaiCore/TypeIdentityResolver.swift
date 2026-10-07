@@ -71,8 +71,6 @@ public struct TypeIdentityResolver: Sendable {
         // silently resolve to whichever type was counted last.
         func countKeys(_ types: [TypeDeclaration]) {
             for type in types {
-                // The unqualified id is the name as source code spells it (`Outer.Inner`), before
-                // project analysis scoped it to a module or file.
                 let unqualified = type.unqualifiedID
                 for key in Set([type.id, type.qualifiedName, unqualified]) {
                     exactKeyCount[key, default: 0] += 1

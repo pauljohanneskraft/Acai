@@ -333,6 +333,7 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Base",
       "nestedTypes" : [
 
@@ -497,6 +498,7 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Derived",
       "nestedTypes" : [
 
@@ -654,6 +656,7 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Helper",
       "nestedTypes" : [
 
@@ -728,6 +731,7 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Worker",
       "nestedTypes" : [
 

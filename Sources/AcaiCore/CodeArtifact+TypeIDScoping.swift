@@ -1,28 +1,22 @@
-/// The scopes a type id can be qualified by, derived from the relative path of the file declaring
-/// the type: its build module (via ``ModuleResolver``) and, for a name its module still declares in
-/// more than one file, the file itself.
+/// The module and file scopes a type id can be qualified by.
 public struct TypeIDScope: Sendable {
     public let filePath: String
+    public let module: String
 
-    public init(filePath: String) {
+    public init(filePath: String, module: String) {
         self.filePath = filePath
-    }
-
-    public var module: String {
-        ModuleResolver.standard.productName(forFilePath: filePath)
+        self.module = module
     }
 
     public func moduleScoped(_ id: String) -> String {
         "\(module).\(id)"
     }
 
-    /// `Sources/AcaiCLI/Main.swift:ThemeOption` — the colon keeps the path from reading as part of a
-    /// dotted name, so ``unqualified(_:)`` can strip it exactly.
+    /// `Sources/AcaiCLI/Main.swift:ThemeOption`; the colon keeps the path out of the dotted name.
     public func fileScoped(_ id: String) -> String {
         "\(filePath):\(id)"
     }
 
-    /// `id` with the scope project analysis prefixed it with removed — the id as the parser wrote it.
     public func unqualified(_ id: String) -> String {
         if id.hasPrefix(filePath + ":") { return String(id.dropFirst(filePath.count + 1)) }
         if id.hasPrefix(module + ".") { return String(id.dropFirst(module.count + 1)) }
@@ -31,35 +25,42 @@ public struct TypeIDScope: Sendable {
 }
 
 extension TypeDeclaration {
+    /// An unscoped type falls back to the module ``ModuleResolver/standard`` derives from its path.
     public var idScope: TypeIDScope {
-        TypeIDScope(filePath: location?.filePath ?? "")
+        let filePath = location?.filePath ?? ""
+        return TypeIDScope(
+            filePath: filePath, module: module ?? ModuleResolver.standard.productName(forFilePath: filePath))
     }
 
     /// The id as its parser wrote it, before project analysis scoped it to a module or file.
     public var unqualifiedID: String {
-        idScope.unqualified(id)
+        module == nil ? id : idScope.unqualified(id)
     }
 
-    /// A top-level `private`/`fileprivate` declaration is visible only in its own file (Swift,
-    /// Kotlin, Dart's `_`-prefixed names), so the file — not the module — is what keeps it unique.
+    /// A top-level `private`/`fileprivate` type is unique per file, not per module.
     var isFileScoped: Bool {
         accessLevel == .private || accessLevel == .filePrivate
+    }
+
+    fileprivate func stampingModule(from modules: ModuleMap) -> TypeDeclaration {
+        var copy = self
+        copy.module = modules.module(forFilePath: location?.filePath ?? "")
+        copy.nestedTypes = nestedTypes.map { $0.stampingModule(from: modules) }
+        return copy
     }
 }
 
 extension CodeArtifact {
-    /// Prefixes every type id with the build module of the file declaring it, so same-named types in
-    /// two modules (`AcaiCLI.ThemeOption`, `AcaiMCP.ThemeOption`) stay distinct; a file-private type
-    /// gets its file instead. Either way an id depends only on its own file, so it stays stable when
-    /// other files change. Applied once per parsed file, before files are merged.
-    public func scopingTypeIDs() -> CodeArtifact {
-        renamingTypeIDs { type in
+    /// Prefixes each type id with its file's module in `modules` (`AcaiCLI.ThemeOption`), or its file if file-private.
+    public func scopingTypeIDs(modules: ModuleMap) -> CodeArtifact {
+        var stamped = self
+        stamped.types = types.map { $0.stampingModule(from: modules) }
+        return stamped.renamingTypeIDs { type in
             type.isFileScoped ? type.idScope.fileScoped(type.id) : type.idScope.moduleScoped(type.id)
         }
     }
 
-    /// Re-scopes each type whose id (or a nested type's id) is in `collidingIDs` from its module to
-    /// its file — for a name its module declares in more than one file.
+    /// Re-scopes each type declaring an id in `collidingIDs` from its module to its file.
     public func qualifyingTypeIDsByFile(collidingIDs: Set<String>) -> CodeArtifact {
         renamingTypeIDs { type in
             guard type.declaresAnyID(in: collidingIDs) else { return nil }
@@ -67,9 +68,7 @@ extension CodeArtifact {
         }
     }
 
-    /// `newID` is asked for each top-level declaration (and each type nested in an extension, which
-    /// keeps its own unscoped id); nested types follow their parent. Relationship endpoints naming a
-    /// renamed id follow too.
+    /// Asks `newID` per top-level type and per type nested in an extension; nested types and edges follow.
     private func renamingTypeIDs(_ newID: (TypeDeclaration) -> String?) -> CodeArtifact {
         var renames: [String: String] = [:]
         var copy = self

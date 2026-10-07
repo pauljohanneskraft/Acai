@@ -97,6 +97,8 @@ public struct AnalysisService: Sendable {
         }
 
         let reusable = cache.reusableFragments()
+        let discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
+        let modules = ModuleMap(roots: discoveredRoots.map(\.path), filePaths: [])
         var parsedSpecs: [ParsedSpec] = []
         var freshEntries: [String: ParsedFileCache.Entry] = [:]
         for spec in specs.mergedByLanguage {
@@ -104,14 +106,11 @@ public struct AnalysisService: Sendable {
                 spec, rootURL: rootURL, gitignore: gitignore, fileCache: reusable, includingFile: includingFile
             ) {
                 freshEntries.merge(parsed.fileCacheEntries) { _, new in new }
-                parsedSpecs.append(parsed)
+                parsedSpecs.append(parsed.scopingTypeIDs(modules: modules))
             }
         }
 
-        // Ids are already module- (or, file-private, file-) scoped, so a name only collides here when
-        // one module declares it non-privately in several files — normal where each file is its own
-        // namespace (Python, TS); those are scoped to their file. Every spec is parsed first so this
-        // sees collisions across languages too.
+        // Only a name one module declares non-privately in several files collides; every spec is in.
         let collisions = CollidingTypeIDs(files: parsedSpecs.flatMap(\.files))
         var combinedArtifact: CodeArtifact?
         for parsed in parsedSpecs {
@@ -126,7 +125,7 @@ public struct AnalysisService: Sendable {
         // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
         // per-language-group before specs are merged, so it can't see cross-spec call receivers.
         var result = combined.resolvingCallSiteReceivers()
-        result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
+        result.metadata.discoveredRoots = discoveredRoots
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
         cache.save(freshEntries)
         return result
@@ -161,15 +160,12 @@ public struct AnalysisService: Sendable {
         let parsed = try await batch.parse(collected.files, reusing: fileCache)
         return ParsedSpec(
             spec: spec, fallback: codeParser.configuration,
-            files: parsed.files.map { $0.scopingTypeIDs() },
+            files: parsed.files,
             diagnostics: spec.diagnostics + collected.diagnostics + parsed.diagnostics,
             fileCacheEntries: parsed.fileCacheEntries)
     }
 
-    /// Groups a spec's files by each file's *own* `metadata.sourceLanguage` rather than the spec's
-    /// nominal language — a parser may classify a file differently than the extension that discovered
-    /// it (e.g. the C parser owns `.h` but reports C++ for a C++ header) — and enriches each group.
-    /// First-seen order is kept so the merged artifact's top-level language is stable.
+    /// Enriches by each file's own `metadata.sourceLanguage`, which may differ from the spec's, in first-seen order.
     private func assemble(_ parsed: ParsedSpec) -> CodeArtifact? {
         var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
         var order: [CodeArtifact.SourceLanguage] = []
@@ -260,14 +256,19 @@ public struct AnalysisService: Sendable {
     }
 }
 
-/// One spec's files, parsed and module-scoped but not yet enriched — held until every spec is parsed
-/// so ids colliding across specs can be told apart first.
+/// One spec's files, parsed but not yet enriched, held until collisions across every spec are known.
 private struct ParsedSpec {
     let spec: SourceSpec
     let fallback: LanguageConfiguration
     var files: [CodeArtifact]
     let diagnostics: [ParseDiagnostic]
     let fileCacheEntries: [String: ParsedFileCache.Entry]
+
+    func scopingTypeIDs(modules: ModuleMap) -> ParsedSpec {
+        var copy = self
+        copy.files = files.map { $0.scopingTypeIDs(modules: modules) }
+        return copy
+    }
 
     func disambiguating(_ collisions: CollidingTypeIDs) -> ParsedSpec {
         var copy = self

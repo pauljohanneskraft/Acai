@@ -4,6 +4,7 @@ import Testing
 @Suite("Type id scoping")
 struct TypeIDScopingTests {
     private let path = "Sources/ModA/Outer.swift"
+    private let modules = ModuleMap(roots: [], filePaths: [])
 
     private func type(
         _ id: String, kind: TypeKind = .class, nested: [TypeDeclaration] = [], extensionOf: String? = nil
@@ -29,7 +30,7 @@ struct TypeIDScopingTests {
 
     @Test("Module scoping prefixes every declared id, nested ones and the edges naming them included")
     func moduleScoping() {
-        let scoped = file.scopingTypeIDs()
+        let scoped = file.scopingTypeIDs(modules: modules)
         #expect(scoped.flattened().map(\.id)
             == ["ModA.Outer", "ModA.Outer.Inner", "extension.Outer", "ModA.Outer.Extra"])
         #expect(scoped.flattened().allSatisfy { $0.id == $0.qualifiedName || $0.kind == .extension })
@@ -42,12 +43,13 @@ struct TypeIDScopingTests {
 
     @Test("A colliding id is re-scoped to its file, and only that type moves")
     func fileScoping() {
-        let scoped = file.scopingTypeIDs()
+        let scoped = file.scopingTypeIDs(modules: modules)
         let other = CodeArtifact(
             metadata: scoped.metadata,
             types: [TypeDeclaration(
-                id: "ModA.Outer", name: "Outer", qualifiedName: "ModA.Outer", kind: .struct, accessLevel: .internal,
-                location: SourceLocation(filePath: "Sources/ModA/Other.swift", line: 1, column: 1))])
+                id: "Outer", name: "Outer", qualifiedName: "Outer", kind: .struct, accessLevel: .internal,
+                location: SourceLocation(filePath: "Sources/ModA/Other.swift", line: 1, column: 1))]
+        ).scopingTypeIDs(modules: modules)
         let collisions = CollidingTypeIDs(files: [scoped, other])
         #expect(collisions.ids == ["ModA.Outer"])
 
@@ -65,15 +67,30 @@ struct TypeIDScopingTests {
     func filePrivateScoping(access: AccessLevel) {
         var artifact = file
         artifact.types[0].accessLevel = access
-        let scoped = artifact.scopingTypeIDs()
+        let scoped = artifact.scopingTypeIDs(modules: modules)
         #expect(scoped.flattened().map(\.id).prefix(2)
             == ["Sources/ModA/Outer.swift:Outer", "Sources/ModA/Outer.swift:Outer.Inner"])
         #expect(scoped.relationships[0].source == "Sources/ModA/Outer.swift:Outer")
     }
 
+    @Test("Under several project roots the id carries the module ModuleMap reports, and unqualifies back")
+    func projectQualifiedScoping() {
+        let roots = ModuleMap(roots: ["apps/api", "apps/web"], filePaths: [])
+        let file = CodeArtifact(
+            metadata: .init(sourceLanguage: CodeArtifact.SourceLanguage(rawValue: "fixture")),
+            types: [TypeDeclaration(
+                id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .internal,
+                location: SourceLocation(filePath: "apps/api/Sources/Core/Foo.swift", line: 1, column: 1))])
+        let scoped = file.scopingTypeIDs(modules: roots).types[0]
+        #expect(scoped.id == "api/Core.Foo")
+        #expect(scoped.module == roots.module(forFilePath: "apps/api/Sources/Core/Foo.swift"))
+        #expect(scoped.idScope.module == "api/Core")
+        #expect(scoped.unqualifiedID == "Foo")
+    }
+
     @Test("A reference spelled the way source code spells it resolves to the scoped id")
     func resolverMatchesUnqualifiedIDs() {
-        let resolver = TypeIdentityResolver(types: file.scopingTypeIDs().types)
+        let resolver = TypeIdentityResolver(types: file.scopingTypeIDs(modules: modules).types)
         #expect(resolver.resolve("Outer.Inner") == .resolved(TypeID("ModA.Outer.Inner")))
         #expect(resolver.resolve("Outer") == .resolved(TypeID("ModA.Outer")))
         #expect(resolver.resolve("ModA.Outer") == .resolved(TypeID("ModA.Outer")))

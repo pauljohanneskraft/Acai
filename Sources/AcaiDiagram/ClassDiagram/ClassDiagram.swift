@@ -119,8 +119,7 @@ public struct ClassDiagram: Sendable {
                 type.name = "\(parent).\(type.name)"
             }
 
-            // Include the parent scope so the ID stays unique across the codebase. A type nested in
-            // an extension from another module is scoped to that module, and is unique already.
+            // A type nested in another module's extension is already scoped to that module.
             if let parent, !type.id.hasPrefix(parent.id), !type.unqualifiedID.hasPrefix(parent.unqualifiedID) {
                 type.id = "\(parent.id).\(type.id.components(separatedBy: ".").last ?? type.id)"
                 type.qualifiedName = type.id
