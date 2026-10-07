@@ -18,7 +18,8 @@ struct ClassDeltaBadgeExportTests {
         let type = TypeDeclaration(
             id: "Widget", name: "Widget", qualifiedName: "Widget", kind: .class, accessLevel: .public,
             location: SourceLocation(filePath: "Sources/A/Widget.swift", line: 1, column: 1))
-        let node = GeneratedDiagramNode(from: type, varianceKeywords: [:])
+        let node = GeneratedDiagramNode(
+            from: type, varianceKeywords: [:], modules: ModuleMap(roots: [], filePaths: []))
         return LaidOutDiagram(
             nodes: [node], edges: [],
             positions: [node.id: CGPoint(x: 100, y: 100)],

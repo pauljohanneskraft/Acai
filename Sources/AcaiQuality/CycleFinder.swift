@@ -26,10 +26,10 @@ public struct CycleFinder: Sendable {
     private let graph: GraphView
     private let attribution: ModuleAttribution
 
-    public init(graph: GraphView, moduleResolver: ModuleResolver = .standard) {
+    public init(graph: GraphView) {
         self.graph = graph
         let idToModule = Dictionary(graph.nodes.map { ($0.id, $0.module) }, uniquingKeysWith: { first, _ in first })
-        self.attribution = ModuleAttribution(resolver: moduleResolver, idToModule: idToModule)
+        self.attribution = ModuleAttribution(modules: graph.modules, idToModule: idToModule)
     }
 
     public init(
@@ -39,8 +39,7 @@ public struct CycleFinder: Sendable {
     ) {
         self.init(
             graph: GraphView(
-                artifact: artifact, moduleResolver: moduleResolver, languageResolver: languageResolver),
-            moduleResolver: moduleResolver)
+                artifact: artifact, moduleResolver: moduleResolver, languageResolver: languageResolver))
     }
 
     public func cycles(scope: Scope) -> [Cycle] {

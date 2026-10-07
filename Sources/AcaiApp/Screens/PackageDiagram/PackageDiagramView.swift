@@ -146,6 +146,11 @@ struct PackageDiagramView: View {
             content: {
                 let layout = viewModel.layout
                 ZStack(alignment: .topLeading) {
+                    ForEach(layout.projectBoxes) { box in
+                        GroupingBoxView(label: box.label)
+                            .frame(width: box.rect.width, height: box.rect.height)
+                            .position(x: box.rect.midX, y: box.rect.midY)
+                    }
                     packageEdges(layout)
                     ForEach(layout.nodes) { node in
                         moduleNode(node)
@@ -199,7 +204,7 @@ struct PackageDiagramView: View {
 
     private func moduleNode(_ node: PackageLayoutModel.NodeFrame) -> some View {
         ContainerNodeView(
-            name: node.node.name,
+            name: node.node.moduleName,
             stereotype: "package",
             style: .package,
             isSelected: viewModel.selectedNodeIDs.contains(node.id),
