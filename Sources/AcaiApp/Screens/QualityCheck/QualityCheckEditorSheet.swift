@@ -85,7 +85,7 @@ struct QualityCheckEditorSheet: View {
                     QualityRulesEditor(rules: $rules)
                     Divider()
                     Text(.app("View.QualityCheckEditorSheet.Preview")).font(.headline)
-                    QualityCheckReportView(report: rules.report(for: artifact))
+                    QualityCheckReportView(report: rules.report(for: artifact), typeNames: artifact.typeDisplayNames)
                 }
                 .padding()
             }
@@ -120,7 +120,9 @@ struct QualityCheckEditorSheet: View {
         } else {
             switch externalRules {
             case .success(let rules):
-                ScrollView { QualityCheckReportView(report: rules.report(for: artifact)) }
+                ScrollView {
+                    QualityCheckReportView(report: rules.report(for: artifact), typeNames: artifact.typeDisplayNames)
+                }
             case .failure(let error):
                 QualityCheckPlaceholder(
                     text: .app("View.QualityCheckEditorSheet.CouldNotLoadRules \(error.localizedDescription)"),

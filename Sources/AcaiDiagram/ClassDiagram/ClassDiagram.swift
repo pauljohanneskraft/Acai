@@ -111,7 +111,7 @@ public struct ClassDiagram: Sendable {
     private static func flattenTypes(
         _ types: [TypeDeclaration],
         parentDisplayName: String? = nil,
-        parentId: String? = nil
+        parent: (id: String, unqualifiedID: String)? = nil
     ) -> [TypeDeclaration] {
         var result: [TypeDeclaration] = []
         for var type in types {
@@ -119,16 +119,16 @@ public struct ClassDiagram: Sendable {
                 type.name = "\(parent).\(type.name)"
             }
 
-            // Include the parent scope so the ID stays unique across the codebase.
-            if let pid = parentId, !type.id.hasPrefix(pid) {
-                type.id = "\(pid).\(type.id.components(separatedBy: ".").last ?? type.id)"
+            // A type nested in another module's extension is already scoped to that module.
+            if let parent, !type.id.hasPrefix(parent.id), !type.unqualifiedID.hasPrefix(parent.unqualifiedID) {
+                type.id = "\(parent.id).\(type.id.components(separatedBy: ".").last ?? type.id)"
                 type.qualifiedName = type.id
             }
 
             let nested = flattenTypes(
                 type.nestedTypes,
                 parentDisplayName: type.name,
-                parentId: type.id
+                parent: (type.id, type.unqualifiedID)
             )
             type.nestedTypes = []
 

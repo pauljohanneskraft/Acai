@@ -1,5 +1,5 @@
 classDiagram
-    class Genre["Genre"] {
+    class C_Genre["Genre"] {
         <<enumeration>>
         GENRE_POP
         GENRE_ROCK
@@ -8,43 +8,43 @@ classDiagram
         GENRE_ELECTRONIC
         GENRE_SPOKEN_WORD
     }
-    class Library["Library"] {
+    class C_Library["Library"] {
         <<struct>>
         +playlists Playlist
         +count int
     }
-    class MediaItem["MediaItem"] {
+    class C_MediaItem["MediaItem"] {
         <<struct>>
         +title char
         +duration double
         +genre Genre
     }
-    class Player["Player"] {
+    class C_Player["Player"] {
         <<struct>>
         +library Library
         +now_playing int
     }
-    class Playlist["Playlist"] {
+    class C_Playlist["Playlist"] {
         <<struct>>
         +name char
         +items MediaItem
         +count int
     }
-    class Podcast["Podcast"] {
+    class C_Podcast["Podcast"] {
         <<struct>>
         +base MediaItem
         +host char
         +episode_number int
     }
-    class Song["Song"] {
+    class C_Song["Song"] {
         <<struct>>
         +base MediaItem
         +artist char
         +album char
     }
-    Library *-- "1" Playlist : playlists
-    MediaItem *-- "1" Genre : genre
-    Player *-- "1" Library : library
-    Playlist *-- "1" MediaItem : items
-    Podcast *-- "1" MediaItem : base
-    Song *-- "1" MediaItem : base
+    C_Library *-- "1" C_Playlist : playlists
+    C_MediaItem *-- "1" C_Genre : genre
+    C_Player *-- "1" C_Library : library
+    C_Playlist *-- "1" C_MediaItem : items
+    C_Podcast *-- "1" C_MediaItem : base
+    C_Song *-- "1" C_MediaItem : base

@@ -64,6 +64,6 @@ struct PerFileLanguageRoutingTests {
         // Only the dialectB file should yield an edge to `Special`: dialectA treats it as a primitive.
         let specialEdges = artifact.relationships.filter { $0.target == "Special" }
         #expect(specialEdges.count == 1)
-        #expect(specialEdges.first?.source == "WidgetB")
+        #expect(specialEdges.first?.source == "root.WidgetB")
     }
 }

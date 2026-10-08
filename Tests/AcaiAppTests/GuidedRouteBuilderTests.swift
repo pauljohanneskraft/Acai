@@ -89,6 +89,18 @@ struct GuidedRouteBuilderTests {
         #expect(stop.content == .classDiagram(expected))
     }
 
+    /// The card shows the type's name; the focus keeps the module-scoped id that identifies it.
+    @Test func aModuleScopedTypeIsNamedPlainlyButFocusedByItsID() throws {
+        let scoped = artifact().scopingTypeIDs(modules: ModuleMap(roots: [], filePaths: []))
+        let stop = try #require(stops(for: scoped).first { $0.kind == .mostDependedUpon })
+        let hubID = try #require(scoped.types.first { $0.name == "Hub" }?.id)
+        #expect(hubID != "Hub")
+        #expect(stop.subject == "Hub")
+        var expected = ClassDiagramConfiguration()
+        expected.focus = FocusConfiguration(rootTypeName: hubID, direction: .dependents)
+        #expect(stop.content == .classDiagram(expected))
+    }
+
     @Test func stopsAreOrderedEntryThenDependedUponThenComplexity() {
         let kinds: [GuidedRouteStop.Kind] = stops(for: artifact()).map(\.kind)
         #expect(kinds == [.entryPoint, .mostDependedUpon, .mostComplex])

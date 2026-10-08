@@ -81,4 +81,63 @@ struct PerFileCacheEquivalenceTests {
         #expect(warm == cold)
         #expect(try canonicalJSON(warm) == canonicalJSON(cold))
     }
+
+    private func write(_ files: [String: String], in root: URL) throws {
+        for (path, contents) in files {
+            let url = root.appendingPathComponent(path)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try contents.write(to: url, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes(
+                [.modificationDate: Date().addingTimeInterval(-3600)], ofItemAtPath: url.path)
+        }
+    }
+
+    /// Two projects sharing a `Core` module, a type name in two modules, file-private namesakes and a
+    /// Python name two files of one package declare.
+    private let scopedTree = [
+        "app-ios/Package.swift": "// swift-tools-version:5.9",
+        "app-ios/Sources/Core/Foo.swift": "public class Foo {}\nprivate struct Helper {}",
+        "app-ios/Sources/Core/Bar.swift": "public class Bar { let foo: Foo }\nprivate struct Helper {}",
+        "app-ios/Sources/UI/Foo.swift": "public class Foo { let bar: Bar }",
+        "app-mac/Package.swift": "// swift-tools-version:5.9",
+        "app-mac/Sources/Core/Foo.swift": "public class Foo {}",
+        "py/pyproject.toml": "[project]\nname = \"py\"",
+        "py/pkg/a.py": "class Model:\n    pass\n",
+        "py/pkg/b.py": "class Model:\n    pass\n"
+    ]
+
+    @Test func aWarmAnalysisScopesIdsExactlyAsAColdOne() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AcaiPerFileCacheScoping-\(UUID().uuidString)", isDirectory: true)
+        let storeDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AcaiPerFileCacheScopingStore-\(UUID().uuidString)", isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: storeDirectory)
+        }
+        try write(scopedTree, in: root)
+        let cache = AnalysisCache(store: AnalysisStore(directory: storeDirectory), for: root)
+
+        let cold = try await countingService().0.analyzeProject(at: root, allowedLanguages: [], reusing: cache)
+        let ids = Set(cold.flattened().map(\.id))
+        #expect(ids.isSuperset(of: ["app-ios/Core.Foo", "app-ios/UI.Foo", "app-mac/Core.Foo"]))
+        #expect(ids.isSuperset(of: [
+            "app-ios/Sources/Core/Foo.swift:Helper", "app-ios/Sources/Core/Bar.swift:Helper",
+            "py/pkg/a.py:Model", "py/pkg/b.py:Model"
+        ]))
+
+        let (warmService, warmParsers) = countingService()
+        let warm = try await warmService.analyzeProject(at: root, allowedLanguages: [], reusing: cache)
+        #expect(warmParsers.map(\.parsedCount).reduce(0, +) == 0)
+        #expect(try canonicalJSON(warm) == canonicalJSON(cold))
+
+        try write(["app-mac/Sources/Core/Copy.swift": "public class Foo {}"], in: root)
+        let (partialService, partialParsers) = countingService()
+        let partial = try await partialService.analyzeProject(at: root, allowedLanguages: [], reusing: cache)
+        let uncached = try await countingService().0.analyzeProject(at: root, allowedLanguages: [])
+        #expect(partialParsers.map(\.parsedCount).reduce(0, +) == 1, "only the new file is parsed")
+        #expect(partial.flattened().contains { $0.id == "app-mac/Sources/Core/Foo.swift:Foo" })
+        #expect(try canonicalJSON(partial) == canonicalJSON(uncached))
+    }
 }

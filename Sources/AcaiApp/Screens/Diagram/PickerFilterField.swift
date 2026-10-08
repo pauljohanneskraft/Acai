@@ -37,4 +37,10 @@ extension Sequence<String> {
         guard !query.isEmpty else { return Array(self) }
         return filter { $0.localizedCaseInsensitiveContains(query) }
     }
+
+    /// Matches each option by the `label` it is shown with rather than by its own value.
+    func filtered(by query: String, label: (Element) -> String) -> [Element] {
+        guard !query.isEmpty else { return Array(self) }
+        return filter { label($0).localizedCaseInsensitiveContains(query) }
+    }
 }

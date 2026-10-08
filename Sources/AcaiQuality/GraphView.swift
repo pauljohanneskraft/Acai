@@ -11,6 +11,8 @@ public struct GraphView: Sendable {
     public struct Node: Sendable {
         public var id: String
         public var qualifiedName: String
+        /// The id as source code spells it, before analysis scoped it to a module or file.
+        public var unqualifiedID: String
         public var module: String
         public var kind: TypeKind
         public var access: AccessLevel
@@ -50,6 +52,7 @@ public struct GraphView: Sendable {
             Node(
                 id: type.id,
                 qualifiedName: type.qualifiedName,
+                unqualifiedID: type.unqualifiedID,
                 module: modules.module(forFilePath: type.location?.filePath ?? ""),
                 kind: type.kind,
                 access: type.accessLevel,

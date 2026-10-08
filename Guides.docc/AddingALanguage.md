@@ -63,7 +63,9 @@ struct RubyExtractor {
 Walk with `declarations`: nest a type with `let outer = declarations.enter(namespace: qualified)` /
 `defer { declarations.leave(outer) }`, qualify ids with `declarations.qualifiedName(_:)`, record
 supertype edges with `declarations.recordSupertypeRelationships(from:to:kind:)`, and finish with
-`declarations.resolveRelationshipNames()` then `declarations.artifact(language:filePath:)`.
+`declarations.resolveRelationshipNames()` then `declarations.artifact(language:filePath:)`. Qualify
+ids only with what the source spells (package, namespace, enclosing type); project analysis prefixes
+every id with its build module afterwards, so two modules' same-named types never collide.
 
 `CallSiteSyntax` and `AssignmentSyntax` are the two protocols your adapters conform to:
 

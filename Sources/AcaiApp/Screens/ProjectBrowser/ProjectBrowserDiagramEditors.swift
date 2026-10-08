@@ -22,7 +22,8 @@ struct GeneratedDiagramEditor {
     func add(to projectID: UUID, codebaseID: UUID, content: GeneratedDiagram.Content) -> UUID? {
         guard let projectIndex = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
         var diagram = GeneratedDiagram(name: "", content: content, codebaseID: codebaseID)
-        diagram.name = diagram.autoName(codebaseName: codebaseName(codebaseID))
+        diagram.name = diagram.autoName(
+            codebaseName: codebaseName(codebaseID), artifact: store.artifacts[codebaseID])
         store.projects[projectIndex].generatedDiagramIDs.append(diagram.id)
         store.saveGeneratedDiagram(diagram)
         persist()
@@ -190,7 +191,8 @@ struct GeneratedDiagramEditor {
             diagram.nodePositions = [:]
         }
         if !diagram.isNameUserDefined {
-            diagram.name = diagram.autoName(codebaseName: codebaseName(diagram.codebaseID))
+            diagram.name = diagram.autoName(
+                codebaseName: codebaseName(diagram.codebaseID), artifact: store.artifacts[diagram.codebaseID])
         }
         diagram.lastModified = Date()
         store.saveGeneratedDiagram(diagram)

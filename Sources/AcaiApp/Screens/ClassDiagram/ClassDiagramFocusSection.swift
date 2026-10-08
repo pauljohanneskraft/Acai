@@ -4,7 +4,8 @@ import AcaiRender
 
 struct FocusSection: View {
     @Binding var configuration: ClassDiagramConfiguration
-    let typeNames: [String]
+    let typeIDs: [String]
+    let typeNames: TypeDisplayNames
 
     var body: some View {
         Section(.app("View.FocusSection.Focus")) {
@@ -13,7 +14,7 @@ struct FocusSection: View {
 
             if configuration.isFocused {
                 Picker(.app("View.FocusSection.RootType"), selection: rootType) {
-                    ForEach(typeNames, id: \.self) { Text(verbatim: $0).tag($0) }
+                    ForEach(typeIDs, id: \.self) { Text(verbatim: typeNames.name(forID: $0)).tag($0) }
                 }
                 .accessibilityIdentifier("diagram.focus.rootTypePicker")
 
@@ -50,7 +51,7 @@ struct FocusSection: View {
     private var focusEnabled: Binding<Bool> {
         Binding(
             get: { configuration.isFocused },
-            set: { configuration.setFocused($0, rootTypeName: typeNames.first) }
+            set: { configuration.setFocused($0, rootTypeName: typeIDs.first) }
         )
     }
 

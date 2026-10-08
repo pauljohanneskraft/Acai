@@ -1,5 +1,5 @@
 classDiagram
-    class medialibrary_Genre["Genre"] {
+    class Java_medialibrary_Genre["Genre"] {
         <<enumeration>>
         POP
         ROCK
@@ -8,14 +8,14 @@ classDiagram
         ELECTRONIC
         SPOKEN_WORD
     }
-    class medialibrary_Library["Library"] {
+    class Java_medialibrary_Library["Library"] {
         -playlists List~Playlist~
         +Library(playlists List~Playlist~)
         +playlists() List~Playlist~
         +addPlaylist(playlist Playlist) void
         +playlist(named String) Playlist
     }
-    class medialibrary_MediaItem["MediaItem"] {
+    class Java_medialibrary_MediaItem["MediaItem"] {
         -title String
         -duration double
         -genre Genre
@@ -25,13 +25,13 @@ classDiagram
         +genre() Genre
         +play() void
     }
-    class medialibrary_Playable["Playable"] {
+    class Java_medialibrary_Playable["Playable"] {
         <<interface>>
         ~title() String
         ~duration() double
         ~play() void
     }
-    class medialibrary_Player["Player"] {
+    class Java_medialibrary_Player["Player"] {
         -library Library
         -nowPlaying Playable
         +Player(library Library)
@@ -39,7 +39,7 @@ classDiagram
         +play(item Playable) void
         +playFirstItem(playlistNamed String) void
     }
-    class medialibrary_Playlist["Playlist"] {
+    class Java_medialibrary_Playlist["Playlist"] {
         -name String
         -items List~MediaItem~
         +Playlist(name String, items List~MediaItem~)
@@ -48,24 +48,24 @@ classDiagram
         +totalDuration() double
         +add(item MediaItem) void
     }
-    class medialibrary_Podcast["Podcast"] {
+    class Java_medialibrary_Podcast["Podcast"] {
         -host String
         -episodeNumber int
         +Podcast(title String, duration double, host String, episodeNumber int)
         +play() void
     }
-    class medialibrary_Song["Song"] {
+    class Java_medialibrary_Song["Song"] {
         -artist String
         -album String
         +Song(title String, duration double, genre Genre, artist String, album String)
         +play() void
     }
-    medialibrary_Playable <|.. medialibrary_MediaItem
-    medialibrary_MediaItem <|-- medialibrary_Podcast
-    medialibrary_MediaItem <|-- medialibrary_Song
-    medialibrary_Library o-- "*" medialibrary_Playlist : playlists
-    medialibrary_MediaItem *-- "1" medialibrary_Genre : genre
-    medialibrary_Player *-- "1" medialibrary_Library : library
-    medialibrary_Player *-- "1" medialibrary_Playable : nowPlaying
-    medialibrary_Playlist o-- "*" medialibrary_MediaItem : items
-    medialibrary_Song ..> medialibrary_Genre
+    Java_medialibrary_Playable <|.. Java_medialibrary_MediaItem
+    Java_medialibrary_MediaItem <|-- Java_medialibrary_Podcast
+    Java_medialibrary_MediaItem <|-- Java_medialibrary_Song
+    Java_medialibrary_Library o-- "*" Java_medialibrary_Playlist : playlists
+    Java_medialibrary_MediaItem *-- "1" Java_medialibrary_Genre : genre
+    Java_medialibrary_Player *-- "1" Java_medialibrary_Library : library
+    Java_medialibrary_Player *-- "1" Java_medialibrary_Playable : nowPlaying
+    Java_medialibrary_Playlist o-- "*" Java_medialibrary_MediaItem : items
+    Java_medialibrary_Song ..> Java_medialibrary_Genre

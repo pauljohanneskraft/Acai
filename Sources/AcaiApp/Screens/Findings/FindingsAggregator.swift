@@ -55,7 +55,8 @@ struct FindingsAggregator {
     private func violationFindings(
         _ report: QualityReport, codebase: Codebase, artifact: CodeArtifact?
     ) -> [Finding] {
-        report.violations.map { violation in
+        let names = artifact?.typeDisplayNames
+        return report.violations.map { violation in
             Finding(
                 AtlasFinding(violation: violation),
                 codebase: codebase,
@@ -64,7 +65,8 @@ struct FindingsAggregator {
                     ? Finding.CycleReference(
                         scope: violation.detail["scope"] ?? CycleFinder.Scope.types.rawValue,
                         members: violation.subject.split(separator: ",").map(String.init))
-                    : nil)
+                    : nil,
+                title: names.map(violation.displaySubject))
         }
     }
 

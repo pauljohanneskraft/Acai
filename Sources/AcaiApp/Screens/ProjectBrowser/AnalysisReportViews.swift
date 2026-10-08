@@ -7,6 +7,7 @@ import AcaiLibrary
 /// Shared by the quality-check report views so every finding renders identically.
 struct ViolationRowView: View {
     let violation: Violation
+    var typeNames: TypeDisplayNames?
     var tint: Color = .red
     var codebase: Codebase?
     /// `nil` in the rules editor's live preview, which has no codebase context to resolve a
@@ -55,7 +56,7 @@ struct ViolationRowView: View {
                     .padding(.horizontal, .spacingXS).padding(.vertical, .spacingXXS)
                     .background(tint.opacity(0.12))
                     .clipShape(Capsule())
-                Text(verbatim: violation.subject).font(.callout.bold())
+                Text(verbatim: typeNames.map(violation.displaySubject) ?? violation.subject).font(.callout.bold())
             }
             Text(verbatim: violation.message).font(.callout)
             if let source = violation.source {

@@ -1,24 +1,24 @@
 classDiagram
-    class Library["Library"] {
+    class Python_Library["Library"] {
         +playlists list~Playlist~
         +__init__(playlists list~Playlist~?)
         +addPlaylist(playlist Playlist) None
         +playlist(named str) Playlist?
     }
-    class MediaItem["MediaItem"] {
+    class Python_MediaItem["MediaItem"] {
         +title str
         +duration float
         +genre Genre
         +__init__(title str, duration float, genre Genre)
         +play() None
     }
-    class Playable["Playable"] {
+    class Python_Playable["Playable"] {
         <<interface>>
         +title str
         +duration float
         +play() None
     }
-    class Genre["Genre"] {
+    class Python_Genre["Genre"] {
         <<enumeration>>
         POP
         ROCK
@@ -27,38 +27,38 @@ classDiagram
         ELECTRONIC
         SPOKEN_WORD
     }
-    class Player["Player"] {
+    class Python_Player["Player"] {
         +library Library
         +nowPlaying Playable?
         +__init__(library Library)
         +play(item Playable) None
         +playFirstItem(playlistNamed str) None
     }
-    class Playlist["Playlist"] {
+    class Python_Playlist["Playlist"] {
         +name str
         +items list~MediaItem~
         +totalDuration float
         +__init__(name str, items list~MediaItem~?)
         +add(item MediaItem) None
     }
-    class Podcast["Podcast"] {
+    class Python_Podcast["Podcast"] {
         +host str
         +episodeNumber int
         +__init__(title str, duration float, host str, episodeNumber int)
         +play() None
     }
-    class Song["Song"] {
+    class Python_Song["Song"] {
         +artist str
         +album str?
         +__init__(title str, duration float, genre Genre, artist str, album str?)
         +play() None
     }
-    Playable <|.. MediaItem
-    MediaItem <|-- Podcast
-    MediaItem <|-- Song
-    Library o-- "*" Playlist : playlists
-    MediaItem *-- "1" Genre : genre
-    Player *-- "1" Library : library
-    Player *-- "0..1" Playable : nowPlaying
-    Playlist o-- "*" MediaItem : items
-    Song ..> Genre
+    Python_Playable <|.. Python_MediaItem
+    Python_MediaItem <|-- Python_Podcast
+    Python_MediaItem <|-- Python_Song
+    Python_Library o-- "*" Python_Playlist : playlists
+    Python_MediaItem *-- "1" Python_Genre : genre
+    Python_Player *-- "1" Python_Library : library
+    Python_Player *-- "0..1" Python_Playable : nowPlaying
+    Python_Playlist o-- "*" Python_MediaItem : items
+    Python_Song ..> Python_Genre
