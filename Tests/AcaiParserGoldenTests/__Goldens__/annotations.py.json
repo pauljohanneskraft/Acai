@@ -794,44 +794,47 @@
           ],
           "callSites" : [
             {
+              "isConstruction" : true,
               "location" : {
                 "column" : 61,
                 "endLine" : 22,
                 "filePath" : "annotations.py",
                 "line" : 22
               },
-              "methodName" : "Engine",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Engine"
                 }
               }
             },
             {
+              "isConstruction" : true,
               "location" : {
                 "column" : 87,
                 "endLine" : 26,
                 "filePath" : "annotations.py",
                 "line" : 26
               },
-              "methodName" : "Engine",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Engine"
                 }
               }
             },
             {
+              "isConstruction" : true,
               "location" : {
                 "column" : 107,
                 "endLine" : 26,
                 "filePath" : "annotations.py",
                 "line" : 26
               },
-              "methodName" : "Wheel",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Wheel"
                 }
               }
             },
@@ -1288,16 +1291,17 @@
           ],
           "callSites" : [
             {
+              "isConstruction" : true,
               "location" : {
                 "column" : 31,
                 "endLine" : 46,
                 "filePath" : "annotations.py",
                 "line" : 46
               },
-              "methodName" : "Wheel",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Wheel"
                 }
               }
             }

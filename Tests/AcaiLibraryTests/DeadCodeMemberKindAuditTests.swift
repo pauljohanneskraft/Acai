@@ -9,16 +9,12 @@ import AcaiDiagram
 /// the parser behaviour it rests on — so an opt-in has to be a deliberate change to both.
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
-
     static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
         [.java, .kotlin, .dart, .typeScript, .javaScript]
 
-    /// Swift scans `.initializer` and `.subscript`; Java, Kotlin, Dart, TypeScript and JavaScript scan
-    /// `.initializer` — each has its own dedicated pair of tests below pinning the parser behaviour
-    /// that justifies it. Every other built-in language still scans methods only.
     @Test(arguments: AnalysisService.standardParsers
         .map(\.language)
-        .filter { $0 != .swift && !initializerScanningLanguages.contains($0) })
+        .filter { $0 != .swift && !Self.initializerScanningLanguages.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
@@ -29,7 +25,7 @@ struct DeadCodeMemberKindAuditTests {
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer, .subscript])
     }
 
-    @Test(arguments: initializerScanningLanguages)
+    @Test(arguments: Self.initializerScanningLanguages)
     func anInitializerScanningLanguageClaimsBothKinds(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer])
@@ -201,9 +197,11 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!kinds.values.contains(.subscript))
     }
 
-    /// Why Python declines `.initializer`: a construction is recorded, but as a free call named after
-    /// the class, which no `Thing.__init__` edge can come from.
-    @Test func pythonRecordsAConstructionAsAFreeCallNamedAfterTheClass() throws {
+    /// Why Python now accepts `.initializer`: a construction reaches the shared
+    /// `CallSiteScope.bareCall`, which resolves it to the initializer's fixed `__init__` member
+    /// instead of recording a free call named after the class, which no `Thing.__init__` edge could
+    /// have come from.
+    @Test func pythonRecordsAConstructorCall() throws {
         let sites = try callSites("""
         class Thing:
             def __init__(self):
@@ -213,8 +211,8 @@ struct DeadCodeMemberKindAuditTests {
                 made = Thing()
         """, in: "use", of: PythonCodeParser(), fileName: "thing.py")
 
-        #expect(sites.map(\.receiver) == [.free])
-        #expect(sites.map(\.methodName) == ["Thing"])
+        #expect(sites.map(\.receiver) == [.type("Thing")])
+        #expect(sites.map(\.methodName) == ["__init__"])
     }
 
     @Test func pythonExtractsGetItemAsAMethod() throws {
@@ -274,4 +272,116 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!members.contains { $0.kind == .initializer || $0.kind == .subscript })
         #expect(artifact.freestandingFunctions.filter { $0.name == "grid_resize" }.map(\.kind) == [.method])
     }
+
+    /// The end-to-end consequence for Java: a called constructor is not reported, while an uncalled
+    /// one now is. Java's package-private default keeps both out of the public-API exemption.
+    @Test func aCalledJavaConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = JavaCodeParser().parse(source: """
+        class Called {
+            Called() {}
+        }
+        class Uncalled {
+            Uncalled() {}
+        }
+        class Worker {
+            void run() {
+                new Called();
+            }
+        }
+        """, fileName: "Worker.java")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("Called.Called"))
+    }
+
+    /// The end-to-end consequence for Kotlin: a called constructor is not reported, while an
+    /// uncalled one now is. Marked `private` since Kotlin's own default is `public`, which would
+    /// otherwise exempt both as public API regardless of calls.
+    @Test func aCalledKotlinConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = KotlinCodeParser().parse(source: """
+        private class Called(val x: Int)
+        private class Uncalled(val y: Int)
+        class Worker {
+            fun run() {
+                Called(1)
+            }
+        }
+        """, fileName: "Worker.kt")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.init"))
+        #expect(!report.candidates.map(\.id).contains("Called.init"))
+    }
+
+    /// The end-to-end consequence for Dart's default constructors: a called one is not reported,
+    /// while an uncalled one now is. The class names are `_`-prefixed since Dart's own default is
+    /// public, which would otherwise exempt both as public API regardless of calls.
+    @Test func aCalledDartDefaultConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = DartCodeParser().parse(source: """
+        class _Called {
+          _Called();
+        }
+        class _Uncalled {
+          _Uncalled();
+        }
+        class Worker {
+          void run() {
+            _Called();
+          }
+        }
+        """, fileName: "worker.dart")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("_Called._Called"))
+    }
+
+    /// The end-to-end consequence for Python, which differs from the three languages above: the
+    /// construction resolves to a real `Thing.use -> Thing.__init__` edge, but an *uncalled*
+    /// `__init__` is still not reported. `__init__` is a dunder, and `PythonName` maps dunders to
+    /// `.public`, which `DeadCodeScan` exempts as API reachable from outside the analysed sources —
+    /// so for Python the opt-in widens the report's `scannedKinds` and feeds the call graph without
+    /// ever producing an initializer candidate. Pinned so the divergence is deliberate.
+    @Test func aPythonConstructionResolvesToAnInitEdgeWhileAnUncalledInitIsStillExempt() {
+        let artifact = PythonCodeParser().parse(source: """
+        class Called:
+            def __init__(self): pass
+
+        class Uncalled:
+            def __init__(self): pass
+
+        class Worker:
+            def run(self): Called()
+        """, fileName: "worker.py")
+
+        let graph = CallGraphBuilder().build(from: artifact)
+        #expect(graph.edges.contains { $0.from == "Worker.run" && $0.to == "Called.__init__" })
+
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.scannedKinds.contains(.initializer))
+        #expect(!report.candidates.map(\.id).contains("Uncalled.__init__"))
+    }
+
+    /// The end-to-end consequence for Dart's named constructors: a called one is not reported, while
+    /// an uncalled one now is.
+    @Test func aCalledDartNamedConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = DartCodeParser().parse(source: """
+        class Widget {
+          Widget._calledNamed();
+          Widget._uncalledNamed();
+        }
+        class Worker {
+          void run() {
+            Widget._calledNamed();
+          }
+        }
+        """, fileName: "worker.dart")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed"))
+        #expect(!report.candidates.map(\.id).contains("Widget._calledNamed"))
+    }
+
 }

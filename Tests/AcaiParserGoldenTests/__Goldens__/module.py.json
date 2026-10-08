@@ -10,16 +10,17 @@
       ],
       "callSites" : [
         {
+          "isConstruction" : true,
           "location" : {
             "column" : 23,
             "endLine" : 24,
             "filePath" : "module.py",
             "line" : 24
           },
-          "methodName" : "Settings",
+          "methodName" : "__init__",
           "receiver" : {
-            "free" : {
-
+            "type" : {
+              "_0" : "Settings"
             }
           }
         }
