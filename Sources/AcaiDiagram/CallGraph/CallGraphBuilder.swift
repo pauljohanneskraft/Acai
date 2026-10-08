@@ -104,9 +104,12 @@ private struct CallGraphAccumulator {
     ) {
         for site in callSites {
             guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else {
-                guard !site.isSpeculative else { continue }
-                total += 1
-                if constructsTypeWithImplicitInitializer(site) { resolved += 1 }
+                if constructsTypeWithImplicitInitializer(site) {
+                    total += 1
+                    resolved += 1
+                } else if !site.isSpeculative {
+                    total += 1
+                }
                 continue
             }
             total += 1
