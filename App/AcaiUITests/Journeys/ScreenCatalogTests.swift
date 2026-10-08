@@ -38,7 +38,7 @@ final class ScreenCatalogTests: UIJourneyTestCase {
         findings.authorshipOperation.waitUntilLoaded("reading the findings' authorship")
         validateScreenshot("Findings", state: "populated")
 
-        browser.openLink("acai://diagram/\(freeformDiagramID)")
+        browser.openLink("acai://diagram/\(freeformDiagramID)", relaunching: true)
         let freeform = FreeformDiagramScreen(app: app)
         freeform.openedIndicator.waitOrFail("the seeded freeform diagram")
         validateScreenshot("FreeformDiagram", state: "emptyCanvas")

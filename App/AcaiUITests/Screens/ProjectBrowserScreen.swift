@@ -82,8 +82,11 @@ final class ProjectBrowserScreen {
     // MARK: - Links
 
     /// Opens an `acai://` address the way another app would. The app must already be showing a screen:
-    /// the caller waits for one first.
-    func openLink(_ address: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// the caller waits for one first. On iOS, `relaunching` delivers it to a fresh launch instead of
+    /// the running app, whose layout the system's delivery shifts down by a status bar's height.
+    func openLink(
+        _ address: String, relaunching: Bool = false, file: StaticString = #filePath, line: UInt = #line
+    ) {
         guard let url = URL(string: address) else {
             XCTFail("Not a URL: \(address)", file: file, line: line)
             return
@@ -110,7 +113,11 @@ final class ProjectBrowserScreen {
         }
         app.activate()
         #else
-        app.open(url)
+        if relaunching {
+            app.open(url)
+        } else {
+            XCUIDevice.shared.system.open(url)
+        }
         #endif
     }
 
