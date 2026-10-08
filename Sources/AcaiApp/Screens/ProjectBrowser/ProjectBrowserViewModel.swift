@@ -393,4 +393,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         guard let project = store.projects.first(where: { $0.id == projectID }) else { return [] }
         return project.freeformDiagramIDs.compactMap { store.freeformDiagrams[$0] }
     }
+
+    /// A rebuild in the tap's own turn freezes a glass container (sheet, sidebar) at its pressed scale.
+    func afterTouchRelease(_ change: @escaping @MainActor (ProjectBrowserViewModel) -> Void) {
+        DispatchQueue.main.async { change(self) }
+    }
 }
