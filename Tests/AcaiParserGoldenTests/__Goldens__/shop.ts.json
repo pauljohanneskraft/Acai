@@ -711,7 +711,21 @@
 
           ],
           "callSites" : [
-
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 57,
+                "endLine" : 34,
+                "filePath" : "shop.ts",
+                "line" : 34
+              },
+              "methodName" : "constructor",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -1094,6 +1108,21 @@
 
           ],
           "callSites" : [
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 45,
+                "endLine" : 49,
+                "filePath" : "shop.ts",
+                "line" : 49
+              },
+              "methodName" : "constructor",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            },
             {
               "location" : {
                 "column" : 17,
