@@ -9,15 +9,12 @@ import AcaiDiagram
 /// the parser behaviour it rests on — so an opt-in has to be a deliberate change to both.
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
+    static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
+        [.java, .kotlin, .dart, .typeScript, .javaScript]
 
-    static let initializerScanning: Set<CodeArtifact.SourceLanguage> = [.java, .kotlin, .dart, .python]
-
-    /// Swift scans `.initializer` and `.subscript`; Java, Kotlin, Dart and Python scan `.initializer` —
-    /// each has its own dedicated pair of tests below pinning the parser behaviour that justifies it.
-    /// Every other built-in language still scans methods only.
     @Test(arguments: AnalysisService.standardParsers
         .map(\.language)
-        .filter { $0 != .swift && !Self.initializerScanning.contains($0) })
+        .filter { $0 != .swift && !Self.initializerScanningLanguages.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
@@ -28,8 +25,8 @@ struct DeadCodeMemberKindAuditTests {
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer, .subscript])
     }
 
-    @Test(arguments: Self.initializerScanning.sorted { $0.rawValue < $1.rawValue })
-    func javaKotlinDartAndPythonAlsoScanInitializers(language: CodeArtifact.SourceLanguage) throws {
+    @Test(arguments: Self.initializerScanningLanguages)
+    func anInitializerScanningLanguageClaimsBothKinds(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer])
     }
@@ -133,19 +130,40 @@ struct DeadCodeMemberKindAuditTests {
         #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "Thing" })
     }
 
+    /// Why TypeScript and JavaScript now accept `.initializer`: `new Thing()` resolves the same way a
+    /// static `Thing.method()` call would, targeting `constructor` — the member name both languages
+    /// give every constructor. Neither has a subscript operator, so `.subscript` stays undeclarable.
     @Test(arguments: [true, false])
-    func jsRecordsNoConstructorCall(isTypeScript: Bool) throws {
+    func jsRecordsAConstructorCall(isTypeScript: Bool) throws {
         let sites = try callSites("""
         class Thing {
             constructor(x) {}
             use() {
                 const made = new Thing(1);
+                const empty = new Thing();
             }
         }
         """, in: "use", of: JSCodeParser(isTypeScript: isTypeScript),
            fileName: isTypeScript ? "Thing.ts" : "Thing.js")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 2)
+        #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "constructor" })
+    }
+
+    /// There is no `.subscript` member for either to declare: `grid[i]` reaches no declaration, and a
+    /// TypeScript index signature — the nearest thing to one — isn't modeled as a member.
+    @Test func typeScriptModelsNoSubscriptMember() throws {
+        let kinds = try memberKinds("""
+        interface Indexed {
+            [key: string]: number;
+            at(i: number): number;
+        }
+        class Grid {
+            at(i) { return i; }
+        }
+        """, of: JSCodeParser(), fileName: "Grid.ts")
+        #expect(kinds["at"] == .method)
+        #expect(!kinds.values.contains(.subscript))
     }
 
     /// Why Dart now accepts `.initializer`: a bare default-constructor call `Thing()` now resolves
@@ -365,4 +383,5 @@ struct DeadCodeMemberKindAuditTests {
         #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed"))
         #expect(!report.candidates.map(\.id).contains("Widget._calledNamed"))
     }
+
 }
