@@ -268,6 +268,7 @@ Sources/
   AcaiCLI/          the `acai` executable
   AcaiMCP/          the `acai-mcp` executable
   AcaiApp/          the SwiftUI app, shared by macOS and iOS    (Apple only)
+  AcaiWidget/       the codebase-state widget                    (Apple only)
   AcaiGit/          libgit2 wrapper — history, churn, checkouts  (Apple only)
 App/                XcodeGen project, entry points, UI tests + golden screenshots
 Examples/           one sample per diagram type, per language, with checked-in exports
@@ -303,6 +304,7 @@ Every public module has full API docs. Follow a link for the complete surface:
 | **AcaiCLI** | the `acai` command-line tool | [reference →](https://pauljohanneskraft.github.io/Acai/documentation/acaicli/) |
 | **AcaiMCP** | the `acai-mcp` MCP server | [reference →](https://pauljohanneskraft.github.io/Acai/documentation/acaimcp/) |
 | **AcaiApp** | the SwiftUI app, macOS + iOS | [reference →](https://pauljohanneskraft.github.io/Acai/documentation/acaiapp/) |
+| **AcaiWidget** | the codebase-state widget, macOS + iOS | [reference →](https://pauljohanneskraft.github.io/Acai/documentation/acaiwidget/) |
 
 **Supporting modules** — internal building blocks you wouldn't normally depend on, documented so nothing in the package is a blank spot: [AcaiGit](https://pauljohanneskraft.github.io/Acai/documentation/acaigit/) (libgit2 wrapper for cloning, revision comparison and churn — Apple platforms only, and **not** a package product, so consumers can't import it), [CPythonScanner](https://pauljohanneskraft.github.io/Acai/documentation/cpythonscanner/) (the vendored Python grammar scanner), and [AcaiPNGComparison](https://pauljohanneskraft.github.io/Acai/documentation/acaipngcomparison/) / [AcaiTestSupport](https://pauljohanneskraft.github.io/Acai/documentation/acaitestsupport/) (test-only helpers).
 
@@ -349,7 +351,7 @@ let dot = ClassDiagramDOTRenderer(options: options).generate(from: artifact)
 
 On Apple platforms, `AcaiRender`'s `DiagramImageRenderer` takes it the rest of the way to a PNG.
 
-**Products:** `AcaiCore`, `AcaiTreeSitter`, `AcaiSwift`, `AcaiJVM`, `AcaiJS`, `AcaiDart`, `AcaiPython`, `AcaiCFamily`, `AcaiDiagram`, `AcaiDiff`, `AcaiQuality`, `AcaiLibrary`, plus `AcaiRender` and `AcaiApp` on Apple platforms.
+**Products:** `AcaiCore`, `AcaiTreeSitter`, `AcaiSwift`, `AcaiJVM`, `AcaiJS`, `AcaiDart`, `AcaiPython`, `AcaiCFamily`, `AcaiDiagram`, `AcaiDiff`, `AcaiQuality`, `AcaiLibrary`, plus `AcaiRender`, `AcaiApp` and `AcaiWidget` on Apple platforms.
 
 ---
 

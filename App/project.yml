@@ -35,6 +35,7 @@ targets:
     dependencies:
       - package: Acai
         product: AcaiApp
+      - target: AcaiWidget-iOS
     info:
       path: iOS/Info.plist
       properties:
@@ -69,8 +70,63 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_ENTITLEMENTS: Acai-iOS.entitlements
     scheme:
       gatherCoverageData: false
+
+  # A shell around `AcaiWidget`; `PRODUCT_MODULE_NAME` keeps its module from colliding with that library's.
+  AcaiWidget-iOS:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared/InfoPlist.xcstrings
+    dependencies:
+      - package: Acai
+        product: AcaiWidget
+    info: &widgetInfo
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Açaí
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_NAME: AcaiWidget
+        PRODUCT_MODULE_NAME: AcaiWidgetExtension
+        PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.Widget
+        DEVELOPMENT_TEAM: TJSHMGE2VX
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: "NO"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_ENTITLEMENTS: AcaiWidget-iOS.entitlements
+
+  AcaiWidget-macOS:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Widget
+      - path: Shared/InfoPlist.xcstrings
+    dependencies:
+      - package: Acai
+        product: AcaiWidget
+    info: *widgetInfo
+    settings:
+      base:
+        PRODUCT_NAME: AcaiWidget
+        PRODUCT_MODULE_NAME: AcaiWidgetExtension
+        PRODUCT_BUNDLE_IDENTIFIER: de.kraftsoftware.Acai.Widget
+        DEVELOPMENT_TEAM: TJSHMGE2VX
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: "NO"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_ENTITLEMENTS: AcaiWidget-macOS.entitlements
 
   # The snapshot tests. Both platforms share one `AcaiUITests/` source tree; `Fixtures/` is a
   # separate resources path so its fixtures get copied rather than compiled.
@@ -136,6 +192,7 @@ targets:
     dependencies:
       - package: Acai
         product: AcaiApp
+      - target: AcaiWidget-macOS
     info:
       path: macOS/Info.plist
       properties:
@@ -202,3 +259,4 @@ schemes:
         - package: Acai/AcaiCoreTests
         - package: Acai/AcaiAppModelTests
         - package: Acai/AcaiAppTests
+        - package: Acai/AcaiWidgetTests

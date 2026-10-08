@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 OUT="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 
 # Wherever the comparator's `outputDirectory` resolved to on this platform.
-ROOTS=("/private/tmp/AcaiUITestSnapshots" "App/AcaiUITests/__RecordedSnapshots__")
+ROOTS=("/private/tmp/AcaiUITestSnapshots" "App/AcaiUITests/__RecordedSnapshots__" "Tests/AcaiWidgetTests/__RecordedSnapshots__")
 
 # Each `.drift` line plus its root, where that state's `.captured.png` would be; one row per state.
 DRIFTS=$(for ROOT in "${ROOTS[@]}"; do

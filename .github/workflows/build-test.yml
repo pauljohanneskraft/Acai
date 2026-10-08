@@ -159,6 +159,19 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
         working-directory: App
 
+      - name: Widget snapshot drift summary
+        if: ${{ !cancelled() }}
+        run: Scripts/snapshot_drift_summary.sh
+
+      # The widget's render snapshots, for `Scripts/snapshots_accept.sh`; uploaded red or green.
+      - name: Upload widget render snapshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: widget-render-snapshots
+          path: Tests/AcaiWidgetTests/__RecordedSnapshots__/*.png
+          if-no-files-found: warn
+
       # The runner's "Complete job" waits for orphaned processes; leave no simulator running behind.
       - name: Shut down simulators
         if: always()
