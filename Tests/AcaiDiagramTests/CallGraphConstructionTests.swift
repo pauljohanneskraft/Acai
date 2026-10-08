@@ -59,6 +59,23 @@ struct CallGraphConstructionTests {
         #expect(graph.coverage.total == 0)
     }
 
+    @Test func aSpeculativeConstructionOfAProjectTypeWithOnlyAnImplicitInitializerIsResolved() {
+        let graph = CallGraphBuilder().build(from: artifact(
+            constructedMembers: [Member(name: "work", kind: .method, accessLevel: .internal)],
+            site: CallSite(receiver: .type("B"), methodName: "B", isConstruction: true, isSpeculative: true)))
+        #expect(graph.coverage.resolved == 1)
+        #expect(graph.coverage.total == 1)
+    }
+
+    @Test func aSpeculativeConstructionOfAnOutsideTypeIsNotCounted() {
+        let graph = CallGraphBuilder().build(from: artifact(
+            constructedMembers: [],
+            site: CallSite(
+                receiver: .unresolvedTypeName("Error"), methodName: "constructor",
+                isConstruction: true, isSpeculative: true)))
+        #expect(graph.coverage.total == 0)
+    }
+
     @Test func aResolvedSpeculativeSiteIsAnEdge() {
         let graph = CallGraphBuilder().build(from: artifact(
             constructedMembers: [Member(name: "subscript", kind: .subscript, accessLevel: .internal)],
