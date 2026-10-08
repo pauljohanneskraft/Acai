@@ -10,8 +10,8 @@ import AcaiDiagram
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
 
-    static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
-        [.java, .kotlin, .dart, .typeScript, .javaScript]
+    private static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
+        [.java, .kotlin, .dart, .cpp, .typeScript, .javaScript]
 
     /// Swift scans `.initializer` and `.subscript`; Java, Kotlin, Dart, TypeScript and JavaScript scan
     /// `.initializer` — each has its own dedicated pair of tests below pinning the parser behaviour
@@ -30,7 +30,7 @@ struct DeadCodeMemberKindAuditTests {
     }
 
     @Test(arguments: initializerScanningLanguages)
-    func anInitializerScanningLanguageClaimsBothKinds(language: CodeArtifact.SourceLanguage) throws {
+    func aLanguageRecordingConstructorCallsAlsoScansInitializers(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer])
     }
@@ -226,7 +226,9 @@ struct DeadCodeMemberKindAuditTests {
         #expect(kinds["__getitem__"] == .method)
     }
 
-    @Test func cppRecordsNoConstructorCall() throws {
+    /// Why C++ takes `.initializer`: construction is a declaration rather than a call, and every
+    /// spelling of it — including the heap allocation — now resolves to the constructor.
+    @Test func cppRecordsAConstructorCallForEveryConstructionForm() throws {
         let sites = try callSites("""
         class Thing {
         public:
@@ -235,11 +237,14 @@ struct DeadCodeMemberKindAuditTests {
             void use() {
                 Thing made;
                 Thing other(1);
+                Thing braced{1};
+                Thing* owned = new Thing(2);
             }
         };
         """, in: "use", of: CppCodeParser(), fileName: "Thing.cpp")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 4)
+        #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "Thing" })
     }
 
     @Test func cppExtractsAnIndexOperatorAsAMethod() throws {
@@ -274,4 +279,111 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!members.contains { $0.kind == .initializer || $0.kind == .subscript })
         #expect(artifact.freestandingFunctions.filter { $0.name == "grid_resize" }.map(\.kind) == [.method])
     }
+
+    /// The end-to-end consequence for Java: a called constructor is not reported, while an uncalled
+    /// one now is. Java's package-private default keeps both out of the public-API exemption.
+    @Test func aCalledJavaConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = JavaCodeParser().parse(source: """
+        class Called {
+            Called() {}
+        }
+        class Uncalled {
+            Uncalled() {}
+        }
+        class Worker {
+            void run() {
+                new Called();
+            }
+        }
+        """, fileName: "Worker.java")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("Called.Called"))
+    }
+
+    /// The end-to-end consequence for Kotlin: a called constructor is not reported, while an
+    /// uncalled one now is. Marked `private` since Kotlin's own default is `public`, which would
+    /// otherwise exempt both as public API regardless of calls.
+    @Test func aCalledKotlinConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = KotlinCodeParser().parse(source: """
+        private class Called(val x: Int)
+        private class Uncalled(val y: Int)
+        class Worker {
+            fun run() {
+                Called(1)
+            }
+        }
+        """, fileName: "Worker.kt")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.init"))
+        #expect(!report.candidates.map(\.id).contains("Called.init"))
+    }
+
+    /// The end-to-end consequence for Dart's default constructors: a called one is not reported,
+    /// while an uncalled one now is. The class names are `_`-prefixed since Dart's own default is
+    /// public, which would otherwise exempt both as public API regardless of calls.
+    @Test func aCalledDartDefaultConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = DartCodeParser().parse(source: """
+        class _Called {
+          _Called();
+        }
+        class _Uncalled {
+          _Uncalled();
+        }
+        class Worker {
+          void run() {
+            _Called();
+          }
+        }
+        """, fileName: "worker.dart")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("_Called._Called"))
+    }
+
+    /// The end-to-end consequence for C++: a constructed class's constructor is not reported, while
+    /// an unconstructed one now is. Both are `private`, since C++'s own `class` default would
+    /// otherwise exempt neither — the members are listed under `public:` to be callable at all, so
+    /// the access level is what keeps the public-API exemption out of the comparison.
+    @Test func aCalledCppConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = CppCodeParser().parse(source: """
+        class Called {
+            Called() {}
+        };
+        class Uncalled {
+            Uncalled() {}
+        };
+        class Worker {
+            void run() { Called made; }
+        };
+        """, fileName: "Worker.cpp")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("Called.Called"))
+    }
+
+    /// The end-to-end consequence for Dart's named constructors: a called one is not reported, while
+    /// an uncalled one now is.
+    @Test func aCalledDartNamedConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = DartCodeParser().parse(source: """
+        class Widget {
+          Widget._calledNamed();
+          Widget._uncalledNamed();
+        }
+        class Worker {
+          void run() {
+            Widget._calledNamed();
+          }
+        }
+        """, fileName: "worker.dart")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed"))
+        #expect(!report.candidates.map(\.id).contains("Widget._calledNamed"))
+    }
+
 }

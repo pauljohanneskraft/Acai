@@ -12,9 +12,9 @@
         {
           "location" : {
             "column" : 23,
-            "endLine" : 80,
+            "endLine" : 84,
             "filePath" : "shop.cpp",
-            "line" : 80
+            "line" : 84
           },
           "methodName" : "price",
           "receiver" : {
@@ -34,9 +34,9 @@
       "kind" : "method",
       "location" : {
         "column" : 1,
-        "endLine" : 81,
+        "endLine" : 85,
         "filePath" : "shop.cpp",
-        "line" : 79
+        "line" : 83
       },
       "modifiers" : [
 
@@ -709,7 +709,7 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
-        "endLine" : 77,
+        "endLine" : 81,
         "filePath" : "shop.cpp",
         "line" : 36
       },
@@ -963,9 +963,9 @@
           "kind" : "initializer",
           "location" : {
             "column" : 9,
-            "endLine" : 51,
+            "endLine" : 53,
             "filePath" : "shop.cpp",
-            "line" : 51
+            "line" : 53
           },
           "modifiers" : [
 
@@ -1023,18 +1023,18 @@
             {
               "location" : {
                 "column" : 31,
-                "endLine" : 54,
+                "endLine" : 56,
                 "filePath" : "shop.cpp",
-                "line" : 54
+                "line" : 56
               },
               "name" : "base"
             },
             {
               "location" : {
                 "column" : 45,
-                "endLine" : 54,
+                "endLine" : 56,
                 "filePath" : "shop.cpp",
-                "line" : 54
+                "line" : 56
               },
               "name" : "discount"
             }
@@ -1046,9 +1046,9 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
-            "endLine" : 55,
+            "endLine" : 57,
             "filePath" : "shop.cpp",
-            "line" : 53
+            "line" : 55
           },
           "modifiers" : [
             "override"
@@ -1092,9 +1092,9 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
-            "endLine" : 59,
+            "endLine" : 61,
             "filePath" : "shop.cpp",
-            "line" : 57
+            "line" : 59
           },
           "modifiers" : [
             "override"
@@ -1124,9 +1124,9 @@
             {
               "location" : {
                 "column" : 87,
-                "endLine" : 67,
+                "endLine" : 71,
                 "filePath" : "shop.cpp",
-                "line" : 67
+                "line" : 71
               },
               "op" : "compound",
               "targetName" : "index",
@@ -1138,9 +1138,9 @@
             {
               "location" : {
                 "column" : 25,
-                "endLine" : 68,
+                "endLine" : 72,
                 "filePath" : "shop.cpp",
-                "line" : 68
+                "line" : 72
               },
               "op" : "compound",
               "targetName" : "discount",
@@ -1151,16 +1151,44 @@
             }
           ],
           "callSites" : [
-
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 17,
+                "endLine" : 64,
+                "filePath" : "shop.cpp",
+                "line" : 64
+              },
+              "methodName" : "Logger",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "endLine" : 65,
+                "filePath" : "shop.cpp",
+                "line" : 65
+              },
+              "methodName" : "log",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 4,
           "fieldReads" : [
             {
               "location" : {
                 "column" : 25,
-                "endLine" : 68,
+                "endLine" : 72,
                 "filePath" : "shop.cpp",
-                "line" : 68
+                "line" : 72
               },
               "name" : "discount"
             }
@@ -1172,9 +1200,9 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
-            "endLine" : 71,
+            "endLine" : 75,
             "filePath" : "shop.cpp",
-            "line" : 61
+            "line" : 63
           },
           "modifiers" : [
 
@@ -1202,9 +1230,12 @@
             "Category::Food",
             "Category::Tool",
             "Food",
+            "Logger",
             "Tool",
             "discount",
             "index",
+            "local",
+            "log",
             "value"
           ],
           "type" : {
@@ -1237,9 +1268,9 @@
           "kind" : "method",
           "location" : {
             "column" : 9,
-            "endLine" : 76,
+            "endLine" : 80,
             "filePath" : "shop.cpp",
-            "line" : 74
+            "line" : 78
           },
           "modifiers" : [
 
@@ -1302,7 +1333,7 @@
           "kind" : "class",
           "location" : {
             "column" : 9,
-            "endLine" : 49,
+            "endLine" : 51,
             "filePath" : "shop.cpp",
             "line" : 46
           },
@@ -1316,8 +1347,23 @@
 
               ],
               "callSites" : [
-
+                {
+                  "isConstruction" : true,
+                  "location" : {
+                    "column" : 39,
+                    "endLine" : 49,
+                    "filePath" : "shop.cpp",
+                    "line" : 49
+                  },
+                  "methodName" : "Product",
+                  "receiver" : {
+                    "type" : {
+                      "_0" : "Product"
+                    }
+                  }
+                }
               ],
+              "cyclomaticComplexity" : 1,
               "fieldReads" : [
 
               ],
@@ -1328,7 +1374,7 @@
               "kind" : "method",
               "location" : {
                 "column" : 17,
-                "endLine" : 48,
+                "endLine" : 50,
                 "filePath" : "shop.cpp",
                 "line" : 48
               },
@@ -1340,7 +1386,7 @@
 
               ],
               "referencedTypeNames" : [
-
+                "Product"
               ],
               "type" : {
                 "genericArguments" : [
