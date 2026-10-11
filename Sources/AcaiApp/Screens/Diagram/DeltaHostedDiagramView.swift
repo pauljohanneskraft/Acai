@@ -46,10 +46,8 @@ extension CoordinateSpaceProtocol where Self == NamedCoordinateSpace {
 /// can be placed inside the diagram's own canvas without losing that state when the ref changes.
 ///
 /// Picking a ref resets `content`'s identity twice in quick succession (the ref, then `loaded`), so
-/// the panel is presented from here, outside that boundary, on every platform: presented from
-/// inside it, each reset tore the presenter down mid-presentation, and re-presenting raced the old
-/// presentation's dismissal — the panel vanished while the user was using it. The macOS popover
-/// anchors to the button's reported frame rather than to the button itself for the same reason.
+/// the panel is presented from here, outside that boundary, where a reset never touches the
+/// presentation; the macOS popover anchors to the button's reported frame for the same reason.
 struct DeltaHostedDiagramView<Content: View>: View {
     let diagram: GeneratedDiagram
     @ViewBuilder var content: (Binding<Bool>) -> Content
