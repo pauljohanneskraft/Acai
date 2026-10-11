@@ -9,21 +9,15 @@ import AcaiRender
 /// popover (macOS) or sheet (iOS/iPadOS). Deliberately not a permanent on-canvas bar: comparing
 /// against git is occasional and shouldn't cost canvas space on every diagram view.
 ///
-/// iOS/iPadOS use `.sheet` rather than `.popover` + `.presentationCompactAdaptation(.sheet)`: a
-/// `.popover` anchored to a small overlay button on a `GeometryReader`-driven canvas renders no
-/// visible content on iOS. `.sheet` doesn't share that anchor-dependent presentation, so it is
-/// presented by `DeltaHostedDiagramView` instead of by this button — see its doc comment.
+/// Both are presented by `DeltaHostedDiagramView`, above the diagram's `.id(...)` boundary, because
+/// this button renders inside the canvas and its identity resets whenever the comparison changes.
+/// On macOS it reports its frame there, as the popover's anchor.
 struct CompareOverlayButton: View {
     let diagram: GeneratedDiagram
-    /// Owned by a stable ancestor above the diagram's own `.id(...)` boundary (`DeltaHostedDiagramView`),
-    /// not this view itself: this button renders inside the diagram's canvas, so its view identity
-    /// resets whenever the comparison ref changes.
     @Binding var isPresented: Bool
-    /// Invoked when a changed-files row is tapped, with that file's type ids — lets the host diagram
-    /// view select/reveal those nodes. `nil` for a diagram type with no such concept (only Class
-    /// Diagram wires this up today). On iOS the sheet reports it through
-    /// `EnvironmentValues.compareChangedFileSelection` instead.
-    var onSelectChangedFileTypes: ((Set<String>) -> Void)?
+    #if os(macOS)
+    @Environment(\.compareButtonFrame) private var compareButtonFrame
+    #endif
 
     private var isOn: Bool { diagram.comparisonGitRef != nil }
 
@@ -55,20 +49,8 @@ struct CompareOverlayButton: View {
             : .app("View.CompareGitOverlay.CompareVsGit"))
         .accessibilityIdentifier("delta.openButton")
         #if os(macOS)
-        .popover(isPresented: $isPresented) {
-            // Not `NavigationStack { ... .toolbar { clearButton } }`: on macOS, a `.toolbar` inside a
-            // `NavigationStack` presented in a `.popover` renders its items in the presenting
-            // window's own toolbar instead of inside the popover.
-            VStack(alignment: .leading, spacing: .zero) {
-                HStack {
-                    Text(.app("View.CompareOverlayButton.CompareVsGit")).font(.headline)
-                    Spacer()
-                    CompareClearButton(diagram: diagram)
-                }
-                .padding()
-                Divider()
-                CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: onSelectChangedFileTypes)
-            }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .deltaHost) } action: { frame in
+            compareButtonFrame?.wrappedValue = frame
         }
         #endif
     }
@@ -92,7 +74,7 @@ struct CompareClearButton: View {
 /// Comparison controls: comparing the codebase's current working tree against a git revision
 /// (`HEAD`, a branch, a SHA, …) and colour-coding the added/removed/changed elements. Reads and
 /// writes the diagram's `comparisonGitRef` through the model; the actual snapshot load is driven
-/// by the host view's `.task`. Presented inside `CompareOverlayButton`'s popover/sheet.
+/// by the host view's `.task`. Presented in `DeltaHostedDiagramView`'s popover/sheet.
 struct CompareGitPanel: View {
     let diagram: GeneratedDiagram
     var onSelectChangedFileTypes: ((Set<String>) -> Void)?

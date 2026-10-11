@@ -83,6 +83,16 @@ struct ComparisonViewModelTests {
         #expect(model.comparisonError == nil)
     }
 
+    @Test func aComparisonChangeFromThePanelAppliesOneMainQueueTurnAfterTheTap() async throws {
+        let (model, _, diagramID) = try makeModel()
+
+        model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: "main") }
+
+        #expect(model.generatedDiagram(for: diagramID)?.comparisonGitRef == nil)
+        await withCheckedContinuation { continuation in DispatchQueue.main.async { continuation.resume() } }
+        #expect(model.generatedDiagram(for: diagramID)?.comparisonGitRef == "main")
+    }
+
     @Test func aFailedSnapshotLoadReportsItsError() async throws {
         let (model, _, diagramID) = try makeModel(comparisonSources: CannedComparisonSource(artifact: nil))
         model.updateComparisonGitRef(diagramID: diagramID, ref: "main")
