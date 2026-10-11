@@ -10,7 +10,7 @@ import AcaiDiagram
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
     static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
-        [.java, .kotlin, .dart, .typeScript, .javaScript]
+        [.java, .kotlin, .dart, .typeScript, .javaScript, .python]
 
     @Test(arguments: AnalysisService.standardParsers
         .map(\.language)
