@@ -28,9 +28,10 @@ extension JSCodeParser {
                     "main", "componentdidmount", "componentwillunmount", "componentdidupdate",
                     "render", "ngoninit", "ngondestroy", "ngonchanges"
                 ]),
-            // `new Thing()` is read for a local's type but never recorded as a call, so a
-            // `constructor` has no caller edge.
-            deadCodeMemberKinds: [.method]
+            // `JSCallSiteSyntax` also matches `new_expression`: `new Thing()` resolves to a
+            // call-site edge targeting `constructor`, the member name TS and JS give every
+            // constructor. Neither language has a subscript operator to declare.
+            deadCodeMemberKinds: [.method, .initializer]
         )
     }
 }

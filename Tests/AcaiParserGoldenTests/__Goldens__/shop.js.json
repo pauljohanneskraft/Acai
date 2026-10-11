@@ -439,7 +439,21 @@
             }
           ],
           "callSites" : [
-
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 43,
+                "endLine" : 18,
+                "filePath" : "shop.js",
+                "line" : 18
+              },
+              "methodName" : "constructor",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            }
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
@@ -533,6 +547,21 @@
 
           ],
           "callSites" : [
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 45,
+                "endLine" : 29,
+                "filePath" : "shop.js",
+                "line" : 29
+              },
+              "methodName" : "constructor",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Logger"
+                }
+              }
+            },
             {
               "location" : {
                 "column" : 17,

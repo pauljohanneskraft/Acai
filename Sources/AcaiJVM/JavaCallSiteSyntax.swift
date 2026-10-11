@@ -17,8 +17,8 @@ struct JavaCallSiteSyntax: CallSiteSyntax {
         if node.nodeType == "object_creation_expression", let typeNode = node.child(byFieldName: "type"),
            let typeName = JavaTypeReferenceResolver(context: context).extractTypeReference(typeNode)?.name,
            !typeName.isEmpty {
-            return scope.resolvedCallSite(
-                receiverName: typeName, methodName: typeName, location: node.location(in: context))?.asConstruction
+            return scope.constructionCallSite(
+                typeName: typeName, methodName: typeName, location: node.location(in: context))
         }
 
         guard node.nodeType == "method_invocation",

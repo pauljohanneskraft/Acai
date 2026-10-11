@@ -82,12 +82,6 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
         return nil
     }
 
-    public var asConstruction: CallSite {
-        var copy = self
-        copy.isConstruction = true
-        return copy
-    }
-
     private enum CodingKeys: String, CodingKey {
         case receiver, methodName, location, isConstruction, isSpeculative
     }
