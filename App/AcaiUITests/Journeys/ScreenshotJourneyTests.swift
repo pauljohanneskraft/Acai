@@ -44,6 +44,10 @@ final class ScreenshotJourneyTests: UIJourneyTestCase {
         base.doubleTap()
         diagram.inspectorContent.waitOrFail("the Inspector for Base")
         validateScreenshot("ClassDiagram", state: "inspectorOpen")
+
+        diagram.filterEverythingAway(hiding: diagram.typeNode(named: "Base"))
+        validateScreenshot("ClassDiagram", state: "filteredToNothing")
+        diagram.clearEmptyFilter(restoring: diagram.typeNode(named: "Base"))
     }
 
     func testProjectDetailAddMenuScreenshot() throws {
