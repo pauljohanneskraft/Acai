@@ -216,7 +216,9 @@ struct ClassDiagramView: View {
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
-            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
+            CompareOverlayButton(
+                diagram: diagram, isPresented: isComparePresented, onSelectChangedFileTypes: selectChangedFileTypes
+            )
         }
         .overlay(alignment: .top) {
             if isSearchBarVisible {
@@ -461,7 +463,7 @@ extension ClassDiagramView {
         showSidebar = true
     }
 
-    /// Applies a changed-file pick from the compare panel, which can arrive while this view is
+    /// Applies a changed-file pick from the iOS compare sheet, which can arrive while this view is
     /// being recreated for a new comparison — hence also on appear.
     private func applyChangedFileSelection() {
         guard let ids = changedFileSelection.wrappedValue else { return }
