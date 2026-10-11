@@ -49,7 +49,7 @@ struct CompareOverlayButton: View {
             : .app("View.CompareGitOverlay.CompareVsGit"))
         .accessibilityIdentifier("delta.openButton")
         #if os(macOS)
-        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .deltaHost) } action: { frame in
             compareButtonFrame?.wrappedValue = frame
         }
         #endif

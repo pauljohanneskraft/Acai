@@ -22,7 +22,7 @@ extension EnvironmentValues {
         set { self[DiagramHasBeenFittedKey.self] = newValue }
     }
 
-    /// The compare button's window frame, where the macOS popover anchors to it.
+    /// The compare button's frame in `.deltaHost`, where the macOS popover anchors to it.
     var compareButtonFrame: Binding<CGRect>? {
         get { self[CompareButtonFrameKey.self] }
         set { self[CompareButtonFrameKey.self] = newValue }
@@ -35,6 +35,10 @@ private struct DiagramHasBeenFittedKey: EnvironmentKey {
 
 private struct CompareButtonFrameKey: EnvironmentKey {
     static let defaultValue: Binding<CGRect>? = nil
+}
+
+extension CoordinateSpaceProtocol where Self == NamedCoordinateSpace {
+    static var deltaHost: NamedCoordinateSpace { .named("DeltaHostedDiagramView") }
 }
 
 /// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
@@ -92,20 +96,26 @@ struct DeltaHostedDiagramView<Content: View>: View {
                 .environment(\.compareButtonFrame, $compareButtonFrame)
                 #endif
         }
+        .coordinateSpace(.deltaHost)
         .task(id: comparisonTaskID) {
             await model.ensureComparisonLoaded(for: diagram)
         }
         #if os(macOS)
-        // On a leaf placed over the button, not on this `ZStack`: the diagram's `.inspector` hoists
-        // `content` into a split view, and a popover attached to a view wrapping it never presents.
-        .overlay {
-            GeometryReader { proxy in
-                let origin = proxy.frame(in: .global).origin
-                Color.clear
-                    .frame(width: compareButtonFrame.width, height: compareButtonFrame.height)
-                    .popover(isPresented: $isComparePresented) { comparePopover }
-                    .position(x: compareButtonFrame.midX - origin.x, y: compareButtonFrame.midY - origin.y)
+        .popover(isPresented: $isComparePresented, attachmentAnchor: .rect(.rect(compareButtonFrame))) {
+            // Not `NavigationStack { ... .toolbar { clearButton } }`: on macOS, a `.toolbar` inside a
+            // `NavigationStack` presented in a `.popover` renders its items in the presenting
+            // window's own toolbar instead of inside the popover.
+            VStack(alignment: .leading, spacing: .zero) {
+                HStack {
+                    Text(.app("View.CompareOverlayButton.CompareVsGit")).font(.headline)
+                    Spacer()
+                    CompareClearButton(diagram: diagram)
+                }
+                .padding()
+                Divider()
+                CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: selectChangedFileTypes)
             }
+            .environmentObject(model)
         }
         #else
         // Not a `.popover` + `.presentationCompactAdaptation(.sheet)`: a popover anchored to a small
@@ -131,23 +141,4 @@ struct DeltaHostedDiagramView<Content: View>: View {
         }
         #endif
     }
-
-    #if os(macOS)
-    /// Not `NavigationStack { ... .toolbar { clearButton } }`: on macOS, a `.toolbar` inside a
-    /// `NavigationStack` presented in a `.popover` renders its items in the presenting window's own
-    /// toolbar instead of inside the popover.
-    private var comparePopover: some View {
-        VStack(alignment: .leading, spacing: .zero) {
-            HStack {
-                Text(.app("View.CompareOverlayButton.CompareVsGit")).font(.headline)
-                Spacer()
-                CompareClearButton(diagram: diagram)
-            }
-            .padding()
-            Divider()
-            CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: selectChangedFileTypes)
-        }
-        .environmentObject(model)
-    }
-    #endif
 }
