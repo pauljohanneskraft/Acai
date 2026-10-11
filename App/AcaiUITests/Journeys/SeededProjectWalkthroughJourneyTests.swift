@@ -8,7 +8,7 @@ import XCTest
 /// exactly the screens this already visits, so a separate journey only bought a second cold launch
 /// of the identical path.
 @MainActor
-final class ScreenshotJourneyTests: UIJourneyTestCase {
+final class SeededProjectWalkthroughJourneyTests: UIJourneyTestCase {
     private var audit: AccessibilityAudit { AccessibilityAudit(testCase: self) }
 
     func testSeededJourneyScreenshots() throws {
