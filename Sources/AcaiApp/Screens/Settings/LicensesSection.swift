@@ -41,6 +41,7 @@ struct LicensesSection: View {
         } description: {
             Text(.app("View.LicensesSection.NoLicensesDetail"))
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("licenses.emptyState")
     }
 
