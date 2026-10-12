@@ -13,27 +13,28 @@ final class QueryJourneyTests: UIJourneyTestCase {
 
         let query = QueryScreen(app: app)
         codebaseDetail.queryButton.tap("Query", until: query.list)
-        query.row(id: "Base").waitOrFail("the Base query row")
-        XCTAssertTrue(query.row(id: "Worker").exists)
+        query.row(id: "SampleSwiftPackage.Base").waitOrFail("the Base query row")
+        XCTAssertTrue(query.row(id: "SampleSwiftPackage.Worker").exists)
 
         // Every filter control lives in a sheet, not inline above the results.
         query.filterButton.tap("the query filter button", until: query.mutablePublicStateToggle)
         query.mutablePublicStateToggle.tapWhenReady("Mutable public state only")
         query.filterSheetDoneButton.tapWhenReady("the filter sheet's Done button")
 
-        query.row(id: "Worker").waitForDisappearanceOrFail(
+        query.row(id: "SampleSwiftPackage.Worker").waitForDisappearanceOrFail(
             "the Worker query row (it has no stored properties and shouldn't match \"mutable public state only\")"
         )
-        query.row(id: "Base").waitOrFail("the Base query row (its public settable `id` should still match)")
+        query.row(id: "SampleSwiftPackage.Base")
+            .waitOrFail("the Base query row (its public settable `id` should still match)")
         XCTAssertFalse(
-            query.row(id: "Derived").exists,
+            query.row(id: "SampleSwiftPackage.Derived").exists,
             "Derived's only property (`helper`) is private and shouldn't match.")
 
         query.filterButton.tap("the query filter button", until: query.clearFiltersButton)
         query.clearFiltersButton.tapWhenReady("Clear Filters")
         query.filterSheetDoneButton.tapWhenReady("the filter sheet's Done button")
 
-        query.row(id: "Worker").waitOrFail("the Worker query row after clearing filters")
+        query.row(id: "SampleSwiftPackage.Worker").waitOrFail("the Worker query row after clearing filters")
 
         validateScreenshot("Query", state: "listPopulated")
     }

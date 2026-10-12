@@ -55,16 +55,18 @@
       ],
       "callSites" : [
         {
+          "isConstruction" : true,
+          "isSpeculative" : true,
           "location" : {
             "column" : 9,
             "endLine" : 8,
             "filePath" : "classes.py",
             "line" : 8
           },
-          "methodName" : "TypeVar",
+          "methodName" : "__init__",
           "receiver" : {
-            "free" : {
-
+            "unresolvedTypeName" : {
+              "_0" : "TypeVar"
             }
           }
         }
@@ -427,16 +429,17 @@
           ],
           "callSites" : [
             {
+              "isConstruction" : true,
               "location" : {
                 "column" : 31,
                 "endLine" : 28,
                 "filePath" : "classes.py",
                 "line" : 28
               },
-              "methodName" : "Money",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Money"
                 }
               }
             }
@@ -1128,16 +1131,17 @@
           ],
           "callSites" : [
             {
+              "isConstruction" : true,
               "location" : {
                 "column" : 31,
                 "endLine" : 61,
                 "filePath" : "classes.py",
                 "line" : 61
               },
-              "methodName" : "Rectangle",
+              "methodName" : "__init__",
               "receiver" : {
-                "free" : {
-
+                "type" : {
+                  "_0" : "Rectangle"
                 }
               }
             }

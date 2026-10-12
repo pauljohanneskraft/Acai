@@ -34,23 +34,23 @@
   "relationships" : [
     {
       "kind" : "inheritance",
-      "source" : "Derived",
-      "target" : "Base"
+      "source" : "SampleSwiftPackage.Derived",
+      "target" : "SampleSwiftPackage.Base"
     },
     {
       "kind" : "composition",
       "label" : "helper",
       "origin" : "Sources\/SampleSwiftPackage\/Derived.swift",
-      "source" : "Derived",
-      "target" : "Helper",
+      "source" : "SampleSwiftPackage.Derived",
+      "target" : "SampleSwiftPackage.Helper",
       "targetLabel" : "1"
     },
     {
       "kind" : "composition",
       "label" : "worker",
       "origin" : "Sources\/SampleSwiftPackage\/Helper.swift",
-      "source" : "Helper",
-      "target" : "Worker",
+      "source" : "SampleSwiftPackage.Helper",
+      "target" : "SampleSwiftPackage.Worker",
       "targetLabel" : "1"
     }
   ],
@@ -70,7 +70,7 @@
       "genericParameters" : [
 
       ],
-      "id" : "Base",
+      "id" : "SampleSwiftPackage.Base",
       "inheritedTypes" : [
 
       ],
@@ -333,11 +333,12 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Base",
       "nestedTypes" : [
 
       ],
-      "qualifiedName" : "Base",
+      "qualifiedName" : "SampleSwiftPackage.Base",
       "sourceLanguage" : "swift"
     },
     {
@@ -354,7 +355,7 @@
       "genericParameters" : [
 
       ],
-      "id" : "Derived",
+      "id" : "SampleSwiftPackage.Derived",
       "inheritedTypes" : [
         {
           "genericArguments" : [
@@ -362,7 +363,7 @@
           ],
           "isArray" : false,
           "isOptional" : false,
-          "name" : "Base"
+          "name" : "SampleSwiftPackage.Base"
         }
       ],
       "kind" : "class",
@@ -497,11 +498,12 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Derived",
       "nestedTypes" : [
 
       ],
-      "qualifiedName" : "Derived",
+      "qualifiedName" : "SampleSwiftPackage.Derived",
       "sourceLanguage" : "swift"
     },
     {
@@ -518,7 +520,7 @@
       "genericParameters" : [
 
       ],
-      "id" : "Helper",
+      "id" : "SampleSwiftPackage.Helper",
       "inheritedTypes" : [
 
       ],
@@ -654,11 +656,12 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Helper",
       "nestedTypes" : [
 
       ],
-      "qualifiedName" : "Helper",
+      "qualifiedName" : "SampleSwiftPackage.Helper",
       "sourceLanguage" : "swift"
     },
     {
@@ -675,7 +678,7 @@
       "genericParameters" : [
 
       ],
-      "id" : "Worker",
+      "id" : "SampleSwiftPackage.Worker",
       "inheritedTypes" : [
 
       ],
@@ -728,11 +731,12 @@
       "modifiers" : [
 
       ],
+      "module" : "SampleSwiftPackage",
       "name" : "Worker",
       "nestedTypes" : [
 
       ],
-      "qualifiedName" : "Worker",
+      "qualifiedName" : "SampleSwiftPackage.Worker",
       "sourceLanguage" : "swift"
     }
   ]

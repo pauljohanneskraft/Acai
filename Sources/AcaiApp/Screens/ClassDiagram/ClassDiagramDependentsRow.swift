@@ -5,7 +5,7 @@ extension ClassDiagramSidebar {
     @ViewBuilder
     func dependentRow(_ dependent: ImpactAnalysis.Dependent) -> some View {
         let label = HStack {
-            Text(verbatim: dependent.qualifiedName)
+            Text(verbatim: viewModel.typeDisplayNames.name(forID: dependent.id))
                 .font(.system(.caption, design: .monospaced))
                 .lineLimit(1)
                 .truncationMode(.middle)

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Refreshes the committed XCUITest screenshot goldens from a CI run's uploaded captures.
+# Refreshes the committed XCUITest screenshot and widget render goldens from a CI run's uploaded captures.
 #
 # CI's renderer is the only one whose output the goldens are compared against, so a local recording
 # run wouldn't produce trustworthy bytes — the artifacts are the source of truth. Every run uploads
@@ -49,5 +49,20 @@ for ARTIFACT in $ARTIFACTS; do
     done < <(find "$STAGING/$ARTIFACT" -name '*.png' ! -name '*.captured.png')
 done
 
+# The widget's render snapshots, from the Unit Test iOS job.
+WIDGET_GOLDENS="Tests/AcaiWidgetTests/__Snapshots__"
+if gh run download "$RUN_ID" -n widget-render-snapshots -D "$STAGING/widget" 2>/dev/null; then
+    FOUND=1
+    while IFS= read -r CAPTURE; do
+        TARGET="$WIDGET_GOLDENS/$(basename "$CAPTURE")"
+        if cmp -s "$CAPTURE" "$TARGET"; then
+            echo "  unchanged  widget/$(basename "$CAPTURE")"
+        else
+            cp "$CAPTURE" "$TARGET"
+            echo "  updated    widget/$(basename "$CAPTURE")"
+        fi
+    done < <(find "$STAGING/widget" -name '*.png')
+fi
+
 [ "$FOUND" -eq 1 ] || { echo "No screenshot artifacts on run $RUN_ID." >&2; exit 1; }
-echo "▸ Review with 'git diff -- $GOLDENS' before committing."
+echo "▸ Review with 'git diff -- $GOLDENS $WIDGET_GOLDENS' before committing."

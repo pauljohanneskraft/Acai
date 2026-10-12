@@ -21,6 +21,8 @@ extension QualityRules {
 /// and the editor's live preview share it without re-evaluating.
 struct QualityCheckReportView: View {
     let report: QualityReport
+    /// Names the types in each subject; derived from `artifact` when that is given instead.
+    var typeNames: TypeDisplayNames?
     /// Whether to show the leading "N finding(s) across N rule(s)" summary. The codebase section
     /// carries that string in its collapsible header instead, so it opts out; the editor keeps it.
     var showsSummary: Bool = true
@@ -52,7 +54,8 @@ struct QualityCheckReportView: View {
     }
 
     private func violationList(_ report: QualityReport) -> some View {
-        VStack(alignment: .leading, spacing: .spacingS) {
+        let names = typeNames ?? artifact?.typeDisplayNames
+        return VStack(alignment: .leading, spacing: .spacingS) {
             if showsSummary {
                 let findings = report.violations.count
                 let rules = report.checkedRuleCount
@@ -62,7 +65,7 @@ struct QualityCheckReportView: View {
             }
             ForEach(Array(report.violations.prefix(analysisReportLimit).enumerated()), id: \.offset) { _, violation in
                 ViolationRowView(
-                    violation: violation, tint: tint, codebase: codebase, artifact: artifact,
+                    violation: violation, typeNames: names, tint: tint, codebase: codebase, artifact: artifact,
                     onViewAsDiagram: onViewAsDiagram.map { callback in { callback(violation) } }
                 )
             }

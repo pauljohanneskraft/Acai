@@ -82,7 +82,7 @@ struct HotspotsToolTests {
             let hotspots = try #require(object["hotspots"]?.arrayValue)
             let first = try #require(hotspots.first?.objectValue)
             #expect(first["path"]?.stringValue == "Hot.swift")
-            #expect(first["type"]?.stringValue == "Hot")
+            #expect(first["type"]?.stringValue == "root.Hot")
             #expect(first["churn"]?.intValue == 3)
             #expect(first["score"] != nil)
             #expect(first["isHotspot"]?.boolValue == true)

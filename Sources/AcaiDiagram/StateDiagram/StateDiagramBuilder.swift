@@ -67,7 +67,7 @@ private struct StateAnalysis {
 
     private static func findType(named name: String, in types: [TypeDeclaration]) -> TypeDeclaration? {
         for type in types {
-            if type.name == name || type.qualifiedName == name { return type }
+            if type.name == name || type.qualifiedName == name || type.unqualifiedID == name { return type }
             if let nested = findType(named: name, in: type.nestedTypes) { return nested }
         }
         return nil

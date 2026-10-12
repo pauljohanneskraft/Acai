@@ -76,7 +76,7 @@ struct StateConfigModelTests {
     @Test func onlyTypesWithStoredPropertiesAreOfferedAndNestedOnesAreQualified() {
         let model = StateConfigModel(artifact: artifact())
         // `Outer` has only a nested type, `Phase` has no members at all — neither is offered.
-        #expect(model.typeNamesWithStoredProperties == ["Loader", "Outer.Inner"])
+        #expect(model.typeIDsWithStoredProperties == ["Loader", "Outer.Inner"])
         #expect(model.hasGlobalVariables)
     }
 
@@ -124,6 +124,19 @@ struct StateConfigModelTests {
         model.selectScope(.globals)
         #expect(model.configuration.typeName == nil)
         #expect(model.configuration.variableName == "appMode")
+    }
+
+    /// Module-scoped ids tag each option, so the configuration names the exact type; the label is its plain name.
+    @Test func aModuleScopedTypeIsPickedByItsIDAndShownByItsName() {
+        let scoped = artifact().scopingTypeIDs(modules: ModuleMap(roots: [], filePaths: []))
+        var model = StateConfigModel(artifact: scoped)
+        let ids = model.typeIDsWithStoredProperties
+        #expect(ids.allSatisfy { $0.hasPrefix("root.") })
+        #expect(ids.map(model.typeDisplayNames.name(forID:)) == ["Loader", "Outer.Inner"])
+
+        model.selectScope(.type(ids[0]))
+        model.variableName = "state"
+        #expect(model.configuration.typeName == ids[0])
     }
 
     @Test func aCodebaseWithoutGlobalsDoesNotOfferTheGlobalsScope() {

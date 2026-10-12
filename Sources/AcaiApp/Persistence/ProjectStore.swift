@@ -79,6 +79,8 @@ final class ProjectStore: ObservableObject {
     /// (`~/.acai/analysis`) in production, shared with the CLI and an MCP session over the same
     /// directory. Injectable so a test's writes never reach the real store.
     let analysisStore: AnalysisStore
+    /// `nil` by default over an explicit `baseDir`, so a test never writes the real App Group container.
+    let widgetPublisher: CodebaseWidgetPublisher?
     private var projectsDir: URL { baseDir.appendingPathComponent("projects", isDirectory: true) }
     // Not `private`: `ProjectStore+DiagramFiles.swift`'s extension needs it too — same "not private,
     // another file's extension needs it too" pattern used throughout this app.
@@ -103,16 +105,21 @@ final class ProjectStore: ObservableObject {
 
     init(
         baseDir: URL? = nil, analysisStore: AnalysisStore = .standard,
-        diagramWriter: DebouncedDiagramWriter = DebouncedDiagramWriter()
+        diagramWriter: DebouncedDiagramWriter = DebouncedDiagramWriter(),
+        widgetPublisher: CodebaseWidgetPublisher? = nil
     ) {
         self.analysisStore = analysisStore
         self.diagramWriter = diagramWriter
         let fileManager = FileManager.default
         if let baseDir {
             self.baseDir = baseDir
+            self.widgetPublisher = widgetPublisher
         } else if let fixtureBaseDir = UITestFixtureResolver().resolveBaseDir() {
             self.baseDir = fixtureBaseDir
+            self.widgetPublisher = CodebaseWidgetPublisher(
+                store: CodebaseWidgetSnapshotStore(containerURL: fixtureBaseDir.appendingPathComponent("widget")))
         } else {
+            self.widgetPublisher = widgetPublisher ?? CodebaseWidgetPublisher()
             #if os(macOS)
             let appSupport = try? fileManager.url(
                 for: .applicationSupportDirectory,

@@ -35,10 +35,7 @@ extension CodeArtifact {
         // `source` is already the referencing type's own id/qualified name, so its module locates
         // the reference for both endpoints — `target` is what that type's own file/module wrote.
         let moduleByID = Dictionary(
-            Self.allTypes(types).map {
-                ($0.id, ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? ""))
-            },
-            uniquingKeysWith: { first, _ in first })
+            Self.allTypes(types).map { ($0.id, $0.idScope.module) }, uniquingKeysWith: { first, _ in first })
         var copy = self
         var diagnostics: [ParseDiagnostic] = []
 
@@ -86,7 +83,7 @@ extension CodeArtifact {
         var diagnostics: [ParseDiagnostic] = []
         let resolvedTypes = types.map { type -> TypeDeclaration in
             var copy = type
-            let module = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
+            let module = type.idScope.module
             copy.inheritedTypes = type.inheritedTypes.map { ref in
                 var resolved = ref
                 let identity = resolver.resolve(ref.name, referencingModule: module)
@@ -141,7 +138,7 @@ extension CodeArtifact {
 
         var edges: [Relationship] = []
         for type in Self.allTypes(types) {
-            let module = ModuleResolver.standard.productName(forFilePath: type.location?.filePath ?? "")
+            let module = type.idScope.module
             let inference = StructuralEdgeInference(
                 configuration: resolver.configuration(for: type),
                 resolveId: { identity.canonicalName(for: $0, referencingModule: module) })
@@ -246,11 +243,7 @@ extension CodeArtifact {
 
     /// Resolves the id of the single type `name` should merge into.
     ///
-    /// An exact `qualifiedName`/`id` match wins outright. Otherwise falls back to a bare simple-name
-    /// match scoped to the extension's own module (via ``ModuleResolver``): a bare name shared with an
-    /// unrelated type in another module (e.g. an extension of external `SwiftTreeSitter.Node` colliding
-    /// with in-project `FreeformDiagram.Node`) must not silently merge into it, so the fallback only
-    /// accepts a sole same-module candidate.
+    /// An exact id, else a sole same-module match, else a sole unqualified-id match; never a foreign simple name.
     private static func extensionTargetID(
         _ ext: TypeDeclaration, name: String, in types: [TypeDeclaration]
     ) -> String? {
@@ -258,13 +251,15 @@ extension CodeArtifact {
         if let exact = flat.first(where: { $0.qualifiedName == name || $0.id == name }) {
             return exact.id
         }
-        let extModule = ModuleResolver.standard.productName(forFilePath: ext.location?.filePath ?? "")
-        let sameModuleMatches = flat.filter {
-            $0.name == name
-                && ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? "") == extModule
+        let candidates = flat.filter { $0.name == name || $0.id.hasSuffix(name) }
+        let extModule = ext.idScope.module
+        let sameModuleMatches = candidates.filter {
+            ($0.name == name || $0.unqualifiedID == name) && $0.idScope.module == extModule
         }
-        guard sameModuleMatches.count == 1 else { return nil }
-        return sameModuleMatches[0].id
+        if sameModuleMatches.count == 1 { return sameModuleMatches[0].id }
+        let unqualifiedMatches = candidates.filter { $0.unqualifiedID == name }
+        guard sameModuleMatches.isEmpty, unqualifiedMatches.count == 1 else { return nil }
+        return unqualifiedMatches[0].id
     }
 
     private static func mergeExtensionMembers(
