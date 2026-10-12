@@ -32,7 +32,10 @@ extension XCUIElement {
                 format: "(label == %@ OR title == %@) AND elementType IN %@",
                 label, label, optionTypes.map(\.rawValue)))
             .firstMatch
-        option.tapWhenReady("option '\(label)'", timeout: timeout, file: file, line: line)
+        option.waitOrFail("option '\(label)'", timeout: timeout, file: file, line: line)
+        SystemBanners().dismiss(file: file, line: line)
+        // The option exists mid-presentation; `tap()` waits for the app to idle first, `isHittable` doesn't.
+        option.tap()
         return option
     }
 }

@@ -81,7 +81,8 @@ struct ContractNormalizer {
             enumCases: type.enumCases.map(\.name).sorted(),
             nested: type.nestedTypes
                 .map { declaration(of: $0, isNested: true) }
-                .sorted { $0.name < $1.name }
+                .sorted { $0.name < $1.name },
+            documentation: type.documentation
         )
     }
 
@@ -104,7 +105,8 @@ struct ContractNormalizer {
             calls: isStored ? [] : member.callSites.map(call(of:)).sorted(),
             reads: isStored ? [] : member.fieldReads.map { read in
                 read.receiver.map { "\(simpleName($0)).\(read.name)" } ?? read.name
-            }.sorted()
+            }.sorted(),
+            documentation: member.documentation
         )
     }
 

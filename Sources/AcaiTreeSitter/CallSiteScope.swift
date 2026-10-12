@@ -67,6 +67,23 @@ public struct CallSiteScope: Sendable {
         return nil
     }
 
+    /// An explicit construction of `typeName` (`new Thing()`). A capitalised name not declared in-file is
+    /// deferred like ``resolvedCallSite(receiverName:methodName:location:)``'s, and speculative: it may
+    /// be a library type, which then stays out of coverage rather than counting as unresolved.
+    public func constructionCallSite(
+        typeName: String,
+        methodName: String,
+        location: SourceLocation?
+    ) -> CallSite? {
+        if knownTypeNames.contains(typeName) {
+            return CallSite(receiver: .type(typeName), methodName: methodName, location: location, isConstruction: true)
+        }
+        guard typeName.first?.isUppercase == true else { return nil }
+        return CallSite(
+            receiver: .unresolvedTypeName(typeName), methodName: methodName, location: location,
+            isConstruction: true, isSpeculative: true)
+    }
+
     /// Leaves `knownPropertyNames` untouched, since a local isn't a field.
     public func merging(locals: [String: String]) -> CallSiteScope {
         guard !locals.isEmpty else { return self }
@@ -102,7 +119,9 @@ public struct CallSiteScope: Sendable {
     ) -> CallSite? {
         if knownTypeNames.contains(name) {
             guard let constructorMethodName else { return nil }
-            return CallSite(receiver: .type(name), methodName: constructorMethodName(name), location: location)
+            return CallSite(
+                receiver: .type(name), methodName: constructorMethodName(name), location: location,
+                isConstruction: true)
         }
         return CallSite(receiver: implicitSelf ? .selfDispatch : .free, methodName: name, location: location)
     }

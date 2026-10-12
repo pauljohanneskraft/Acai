@@ -342,34 +342,62 @@ struct ProjectDetailView: View {
 // MARK: - Project Title Fields
 
 private extension ProjectDetailView {
+    #if os(macOS)
     func projectTitleFields(index: Int) -> some View {
         VStack(alignment: .leading, spacing: .spacingXS) {
-            TextField(text: Binding(
-                get: { model.store.projects[safe: index]?.title ?? "" },
-                set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
-            )) {
+            PlainTextField(
+                text: titleBinding(index: index),
+                placeholder: .app("View.ProjectDetailView.ProjectName"),
+                font: NSFont.preferredFont(forTextStyle: .title2).bold,
+                accessibilityIdentifier: "projectDetail.titleField"
+            )
+
+            PlainTextField(
+                text: subtitleBinding(index: index),
+                placeholder: .app("View.ProjectDetailView.ProjectDescription"),
+                font: NSFont.preferredFont(forTextStyle: .subheadline),
+                accessibilityIdentifier: "projectDetail.subtitleField",
+                textColor: .secondaryLabelColor
+            )
+        }
+    }
+    #else
+    func projectTitleFields(index: Int) -> some View {
+        VStack(alignment: .leading, spacing: .spacingXS) {
+            TextField(text: titleBinding(index: index)) {
                 Text(.app("View.ProjectDetailView.ProjectName"))
             }
             .font(.title2.bold())
             .textFieldStyle(.plain)
 
-            TextField(text: Binding(
-                get: { model.store.projects[safe: index]?.subtitle ?? "" },
-                set: {
-                    model.store.projects[index].subtitle = $0
-                    model.store.save()
-                    model.objectWillChange.send()
-                }
-            )) {
+            TextField(text: subtitleBinding(index: index)) {
                 Text(.app("View.ProjectDetailView.ProjectDescription"))
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .textFieldStyle(.plain)
         }
-        // A plain macOS field laid out mid-animation (a just-created project) keeps a clipped height.
         .fixedSize(horizontal: false, vertical: true)
         .transaction { $0.animation = nil }
+    }
+    #endif
+
+    func titleBinding(index: Int) -> Binding<String> {
+        Binding(
+            get: { model.store.projects[safe: index]?.title ?? "" },
+            set: { model.store.projects[index].title = $0; model.store.save(); model.objectWillChange.send() }
+        )
+    }
+
+    func subtitleBinding(index: Int) -> Binding<String> {
+        Binding(
+            get: { model.store.projects[safe: index]?.subtitle ?? "" },
+            set: {
+                model.store.projects[index].subtitle = $0
+                model.store.save()
+                model.objectWillChange.send()
+            }
+        )
     }
 }
 

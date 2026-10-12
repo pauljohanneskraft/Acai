@@ -137,6 +137,7 @@ struct ClassFreeformConversion: FreeformConversion {
     ) -> [String: (label: String, depth: Int, rect: CGRect)] {
         let languages = artifact.standardLanguageResolver
         let configuration = diagram.classConfiguration ?? .init()
+        let modules = ModuleMap(artifact: artifact)
 
         func groupKey(for type: TypeDeclaration) -> String? {
             let langConfig = languages.configuration(for: type)
@@ -144,7 +145,8 @@ struct ClassFreeformConversion: FreeformConversion {
                 from: type, configuration: configuration,
                 annotationStereotypes: langConfig.annotationStereotypes,
                 collectionTypeNames: langConfig.collectionTypeNames,
-                varianceKeywords: langConfig.varianceKeywords
+                varianceKeywords: langConfig.varianceKeywords,
+                modules: modules
             )
             switch grouping {
             case .none:

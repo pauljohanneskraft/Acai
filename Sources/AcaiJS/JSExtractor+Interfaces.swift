@@ -42,27 +42,33 @@ extension JSExtractor {
 
     private func parseInterfaceBody(_ bodyNode: Node, into typeDecl: inout TypeDeclaration) {
         for child in bodyNode.namedChildren() {
-            guard let childType = child.nodeType else { continue }
-            switch childType {
-            case "property_signature":
-                typeDecl.members.append(memberExtractor.propertySignature(child))
-            case "method_signature":
-                typeDecl.members.append(memberExtractor.methodSignature(child))
-            case "call_signature":
-                let params = parameterExtractor.parameters(child.child(byFieldName: "parameters") ?? child)
-                let ret = typeReferences.extractReturnTypeAnnotation(child)
-                typeDecl.members.append(
-                    Member(name: "call", kind: .method, accessLevel: .internal, type: ret, parameters: params))
-            case "construct_signature":
-                let params = parameterExtractor.parameters(child.child(byFieldName: "parameters") ?? child)
-                let ret = typeReferences.extractReturnTypeAnnotation(child)
-                typeDecl.members.append(
-                    Member(name: "new", kind: .initializer, accessLevel: .internal, type: ret, parameters: params))
-            case "index_signature":
-                break // Not modeled
-            default:
-                break
-            }
+            guard var member = interfaceMember(child) else { continue }
+            member.documentation = documentation.documentation(above: child, in: context)
+            typeDecl.members.append(member)
         }
+    }
+
+    /// `index_signature` is not modelled, and neither is anything else unlisted.
+    private func interfaceMember(_ node: Node) -> Member? {
+        switch node.nodeType {
+        case "property_signature":
+            return memberExtractor.propertySignature(node)
+        case "method_signature":
+            return memberExtractor.methodSignature(node)
+        case "call_signature":
+            return signatureMember(node, name: "call", kind: .method)
+        case "construct_signature":
+            return signatureMember(node, name: "new", kind: .initializer)
+        default:
+            return nil
+        }
+    }
+
+    private func signatureMember(_ node: Node, name: String, kind: MemberKind) -> Member {
+        Member(
+            name: name, kind: kind, accessLevel: .internal,
+            type: typeReferences.extractReturnTypeAnnotation(node),
+            parameters: parameterExtractor.parameters(node.child(byFieldName: "parameters") ?? node)
+        )
     }
 }

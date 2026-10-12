@@ -15,6 +15,15 @@ struct JSExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
+    /// JSDoc only: a `///` line in TypeScript is a compiler directive, not documentation.
+    let documentation = DocumentationReader(
+        convention: DocumentationComment(blockOpenings: ["/**"], blockClosing: "*/", continuationMarker: "*"),
+        transparentParentTypes: [
+            "export_statement", "ambient_declaration", "expression_statement",
+            "lexical_declaration", "variable_declaration", "variable_declarator"
+        ],
+        skippedSiblingTypes: ["decorator"]
+    )
 
     var declarations = DeclarationBuilder()
 

@@ -109,11 +109,23 @@ public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
         /// The claiming detector's type name.
         public var detector: String
         public var languages: [SourceLanguage]
+        /// Relative to the analysed folder, across every language this root claimed.
+        public var sourceDirs: [String]
+        /// Matched by file extension because no build system claimed these languages.
+        public var isFallback: Bool
 
-        public init(path: String, detector: String, languages: [SourceLanguage]) {
+        public init(
+            path: String,
+            detector: String,
+            languages: [SourceLanguage],
+            sourceDirs: [String] = [],
+            isFallback: Bool = false
+        ) {
             self.path = path
             self.detector = detector
             self.languages = languages
+            self.sourceDirs = sourceDirs
+            self.isFallback = isFallback
         }
     }
 

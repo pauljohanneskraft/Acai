@@ -113,6 +113,82 @@ struct GitHubNetworkingTests {
         #expect(capturedRequest.value?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
     }
 
+    private func pullRequestsFailure(status: Int, headers: [String: String] = [:]) async -> (any Error)? {
+        MockURLProtocol.handler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: status, httpVersion: nil, headerFields: headers)!
+            return (response, Data("refused".utf8))
+        }
+        defer { MockURLProtocol.handler = nil }
+        do {
+            _ = try await makeClient(credential: .personalAccessToken("t")).pullRequests(owner: "acme", repo: "widgets")
+            return nil
+        } catch {
+            return error
+        }
+    }
+
+    private func rateLimitReset(status: Int, headers: [String: String]) async -> Date? {
+        let failure = await pullRequestsFailure(status: status, headers: headers)
+        guard case .rateLimited(let resetAt) = failure as? GitHubAPIClient.Failure else {
+            Issue.record("expected a rate-limit failure, got \(String(describing: failure))")
+            return nil
+        }
+        return resetAt
+    }
+
+    @Test(arguments: [403, 429])
+    func aSpentQuotaCarriesItsResetTime(status: Int) async {
+        let resetAt = await rateLimitReset(
+            status: status, headers: ["x-ratelimit-remaining": "0", "x-ratelimit-reset": "1800000000"])
+
+        #expect(resetAt == Date(timeIntervalSince1970: 1_800_000_000))
+    }
+
+    @Test(arguments: [
+        RateLimitedResponse(status: 403, headers: ["retry-after": "60"]),
+        RateLimitedResponse(status: 429, headers: ["retry-after": "60"]),
+        RateLimitedResponse(status: 429, headers: [
+            "retry-after": "60", "x-ratelimit-remaining": "0", "x-ratelimit-reset": "1800000000"
+        ])
+    ])
+    func aSecondaryLimitResetsAfterItsRetryAfter(_ response: RateLimitedResponse) async throws {
+        let resetAt = await rateLimitReset(status: response.status, headers: response.headers)
+        let seconds = try #require(resetAt).timeIntervalSinceNow
+
+        #expect(seconds > 30 && seconds <= 60)
+    }
+
+    @Test func aRateLimitWithoutAResetHeaderInventsNoTime() async {
+        #expect(await rateLimitReset(status: 429, headers: [:]) == nil)
+    }
+
+    @Test(arguments: [[:], ["x-ratelimit-remaining": "4999"]])
+    func aForbiddenResponseWithQuotaLeftStaysAnOrdinaryFailure(_ headers: [String: String]) async {
+        let failure = await pullRequestsFailure(status: 403, headers: headers)
+
+        #expect(failure as? GitHubAPIClient.Failure == .http(403, "refused"))
+    }
+
+    @Test func aRejectedCredentialSurfacesAsUnauthorized() async {
+        let failure = await pullRequestsFailure(status: 401)
+
+        #expect(failure as? GitHubAPIClient.Failure == .unauthorized)
+    }
+
+    @Test func aRequestThatNeverReachesAServerReadsAsOffline() async throws {
+        MockURLProtocol.handler = { _ in throw URLError(.notConnectedToInternet) }
+        defer { MockURLProtocol.handler = nil }
+
+        let client = makeClient(credential: .personalAccessToken("t"))
+        let thrown = await #expect(throws: URLError.self) {
+            _ = try await client.pullRequests(owner: "acme", repo: "widgets")
+        }
+
+        #expect(String(localized: LoadFailure(error: try #require(thrown)).message)
+            == String(localized: .app("Error.LoadFailure.Offline")))
+    }
+
     @Test func httpErrorStatusSurfacesAsFailure() async throws {
         MockURLProtocol.handler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!
@@ -125,4 +201,9 @@ struct GitHubNetworkingTests {
             _ = try await client.pullRequests(owner: "acme", repo: "widgets")
         }
     }
+}
+
+struct RateLimitedResponse: Sendable {
+    var status: Int
+    var headers: [String: String]
 }

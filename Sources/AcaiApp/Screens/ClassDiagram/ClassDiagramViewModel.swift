@@ -29,6 +29,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// out and measuring that many nodes is the hang the ceiling exists to prevent, so this stops
     /// short of it rather than attempting it behind the progress indicator.
     @Published private(set) var nodeLimitError: DiagramRequestError?
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
     private(set) var configuration: ClassDiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
@@ -115,6 +116,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
         nodes = model.nodes
         edges = model.edges
+        emptyReason = resolvedEmptyReason(in: renderArtifact)
 
         for node in nodes {
             nodeSizes[node.id] = DiagramLayoutModel.estimateSize(for: node)
@@ -136,6 +138,19 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         } else {
             performLayout()
         }
+    }
+
+    // MARK: - Empty Scope
+
+    private func resolvedEmptyReason(in renderArtifact: CodeArtifact) -> DiagramEmptyReason {
+        guard model.nodes.isEmpty else { return .codebase }
+        let undos: [DiagramEmptyReason] = configuration.isFocused ? [.scope, .filter, .scopeAndFilter] : [.filter]
+        return undos.first { undo in
+            !DiagramLayoutModel(
+                artifact: renderArtifact, configuration: configuration.widened(undoing: undo),
+                languages: renderArtifact.standardLanguageResolver
+            ).nodes.isEmpty
+        } ?? .codebase
     }
 
     // MARK: - Apply Configuration

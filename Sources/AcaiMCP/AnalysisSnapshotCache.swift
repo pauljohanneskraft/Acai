@@ -54,7 +54,8 @@ actor AnalysisSnapshotCache {
             artifact = try decodeArtifact(at: url)
         } else {
             artifact = try await service.analyzeProject(
-                at: url, allowedLanguages: languageResolver.resolve(names: languageNames))
+                at: url, allowedLanguages: languageResolver.resolve(names: languageNames),
+                reusing: refresh ? .disabled : AnalysisCache(store: store, forResolvedPath: key))
             _ = try? store.write(artifact, sourcePath: key, fingerprint: fingerprint)
         }
         analysisCount += 1

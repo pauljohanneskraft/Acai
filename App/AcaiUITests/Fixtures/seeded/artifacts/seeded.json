@@ -9,10 +9,14 @@
     "discoveredRoots" : [
       {
         "detector" : "SwiftPackageManagerDetector",
+        "isFallback" : false,
         "languages" : [
           "swift"
         ],
-        "path" : "."
+        "path" : ".",
+        "sourceDirs" : [
+          "Sources\/SampleSwiftPackage"
+        ]
       }
     ],
     "filePaths" : [
@@ -378,7 +382,21 @@
 
           ],
           "callSites" : [
-
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 26,
+                "endLine" : 2,
+                "filePath" : "Sources\/SampleSwiftPackage\/Derived.swift",
+                "line" : 2
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Helper"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 
@@ -521,7 +539,21 @@
 
           ],
           "callSites" : [
-
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 26,
+                "endLine" : 2,
+                "filePath" : "Sources\/SampleSwiftPackage\/Helper.swift",
+                "line" : 2
+              },
+              "methodName" : "init",
+              "receiver" : {
+                "type" : {
+                  "_0" : "Worker"
+                }
+              }
+            }
           ],
           "fieldReads" : [
 

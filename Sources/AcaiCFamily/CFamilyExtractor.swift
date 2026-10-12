@@ -25,6 +25,13 @@ struct CFamilyExtractor {
     let callSites: CallSiteResolver
     let assignments: AssignmentResolver
     let fieldReads: FieldReadResolver
+    /// Doxygen's four markers; a plain `//` or `/* */` comment documents nothing.
+    let documentation = DocumentationReader(
+        convention: DocumentationComment(
+            linePrefixes: ["///", "//!"], blockOpenings: ["/**", "/*!"], blockClosing: "*/", continuationMarker: "*"
+        ),
+        transparentParentTypes: ["declaration", "field_declaration", "type_definition", "linkage_specification"]
+    )
 
     var declarations = DeclarationBuilder()
 
@@ -101,7 +108,28 @@ struct CFamilyExtractor {
         }
     }
 
+    /// What is written above a namespace, a linkage block or a conditional-compilation block (an
+    /// include guard's file header) documents the block, not each declaration inside it.
     private mutating func visitTopLevel(_ node: Node) {
+        switch node.nodeType {
+        case "namespace_definition":
+            visitNamespace(node)
+        case "linkage_specification":
+            visitChildrenAsTopLevel(node)
+        case "preproc_ifdef", "preproc_if", "preproc_else", "preproc_elif", "preproc_elifdef":
+            // Include guards (`#ifndef FOO_H … #endif`) and conditional compilation wrap their
+            // guarded declarations as children; descend so those declarations are still seen.
+            visitChildrenAsTopLevel(node)
+        default:
+            let mark = declarations.mark
+            visitTopLevelEntity(node)
+            let reader = documentation
+            let context = context
+            declarations.attachDocumentation(since: mark) { reader.documentation(above: node, in: context) }
+        }
+    }
+
+    private mutating func visitTopLevelEntity(_ node: Node) {
         switch node.nodeType {
         case "declaration":
             visitTopLevelDeclaration(node)
@@ -111,16 +139,8 @@ struct CFamilyExtractor {
             if let function = extractFunctionDefinition(node, defaultAccess: .public) {
                 declarations.freestandingFunctions.append(function)
             }
-        case "namespace_definition":
-            visitNamespace(node)
         case "template_declaration":
             visitTemplate(node)
-        case "linkage_specification":
-            visitChildrenAsTopLevel(node)
-        case "preproc_ifdef", "preproc_if", "preproc_else", "preproc_elif", "preproc_elifdef":
-            // Include guards (`#ifndef FOO_H … #endif`) and conditional compilation wrap their
-            // guarded declarations as children; descend so those declarations are still seen.
-            visitChildrenAsTopLevel(node)
         default:
             appendTopLevelSpecifier(node)
         }
@@ -270,9 +290,12 @@ extension CFamilyExtractor {
         if let body = node.child(byFieldName: "body") {
             for enumerator in body.namedChildren() where enumerator.nodeType == "enumerator" {
                 if let caseName = enumerator.child(byFieldName: "name").map({ $0.text(in: context) }) {
-                    let rawValue = enumerator.child(byFieldName: "value").map { $0.text(in: context) }
-                    let location = enumerator.location(in: context)
-                    cases.append(EnumCase(name: caseName, rawValue: rawValue, location: location))
+                    cases.append(EnumCase(
+                        name: caseName,
+                        rawValue: enumerator.child(byFieldName: "value").map { $0.text(in: context) },
+                        location: enumerator.location(in: context),
+                        documentation: documentation.documentation(above: enumerator, in: context)
+                    ))
                 }
             }
         }

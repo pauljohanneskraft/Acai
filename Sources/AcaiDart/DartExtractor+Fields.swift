@@ -16,7 +16,9 @@ extension DartExtractor {
             isConst: info.isConst, isFinal: info.isFinal
         )
         return node.allChildren(withType: "initialized_identifier").compactMap { child in
-            memberExtractor.field(child, declaredType: info.type, attributes: attrs, references: references(of: child))
+            documented(memberExtractor.field(
+                child, declaredType: info.type, attributes: attrs, references: references(of: child)
+            ), above: child)
         }
     }
 
@@ -29,8 +31,16 @@ extension DartExtractor {
             isConst: true, isFinal: true
         )
         return node.allChildren(withType: "static_final_declaration").compactMap { child in
-            memberExtractor.field(child, declaredType: info.type, attributes: attrs, references: references(of: child))
+            documented(memberExtractor.field(
+                child, declaredType: info.type, attributes: attrs, references: references(of: child)
+            ), above: child)
         }
+    }
+
+    private func documented(_ member: Member?, above node: Node) -> Member? {
+        guard var member else { return nil }
+        member.documentation = documentation.documentation(above: node, in: context)
+        return member
     }
 
     /// What a field's initializer contributes. A field initializer can't reference `this`, so

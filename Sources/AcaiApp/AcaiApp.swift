@@ -28,6 +28,8 @@ public struct AcaiRootScene: Scene {
         // launch only; `resolveBaseDir()` is inert in release.
         if UITestFixtureResolver().resolveBaseDir() != nil {
             UITextField.appearance().tintColor = .clear
+            // The simulator can deliver one animation's start twice, so XCTest's idle check never settles.
+            UIView.setAnimationsEnabled(false)
         }
         #endif
     }

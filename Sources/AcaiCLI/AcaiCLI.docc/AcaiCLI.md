@@ -217,6 +217,15 @@ looking at without guessing from a decode failure; a file written before this fi
 `.gitignore` line no rule could be read from) alongside the parser's own `error`, `missing`,
 `unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed).
 
+The report also carries the scope the parse ran over, under `discoveredRoots`: one entry per project
+root discovery claimed, each with its `path` (relative to the analysed folder, `"."` for the folder
+itself), the `detector` that claimed it, its `languages`, the `sourceDirs` it contributed, and
+`isFallback`. That last one is the answer to "why did this folder analyse to fewer types than it
+contains": when every root reads `isFallback: true`, no build system's manifest was recognised
+anywhere and the file set is an extension match over the tree rather than a manifest's declared
+scope — which `--format human` says outright as *No build system recognised; analysed by file
+extension.*
+
 ```sh
 acai analyze --source . --health --format human    # run this first
 acai analyze --source . --output model.json

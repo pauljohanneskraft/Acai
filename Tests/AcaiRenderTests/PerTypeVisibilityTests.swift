@@ -23,10 +23,12 @@ struct PerTypeVisibilityTests {
         config.propertyVisibility["Hidden"] = false
 
         let shown = GeneratedDiagramNode(
-            from: typeWithEverything(id: "Shown"), configuration: config, varianceKeywords: [:]
+            from: typeWithEverything(id: "Shown"), configuration: config, varianceKeywords: [:],
+            modules: ModuleMap(roots: [], filePaths: [])
         )
         let hidden = GeneratedDiagramNode(
-            from: typeWithEverything(id: "Hidden"), configuration: config, varianceKeywords: [:]
+            from: typeWithEverything(id: "Hidden"), configuration: config, varianceKeywords: [:],
+            modules: ModuleMap(roots: [], filePaths: [])
         )
 
         #expect(!shown.properties.isEmpty)
@@ -45,10 +47,12 @@ struct PerTypeVisibilityTests {
         config.enumCaseVisibility["Revealed"] = true
 
         let revealed = GeneratedDiagramNode(
-            from: typeWithEverything(id: "Revealed"), configuration: config, varianceKeywords: [:]
+            from: typeWithEverything(id: "Revealed"), configuration: config, varianceKeywords: [:],
+            modules: ModuleMap(roots: [], filePaths: [])
         )
         let collapsed = GeneratedDiagramNode(
-            from: typeWithEverything(id: "Collapsed"), configuration: config, varianceKeywords: [:]
+            from: typeWithEverything(id: "Collapsed"), configuration: config, varianceKeywords: [:],
+            modules: ModuleMap(roots: [], filePaths: [])
         )
 
         #expect(!revealed.properties.isEmpty)

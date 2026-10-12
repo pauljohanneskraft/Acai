@@ -102,6 +102,17 @@ Two more shared collaborators cover the rest of a declaration's syntax:
   declaration's access level, modifiers and annotations from its `modifiers` node in one call to
   `.modifierInfo(for:in:)` — `AcaiJVM`'s `JavaExtractor` and `KotlinExtractor` each hold their own
   instance with a different lookup table.
+- `DocumentationReader(convention:commentNodeTypes:transparentParentTypes:skippedSiblingTypes:)`
+  finds the comment run directly above a declaration (a blank line ends it) and hands it to a
+  [DocumentationComment](/documentation/acaicore/documentationcomment) — your language's convention
+  as data: the line prefixes (`///`, `//!`) and block openings (`/**`, `/*!`) that mark a comment as
+  documentation, the block's closing and the decoration its continuation lines repeat, and the
+  delimiters of a string literal that *is* the documentation. Set `documentation` on each `TypeDeclaration`, `Member` and `EnumCase`
+  from `.documentation(above:in:)`; `DeclarationBuilder.mark` plus `.attachDocumentation(since:_:)`
+  does it for a top-level walk that may produce a type, a function or a variable. Name only the
+  markers the language really uses — a `///` line in TypeScript is a compiler directive, and Python's
+  documentation is not a comment at all but the first statement of the declaration's body, read with
+  `.prose(fromLiteral:)` (see `AcaiPython`'s `PythonDocstring`).
 
 What remains — building a `TypeDeclaration` skeleton, shaping a `Member` from already-resolved
 pieces, parameter lists, base-class/type-reference resolution — splits into stateless value types

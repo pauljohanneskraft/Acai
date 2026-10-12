@@ -12,6 +12,8 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
     public struct Node: Codable, Hashable, Sendable, Identifiable {
         public var id: String
         public var name: String
+        /// The outer box the module is drawn inside; `nil` when the analysed folder holds one project.
+        public var project: String?
         public var typeCount: Int
         /// Afferent coupling (Ca): external types that depend on this module.
         public var afferentCoupling: Int
@@ -21,6 +23,12 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         public var instability: Double
         /// Abstractness `A = abstractTypes / totalTypes`.
         public var abstractness: Double
+
+        /// `name` without its `project` prefix, which the enclosing project box already shows.
+        public var moduleName: String {
+            guard let project, name.hasPrefix("\(project)/") else { return name }
+            return String(name.dropFirst(project.count + 1))
+        }
 
         /// Distance from the main sequence `D = |A + I − 1|` (0 = balanced,
         /// 1 = either the "zone of pain" or the "zone of uselessness").
@@ -50,6 +58,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         public init(
             id: String,
             name: String,
+            project: String? = nil,
             typeCount: Int,
             afferentCoupling: Int,
             efferentCoupling: Int,
@@ -58,6 +67,7 @@ public struct PackageDiagram: Codable, Hashable, Sendable {
         ) {
             self.id = id
             self.name = name
+            self.project = project
             self.typeCount = typeCount
             self.afferentCoupling = afferentCoupling
             self.efferentCoupling = efferentCoupling

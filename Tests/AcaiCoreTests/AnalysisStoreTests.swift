@@ -140,4 +140,67 @@ struct AnalysisStoreTests {
             artifact: makeArtifact(toolVersion: "0.9.0"), sourcePath: "/tmp/proj", fingerprint: fingerprint)
         #expect(!entry.isCurrent(sourcePath: "/tmp/proj", fingerprint: fingerprint, toolVersion: "1.0.0"))
     }
+
+    // MARK: - Per-file parse cache
+
+    private func makeFileCacheEntry() -> ParsedFileCache.Entry {
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift, filePaths: ["Foo.swift"]))
+        return ParsedFileCache.Entry(modified: Date(timeIntervalSince1970: 500), size: 42, artifact: artifact)
+    }
+
+    private func makeFileCache() -> ParsedFileCache {
+        ParsedFileCache(
+            build: .current, entriesByRelativePath: ["Foo.swift": makeFileCacheEntry()])
+    }
+
+    @Test func fileCacheRoundTripsThroughTheStore() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = makeFileCache()
+
+        try store.writeFileCache(cache, forResolvedPath: "/tmp/proj")
+
+        let loaded = store.lookupFileCache(forResolvedPath: "/tmp/proj")
+        #expect(loaded == cache)
+    }
+
+    @Test func missingFileCacheIsNilNotThrown() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        #expect(store.lookupFileCache(forResolvedPath: "/no/such/path") == nil)
+    }
+
+    @Test func fileCacheFilesAreNeverPickedUpAsWholeProjectEntries() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try store.writeFileCache(makeFileCache(), forResolvedPath: "/tmp/proj")
+
+        #expect(store.lookup(forResolvedPath: "/tmp/proj") == .absent)
+    }
+
+    /// Deleting a codebase goes through `removeEntry`, so that is where its parsed fragments have to
+    /// go too — otherwise they sit in `~/.acai/analysis` for a path nothing will ever look up again.
+    @Test func removingAnEntryAlsoRemovesItsFileCache() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try store.write(makeArtifact(), sourcePath: "/tmp/proj", fingerprint: fingerprint)
+        try store.writeFileCache(makeFileCache(), forResolvedPath: "/tmp/proj")
+
+        try store.removeEntry(forResolvedPath: "/tmp/proj")
+
+        #expect(store.lookup(forResolvedPath: "/tmp/proj") == .absent)
+        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == nil)
+        let remaining = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+        #expect(remaining.filter { $0.pathExtension == "filecache" }.isEmpty)
+    }
+
+    @Test func removingAFileCacheWithNoWholeProjectEntryStillSucceeds() throws {
+        let (store, directory) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try store.writeFileCache(makeFileCache(), forResolvedPath: "/tmp/proj")
+
+        try store.removeEntry(forResolvedPath: "/tmp/proj")
+
+        #expect(store.lookupFileCache(forResolvedPath: "/tmp/proj") == nil)
+    }
 }

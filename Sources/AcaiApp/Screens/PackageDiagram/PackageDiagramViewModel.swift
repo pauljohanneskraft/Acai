@@ -20,6 +20,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     @Published private(set) var diagram: PackageDiagram
     @Published private(set) var filter: AcaiQuality.Selector?
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
     /// Per-module centre overrides, keyed by module id.
     @Published var positionOverrides: [String: CGPoint] = [:]
@@ -51,19 +52,28 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
+    var isEmpty: Bool { diagram.nodes.isEmpty }
+
     private func rebuild() {
+        let built = build(filter: filter)
+        diagram = built.diagram
+        diff = built.diff
+        emptyReason = resolvedEmptyReason()
+    }
+
+    private func build(filter: AcaiQuality.Selector?) -> (diagram: PackageDiagram, diff: PackageDiagramDiff?) {
         let new = PackageDiagramBuilder(filter: filter).build(
             from: artifact.enriched(using: artifact.standardLanguageResolver))
-        if let comparisonArtifact {
-            let old = PackageDiagramBuilder(filter: filter).build(
-                from: comparisonArtifact.enriched(using: comparisonArtifact.standardLanguageResolver))
-            let diff = PackageDiagramDiff(old: old, new: new)
-            self.diff = diff
-            self.diagram = diff.union
-        } else {
-            self.diff = nil
-            self.diagram = new
-        }
+        guard let comparisonArtifact else { return (new, nil) }
+        let old = PackageDiagramBuilder(filter: filter).build(
+            from: comparisonArtifact.enriched(using: comparisonArtifact.standardLanguageResolver))
+        let diff = PackageDiagramDiff(old: old, new: new)
+        return (diff.union, diff)
+    }
+
+    private func resolvedEmptyReason() -> DiagramEmptyReason {
+        guard diagram.nodes.isEmpty, filter != nil else { return .codebase }
+        return build(filter: nil).diagram.nodes.isEmpty ? .codebase : .filter
     }
 
     var isDeltaMode: Bool { diff != nil }

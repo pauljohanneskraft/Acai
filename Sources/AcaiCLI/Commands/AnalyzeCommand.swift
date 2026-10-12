@@ -72,16 +72,7 @@ extension AcaiCommand {
             case .json:
                 return try JSONReport(report).text
             case .human:
-                let percent = Int((report.score * 100).rounded())
-                var lines = [
-                    "Parse health: \(percent)% "
-                    + "(\(report.diagnosticCount) diagnostic(s) across \(report.typeCount) type(s))"
-                ]
-                for diagnostic in report.diagnostics {
-                    lines.append(
-                        "  \(diagnostic.location.jumpTarget): \(diagnostic.kind.rawValue): \(diagnostic.message)")
-                }
-                return lines.joined(separator: "\n") + "\n"
+                return HealthTextReport(report: report).render()
             }
         }
     }

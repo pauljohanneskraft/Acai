@@ -15,10 +15,14 @@ public struct SourceSpec {
     /// Paths under ``sourceDirs`` a build system's manifest declares out of the build. A path is
     /// excluded together with everything below it.
     public var excludedPaths: [URL]
+    /// Directories a nested root may claim from this spec; unlike ``excludedPaths``, no file is dropped.
+    public var nestedRootPaths: [URL]
     /// Problems found while discovering this spec — a manifest whose layout could not be read in
     /// full, say, leaving the file set a guess. Merged into the artifact's parse diagnostics, so
     /// ``HealthCheck`` reflects them.
     public var diagnostics: [ParseDiagnostic]
+    /// Recorded rather than derived from ``detector``, so no consumer has to recognise a detector's name.
+    public var isFallback: Bool
 
     public init(
         language: CodeArtifact.SourceLanguage,
@@ -26,19 +30,24 @@ public struct SourceSpec {
         root: URL,
         detector: String = "",
         excludedPaths: [URL] = [],
-        diagnostics: [ParseDiagnostic] = []
+        nestedRootPaths: [URL] = [],
+        diagnostics: [ParseDiagnostic] = [],
+        isFallback: Bool = false
     ) {
         self.language = language
         self.sourceDirs = sourceDirs
         self.root = root
         self.detector = detector
         self.excludedPaths = excludedPaths
+        self.nestedRootPaths = nestedRootPaths
         self.diagnostics = diagnostics
+        self.isFallback = isFallback
     }
 
-    func detected(by detector: any BuildSystemDetector) -> SourceSpec {
+    func detected(by detector: any BuildSystemDetector, asFallback: Bool = false) -> SourceSpec {
         var copy = self
         copy.detector = String(describing: type(of: detector))
+        copy.isFallback = asFallback
         return copy
     }
 

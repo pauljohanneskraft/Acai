@@ -30,9 +30,7 @@ final class ProjectStore: ObservableObject {
     /// The most recent load/save failure, surfaced to the UI (e.g. via an alert).
     @Published var lastError: StoreError?
 
-    /// The fixture preindexing `load()` started, retained so a caller can await it rather than race
-    /// it. `nil` in production, where there is nothing to preindex.
-    private(set) var fixturePreindexing: Task<Void, Never>?
+    private var fixturePreindexing: Task<Void, Never>?
 
     /// A user-presentable persistence error. `Identifiable` so SwiftUI `.alert(item:)` can bind it.
     struct StoreError: Identifiable {
@@ -176,16 +174,20 @@ final class ProjectStore: ObservableObject {
         } catch {
             report(.app("Error.ProjectStore.LoadProjectDirectory \(error.localizedDescription)"))
         }
-        guard !fixtures.isEmpty else { return }
-        fixturePreindexing = Task { [weak self, fixtures] in
+        if !fixtures.isEmpty {
+            startFixturePreindexing(fixtures)
+        }
+    }
+
+    /// Every artifact write awaits this first, so a real index always lands after the canned one.
+    func startFixturePreindexing(_ fixtures: [FixturePreindex]) {
+        fixturePreindexing = Task { [weak self] in
             for fixture in fixtures {
                 await self?.preindex(fixture)
             }
         }
     }
 
-    /// Empty outside a UI test: `resolvePreindexedArtifactURL()` reads an environment variable a real
-    /// launch never carries.
     private func fixturesToPreindex(inProjectAt projectIndex: Int) -> [FixturePreindex] {
         guard let artifactURL = UITestFixtureResolver().resolvePreindexedArtifactURL(),
               let data = try? Data(contentsOf: artifactURL),
@@ -337,6 +339,7 @@ final class ProjectStore: ObservableObject {
     }
 
     private func writeArtifactToDisk(_ artifact: CodeArtifact, for codebaseID: UUID) async throws {
+        await fixturePreindexing?.value
         guard let sourcePath = resolvedSourcePath(for: codebaseID) else {
             throw StoreCodebaseNotFoundError()
         }
