@@ -25,7 +25,7 @@ final class QueryScreen {
     }
     var overridesToggle: XCUIElement { app.descendants(matching: .any)["query.memberFilter.overridesToggle"] }
 
-    /// `id` is a `TypeQuery.TypeRow.id` (the type's qualified name, e.g. `"Base"`).
+    /// `id` is a `TypeQuery.TypeRow.id` (the type's qualified name, e.g. `"SampleSwiftPackage.Base"`).
     func row(id: String) -> XCUIElement {
         app.descendants(matching: .any)["query.row.\(id)"]
     }

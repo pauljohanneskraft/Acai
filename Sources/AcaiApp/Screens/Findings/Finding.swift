@@ -106,14 +106,18 @@ extension Finding {
         let members: [String]
     }
 
-    init(_ finding: AtlasFinding, codebase: Codebase, reference: CodeElementReference?, cycle: CycleReference?) {
+    /// `title` replaces the shared finding's own, which names types by id as exported reports do.
+    init(
+        _ finding: AtlasFinding, codebase: Codebase, reference: CodeElementReference?, cycle: CycleReference?,
+        title: String? = nil
+    ) {
         self.init(
             id: "\(finding.kind.rawValue)-\(codebase.id)-\(finding.identity)",
             kind: Kind(finding.kind),
             severity: Severity(finding.severity),
             codebaseID: codebase.id,
             codebaseName: codebase.name,
-            title: finding.title,
+            title: title ?? finding.title,
             message: finding.message,
             location: finding.location,
             reference: reference,

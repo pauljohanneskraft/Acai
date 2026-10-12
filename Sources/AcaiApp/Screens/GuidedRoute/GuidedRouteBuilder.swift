@@ -30,14 +30,19 @@ struct GuidedRouteBuilder: Sendable {
         guard let top = topType(by: \.fanIn) else { return nil }
         var configuration = ClassDiagramConfiguration()
         configuration.focus = FocusConfiguration(rootTypeName: top.id, direction: .dependents)
-        return GuidedRouteStop(kind: .mostDependedUpon, subject: top.name, content: .classDiagram(configuration))
+        return GuidedRouteStop(
+            kind: .mostDependedUpon, subject: displayName(of: top), content: .classDiagram(configuration))
     }
 
     private var mostComplexStop: GuidedRouteStop? {
         guard let top = topType(by: \.maxCyclomaticComplexity) else { return nil }
         var configuration = ClassDiagramConfiguration()
         configuration.focus = FocusConfiguration(rootTypeName: top.id)
-        return GuidedRouteStop(kind: .mostComplex, subject: top.name, content: .classDiagram(configuration))
+        return GuidedRouteStop(kind: .mostComplex, subject: displayName(of: top), content: .classDiagram(configuration))
+    }
+
+    private func displayName(of metric: CodeMetrics.TypeMetric) -> String {
+        artifact.typeDisplayNames.name(forID: metric.id)
     }
 
     /// Ties break alphabetically by name so the pick is deterministic; `nil` when nothing scores above zero.
