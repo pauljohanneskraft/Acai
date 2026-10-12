@@ -30,6 +30,51 @@ struct InspectCommandTests {
         }
     }
 
+    @Test func humanReportCarriesDocumentationAsCommentLines() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeDocumentedSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("inspect.txt")
+            var cmd = try CLITestSupport.parseInspect(
+                ["--source", dir.path, "--language", "swift", "--format", "human", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("  // Stores and retrieves orders."))
+            #expect(contents.contains("    // Writes the order to disk."))
+        }
+    }
+
+    @Test func humanReportLeavesAnUndocumentedDeclarationWithoutAPlaceholder() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeDocumentedSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("inspect.txt")
+            var cmd = try CLITestSupport.parseInspect(
+                ["--source", dir.path, "--language", "swift", "--format", "human", "--output", output.path])
+            try await cmd.run()
+            let lines = try String(contentsOf: output, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map(String.init)
+            // The undocumented type's row is followed straight by its member, and that member's row
+            // by the next line of structure — no blank comment, no "no documentation" stand-in.
+            let index = try #require(lines.firstIndex { $0.hasPrefix("Undocumented ") })
+            #expect(lines[index + 1].hasPrefix("  - run"))
+            #expect(!lines[index + 2].contains("//"))
+        }
+    }
+
+    @Test func jsonReportCarriesDocumentationOnTypesAndMembers() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeDocumentedSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("inspect.json")
+            var cmd = try CLITestSupport.parseInspect(
+                ["--source", dir.path, "--language", "swift", "--output", output.path])
+            try await cmd.run()
+            let contents = try String(contentsOf: output, encoding: .utf8)
+            #expect(contents.contains("\"documentation\""))
+            #expect(contents.contains("Stores and retrieves orders."))
+            #expect(contents.contains("Writes the order to disk."))
+        }
+    }
+
     @Test func memberFilterNarrowsToMatchingTypes() async throws {
         try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)
