@@ -180,12 +180,13 @@ struct ParameterListEditor: View {
                     parameters.remove(at: index)
                 } label: {
                     Label(.app("View.ParameterListEditor.DeleteParameter"), systemImage: "minus.circle")
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless)
                 .help(.app("View.ParameterListEditor.DeleteParameter"))
                 .accessibilityIdentifier("\(accessibilityPrefix).removeParameterButton.\(index)")
             }
-            .frame(minHeight: 44)
         }
         Button {
             parameters.append(.init(name: "", type: ""))
