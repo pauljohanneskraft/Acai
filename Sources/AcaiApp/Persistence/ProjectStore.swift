@@ -146,7 +146,7 @@ final class ProjectStore: ObservableObject {
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
-        activityCenter.onPersistenceFailure = { [weak self] error in
+        activityCenter.onPersistenceFailure = { @MainActor [weak self] error in
             self?.report(.app("Error.ActivityCenter.LedgerWriteFailed \(error.localizedDescription)"))
         }
         load()

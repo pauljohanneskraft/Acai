@@ -139,7 +139,7 @@ final class ActivityCenter: ObservableObject {
     private func newestPerSubject(_ records: [InterruptedOperationRecord]) -> [InterruptedOperationRecord] {
         var newest: [ActivityOperation.Subject: InterruptedOperationRecord] = [:]
         for record in records where record.subject != .none {
-            guard newest[record.subject].map({ $0.startedAt < record.startedAt }) ?? true else { continue }
+            if let existing = newest[record.subject], existing.startedAt >= record.startedAt { continue }
             newest[record.subject] = record
         }
         return newest.values.sorted { $0.startedAt < $1.startedAt }
