@@ -533,6 +533,10 @@ acai inspect --from myproj --enums
 `--format json` output: `{ "types": [<TypeQuery.TypeRow>], "health": <HealthCheck.Summary> }`, or with
 `--enums`: `{ "enums": [<EnumInventory.Entry>], "health": <HealthCheck.Summary> }`.
 
+Each type, member and enum case carries the `documentation` the source declared, as prose with the
+comment markers stripped — rendered as `//` comment lines under the declaration by `--format human`,
+and omitted entirely where a declaration carries none.
+
 ### `callgraph`
 
 > Call-graph analysis: metrics, method cycles, or dead-code candidates.
