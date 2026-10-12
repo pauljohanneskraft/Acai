@@ -45,7 +45,9 @@ public:
 
     class Builder {
     public:
-        Product build() const;
+        Product build() const {
+            return Product("", 0.0);
+        }
     };
 
     Product(const std::string &name, double base);
@@ -59,6 +61,8 @@ public:
     }
 
     Category classify(int value) {
+        Logger local;
+        local.log("classify");
         if (value > 10) {
             return Category::Tool;
         } else if (value > 5) {
