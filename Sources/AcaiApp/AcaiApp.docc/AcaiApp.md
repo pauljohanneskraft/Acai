@@ -151,6 +151,18 @@ started by hand. The action returns the codebase when the reindex finishes. It f
 when the codebase no longer exists, the analysis fails, or the run is cancelled, so a shortcut can
 branch on the result.
 
+## The widget
+
+A widget shows one codebase's state without opening the app: when it was last analysed, whether the
+code had changed since, and what that analysis found. Tapping it opens that codebase rather than the
+app's front door. Pick which codebase it shows by editing the widget; a new one starts on the
+codebase analysed most recently.
+
+It is explicitly a snapshot. The widget runs outside the app with no access to your source folder,
+so it reports what the app wrote out at its last analysis and freshness check — never live state,
+which is what the "as of the last analysis" line on it means. Reindexing in the app updates it.
+See [AcaiWidget](/documentation/acaiwidget/).
+
 ## Languages
 
 The app ships in English, German and French, following the system language — there is no in-app
