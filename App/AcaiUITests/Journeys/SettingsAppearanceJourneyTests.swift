@@ -10,6 +10,11 @@ final class SettingsAppearanceJourneyTests: UIJourneyTestCase {
 
         let settings = SettingsScreen(app: app)
         settings.diagramThemePicker.waitOrFail("the diagram theme picker in Settings")
+        #if os(macOS)
+        // The pane renders every section without scrolling on macOS, so the license load’s own
+        // outcome is observable here; a row count would pass on an empty list.
+        settings.licensesLoad.waitUntilLoaded("the licenses list")
+        #endif
         #if os(iOS)
         settings.keyboardShortcutsButton.tap(
             "Keyboard Shortcuts", until: app.navigationBars["Keyboard Shortcuts"])
