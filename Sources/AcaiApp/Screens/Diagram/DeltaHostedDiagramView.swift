@@ -62,6 +62,12 @@ struct DeltaHostedDiagramView<Content: View>: View {
         "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")"
     }
 
+    /// `nil` hides the panel's per-file select button where the diagram has nothing to select.
+    private var selectChangedFileTypes: ((Set<String>) -> Void)? {
+        guard diagram.type.selectsChangedFileTypes else { return nil }
+        return { changedFileSelection = $0 }
+    }
+
     private var contentIdentity: String {
         "\(comparisonTaskID)|\(loaded)"
     }
@@ -94,12 +100,14 @@ struct DeltaHostedDiagramView<Content: View>: View {
             await model.ensureComparisonLoaded(for: diagram)
         }
         #if !os(macOS)
+        // Not a `.popover` + `.presentationCompactAdaptation(.sheet)`: a popover anchored to a small
+        // overlay button on a `GeometryReader`-driven canvas renders no visible content on iOS.
         .sheet(isPresented: $isComparePresented) {
             // A sheet has no built-in close chrome, so an explicit Done button is the discoverable
             // dismiss path (unlike macOS's popover, a sheet's `NavigationStack` toolbar renders
             // correctly here).
             NavigationStack {
-                CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: { changedFileSelection = $0 })
+                CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: selectChangedFileTypes)
                     .navigationTitle(.app("View.CompareOverlayButton.CompareVsGit"))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
