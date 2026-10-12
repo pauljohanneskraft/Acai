@@ -51,8 +51,7 @@ enum MCPTestSupport {
         return fileURL
     }
 
-    /// A documented type beside an undocumented one, so a tool's rows can be checked both for the
-    /// prose they carry and for the absence of a field where there is none.
+    /// A documented type beside an undocumented one.
     @discardableResult
     static func writeDocumentedSwiftSource(in directory: URL) throws -> URL {
         let source = """

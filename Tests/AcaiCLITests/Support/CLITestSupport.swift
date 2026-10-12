@@ -123,8 +123,7 @@ enum CLITestSupport {
         return fileURL
     }
 
-    /// A documented type and enum beside undocumented declarations, so a report can be checked both
-    /// for the prose it carries and for the absence of a placeholder where there is none.
+    /// Documented declarations beside undocumented ones.
     @discardableResult
     static func writeDocumentedSwiftSource(in directory: URL) throws -> URL {
         let source = """

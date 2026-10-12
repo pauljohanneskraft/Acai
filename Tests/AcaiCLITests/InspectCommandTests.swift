@@ -53,8 +53,7 @@ struct InspectCommandTests {
             let lines = try String(contentsOf: output, encoding: .utf8)
                 .split(separator: "\n", omittingEmptySubsequences: false)
                 .map(String.init)
-            // The undocumented type's row is followed straight by its member, and that member's row
-            // by the next line of structure — no blank comment, no "no documentation" stand-in.
+            // No comment line, blank or placeholder, follows an undocumented declaration.
             let index = try #require(lines.firstIndex { $0.contains("Undocumented [") })
             #expect(lines[index + 1].hasPrefix("  - run"))
             #expect(!lines[index + 2].contains("//"))
