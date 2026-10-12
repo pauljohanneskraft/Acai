@@ -53,6 +53,6 @@ public struct ImpactAnalysis: Sendable {
 
 private extension TypeDeclaration {
     func matches(name: String) -> Bool {
-        id == name || self.name == name || qualifiedName == name
+        id == name || self.name == name || qualifiedName == name || unqualifiedID == name
     }
 }

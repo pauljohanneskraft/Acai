@@ -32,7 +32,7 @@ struct DOTClusterRenderer {
 
     func renderByDirectory(types: [TypeDeclaration], directoryGroups: [String: [String]]) -> String {
         let nodeRenderer = DOTNodeRenderer(options: options)
-        let typeIndex = Dictionary(uniqueKeysWithValues: types.map { ($0.id, $0) })
+        let typeIndex = Dictionary(types.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
         return directoryGroups.sorted(by: { $0.key < $1.key }).enumerated().map { index, pair in
             let (dir, typeIds) = pair

@@ -11,7 +11,7 @@ struct SelectorOption: ParsableArguments {
     @Option(name: .long, help: "Only types whose module/target matches this name or glob (*, ?).")
     var module: String?
 
-    @Option(name: .long, help: "Only types whose id / qualified name matches this glob (*, ?).")
+    @Option(name: .long, help: "Only types whose module-scoped or source-spelled id matches this glob (*, ?).")
     var type: String?
 
     @Option(name: .long, help: "Only types of this declaration kind (e.g. class, protocol, struct).")

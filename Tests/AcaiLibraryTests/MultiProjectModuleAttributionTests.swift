@@ -67,6 +67,35 @@ struct MultiProjectModuleAttributionTests {
         }
     }
 
+    @Test("two roots each declaring Core.Foo get ids scoped by the module ModuleMap reports")
+    func sameTypeInSameNamedModulesOfTwoProjects() async throws {
+        try await withTempDir { root in
+            for project in ["app-ios", "app-mac"] {
+                try write("\(project)/Package.swift", in: root, contents: "// swift-tools-version:5.9")
+                try write("\(project)/Sources/Core/Foo.swift", in: root, contents: "public class Foo {}")
+                try write(
+                    "\(project)/Sources/Core/Bar.swift", in: root,
+                    contents: "public class Bar { let foo: Foo; init(foo: Foo) { self.foo = foo } }")
+            }
+
+            let artifact = try await AnalysisService.standard.analyzeProject(at: root, allowedLanguages: [])
+            let modules = ModuleMap(artifact: artifact)
+            let types = artifact.flattened()
+
+            #expect(Set(types.map(\.id))
+                == ["app-ios/Core.Foo", "app-ios/Core.Bar", "app-mac/Core.Foo", "app-mac/Core.Bar"])
+            for type in types {
+                let module = modules.module(forFilePath: type.location?.filePath ?? "")
+                #expect(type.id == "\(module).\(type.name)")
+                #expect(type.module == module)
+            }
+            let edges = Set(
+                artifact.relationships.filter { $0.kind == .composition }.map { "\($0.source)->\($0.target)" })
+            #expect(edges == ["app-ios/Core.Bar->app-ios/Core.Foo", "app-mac/Core.Bar->app-mac/Core.Foo"])
+            #expect(Set(artifact.computeMetrics().types.map(\.name)) == Set(types.map(\.id)))
+        }
+    }
+
     /// One root is the single-project case the issue pins: names stay exactly what the anchor
     /// derives, and nothing grows a project box.
     @Test("one root leaves module names unqualified and draws no project box")
