@@ -2,11 +2,7 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// `SeededFixture.stageSignedInGitHubAccount(in:)` copies `signed-in-github-token.json` over the
-/// file a fixture launch redirects `GitHubTokenStore` to, so a journey that only needs an account
-/// starts with one instead of driving the Settings sign-in form. That file is hand-written JSON on
-/// the other side of the SwiftPM / Xcode-project boundary, where nothing type-checks it: this pins
-/// it both to the shape `StoredAccount` reads and to what the form itself would have stored.
+/// Pins the journeys' hand-written `signed-in-github-token.json` to what signing in would store.
 @Suite("Signed-in GitHub account fixture", .timeLimit(.minutes(1)))
 @MainActor
 struct SignedInGitHubAccountFixtureTests {

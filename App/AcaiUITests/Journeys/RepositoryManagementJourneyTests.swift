@@ -2,21 +2,18 @@ import XCTest
 
 /// Codebases cloned from the same remote share one on-disk clone. Real git against a local fixture
 /// remote: only a real clone has a shared hub, a size on disk and worktrees.
-///
-/// Everything around that clone is staged rather than driven, so the journey spends its allowance on
-/// git: the GitHub account comes from the fixture (`GitHubSignInTests` owns the sign-in form) and
-/// each clone's first index reads the canned artifact instead of parsing the cloned package.
 @MainActor
 final class RepositoryManagementJourneyTests: UIJourneyTestCase {
 
     func testRepositoryDetailShowsTheSharedCloneAndTheCodebasesUsingIt() throws {
         var remoteURL = ""
+        // Account and first index are staged, so the allowance goes on git (`GitHubSignInTests` owns sign-in).
         let browser = launchSeeded(analysis: .cannedForEveryCodebase) { app, destination in
             try SeededFixture().stageSignedInGitHubAccount(in: destination)
             remoteURL = try Self.stageRemote(for: app, in: destination)
         }
-        // `main` for both on purpose: the point is two codebases sharing one clone, not two branches.
-        addCodebases([("fixture-repo", "main"), ("fixture-repo-2", "main")], browser: browser)
+        // Both on the default branch on purpose: the point is two codebases sharing one clone.
+        addCodebases(named: ["fixture-repo", "fixture-repo-2"], browser: browser)
 
         let repositoryRow = browser.repositoryRow(remoteURL: remoteURL)
         let repository = RepositoryDetailScreen(app: app)
@@ -31,9 +28,7 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         repository.referencingCodebase(named: "fixture-repo").waitOrFail("the first referencing codebase")
         repository.referencingCodebase(named: "fixture-repo-2").waitOrFail("the second referencing codebase")
 
-        // The sidebar row's own Delete affordance and its confirmation, which no other journey
-        // reaches. That the repository's list then drops the codebase is
-        // `RepositoryDetailModelTests.referencingCodebasesFollowTheStoreAfterRemoval`.
+        // No other journey reaches this confirmation; the list update is a `RepositoryDetailModelTests` case.
         returnToSidebar(browser: browser)
         browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-repo-2"))
     }
@@ -45,13 +40,13 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         return URL(fileURLWithPath: remoteDir.path, isDirectory: true).absoluteString
     }
 
-    private func addCodebases(_ codebases: [(name: String, ref: String)], browser: ProjectBrowserScreen) {
+    private func addCodebases(named names: [String], browser: ProjectBrowserScreen) {
         let detail = ProjectDetailScreen(app: app)
         browser.projectRow(id: seeded.projectID).tap(
             "the seeded project's sidebar row", until: detail.codebaseRow(id: seeded.codebaseID)
         )
-        for codebase in codebases {
-            detail.addFixtureGitHubCodebase(named: codebase.name, ref: codebase.ref)
+        for name in names {
+            detail.addFixtureGitHubCodebase(named: name)
         }
         returnToSidebar(browser: browser)
     }
