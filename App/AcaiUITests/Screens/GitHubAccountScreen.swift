@@ -20,6 +20,23 @@ final class GitHubAccountScreen {
     var signInWithDeviceFlowButton: XCUIElement { app.buttons["github.signInWithDeviceFlowButton"] }
     var signedInRow: XCUIElement { app.descendants(matching: .any)["github.signedInRow"] }
     var signOutButton: XCUIElement { app.buttons["github.signOutButton"] }
+    var signOutConfirmButton: XCUIElement { app.buttons["github.signOut.confirmButton"] }
+    var signOutCancelButton: XCUIElement { app.buttons["github.signOut.cancelButton"] }
+
+    /// Opens the sign-out confirmation and backs out of it, leaving the account signed in.
+    func cancelSignOut(file: StaticString = #filePath, line: UInt = #line) {
+        signOutButton.tapWhenReady("Sign Out", file: file, line: line)
+        signOutCancelButton.tapWhenReady("Cancel, in the sign-out confirmation", file: file, line: line)
+        signOutCancelButton.waitForDisappearanceOrFail("the sign-out confirmation", file: file, line: line)
+    }
+
+    /// Sign Out asks first — the confirmation names the account and how many codebases stop
+    /// pulling — so the signed-in row only goes away once its destructive button is tapped.
+    func signOut(file: StaticString = #filePath, line: UInt = #line) {
+        signOutButton.tapWhenReady("Sign Out", file: file, line: line)
+        signOutConfirmButton.tapWhenReady("Sign Out, in the confirmation", file: file, line: line)
+        signedInRow.waitForDisappearanceOrFail("the signed-in account row", file: file, line: line)
+    }
 
     /// `NewCodebaseSheet`'s GitHub tab reads signed-in state from Settings rather than embedding its
     /// own sign-in UI. A fixture launch redirects `GitHubTokenStore` into the run's disposable
