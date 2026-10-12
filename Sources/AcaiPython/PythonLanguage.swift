@@ -30,10 +30,10 @@ extension PythonCodeParser {
             entryPointMarkers: EntryPointMarkers(
                 annotations: ["fixture", "pytestfixture"],
                 methodNames: ["main", "__init__", "setup_method", "teardown_method", "setup", "teardown"]),
-            // A bare `Thing()` is recorded as a `.free` call named `Thing`, never as one targeting
-            // `__init__`, so an initializer has no caller edge. `__getitem__` is extracted as a
-            // method and is scanned as one.
-            deadCodeMemberKinds: [.method]
+            // A bare `Thing()` now resolves through `CallSiteScope.bareCall`'s constructor opt-in to
+            // a call-site edge targeting the initializer's fixed `__init__` member. `__getitem__` is
+            // extracted as a method and is scanned as one.
+            deadCodeMemberKinds: [.method, .initializer]
         )
     }
 }
