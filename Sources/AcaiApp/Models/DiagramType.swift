@@ -51,6 +51,10 @@ enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Whether the diagram selects a changed file's types picked in the compare panel
+    /// (`EnvironmentValues.compareChangedFileSelection`).
+    var selectsChangedFileTypes: Bool { self == .classDiagram }
+
     var systemImage: String {
         switch self {
         case .classDiagram:
