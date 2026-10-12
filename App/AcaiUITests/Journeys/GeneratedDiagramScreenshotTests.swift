@@ -1,7 +1,7 @@
 import XCTest
 
 /// Golden screenshots for the four generated diagram types not already covered by
-/// `ScreenshotJourneyTests`/`CompareGitRevisionTests` (Class Diagram): Sequence, State, Package, and
+/// `SeededProjectWalkthroughJourneyTests`/`CompareGitRevisionTests` (Class Diagram): Sequence, State, Package, and
 /// Call Graph — each also filtered to nothing and back through the empty-scope overlay. The seeded fixture's `Base`/`Derived`/`Helper`/`Worker` types are patterned directly
 /// on `Examples/CallGraph/Swift`, `Examples/SequenceDiagram/Swift`, and
 /// `Examples/StateDiagram/Swift/Download.swift` so this fixture doesn't invent a fifth shape of demo
@@ -78,6 +78,8 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
         callGraph.node(id: "Derived.doWork").waitOrFail("the Derived.doWork node", timeout: .uiWork)
         XCTAssertTrue(callGraph.node(id: "Helper.performTask").exists, "Helper.performTask should be drawn")
         XCTAssertTrue(callGraph.node(id: "Worker.execute").exists, "Worker.execute should be drawn")
+        callGraph.describedNode(id: "Derived.doWork").waitOrFail("the Derived.doWork node, described to VoiceOver")
+        callGraph.describedCall.waitOrFail("a call edge, described to VoiceOver")
 
         callGraph.tapFitToView()
         validateScreenshot("CallGraph", state: "populated")
