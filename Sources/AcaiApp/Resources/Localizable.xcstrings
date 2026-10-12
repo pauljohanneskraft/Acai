@@ -23,24 +23,200 @@
         }
       }
     },
-    "View.CodebaseInterruptedBanner.DidNotFinish" : {
+    "View.CodebaseInterruptedBanner.IndexingDidNotFinish" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die letzte Aktualisierung wurde nicht abgeschlossen."
+            "value" : "Die Indizierung wurde nicht abgeschlossen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The last update didn't finish."
+            "value" : "Indexing didn't finish."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La dernière mise à jour n'a pas abouti."
+            "value" : "L'indexation n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.Pull" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pull"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pull"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récupérer"
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.PullDidNotFinish" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Pull wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulling didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La récupération n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.SwitchDidNotFinish %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Umstellung auf %@ wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switching to %@ didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La bascule vers %@ n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.SwitchTo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf %@ umstellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basculer vers %@"
+          }
+        }
+      }
+    },
+    "View.InterruptedClonesBanner.DidNotFinish %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Klonen von %@ wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloning %@ didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le clonage de %@ n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.InterruptedClonesBanner.Dismiss" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verwerfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorer"
+          }
+        }
+      }
+    },
+    "View.InterruptedClonesBanner.NotAdded" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí wurde währenddessen beendet, die Codebase wurde daher nicht hinzugefügt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí stopped while cloning, so the codebase wasn't added."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí s'est arrêté pendant le clonage ; la codebase n'a donc pas été ajoutée."
+          }
+        }
+      }
+    },
+    "View.InterruptedClonesBanner.RetryClone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut klonen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry Clone"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relancer le clonage"
           }
         }
       }

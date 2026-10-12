@@ -43,6 +43,28 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         #expect(FileManager.default.fileExists(atPath: codebase.directoryPath + "/README.md"))
     }
 
+    @Test func aCloneInterruptedByTerminationIsOfferedAfterRelaunchAndRetryingItAddsTheCodebase() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let storeDir = root.appendingPathComponent("store")
+        let firstLaunch = ProjectStore(baseDir: storeDir)
+        let projectID = makeEditor(store: firstLaunch).addProject(title: "Demo", subtitle: "")
+        firstLaunch.save()
+        let request = InterruptedOperationRecord.RemoteCloneRequest(
+            projectID: projectID, codebaseID: UUID(), name: "widgets", remoteURL: remote.directory, ref: "main",
+            refKind: .branch, latestSnapshotOnly: false)
+        try InterruptedOperationStore(baseDir: storeDir).save(ActivityLedger(inFlight: [InterruptedOperationRecord(
+            id: UUID(), kind: .gitClone, resumption: .clone(request), startedAt: Date())]))
+
+        let relaunched = ProjectStore(baseDir: storeDir)
+        let interrupted = try #require(relaunched.activityCenter.interruptedClones(inProject: projectID).first)
+        await makeEditor(store: relaunched).retryClone(interrupted)
+
+        #expect(relaunched.projects.first?.codebases.map(\.name) == ["widgets"])
+        #expect(relaunched.activityCenter.interruptedOperations.isEmpty)
+    }
+
     @Test func switchingRefMovesTheWorktreeAndRecordsTheNewRef() async throws {
         let root = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: root) }

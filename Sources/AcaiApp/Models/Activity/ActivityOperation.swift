@@ -24,7 +24,7 @@ struct ActivityOperation: Identifiable, Sendable {
         }
     }
 
-    enum Subject: Codable, Hashable, Sendable {
+    enum Subject: Hashable, Sendable {
         case codebase(UUID)
         case repository(URL)
         case none

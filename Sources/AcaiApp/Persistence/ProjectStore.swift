@@ -96,9 +96,7 @@ final class ProjectStore: ObservableObject {
     /// One instance for this store's entire lifetime; a fresh instance would provide no exclusion
     /// against this one.
     let gitRepositoryLocks = GitRepositoryLocks()
-    /// Holds the interruption ledger, so an index or clone killed mid-flight is still known
-    /// about at the next launch. Assigned in `init` rather than inline because its store is
-    /// rooted at `baseDir`, which `init` resolves.
+    /// Assigned in `init`, since its ledger lives under `baseDir`.
     let activityCenter: ActivityCenter
     /// Codebases whose cached analysis every window must drop.
     let analysisInvalidations = PassthroughSubject<UUID, Never>()
@@ -150,6 +148,9 @@ final class ProjectStore: ObservableObject {
             self?.report(.app("Error.ActivityCenter.LedgerWriteFailed \(error.localizedDescription)"))
         }
         load()
+        activityCenter.pruneInterruptedOperations(
+            existingCodebaseIDs: Set(projects.flatMap(\.codebases).map(\.id)),
+            existingProjectIDs: Set(projects.map(\.id)))
         let gitStorageSweep = GitStorageSweep(store: self)
         if !gitStorageSweep.isEmpty {
             Task.detached(priority: .utility) { await gitStorageSweep.run() }

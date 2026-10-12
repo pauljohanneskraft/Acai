@@ -1,3 +1,4 @@
+import AcaiGit
 import SwiftUI
 
 extension CodebaseDetailView {
@@ -26,8 +27,8 @@ extension CodebaseDetailView {
             CodebaseInterruptedBanner(
                 activityCenter: model.store.activityCenter,
                 codebaseID: codebaseID,
-                phase: reindexPhase,
-                resume: { startReindex(codebaseID: codebaseID) }
+                phase: { resumptionPhase(for: $0) },
+                resume: { resume($0) }
             )
             if model.showsStaleBanner(codebaseID: codebaseID) {
                 staleBanner(codebase: codebase)
@@ -49,8 +50,29 @@ extension CodebaseDetailView {
         }
     }
 
-    /// The one reindex path the header's three entry points share — the interrupted banner, the
-    /// stale banner and the actions row — so they can't drift in what they report.
+    private func resumptionPhase(for resumption: InterruptedOperationRecord.Resumption) -> AsyncOperationPhase {
+        switch resumption {
+        case .reindex, .clone:
+            reindexPhase
+        case .pull:
+            pullPhase
+        case .switchRef:
+            refSwitchPhase
+        }
+    }
+
+    private func resume(_ resumption: InterruptedOperationRecord.Resumption) {
+        switch resumption {
+        case .reindex, .clone:
+            startReindex(codebaseID: resumption.codebaseID)
+        case .pull(let codebaseID):
+            startPull(codebaseID: codebaseID)
+        case .switchRef(let codebaseID, let ref, let refKind):
+            startRefSwitch(codebaseID: codebaseID, to: GitCheckout.Ref(name: ref, kind: refKind))
+        }
+    }
+
+    /// The reindex path the interrupted banner, the stale banner and the actions row share.
     private func startReindex(codebaseID: UUID) {
         reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
         Task {

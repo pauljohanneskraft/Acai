@@ -3,35 +3,29 @@ import Foundation
 /// **Cancellation:** `run` always gives its `operation` a real `Task` to cooperate with, so
 /// cancelling here stops the work itself, not just whether its result gets applied.
 ///
-/// **Interruption:** every operation with a subject is written to an `ActivityLedger` while it
-/// runs and removed when it ends. Only a killed process skips that removal, so a record still
-/// marked in flight at the next launch is exactly an operation termination interrupted —
-/// republished as `interruptedOperations` for the screen that owns the subject to report.
+/// **Interruption:** a resumable operation stays in the on-disk ledger while it runs, so one a killed
+/// process never finished is reported at the next launch as `interruptedOperations`.
 @MainActor
 final class ActivityCenter: ObservableObject {
     @Published private(set) var operations: [ActivityOperation] = []
-    /// Work an earlier launch started and never finished, newest record per subject.
+    /// Work an earlier launch started and never finished, oldest first.
     @Published private(set) var interruptedOperations: [InterruptedOperationRecord] = []
 
-    /// Routes a failed ledger write to whatever presents the app's other persistence failures,
-    /// rather than leaving the user to discover that interruptions stopped being reported.
+    /// Where a failed ledger write is reported.
     var onPersistenceFailure: (@MainActor (any Error) -> Void)?
 
     private let store: InterruptedOperationStore?
     private var ledger = ActivityLedger()
-    /// Each write awaits the one before it, so a newer ledger is never buried by an older
-    /// snapshot that reached the disk later.
+    /// Each write awaits the one before it, so an older snapshot never lands last.
     private var lastWrite: Task<Void, Never>?
 
-    /// A `nil` store keeps everything in memory — the shape a test wants unless it is about
-    /// interruption itself.
+    /// A `nil` store keeps the ledger in memory only.
     init(store: InterruptedOperationStore? = nil) {
         self.store = store
         guard let store else { return }
         let loaded = store.load()
         ledger = reconciled(loaded)
         interruptedOperations = ledger.interrupted
-        // A launch that found nothing to reconcile has nothing to write back.
         if ledger != loaded { persist() }
     }
 
@@ -45,11 +39,6 @@ final class ActivityCenter: ObservableObject {
         return operations.first { $0.subject == subject }
     }
 
-    func interruptedOperation(for subject: ActivityOperation.Subject) -> InterruptedOperationRecord? {
-        guard subject != .none else { return nil }
-        return interruptedOperations.first { $0.subject == subject }
-    }
-
     func cancel(_ id: ActivityOperation.ID) {
         operations.first { $0.id == id }?.requestCancel()
     }
@@ -60,20 +49,24 @@ final class ActivityCenter: ObservableObject {
         title: LocalizedStringResource,
         kind: ActivityOperation.Kind,
         subject: ActivityOperation.Subject = .none,
+        resumption: InterruptedOperationRecord.Resumption? = nil,
         priority: TaskPriority = .userInitiated,
         _ operation: @escaping @Sendable () async throws -> T
     ) async throws -> T? {
-        try await run(title: title, kind: kind, subject: subject, priority: priority) { _ in try await operation() }
+        try await run(
+            title: title, kind: kind, subject: subject, resumption: resumption, priority: priority
+        ) { _ in try await operation() }
     }
 
     /// Hands `operation` a progress sink it can call (from any thread) to drive the row's
     /// determinate progress bar instead of an indeterminate spinner. Reports are throttled via
     /// `ActivityProgressGate` so a callback firing on every packet doesn't queue a flood of
-    /// main-actor hops.
+    /// main-actor hops. A `resumption` is what a relaunch offers if the process dies before this ends.
     func run<T: Sendable>(
         title: LocalizedStringResource,
         kind: ActivityOperation.Kind,
         subject: ActivityOperation.Subject = .none,
+        resumption: InterruptedOperationRecord.Resumption? = nil,
         priority: TaskPriority = .userInitiated,
         _ operation: @escaping @Sendable (@escaping @Sendable (Double) -> Void) async throws -> T
     ) async throws -> T? {
@@ -89,12 +82,18 @@ final class ActivityCenter: ObservableObject {
             requestCancel: { task.cancel() }
         )
         operations.append(registered)
-        begin(registered)
+        if let resumption {
+            begin(InterruptedOperationRecord(
+                id: id, kind: kind, resumption: resumption, startedAt: registered.startedAt))
+        }
+        var succeeded = false
         defer {
             operations.removeAll { $0.id == id }
-            end(id)
+            end(id, succeeded: succeeded)
         }
-        return try await awaitCancellable(task)
+        let result = try await awaitCancellable(task)
+        succeeded = result != nil
+        return result
     }
 
     private func awaitCancellable<T: Sendable>(_ task: Task<T, any Error>) async throws -> T? {
@@ -116,50 +115,81 @@ final class ActivityCenter: ObservableObject {
         operations[index].progress = progress
     }
 
-    /// Awaits the ledger writes already scheduled, so a caller that needs the file to be on disk
-    /// doesn't have to guess at the timing.
+    /// Awaits the ledger writes already scheduled.
     func flushPersistence() async {
         await lastWrite?.value
     }
 
     // MARK: - Interruption Ledger
 
-    /// Whatever the loaded ledger still calls in flight was running when the process stopped, so
-    /// this launch reports it as unfinished instead.
-    private func reconciled(_ loaded: ActivityLedger) -> ActivityLedger {
-        var ledger = loaded
-        ledger.interrupted = newestPerSubject(loaded.interrupted + loaded.inFlight)
-        ledger.inFlight = []
-        return ledger
-    }
-
-    /// One record per subject: a codebase whose index was interrupted five times has one
-    /// unfinished operation to report, not five. A subject-less operation is dropped — it names
-    /// nothing a screen could report it against, and nothing the user could resume.
-    private func newestPerSubject(_ records: [InterruptedOperationRecord]) -> [InterruptedOperationRecord] {
-        var newest: [ActivityOperation.Subject: InterruptedOperationRecord] = [:]
-        for record in records where record.subject != .none {
-            if let existing = newest[record.subject], existing.startedAt >= record.startedAt { continue }
-            newest[record.subject] = record
+    /// The newest unfinished work on an existing codebase, for its screen to offer to resume.
+    func interruptedOperation(forCodebase codebaseID: UUID) -> InterruptedOperationRecord? {
+        interruptedOperations.last {
+            if case .clone = $0.resumption { return false }
+            return $0.resumption.codebaseID == codebaseID
         }
-        return newest.values.sorted { $0.startedAt < $1.startedAt }
     }
 
-    /// Records the operation as in flight, and clears any unfinished record for the same subject:
-    /// starting the work again is how the user resolves the interruption.
-    private func begin(_ operation: ActivityOperation) {
-        guard operation.subject != .none else { return }
-        ledger.interrupted.removeAll { $0.subject == operation.subject }
-        ledger.inFlight.append(InterruptedOperationRecord(operation))
+    func interruptedClones(inProject projectID: UUID) -> [InterruptedOperationRecord] {
+        interruptedOperations.filter {
+            guard case .clone(let request) = $0.resumption else { return false }
+            return request.projectID == projectID
+        }
+    }
+
+    /// The user chose not to resume it.
+    func discardInterruptedOperation(_ id: InterruptedOperationRecord.ID) {
+        guard ledger.interrupted.contains(where: { $0.id == id }) else { return }
+        ledger.interrupted.removeAll { $0.id == id }
         interruptedOperations = ledger.interrupted
         persist()
     }
 
-    /// Completion, failure and cancellation all land here — `run`'s `defer` runs in every case a
-    /// live process can reach.
-    private func end(_ id: ActivityOperation.ID) {
-        guard ledger.inFlight.contains(where: { $0.id == id }) else { return }
+    /// Drops records whose subject is gone: a deleted codebase or project, or a clone that did add its codebase.
+    func pruneInterruptedOperations(existingCodebaseIDs: Set<UUID>, existingProjectIDs: Set<UUID>) {
+        let kept = ledger.interrupted.filter { record in
+            guard case .clone(let request) = record.resumption else {
+                return existingCodebaseIDs.contains(record.resumption.codebaseID)
+            }
+            return existingProjectIDs.contains(request.projectID) && !existingCodebaseIDs.contains(request.codebaseID)
+        }
+        guard kept != ledger.interrupted else { return }
+        ledger.interrupted = kept
+        interruptedOperations = kept
+        persist()
+    }
+
+    /// Whatever the loaded ledger still calls in flight was running when the process stopped.
+    private func reconciled(_ loaded: ActivityLedger) -> ActivityLedger {
+        var ledger = loaded
+        ledger.interrupted = withoutSuperseded(loaded.interrupted + loaded.inFlight)
+        ledger.inFlight = []
+        return ledger
+    }
+
+    /// Oldest first, without any record that a newer one's resumption would also resolve.
+    private func withoutSuperseded(_ records: [InterruptedOperationRecord]) -> [InterruptedOperationRecord] {
+        var kept: [InterruptedOperationRecord] = []
+        for record in records.sorted(by: { $0.startedAt > $1.startedAt })
+        where !kept.contains(where: { $0.resumption.resolves(record.resumption) }) {
+            kept.append(record)
+        }
+        return kept.reversed()
+    }
+
+    private func begin(_ record: InterruptedOperationRecord) {
+        ledger.inFlight.append(record)
+        persist()
+    }
+
+    /// Finishing also clears the unfinished records it leaves consistent again.
+    private func end(_ id: ActivityOperation.ID, succeeded: Bool) {
+        guard let record = ledger.inFlight.first(where: { $0.id == id }) else { return }
         ledger.inFlight.removeAll { $0.id == id }
+        if succeeded {
+            ledger.interrupted.removeAll { record.resumption.resolves($0.resumption) }
+            interruptedOperations = ledger.interrupted
+        }
         persist()
     }
 
