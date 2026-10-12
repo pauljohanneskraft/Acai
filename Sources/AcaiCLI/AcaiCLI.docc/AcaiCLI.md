@@ -304,6 +304,10 @@ render it without anything installed. For Graphviz, write to a `.dot` file or pa
 which stdout needs, and render it anywhere Graphviz runs: `dot -Tpng arch.dot -o arch.png`. The
 default matches `acai_diagram`'s on the MCP server.
 
+A class diagram carries each type's own documentation: as `%%` comment lines above its class in
+Mermaid, and as the node's `tooltip` in DOT, which an SVG render shows on hover. An undocumented type
+gets neither.
+
 > **`--theme default` still works**, on `diagram` and `image` alike. It is a deprecated spelling of
 > `light` — accepted, hidden from `--help`, and due for removal in a later major release. The `theme:`
 > key in a `--config` file takes either spelling too.

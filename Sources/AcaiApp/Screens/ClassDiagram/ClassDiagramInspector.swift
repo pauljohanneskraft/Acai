@@ -346,8 +346,6 @@ struct ClassDiagramSidebar: View {
 }
 
 private extension ClassDiagramSidebar {
-    /// The type's own prose, shown beside its structure. Parser-produced content, so it is never
-    /// translated; a type without documentation renders nothing at all rather than a placeholder.
     func documentationSection(_ documentation: String) -> some View {
         VStack(alignment: .leading, spacing: .spacingXXS) {
             Text(.app("View.ClassDiagramSidebar.Documentation"))

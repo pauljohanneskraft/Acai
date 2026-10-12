@@ -182,6 +182,12 @@ private struct QuickOpenResultRow: View {
                     Text(verbatim: entry.subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let documentation = entry.documentation {
+                        Text(verbatim: documentation)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
                 }
                 Spacer()
             }

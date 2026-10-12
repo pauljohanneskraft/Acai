@@ -179,20 +179,9 @@ struct QueryView: View {
             .contentShape(Rectangle())
             .openInCodeElement(.type(id: row.id), codebase: codebase, relativePath: row.location?.filePath)
             if let location = row.location {
-                HStack(spacing: .spacingS) {
-                    Text(verbatim: "\(location.filePath):\(location.line)")
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer(minLength: 8)
-                    ViewSourceButton(codebase: codebase, relativePath: location.filePath)
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                }
+                locationRow(location, codebase: codebase)
             }
             if let documentation = row.documentation {
-                // Parser-produced content, never translated; absent documentation adds no row.
                 Text(verbatim: documentation)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -207,6 +196,20 @@ struct QueryView: View {
         .padding(.vertical, .spacingXS)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("query.row.\(row.id)")
+    }
+
+    private func locationRow(_ location: SourceLocation, codebase: Codebase) -> some View {
+        HStack(spacing: .spacingS) {
+            Text(verbatim: "\(location.filePath):\(location.line)")
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer(minLength: 8)
+            ViewSourceButton(codebase: codebase, relativePath: location.filePath)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
     }
 
     private func memberRows(_ row: TypeQuery.TypeRow, codebase: Codebase) -> some View {

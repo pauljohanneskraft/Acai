@@ -54,6 +54,18 @@ struct ClassDiagramDOTRendererTests {
         #expect(ClassDiagramDOTRenderer().generate(from: artifact).contains("&lt;&lt;entity&gt;&gt;"))
     }
 
+    @Test func documentationBecomesTheNodeTooltip() {
+        var documented = TypeDeclaration(id: "User", name: "User", qualifiedName: "User", kind: .class,
+            accessLevel: .public)
+        documented.documentation = "A \"signed-in\" person.\nOwns sessions."
+        let bare = TypeDeclaration(id: "Bare", name: "Bare", qualifiedName: "Bare", kind: .class, accessLevel: .public)
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .java, filePaths: ["U.java"]), types: [documented, bare])
+        let dot = ClassDiagramDOTRenderer().generate(from: artifact)
+        #expect(dot.contains(#"tooltip="A \"signed-in\" person.\nOwns sessions.""#))
+        #expect(dot.components(separatedBy: "tooltip=").count == 2)
+    }
+
     @Test func inheritanceEdge() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["Test.swift"]),
