@@ -159,9 +159,14 @@ struct CompareGitPanel: View {
             .padding(.spacingL)
         }
         .frame(minWidth: 260, alignment: .leading)
-        .task(id: "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")") {
+        .task(id: analysisTaskID(hasOldArtifact: state.hasOldArtifact)) {
             await model.ensureComparisonAnalysisLoaded(for: diagram)
         }
+    }
+
+    /// The panel outlives the snapshot load, so the analysis reruns once the "old" side arrives.
+    private func analysisTaskID(hasOldArtifact: Bool) -> String {
+        "\(diagram.id)|\(diagram.comparisonGitRef ?? "")|\(diagram.comparisonBaseRef ?? "")|\(hasOldArtifact)"
     }
 
     private func rowButton(_ row: ComparePanelState.Row, state: ComparePanelState) -> some View {
