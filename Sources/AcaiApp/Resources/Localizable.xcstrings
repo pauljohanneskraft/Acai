@@ -15393,46 +15393,90 @@
         }
       }
     },
-    "View.LicensesSection.OK" : {
+    "View.LicensesSection.LoadingLicenses" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "OK"
+            "value" : "Lizenzen werden geladen…"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "OK"
+            "value" : "Loading licenses…"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "OK"
+            "value" : "Chargement des licences…"
           }
         }
       }
     },
-    "View.LicensesSection.SomethingWentWrong" : {
+    "View.LicensesSection.NoLicensesDetail" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Etwas ist schiefgelaufen"
+            "value" : "Diese Build-Version wurde ohne die Lizenzhinweise ihrer Abhängigkeiten ausgeliefert."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Something went wrong"
+            "value" : "This build shipped without its dependency license notices."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Une erreur s'est produite"
+            "value" : "Cette build a été livrée sans les mentions de licence de ses dépendances."
+          }
+        }
+      }
+    },
+    "View.LicensesSection.NoLicensesListed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Lizenzen aufgeführt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No licenses listed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune licence répertoriée"
+          }
+        }
+      }
+    },
+    "View.LicensesSection.Retry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayer"
           }
         }
       }

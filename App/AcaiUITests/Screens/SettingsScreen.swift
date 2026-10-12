@@ -16,4 +16,7 @@ final class SettingsScreen {
     var diagramThemePicker: XCUIElement { app.descendants(matching: .any)["settings.diagramThemePicker"] }
     /// iPad/iPhone only — macOS opens the shortcut reference from its menu bar.
     var keyboardShortcutsButton: XCUIElement { app.buttons["settings.keyboardShortcutsButton"] }
+    var licensesLoad: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "licenses") }
+    var licensesRetryButton: XCUIElement { app.buttons["licenses.retryButton"] }
+    var licensesEmptyState: XCUIElement { app.descendants(matching: .any)["licenses.emptyState"] }
 }
