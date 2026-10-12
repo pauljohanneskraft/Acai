@@ -18,7 +18,7 @@ final class AccessibilityTextSizeJourneyTests: UIJourneyTestCase {
         for name in ["Derived", "Helper", "Worker"] {
             diagram.typeNode(named: name).waitOrFail("\(name), drawn alongside Base")
         }
-        // See `ScreenshotJourneyTests`: the initial centring races the status bar hiding.
+        // See `SeededProjectWalkthroughJourneyTests`: the initial centring races the status bar hiding.
         diagram.tapFitToView()
 
         validateScreenshot("ClassDiagram", state: "accessibility5")
