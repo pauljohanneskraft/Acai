@@ -205,4 +205,19 @@ extension XCUIApplication {
         }
         region.waitForDisappearanceOrFail("the popover", file: file, line: line)
     }
+
+    /// `tap(_:until:)` for a keyboard shortcut, so only for one that navigates. iPadOS registers the
+    /// menu's key commands shortly after the first frame, so a press right after launch can go nowhere.
+    func typeShortcut(
+        _ description: String, key: String, modifierFlags: XCUIElement.KeyModifierFlags,
+        until destination: XCUIElement, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        for _ in 0..<attempts {
+            SystemBanners().dismiss(file: file, line: line)
+            typeKey(key, modifierFlags: modifierFlags)
+            if destination.appears(within: .uiTransition / Double(attempts)) { return }
+        }
+        destination.waitOrFail("the destination of \(description)", file: file, line: line)
+    }
 }

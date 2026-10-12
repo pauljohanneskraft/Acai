@@ -42,10 +42,6 @@ struct KeyboardShortcutsPanel: View {
 /// macOS replaces its own default Help item, which otherwise just points at a nonexistent Help Book,
 /// and opens the panel as its own window. iPadOS keeps its Help items, so the item goes beside them
 /// and the panel is `ProjectBrowserView`'s sheet.
-///
-/// iPadOS 26 does not deliver this group's ⌘/ to the app, while it does deliver `QuickOpenCommands`'
-/// ⇧⌘O from `.textEditing` in the same run. The cause is not the number of shortcuts in the group,
-/// nor the key: ⌘/ has both fired and not fired from this exact placement.
 struct KeyboardShortcutCommands: Commands {
     /// The `WindowGroup(id:)` this command opens on macOS — declared once here so the command and the
     /// scene registration in `AcaiRootScene` can't drift apart.

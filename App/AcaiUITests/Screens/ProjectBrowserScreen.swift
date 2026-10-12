@@ -71,9 +71,9 @@ final class ProjectBrowserScreen {
     /// first, and typing must too.
     func openQuickOpenWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
         newProjectButton.waitOrFail("the project browser", file: file, line: line)
-        SystemBanners().dismiss(file: file, line: line)
-        app.typeKey("o", modifierFlags: [.command, .shift])
-        QuickOpenScreen(app: app).searchField.waitOrFail("the Quick Open search field", file: file, line: line)
+        app.typeShortcut(
+            "⇧⌘O", key: "o", modifierFlags: [.command, .shift], until: QuickOpenScreen(app: app).searchField,
+            file: file, line: line)
     }
 
     /// Opens Quick Open through whichever entry point this platform and width actually has.
@@ -90,9 +90,15 @@ final class ProjectBrowserScreen {
     /// ⌘/, from the Mac's menu bar or an iPad's hardware keyboard.
     func openKeyboardShortcutsWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
         newProjectButton.waitOrFail("the project browser", file: file, line: line)
-        SystemBanners().dismiss(file: file, line: line)
-        app.typeKey("/", modifierFlags: .command)
-        KeyboardShortcutsScreen(app: app).panel.waitOrFail("the Keyboard Shortcuts panel", file: file, line: line)
+        #if os(macOS)
+        // Each press opens another panel window on macOS, so it is never repeated there.
+        let attempts = 1
+        #else
+        let attempts = 3
+        #endif
+        app.typeShortcut(
+            "⌘/", key: "/", modifierFlags: .command, until: KeyboardShortcutsScreen(app: app).panel,
+            attempts: attempts, file: file, line: line)
     }
 
     // MARK: - Links
