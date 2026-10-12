@@ -28,7 +28,7 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         for name in ["Derived", "Helper", "Worker"] {
             XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should be drawn alongside Base")
         }
-        // See `ScreenshotJourneyTests`: the initial centring races the status bar hiding.
+        // See `SeededProjectWalkthroughJourneyTests`: the initial centring races the status bar hiding.
         diagram.tapFitToView()
 
         diagram.openSearch()
@@ -56,9 +56,5 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         for name in ["Base", "Derived", "Helper", "Worker"] {
             XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should survive dismissing search")
         }
-
-        diagram.filterEverythingAway(hiding: diagram.typeNode(named: "Base"))
-        validateScreenshot("ClassDiagram", state: "filteredToNothing")
-        diagram.clearEmptyFilter(restoring: diagram.typeNode(named: "Base"))
     }
 }
