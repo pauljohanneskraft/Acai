@@ -191,6 +191,14 @@ struct QueryView: View {
                         .controlSize(.small)
                 }
             }
+            if let documentation = row.documentation {
+                // Parser-produced content, never translated; absent documentation adds no row.
+                Text(verbatim: documentation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("query.row.\(row.id).documentation")
+            }
             if filter.members.hasActiveFacet {
                 memberRows(row, codebase: codebase)
             }

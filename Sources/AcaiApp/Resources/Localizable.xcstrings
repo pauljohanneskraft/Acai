@@ -6827,6 +6827,28 @@
         }
       }
     },
+    "View.ClassDiagramSidebar.Documentation" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dokumentation"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documentation"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documentation"
+          }
+        }
+      }
+    },
     "View.ClassDiagramSidebar.Export" : {
       "localizations" : {
         "de" : {
