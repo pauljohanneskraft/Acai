@@ -1,6 +1,94 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Error.ActivityCenter.LedgerWriteFailed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die laufenden Vorgänge konnten nicht gespeichert werden: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't record which operations are running: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d'enregistrer les opérations en cours : %@"
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.DidNotFinish" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die letzte Aktualisierung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last update didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La dernière mise à jour n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.MayBeOutOfDate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí wurde beendet, während diese Codebase aktualisiert wurde – die Anzeige kann daher veraltet sein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí stopped while this codebase was being updated, so what you see may be out of date."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí s'est arrêté pendant la mise à jour de cette codebase ; l'affichage peut donc être obsolète."
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.Reindex" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu indizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindex"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexer"
+          }
+        }
+      }
+    },
     "Error.AppAddress.Malformed %@" : {
       "localizations" : {
         "de" : {

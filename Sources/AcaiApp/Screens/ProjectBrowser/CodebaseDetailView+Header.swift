@@ -23,6 +23,12 @@ extension CodebaseDetailView {
                     }
                 }
             }
+            CodebaseInterruptedBanner(
+                activityCenter: model.store.activityCenter,
+                codebaseID: codebaseID,
+                phase: reindexPhase,
+                resume: { startReindex(codebaseID: codebaseID) }
+            )
             if model.showsStaleBanner(codebaseID: codebaseID) {
                 staleBanner(codebase: codebase)
             }
@@ -43,6 +49,16 @@ extension CodebaseDetailView {
         }
     }
 
+    /// The one reindex path the header's three entry points share — the interrupted banner, the
+    /// stale banner and the actions row — so they can't drift in what they report.
+    private func startReindex(codebaseID: UUID) {
+        reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
+        Task {
+            let outcome = await model.editing.reindex(codebaseID: codebaseID)
+            reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
+        }
+    }
+
     private struct FreshnessCheckToken: Equatable {
         let codebaseID: UUID
         let lastIndexed: Date?
@@ -55,11 +71,7 @@ extension CodebaseDetailView {
                 .foregroundStyle(.orange)
             Spacer()
             Button {
-                reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
-                Task {
-                    let outcome = await model.editing.reindex(codebaseID: codebase.id)
-                    reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
-                }
+                startReindex(codebaseID: codebase.id)
             } label: {
                 Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
             }
@@ -131,12 +143,7 @@ extension CodebaseDetailView {
             } else {
                 localRevisionPicker(codebase: codebase)
                 Button {
-                    reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
-                    Task {
-                        let outcome = await model.editing.reindex(codebaseID: codebase.id)
-                        reindexPhase = AsyncOperationPhase(
-                            outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
-                    }
+                    startReindex(codebaseID: codebase.id)
                 } label: {
                     Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
                 }

@@ -96,7 +96,10 @@ final class ProjectStore: ObservableObject {
     /// One instance for this store's entire lifetime; a fresh instance would provide no exclusion
     /// against this one.
     let gitRepositoryLocks = GitRepositoryLocks()
-    let activityCenter = ActivityCenter()
+    /// Holds the interruption ledger, so an index or clone killed mid-flight is still known
+    /// about at the next launch. Assigned in `init` rather than inline because its store is
+    /// rooted at `baseDir`, which `init` resolves.
+    let activityCenter: ActivityCenter
     /// Codebases whose cached analysis every window must drop.
     let analysisInvalidations = PassthroughSubject<UUID, Never>()
     /// Remotes whose hub clone changed on disk (a worktree attached or removed, history deepened),
@@ -136,12 +139,16 @@ final class ProjectStore: ObservableObject {
                 .appendingPathComponent("AcaiApp", isDirectory: true)
             #endif
         }
+        self.activityCenter = ActivityCenter(store: InterruptedOperationStore(baseDir: self.baseDir))
         try? fileManager.createDirectory(at: self.baseDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: projectsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: diagramsDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: rulesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitRepositoriesDir, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: gitWorktreesDir, withIntermediateDirectories: true)
+        activityCenter.onPersistenceFailure = { [weak self] error in
+            self?.report(.app("Error.ActivityCenter.LedgerWriteFailed \(error.localizedDescription)"))
+        }
         load()
         let gitStorageSweep = GitStorageSweep(store: self)
         if !gitStorageSweep.isEmpty {
