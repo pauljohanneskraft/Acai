@@ -114,6 +114,8 @@ public struct ProjectBrowserView: View {
         }
         .environment(\.openInNewWindow, OpenInNewWindowAction { openInNewWindow($0) })
         .onOpenURL { url in openLink(url) }
+        // Lists every codebase in the widget's picker before anything is reindexed.
+        .task { model.publishWidgetSnapshots() }
         .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
         .onDisappear { browserWindows.windowClosed(windowToken) }
         .focusedSceneObject(quickOpenPresenter)

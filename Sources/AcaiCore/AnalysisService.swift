@@ -97,15 +97,24 @@ public struct AnalysisService: Sendable {
         }
 
         let reusable = cache.reusableFragments()
-        var combinedArtifact: CodeArtifact?
+        let discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
+        let modules = ModuleMap(roots: discoveredRoots.map(\.path), filePaths: [])
+        var parsedSpecs: [ParsedSpec] = []
         var freshEntries: [String: ParsedFileCache.Entry] = [:]
-
         for spec in specs.mergedByLanguage {
-            let parsedSpec = try await parseSpec(
+            if let parsed = try await parseSpec(
                 spec, rootURL: rootURL, gitignore: gitignore, fileCache: reusable, includingFile: includingFile
-            )
-            freshEntries.merge(parsedSpec.fileCacheEntries) { _, new in new }
-            if let artifact = parsedSpec.artifact {
+            ) {
+                freshEntries.merge(parsed.fileCacheEntries) { _, new in new }
+                parsedSpecs.append(parsed.scopingTypeIDs(modules: modules))
+            }
+        }
+
+        // Only a name one module declares non-privately in several files collides; every spec is in.
+        let collisions = CollidingTypeIDs(files: parsedSpecs.flatMap(\.files))
+        var combinedArtifact: CodeArtifact?
+        for parsed in parsedSpecs {
+            if let artifact = assemble(parsed.disambiguating(collisions)) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -116,7 +125,7 @@ public struct AnalysisService: Sendable {
         // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
         // per-language-group before specs are merged, so it can't see cross-spec call receivers.
         var result = combined.resolvingCallSiteReceivers()
-        result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
+        result.metadata.discoveredRoots = discoveredRoots
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
         cache.save(freshEntries)
         return result
@@ -128,22 +137,20 @@ public struct AnalysisService: Sendable {
         gitignore: GitignoreFilter?,
         fileCache: ParsedFileCache?,
         includingFile: (String) -> Bool
-    ) async throws -> (artifact: CodeArtifact?, fileCacheEntries: [String: ParsedFileCache.Entry]) {
+    ) async throws -> ParsedSpec? {
         guard let codeParser = parser(for: spec.language) else {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
             )
-            return (nil, [:])
+            return nil
         }
         let collected = collectFiles(
             for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
         )
         guard !collected.files.isEmpty else {
-            let diagnostics = spec.diagnostics + collected.diagnostics
-            guard !diagnostics.isEmpty else { return (nil, [:]) }
-            var result = CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-            result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
-            return (result, [:])
+            return ParsedSpec(
+                spec: spec, fallback: codeParser.configuration, files: [],
+                diagnostics: spec.diagnostics + collected.diagnostics, fileCacheEntries: [:])
         }
 
         let batch = SourceFileBatchParser(
@@ -151,14 +158,33 @@ public struct AnalysisService: Sendable {
             concurrencyLimit: fileParsingConcurrencyLimit, maximumFileBytes: maximumSourceFileBytes
         )
         let parsed = try await batch.parse(collected.files, reusing: fileCache)
+        return ParsedSpec(
+            spec: spec, fallback: codeParser.configuration,
+            files: parsed.files,
+            diagnostics: spec.diagnostics + collected.diagnostics + parsed.diagnostics,
+            fileCacheEntries: parsed.fileCacheEntries)
+    }
+
+    /// Enriches by each file's own `metadata.sourceLanguage`, which may differ from the spec's, in first-seen order.
+    private func assemble(_ parsed: ParsedSpec) -> CodeArtifact? {
+        var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
+        var order: [CodeArtifact.SourceLanguage] = []
+        for file in parsed.files {
+            let language = file.metadata.sourceLanguage
+            if let existing = byLanguage[language] {
+                byLanguage[language] = existing.merging(with: file)
+            } else {
+                byLanguage[language] = file
+                order.append(language)
+            }
+        }
         let enriched = enrichPerLanguage(
-            (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
+            (byLanguage: byLanguage, order: order), spec: parsed.spec, fallback: parsed.fallback
         )
-        let diagnostics = spec.diagnostics + collected.diagnostics + parsed.diagnostics
-        guard !diagnostics.isEmpty else { return (enriched, parsed.fileCacheEntries) }
-        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-        result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
-        return (result, parsed.fileCacheEntries)
+        guard !parsed.diagnostics.isEmpty else { return enriched }
+        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: parsed.spec.language))
+        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
+        return result
     }
 
     /// Skips every registered language's build-output/dependency directories (plus the universal VCS
@@ -227,6 +253,27 @@ public struct AnalysisService: Sendable {
             combined.metadata.toolVersion = AcaiConstants.standard.toolVersion
         }
         return combined
+    }
+}
+
+/// One spec's files, parsed but not yet enriched, held until collisions across every spec are known.
+private struct ParsedSpec {
+    let spec: SourceSpec
+    let fallback: LanguageConfiguration
+    var files: [CodeArtifact]
+    let diagnostics: [ParseDiagnostic]
+    let fileCacheEntries: [String: ParsedFileCache.Entry]
+
+    func scopingTypeIDs(modules: ModuleMap) -> ParsedSpec {
+        var copy = self
+        copy.files = files.map { $0.scopingTypeIDs(modules: modules) }
+        return copy
+    }
+
+    func disambiguating(_ collisions: CollidingTypeIDs) -> ParsedSpec {
+        var copy = self
+        copy.files = files.map(collisions.disambiguating)
+        return copy
     }
 }
 

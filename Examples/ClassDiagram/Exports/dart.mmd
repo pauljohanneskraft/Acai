@@ -1,23 +1,23 @@
 classDiagram
-    class Library["Library"] {
+    class Dart_Library["Library"] {
         +playlists List~Playlist~
         +Library(playlists List)
         +addPlaylist(playlist Playlist) void
         +playlist(named String) Playlist
     }
-    class MediaItem["MediaItem"] {
+    class Dart_MediaItem["MediaItem"] {
         +title String
         +duration double
         +genre Genre
         +MediaItem(title String, duration double, genre Genre)
         +play() void
     }
-    class Playable["Playable"] {
+    class Dart_Playable["Playable"] {
         +title String
         +duration double
         +play() void*
     }
-    class Genre["Genre"] {
+    class Dart_Genre["Genre"] {
         <<enumeration>>
         pop
         rock
@@ -26,38 +26,38 @@ classDiagram
         electronic
         spokenWord
     }
-    class Player["Player"] {
+    class Dart_Player["Player"] {
         +library Library
         +nowPlaying Playable?
         +Player(library Library)
         +play(item Playable) void
         +playFirstItem(playlistNamed String) void
     }
-    class Playlist["Playlist"] {
+    class Dart_Playlist["Playlist"] {
         +name String
         +items List~MediaItem~
         +totalDuration double
         +Playlist(name String, items List)
         +add(item MediaItem) void
     }
-    class Podcast["Podcast"] {
+    class Dart_Podcast["Podcast"] {
         +host String
         +episodeNumber int
         +Podcast(title String, duration double, host String, episodeNumber int)
         +play() void
     }
-    class Song["Song"] {
+    class Dart_Song["Song"] {
         +artist String
         +album String?
         +Song(title String, duration double, genre Genre, artist String, album String?)
         +play() void
     }
-    Playable <|.. MediaItem
-    MediaItem <|-- Podcast
-    MediaItem <|-- Song
-    Library o-- "*" Playlist : playlists
-    MediaItem *-- "1" Genre : genre
-    Player *-- "1" Library : library
-    Player *-- "0..1" Playable : nowPlaying
-    Playlist o-- "*" MediaItem : items
-    Song ..> Genre
+    Dart_Playable <|.. Dart_MediaItem
+    Dart_MediaItem <|-- Dart_Podcast
+    Dart_MediaItem <|-- Dart_Song
+    Dart_Library o-- "*" Dart_Playlist : playlists
+    Dart_MediaItem *-- "1" Dart_Genre : genre
+    Dart_Player *-- "1" Dart_Library : library
+    Dart_Player *-- "0..1" Dart_Playable : nowPlaying
+    Dart_Playlist o-- "*" Dart_MediaItem : items
+    Dart_Song ..> Dart_Genre

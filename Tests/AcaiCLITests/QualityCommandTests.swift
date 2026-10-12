@@ -173,12 +173,12 @@ struct QualityCommandTests {
             // Baseline built through the engine's own Codable model (not hand-typed JSON), so the
             // fixture matches production's on-disk shape exactly: Hub depended on X only (fanOut 1).
             let hub = TypeDeclaration(
-                id: "Hub", name: "Hub", qualifiedName: "Hub", kind: .class, accessLevel: .internal,
+                id: "root.Hub", name: "Hub", qualifiedName: "root.Hub", kind: .class, accessLevel: .internal,
                 location: SourceLocation(filePath: "m.swift", line: 1, column: 1))
             let baselineArtifact = CodeArtifact(
                 metadata: .init(sourceLanguage: CodeArtifact.SourceLanguage(rawValue: "swift")),
                 types: [hub],
-                relationships: [Relationship(kind: .dependency, source: "Hub", target: "X")])
+                relationships: [Relationship(kind: .dependency, source: "root.Hub", target: "root.X")])
             let baseURL = dir.appendingPathComponent("base.json")
             try JSONEncoder().encode(baselineArtifact).write(to: baseURL)
 

@@ -90,6 +90,8 @@ just its API.
   tools with their input schemas, the snapshot-cache contract, and how to wire it into a client.
 - **[AcaiApp](/documentation/acaiapp/)** — the SwiftUI application shared by the macOS and iOS apps:
   what it does, and how the pieces fit.
+- **[AcaiWidget](/documentation/acaiwidget/)** — the WidgetKit widget showing a codebase's state as
+  of its last analysis, shared by the macOS and iOS widget extensions.
 
 ### Supporting modules
 

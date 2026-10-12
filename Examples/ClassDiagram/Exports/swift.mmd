@@ -1,24 +1,24 @@
 classDiagram
-    class Library["Library"] {
+    class Swift_Library["Library"] {
         +playlists Array~Playlist~
         +init(playlists Array~Playlist~)
         +addPlaylist(playlist Playlist)
         +playlist(name String) Playlist?
     }
-    class MediaItem["MediaItem"] {
+    class Swift_MediaItem["MediaItem"] {
         +title String
         +duration TimeInterval
         +genre Genre
         +init(title String, duration TimeInterval, genre Genre)
         +play()
     }
-    class Playable["Playable"] {
+    class Swift_Playable["Playable"] {
         <<interface>>
         +title String
         +duration TimeInterval
         +play()
     }
-    class Genre["Genre"] {
+    class Swift_Genre["Genre"] {
         <<enumeration>>
         pop
         rock
@@ -27,14 +27,14 @@ classDiagram
         electronic
         spokenWord
     }
-    class Player["Player"] {
+    class Swift_Player["Player"] {
         -library Library
         +nowPlaying Playable?
         +init(library Library)
         +play(item Playable)
         +playFirstItem(name String)
     }
-    class Playlist["Playlist"] {
+    class Swift_Playlist["Playlist"] {
         <<struct>>
         +name String
         +items Array~MediaItem~
@@ -42,24 +42,24 @@ classDiagram
         +init(name String, items Array~MediaItem~)
         +add(item MediaItem)
     }
-    class Podcast["Podcast"] {
+    class Swift_Podcast["Podcast"] {
         +host String
         +episodeNumber Int
         +init(title String, duration TimeInterval, host String, episodeNumber Int)
         +play()
     }
-    class Song["Song"] {
+    class Swift_Song["Song"] {
         +artist String
         +album String?
         +init(title String, duration TimeInterval, genre Genre, artist String, album String?)
         +play()
     }
-    Playable <|.. MediaItem
-    MediaItem <|-- Podcast
-    MediaItem <|-- Song
-    Library o-- "*" Playlist : playlists
-    MediaItem *-- "1" Genre : genre
-    Player *-- "1" Library : library
-    Player *-- "0..1" Playable : nowPlaying
-    Playlist o-- "*" MediaItem : items
-    Song ..> Genre
+    Swift_Playable <|.. Swift_MediaItem
+    Swift_MediaItem <|-- Swift_Podcast
+    Swift_MediaItem <|-- Swift_Song
+    Swift_Library o-- "*" Swift_Playlist : playlists
+    Swift_MediaItem *-- "1" Swift_Genre : genre
+    Swift_Player *-- "1" Swift_Library : library
+    Swift_Player *-- "0..1" Swift_Playable : nowPlaying
+    Swift_Playlist o-- "*" Swift_MediaItem : items
+    Swift_Song ..> Swift_Genre

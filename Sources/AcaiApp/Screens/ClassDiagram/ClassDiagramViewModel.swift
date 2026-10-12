@@ -9,6 +9,7 @@ import AcaiRender
 final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let codebase: Codebase
     let artifact: CodeArtifact
+    let typeDisplayNames: TypeDisplayNames
     private let comparisonArtifact: CodeArtifact?
     private var diff: ArtifactDiff?
     /// O(1) status lookups derived from `diff` once per build, so per-element tinting stays cheap on
@@ -68,6 +69,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     ) {
         self.codebase = codebase
         self.artifact = artifact
+        self.typeDisplayNames = artifact.typeDisplayNames
         self.comparisonArtifact = comparisonArtifact
         self.configuration = configuration
         self.restoredPositions = restoredPositions

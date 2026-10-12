@@ -56,7 +56,7 @@ private struct CallGraphAccumulator {
         self.modules = modules
         identityResolver = TypeIdentityResolver(types: types)
         nodeIdentity = CallGraphNodeIdentity(types: types)
-        typesByID = Dictionary(uniqueKeysWithValues: types.map { ($0.id, $0) })
+        typesByID = Dictionary(types.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var keys: Set<String> = []
         for type in types {
             for member in type.members { keys.insert("\(type.id).\(member.name)") }

@@ -1,24 +1,24 @@
 classDiagram
-    class Library["Library"] {
+    class TypeScript_Library["Library"] {
         +playlists Playlist[]
         +constructor(playlists Playlist[])
         +addPlaylist(playlist Playlist) void
         +playlist(named string) Playlist | undefined
     }
-    class MediaItem["MediaItem"] {
+    class TypeScript_MediaItem["MediaItem"] {
         +title string
         +duration number
         +genre Genre
         +constructor(title string, duration number, genre Genre)
         +play() void
     }
-    class Playable["Playable"] {
+    class TypeScript_Playable["Playable"] {
         <<interface>>
         +title string
         +duration number
         +play() void
     }
-    class Genre["Genre"] {
+    class TypeScript_Genre["Genre"] {
         <<enumeration>>
         Pop
         Rock
@@ -27,38 +27,38 @@ classDiagram
         Electronic
         SpokenWord
     }
-    class Player["Player"] {
+    class TypeScript_Player["Player"] {
         -nowPlaying Playable | null
         -library Library
         +constructor(library Library)
         +play(item Playable) void
         +playFirstItem(playlistNamed string) void
     }
-    class Playlist["Playlist"] {
+    class TypeScript_Playlist["Playlist"] {
         +name string
         +items MediaItem[]
         +totalDuration number
         +constructor(name string, items MediaItem[])
         +add(item MediaItem) void
     }
-    class Podcast["Podcast"] {
+    class TypeScript_Podcast["Podcast"] {
         +host string
         +episodeNumber number
         +constructor(title string, duration number, host string, episodeNumber number)
         +play() void
     }
-    class Song["Song"] {
+    class TypeScript_Song["Song"] {
         +artist string
         +album string
         +constructor(title string, duration number, genre Genre, artist string, album string?)
         +play() void
     }
-    Playable <|.. MediaItem
-    MediaItem <|-- Podcast
-    MediaItem <|-- Song
-    Library o-- "*" Playlist : playlists
-    MediaItem *-- "1" Genre : genre
-    Player *-- "1" Library : library
-    Player ..> Playable
-    Playlist o-- "*" MediaItem : items
-    Song ..> Genre
+    TypeScript_Playable <|.. TypeScript_MediaItem
+    TypeScript_MediaItem <|-- TypeScript_Podcast
+    TypeScript_MediaItem <|-- TypeScript_Song
+    TypeScript_Library o-- "*" TypeScript_Playlist : playlists
+    TypeScript_MediaItem *-- "1" TypeScript_Genre : genre
+    TypeScript_Player *-- "1" TypeScript_Library : library
+    TypeScript_Player ..> TypeScript_Playable
+    TypeScript_Playlist o-- "*" TypeScript_MediaItem : items
+    TypeScript_Song ..> TypeScript_Genre
