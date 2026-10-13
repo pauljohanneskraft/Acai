@@ -56,7 +56,7 @@ struct RuleCard<Content: View>: View {
                     Image(systemName: "minus.circle.fill").foregroundStyle(.red)
                 }
                 .buttonStyle(.plain)
-                .help(.app("View.RuleCard.Remove"))
+                .help(.app("View.RuleCard.Delete"))
             }
             content
         }
