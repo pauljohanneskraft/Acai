@@ -27,7 +27,6 @@ extension NewCodebaseSheetContent {
     @ViewBuilder
     var remoteURLSection: some View {
         Section {
-            nameField(isOptional: true, identifier: "newCodebase.remoteNameField")
             TextField(text: $sheet.remoteAddress, prompt: Text(verbatim: "https://example.com/team/project.git")) {
                 Text(.app("View.NewCodebaseSheet.RemoteAddress"))
             }

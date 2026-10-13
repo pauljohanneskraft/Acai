@@ -26,7 +26,8 @@ extension ProjectCodebaseEditor {
                 continue
             }
             store.projects[index].codebases.append(Codebase(
-                name: folder.url.lastPathComponent, directoryPath: folder.url.path,
+                name: uniqueCodebaseName(folder.url.lastPathComponent, inProjectAt: index),
+                directoryPath: folder.url.path,
                 securityScopedBookmark: folder.securityScopedBookmark, repository: folder.repository))
             outcome.added += 1
         }

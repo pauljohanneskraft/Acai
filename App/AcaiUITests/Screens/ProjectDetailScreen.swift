@@ -28,17 +28,15 @@ final class ProjectDetailScreen {
         tapAddMenuItem(addCodebaseButton, description: "Add Codebase", file: file, line: line)
     }
 
-    /// Clones the fixture GitHub repository at `ref` into a new codebase and waits for its row.
-    /// `name` defaults to the sheet's own suggestion, the repository's name.
+    /// Clones the fixture GitHub repository at `ref` into a new codebase and waits for its row. The
+    /// sheet has no name field, so the row's name is the repository's own — numbered when the
+    /// project already holds a codebase under it, which `expecting` is how a caller says.
     func addFixtureGitHubCodebase(
-        named name: String = "fixture-repo", ref: String, file: StaticString = #filePath, line: UInt = #line
+        expecting name: String = "fixture-repo", ref: String, file: StaticString = #filePath, line: UInt = #line
     ) {
         tapAddCodebase(file: file, line: line)
         GitHubAccountScreen(app: app).selectGitHubSource(file: file, line: line)
         let sheet = NewCodebaseSheetScreen(app: app)
-        if name != "fixture-repo" {
-            sheet.enterName(name, file: file, line: line)
-        }
         sheet.choose("octocat/fixture-repo", from: sheet.repositoryPicker, file: file, line: line)
         sheet.choose(ref, from: sheet.refPicker, file: file, line: line)
         sheet.cloneButton.waitUntilEnabled("Clone, once a repository and ref are picked", file: file, line: line)
