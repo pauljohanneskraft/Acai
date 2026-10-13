@@ -9,12 +9,19 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
     /// Types `text` and waits for the match summary to catch up, retyping if it never arrives: a
     /// query landing while the diagram's own state is still settling from the previous action can be
     /// missed by SwiftUI's diffing, and a plain wait can't recover from that. Retyping is idempotent.
+    /// `appending` types into the existing query instead of replacing it, for text whose repeats don't
+    /// change the outcome.
     private func search(
-        _ diagram: ClassDiagramScreen, for text: String, expecting expected: String, attempts: Int = 3,
-        file: StaticString = #filePath, line: UInt = #line
+        _ diagram: ClassDiagramScreen, for text: String, appending: Bool = false, expecting expected: String,
+        attempts: Int = 3, file: StaticString = #filePath, line: UInt = #line
     ) {
         for _ in 0..<attempts {
-            diagram.searchField.clearAndTypeText(text, file: file, line: line)
+            if appending {
+                diagram.searchField.tapWhenReady("the search field", file: file, line: line)
+                diagram.searchField.typeText(text)
+            } else {
+                diagram.searchField.clearAndTypeText(text, file: file, line: line)
+            }
             if diagram.searchMatchSummary(reading: expected).appears(within: .uiTransition / 2) { return }
         }
         XCTFail("searching for '\(text)' never reported '\(expected)'", file: file, line: line)
@@ -51,21 +58,16 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
 
         diagram.openSearch()
 
-        // "Base" matches exactly one of the seeded fixture's four types.
+        // "Base" matches exactly one of the seeded fixture's four types; counts and stepping are
+        // `ClassDiagramViewModelTests` and `DiagramSearchSummaryTests`.
         search(diagram, for: "Base", expecting: "1 match")
         validateScreenshot("ClassDiagram", state: "searching")
 
-        // "er" matches Derived, Helper and Worker but not Base.
-        search(diagram, for: "er", expecting: "3 matches")
-
-        // Stepping through matches never crashes or disables itself once there are matches to step
-        // through.
         diagram.searchNextButton.tapWhenReady("the search's Next Match button")
         diagram.searchPreviousButton.tapWhenReady("the search's Previous Match button")
 
-        // A query nothing matches reports that plainly rather than looking identical to "not
-        // searching yet".
-        search(diagram, for: "nonexistentXYZ", expecting: "No matches")
+        // Wherever the tap leaves the cursor, "XYZ" inside "Base" matches nothing, with no burst of deletes first.
+        search(diagram, for: "XYZ", appending: true, expecting: "No matches")
 
         diagram.searchDismissButton.tapWhenReady("the search's Dismiss button")
         diagram.searchField.waitForDisappearanceOrFail("the search field after dismissing search")
