@@ -33,11 +33,11 @@ final class GitHubAccountScreen {
     /// iOS presents the dialog as a popover without its Cancel button; tapping outside cancels it.
     func cancelSignOut(file: StaticString = #filePath, line: UInt = #line) {
         #if os(iOS)
-        let outside = app.otherElements["PopoverDismissRegion"]
-        outside.waitUntilReady("outside the sign-out confirmation", file: file, line: line)
+        // Inside the Settings sheet but off the dialog: a tap outside the sheet dismisses it too on iPad.
+        let scopeChecklist = app.descendants(matching: .any)["github.scopeChecklist"].firstMatch
+        scopeChecklist.waitOrFail("the scope checklist beside the sign-out confirmation", file: file, line: line)
         SystemBanners().dismiss(file: file, line: line)
-        // Well above the popover, which sits beside the Sign Out button, and clear of the screen's edges.
-        outside.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)).tap()
+        scopeChecklist.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         #else
         signOutCancelButton.tapWhenReady("Cancel, in the sign-out confirmation", file: file, line: line)
         #endif
