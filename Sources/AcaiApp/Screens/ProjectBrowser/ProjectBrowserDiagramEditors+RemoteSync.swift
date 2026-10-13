@@ -21,10 +21,13 @@ extension ProjectCodebaseEditor {
         let target = RemoteCheckoutTarget(endpoint: endpoint, ref: ref, depth: depth)
         // Locals, not `self`/`store`, so the `@Sendable` closure below closes over Sendable values only.
         let remoteService = self.remoteService
+        let request = InterruptedOperationRecord.RemoteCloneRequest(
+            projectID: projectID, codebaseID: codebaseID, name: name, remoteURL: remoteURL, ref: ref,
+            refKind: refKind, latestSnapshotOnly: depth == .latestSnapshot)
         do {
             let cloneResult = try await store.activityCenter.run(
                 title: .app("Activity.CloningRemote \(remoteDisplayName(remoteURL))"),
-                kind: .gitClone, subject: .codebase(codebaseID)
+                kind: .gitClone, subject: .codebase(codebaseID), resumption: .clone(request)
             ) { onProgress in
                 try await remoteService.attachWorktree(target, destination: destination, onProgress: onProgress)
             }
@@ -61,6 +64,15 @@ extension ProjectCodebaseEditor {
         }
     }
 
+    /// Clones again what an earlier launch never finished cloning; the new attempt records itself.
+    func retryClone(_ record: InterruptedOperationRecord) async {
+        guard case .clone(let request) = record.resumption else { return }
+        store.activityCenter.discardInterruptedOperation(record.id)
+        await addRemoteCodebase(
+            to: request.projectID, name: request.name, remoteURL: request.remoteURL, ref: request.ref,
+            refKind: request.refKind, depth: request.depth)
+    }
+
     /// Fetches a managed codebase's remote and moves it to the latest commit of its ref, then
     /// reindexes if that commit actually moved.
     @discardableResult
@@ -73,7 +85,7 @@ extension ProjectCodebaseEditor {
         do {
             let fetchResult = try await store.activityCenter.run(
                 title: .app("Activity.FetchingRemote \(repository.remoteDisplayName)"),
-                kind: .gitFetch, subject: .codebase(codebaseID),
+                kind: .gitFetch, subject: .codebase(codebaseID), resumption: .pull(codebaseID: codebaseID),
                 resyncOperation(codebase: codebase, target: target)
             )
             guard let latestSHA = fetchResult else { return .cancelled }
@@ -102,6 +114,7 @@ extension ProjectCodebaseEditor {
             let switchResult = try await store.activityCenter.run(
                 title: .app("Activity.SwitchingRemote \(repository.remoteDisplayName) \(ref)"),
                 kind: .gitFetch, subject: .codebase(codebaseID),
+                resumption: .switchRef(codebaseID: codebaseID, ref: ref, refKind: kind),
                 resyncOperation(codebase: codebase, target: target)
             )
             guard let headSHA = switchResult else { return .cancelled }

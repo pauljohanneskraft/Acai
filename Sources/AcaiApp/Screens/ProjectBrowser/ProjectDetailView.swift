@@ -108,6 +108,8 @@ struct ProjectDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: .zero) {
                 projectHeader(project: project, index: index, showActions: !isEmpty(project))
+                interruptedClonesBanner
+                    .padding(.horizontal)
 
                 Divider()
                 regularCodebasesAndDiagramsSection(project: project)
@@ -175,6 +177,9 @@ struct ProjectDetailView: View {
         List {
             Section {
                 projectTitleFields(index: index)
+            }
+            Section {
+                interruptedClonesBanner
             }
             if isEmpty(project) {
                 Section {
@@ -292,17 +297,6 @@ struct ProjectDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - Section Header
-
-    private func sectionHeader(title: LocalizedStringResource) -> some View {
-        HStack {
-            Text(localized: title).font(.headline)
-            Spacer()
-        }
-        .padding(.horizontal)
-        .padding(.vertical, .spacingM)
-    }
-
     // MARK: - Project Header (Editable)
 
     /// `showActions` is `false` for a project with no codebases and no diagrams yet: in that case
@@ -342,6 +336,21 @@ struct ProjectDetailView: View {
 // MARK: - Project Title Fields
 
 private extension ProjectDetailView {
+    func sectionHeader(title: LocalizedStringResource) -> some View {
+        HStack {
+            Text(localized: title).font(.headline)
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, .spacingM)
+    }
+
+    var interruptedClonesBanner: some View {
+        InterruptedClonesBanner(activityCenter: model.store.activityCenter, projectID: projectID) { record in
+            Task { await model.editing.retryClone(record) }
+        }
+    }
+
     #if os(macOS)
     func projectTitleFields(index: Int) -> some View {
         VStack(alignment: .leading, spacing: .spacingXS) {

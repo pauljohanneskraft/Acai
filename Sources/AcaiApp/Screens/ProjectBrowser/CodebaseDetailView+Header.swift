@@ -1,3 +1,4 @@
+import AcaiGit
 import SwiftUI
 
 extension CodebaseDetailView {
@@ -23,6 +24,12 @@ extension CodebaseDetailView {
                     }
                 }
             }
+            CodebaseInterruptedBanner(
+                activityCenter: model.store.activityCenter,
+                codebaseID: codebaseID,
+                phase: { resumptionPhase(for: $0) },
+                resume: { resume($0) }
+            )
             if model.showsStaleBanner(codebaseID: codebaseID) {
                 staleBanner(codebase: codebase)
             }
@@ -43,6 +50,37 @@ extension CodebaseDetailView {
         }
     }
 
+    private func resumptionPhase(for resumption: InterruptedOperationRecord.Resumption) -> AsyncOperationPhase {
+        switch resumption {
+        case .reindex, .clone:
+            reindexPhase
+        case .pull:
+            pullPhase
+        case .switchRef:
+            refSwitchPhase
+        }
+    }
+
+    private func resume(_ resumption: InterruptedOperationRecord.Resumption) {
+        switch resumption {
+        case .reindex, .clone:
+            startReindex(codebaseID: resumption.codebaseID)
+        case .pull(let codebaseID):
+            startPull(codebaseID: codebaseID)
+        case .switchRef(let codebaseID, let ref, let refKind):
+            startRefSwitch(codebaseID: codebaseID, to: GitCheckout.Ref(name: ref, kind: refKind))
+        }
+    }
+
+    /// The reindex path the interrupted banner, the stale banner and the actions row share.
+    private func startReindex(codebaseID: UUID) {
+        reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
+        Task {
+            let outcome = await model.editing.reindex(codebaseID: codebaseID)
+            reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
+        }
+    }
+
     private struct FreshnessCheckToken: Equatable {
         let codebaseID: UUID
         let lastIndexed: Date?
@@ -55,11 +93,7 @@ extension CodebaseDetailView {
                 .foregroundStyle(.orange)
             Spacer()
             Button {
-                reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
-                Task {
-                    let outcome = await model.editing.reindex(codebaseID: codebase.id)
-                    reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
-                }
+                startReindex(codebaseID: codebase.id)
             } label: {
                 Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
             }
@@ -131,12 +165,7 @@ extension CodebaseDetailView {
             } else {
                 localRevisionPicker(codebase: codebase)
                 Button {
-                    reindexPhase = .loading(.app("View.CodebaseDetailView.Indexing"))
-                    Task {
-                        let outcome = await model.editing.reindex(codebaseID: codebase.id)
-                        reindexPhase = AsyncOperationPhase(
-                            outcome, failure: .app("View.CodebaseDetailView.IndexingFailed"))
-                    }
+                    startReindex(codebaseID: codebase.id)
                 } label: {
                     Label(.app("View.CodebaseDetailView.Reindex"), systemImage: "arrow.clockwise")
                 }
