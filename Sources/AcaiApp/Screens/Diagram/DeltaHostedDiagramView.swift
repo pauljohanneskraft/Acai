@@ -48,6 +48,8 @@ struct DeltaHostedDiagramView<Content: View>: View {
     @State private var hasBeenFitted = false
     #if os(macOS)
     @State private var reopensCompare = false
+    #else
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
     /// A pull-request comparison needs both the "old" (merge-base) and "new" (head) snapshots
@@ -118,7 +120,9 @@ struct DeltaHostedDiagramView<Content: View>: View {
                         }
                     }
             }
-            .presentationDetents([.medium])
+            // A medium form sheet is too short for a loaded comparison, which then overflows and slides
+            // the ref list under the Clear button.
+            .presentationDetents(horizontalSizeClass == .regular ? [.large] : [.medium])
             .environmentObject(model)
         }
         #endif

@@ -66,24 +66,49 @@ final class ProjectBrowserScreen {
 
     var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
 
+    /// ⇧⌘O, from the Mac's menu bar or an iPad's hardware keyboard. A key event goes to whatever is
+    /// frontmost, so a system banner swallows it the way it swallows a tap — the tap helpers clear one
+    /// first, and typing must too.
+    func openQuickOpenWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
+        app.typeShortcut(
+            "⇧⌘O", key: "o", modifierFlags: [.command, .shift], until: QuickOpenScreen(app: app).searchField,
+            file: file, line: line)
+    }
+
     /// Opens Quick Open through whichever entry point this platform and width actually has.
     func openQuickOpen(file: StaticString = #filePath, line: UInt = #line) {
-        let searchField = QuickOpenScreen(app: app).searchField
         #if os(macOS)
-        // macOS's only entry point is ⌘K (`QuickOpenCommands`) — there is no toolbar button there.
-        newProjectButton.waitOrFail("the project browser", file: file, line: line)
-        app.typeKey("k", modifierFlags: .command)
-        searchField.waitOrFail("the Quick Open search field", file: file, line: line)
+        // macOS's only entry point is ⇧⌘O (`QuickOpenCommands`) — there is no toolbar button there.
+        openQuickOpenWithKeyboard(file: file, line: line)
         #else
-        quickOpenButton.tap("the Quick Open entry point", until: searchField, file: file, line: line)
+        quickOpenButton.tap(
+            "the Quick Open entry point", until: QuickOpenScreen(app: app).searchField, file: file, line: line)
         #endif
+    }
+
+    /// ⌘/, from the Mac's menu bar or an iPad's hardware keyboard.
+    func openKeyboardShortcutsWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
+        #if os(macOS)
+        // Each press opens another panel window on macOS, so it is never repeated there.
+        let attempts = 1
+        #else
+        let attempts = 3
+        #endif
+        app.typeShortcut(
+            "⌘/", key: "/", modifierFlags: .command, until: KeyboardShortcutsScreen(app: app).panel,
+            attempts: attempts, file: file, line: line)
     }
 
     // MARK: - Links
 
     /// Opens an `acai://` address the way another app would. The app must already be showing a screen:
-    /// the caller waits for one first.
-    func openLink(_ address: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// the caller waits for one first. On iOS, `relaunching` delivers it to a fresh launch instead of
+    /// the running app, whose layout the system's delivery shifts down by a status bar's height.
+    func openLink(
+        _ address: String, relaunching: Bool = false, file: StaticString = #filePath, line: UInt = #line
+    ) {
         guard let url = URL(string: address) else {
             XCTFail("Not a URL: \(address)", file: file, line: line)
             return
@@ -110,7 +135,11 @@ final class ProjectBrowserScreen {
         }
         app.activate()
         #else
-        app.open(url)
+        if relaunching {
+            app.open(url)
+        } else {
+            XCUIDevice.shared.system.open(url)
+        }
         #endif
     }
 
