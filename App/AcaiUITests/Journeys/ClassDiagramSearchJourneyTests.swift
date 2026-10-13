@@ -28,7 +28,10 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         for name in ["Derived", "Helper", "Worker"] {
             XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should be drawn alongside Base")
         }
-        // See `ScreenshotJourneyTests`: the initial centring races the status bar hiding.
+        diagram.describedTypeNode(named: "Base").waitOrFail("the Base type node, described to VoiceOver")
+        diagram.relationship(from: "Derived", to: "Base", describing: "Inheritance")
+            .waitOrFail("the Derived → Base relationship, described to VoiceOver as inheritance")
+        // See `SeededProjectWalkthroughJourneyTests`: the initial centring races the status bar hiding.
         diagram.tapFitToView()
 
         diagram.openSearch()

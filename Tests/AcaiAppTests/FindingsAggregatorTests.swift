@@ -67,6 +67,26 @@ struct FindingsAggregatorTests {
         #expect(finding?.cycle == nil)
     }
 
+    /// The title names the types plainly, while the finding's identity, reference and cycle keep their ids.
+    @Test func aModuleScopedSubjectIsTitledByTypeNames() {
+        let codebase = Codebase(name: "C", directoryPath: "/c")
+        let (model, project) = makeModel(codebases: [codebase])
+        let aggregator = FindingsAggregator(project: project, model: model)
+        let scoped = artifact.scopingTypeIDs(modules: ModuleMap(roots: [], filePaths: []))
+        let ids = scoped.types.map(\.id)
+        let scopedCycle = Violation(
+            ruleKind: "cycle", message: "", subject: ids.joined(separator: ","), detail: ["scope": "types"])
+
+        let finding = aggregator.findings(
+            for: codebase, analysis: analysis(violations: [scopedCycle]), artifact: scoped
+        ).first { $0.kind == .violation }
+
+        #expect(ids != ["A", "B"])
+        #expect(finding?.title == "A,B")
+        #expect(finding?.id.hasSuffix(scopedCycle.findingIdentity) == true)
+        #expect(finding?.cycle == Finding.CycleReference(scope: "types", members: ids))
+    }
+
     @Test func aCycleViolationIsCriticalWithItsCycleReference() {
         let codebase = Codebase(name: "C", directoryPath: "/c")
         let (model, project) = makeModel(codebases: [codebase])

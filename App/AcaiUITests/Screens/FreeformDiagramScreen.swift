@@ -2,8 +2,6 @@ import XCTest
 
 @MainActor
 final class FreeformDiagramScreen: DiagramScreenBase {
-    var checkpointsButton: XCUIElement { app.buttons["diagram.checkpointsButton"] }
-
     /// A control only this screen has, so it can't match the diagram a copy was saved from: the
     /// toolbar's Checkpoints button, or on compact width (where that may sit in the overflow menu)
     /// the bottom bar's mode picker.

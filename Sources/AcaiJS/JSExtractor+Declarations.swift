@@ -91,7 +91,8 @@ extension JSExtractor {
             return (typeDecls.map { applyMetadata(to: $0, decorators: decorators, namespace: namespace) }, [])
         }
 
-        if let typeDecl = dispatchTypeDeclaration(nodeType, node: node, isExported: isExported, isDefault: isDefault) {
+        if var typeDecl = dispatchTypeDeclaration(nodeType, node: node, isExported: isExported, isDefault: isDefault) {
+            typeDecl.documentation = documentation.documentation(above: node, in: context)
             return ([applyMetadata(to: typeDecl, decorators: decorators, namespace: namespace)], [])
         }
 
@@ -134,6 +135,7 @@ extension JSExtractor {
             let value = child.child(byFieldName: "value")
             if let value, value.nodeType == "class" {
                 var typeDecl = extractClassLikeDeclaration(value, isExported: false, isDefault: false)
+                typeDecl.documentation = documentation.documentation(above: child, in: context)
                 if typeDecl.name == "_Anonymous" || typeDecl.name == "default", let varName {
                     typeDecl.name = varName
                     typeDecl.id = varName

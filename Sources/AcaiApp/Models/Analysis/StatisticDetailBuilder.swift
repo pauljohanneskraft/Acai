@@ -75,13 +75,14 @@ struct StatisticDetailBuilder {
     /// The relative directory path of a module: a representative type's path truncated at the module
     /// component (e.g. `Sources/AcaiCore/Foo/Bar.swift` → `Sources/AcaiCore`), or the file's parent.
     private func moduleDirectory(named module: String) -> String? {
-        let resolver = ModuleResolver.standard
-        guard let artifact,
-              let path = artifact.flattened().lazy.compactMap({ $0.location?.filePath })
-                  .first(where: { resolver.productName(forFilePath: $0) == module })
+        guard let artifact else { return nil }
+        let modules = ModuleMap(artifact: artifact)
+        guard let path = artifact.flattened().lazy.compactMap({ $0.location?.filePath })
+            .first(where: { modules.module(forFilePath: $0) == module })
         else { return nil }
-        let parts = path.split(separator: "/", omittingEmptySubsequences: true).map(String.init)
-        if let index = parts.firstIndex(of: module) {
+        let leaf = module.pathComponentsIgnoringDots.last ?? module
+        let parts = path.pathComponentsIgnoringDots
+        if let index = parts.firstIndex(of: leaf) {
             return parts[...index].joined(separator: "/")
         }
         return parts.dropLast().joined(separator: "/")

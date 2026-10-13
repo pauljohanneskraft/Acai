@@ -1,0 +1,1 @@
+C has no class type; its only aggregate is a struct, a different TypeKind the diagram layer renders differently, so there is nothing to normalise onto a class.

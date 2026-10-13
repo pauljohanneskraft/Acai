@@ -65,7 +65,12 @@ struct ClassDiagramSidebar: View {
             get: { viewModel.configuration },
             set: { newValue in editor.mutate { $0 = newValue } }
         )
-        let typeNames = Array(Set(artifact.flattened().map(\.name))).sorted()
+        let typeNames = viewModel.typeDisplayNames
+        let typeIDs = artifact.flattened()
+            .filter { $0.kind != .extension }
+            .map(\.id)
+            .uniqued()
+            .sorted { (typeNames.name(forID: $0), $0) < (typeNames.name(forID: $1), $1) }
 
         return Form {
             Section(.app("View.ClassDiagramSidebar.Visibility")) {
@@ -123,7 +128,7 @@ struct ClassDiagramSidebar: View {
                 .accessibilityIdentifier("diagram.relayoutButton")
             }
 
-            FocusSection(configuration: config, typeNames: typeNames)
+            FocusSection(configuration: config, typeIDs: typeIDs, typeNames: typeNames)
 
             // Shown only for languages that declare a generated-code filter; the label and
             // explanation come from that filter, so the app names no language itself.
@@ -243,7 +248,7 @@ struct ClassDiagramSidebar: View {
                                             Spacer()
                                             let otherID = edge.sourceID == nodeID
                                                 ? edge.targetID : edge.sourceID
-                                            Text(verbatim: otherID)
+                                            Text(verbatim: viewModel.typeDisplayNames.name(forID: otherID))
                                                 .font(.caption.monospaced())
                                                 .foregroundStyle(.secondary)
                                         }

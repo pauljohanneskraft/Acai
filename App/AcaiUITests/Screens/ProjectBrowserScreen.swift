@@ -49,24 +49,9 @@ final class ProjectBrowserScreen {
     /// Only exists on compact width, where a pushed detail screen covers the sidebar.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// Deletes through the row's own affordance: a context menu on macOS and iPad, a swipe action on
-    /// iPhone's compact width.
+    /// Deletes through the row's own affordance, then confirms.
     func deleteCodebase(_ row: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
-        row.waitUntilReady("the codebase's sidebar row", file: file, line: line)
-        SystemBanners().dismiss(file: file, line: line)
-        #if os(macOS)
-        row.rightClick()
-        // Window-scoped: the system Edit menu's own "Delete" item also matches an unscoped query.
-        let delete = app.windows.firstMatch.descendants(matching: .any)["Delete"]
-        #else
-        let delete = app.buttons["Delete"]
-        if SnapshotPlatform().usesCompactLayout {
-            row.swipeLeft()
-        } else {
-            row.press(forDuration: 1.5)
-        }
-        #endif
-        delete.tapWhenReady("the row's Delete action", file: file, line: line)
+        RowDeleteAffordance(app: app).tapDelete(on: row, "the codebase's sidebar row", file: file, line: line)
         deleteCodebaseConfirmButton.tapWhenReady("the codebase delete confirmation", file: file, line: line)
         row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
     }
@@ -81,17 +66,39 @@ final class ProjectBrowserScreen {
 
     var quickOpenButton: XCUIElement { app.buttons["sidebar.quickOpenButton"] }
 
+    /// ⇧⌘O, from the Mac's menu bar or an iPad's hardware keyboard. A key event goes to whatever is
+    /// frontmost, so a system banner swallows it the way it swallows a tap — the tap helpers clear one
+    /// first, and typing must too.
+    func openQuickOpenWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
+        app.typeShortcut(
+            "⇧⌘O", key: "o", modifierFlags: [.command, .shift], until: QuickOpenScreen(app: app).searchField,
+            file: file, line: line)
+    }
+
     /// Opens Quick Open through whichever entry point this platform and width actually has.
     func openQuickOpen(file: StaticString = #filePath, line: UInt = #line) {
-        let searchField = QuickOpenScreen(app: app).searchField
         #if os(macOS)
-        // macOS's only entry point is ⌘K (`QuickOpenCommands`) — there is no toolbar button there.
-        newProjectButton.waitOrFail("the project browser", file: file, line: line)
-        app.typeKey("k", modifierFlags: .command)
-        searchField.waitOrFail("the Quick Open search field", file: file, line: line)
+        // macOS's only entry point is ⇧⌘O (`QuickOpenCommands`) — there is no toolbar button there.
+        openQuickOpenWithKeyboard(file: file, line: line)
         #else
-        quickOpenButton.tap("the Quick Open entry point", until: searchField, file: file, line: line)
+        quickOpenButton.tap(
+            "the Quick Open entry point", until: QuickOpenScreen(app: app).searchField, file: file, line: line)
         #endif
+    }
+
+    /// ⌘/, from the Mac's menu bar or an iPad's hardware keyboard.
+    func openKeyboardShortcutsWithKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        newProjectButton.waitOrFail("the project browser", file: file, line: line)
+        #if os(macOS)
+        // Each press opens another panel window on macOS, so it is never repeated there.
+        let attempts = 1
+        #else
+        let attempts = 3
+        #endif
+        app.typeShortcut(
+            "⌘/", key: "/", modifierFlags: .command, until: KeyboardShortcutsScreen(app: app).panel,
+            attempts: attempts, file: file, line: line)
     }
 
     // MARK: - Links

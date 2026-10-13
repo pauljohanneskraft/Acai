@@ -7,6 +7,7 @@ import AcaiCore
 struct SelectorEditor: View {
     let title: LocalizedStringResource
     @Binding var selector: AcaiQuality.Selector
+    var identifierPrefix: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: .spacingXS) {
@@ -14,15 +15,19 @@ struct SelectorEditor: View {
             TextField(text: $selector.module.orEmpty) {
                 Text(.app("View.SelectorEditor.ModuleGlobEG"))
             }
+            .accessibilityIdentifier(identifier("module"))
             TextField(text: $selector.typeGlob.orEmpty) {
                 Text(.app("View.SelectorEditor.TypeGlobEG"))
             }
+            .accessibilityIdentifier(identifier("typeGlob"))
             TextField(text: $selector.stereotype.orEmpty) {
                 Text(.app("View.SelectorEditor.StereotypeEGEntity"))
             }
+            .accessibilityIdentifier(identifier("stereotype"))
             TextField(text: $selector.annotation.orEmpty) {
                 Text(.app("View.SelectorEditor.AnnotationEGEntity"))
             }
+            .accessibilityIdentifier(identifier("annotation"))
             Picker(.app("View.SelectorEditor.MinimumAccess"), selection: $selector.minimumAccess) {
                 Text(.app("View.SelectorEditor.AnyAccessLevel")).tag(AccessLevel?.none)
                 ForEach(AccessLevel.allCases, id: \.self) { level in
@@ -38,10 +43,16 @@ struct SelectorEditor: View {
             TextField(text: $selector.minMembers.asText) {
                 Text(.app("View.SelectorEditor.MinMembersEG"))
             }
+            .accessibilityIdentifier(identifier("minMembers"))
             TextField(text: $selector.minNesting.asText) {
                 Text(.app("View.SelectorEditor.MinNestingEG"))
             }
+            .accessibilityIdentifier(identifier("minNesting"))
         }
         .textFieldStyle(.roundedBorder)
+    }
+
+    private func identifier(_ facet: String) -> String {
+        identifierPrefix.map { "\($0).\(facet)" } ?? ""
     }
 }

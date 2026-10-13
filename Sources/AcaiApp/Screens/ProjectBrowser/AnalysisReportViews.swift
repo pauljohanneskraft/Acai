@@ -7,6 +7,7 @@ import AcaiLibrary
 /// Shared by the quality-check report views so every finding renders identically.
 struct ViolationRowView: View {
     let violation: Violation
+    var typeNames: TypeDisplayNames?
     var tint: Color = .red
     var codebase: Codebase?
     /// `nil` in the rules editor's live preview, which has no codebase context to resolve a
@@ -55,7 +56,7 @@ struct ViolationRowView: View {
                     .padding(.horizontal, .spacingXS).padding(.vertical, .spacingXXS)
                     .background(tint.opacity(0.12))
                     .clipShape(Capsule())
-                Text(verbatim: violation.subject).font(.callout.bold())
+                Text(verbatim: typeNames.map(violation.displaySubject) ?? violation.subject).font(.callout.bold())
             }
             Text(verbatim: violation.message).font(.callout)
             if let source = violation.source {
@@ -146,6 +147,15 @@ struct HealthReportView: View {
     var codebase: Codebase?
 
     var body: some View {
+        VStack(alignment: .leading, spacing: .spacingM) {
+            if !report.discoveredRoots.isEmpty {
+                DiscoveredRootsView(roots: report.discoveredRoots, isFallbackOnly: report.isFallbackOnly)
+            }
+            diagnostics
+        }
+    }
+
+    @ViewBuilder private var diagnostics: some View {
         let percent = Int((report.score * 100).rounded())
         if report.diagnostics.isEmpty {
             let types = String(localized: .app("View.ParseHealthSection.Types \(report.typeCount)"))
@@ -162,5 +172,47 @@ struct HealthReportView: View {
                 }
             }
         }
+    }
+}
+
+struct DiscoveredRootsView: View {
+    let roots: [CodeArtifact.DiscoveredRoot]
+    let isFallbackOnly: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: .spacingS) {
+            Text(.app("View.DiscoveredRootsView.ProjectRoots \(roots.count)"))
+                .font(.caption).foregroundStyle(.secondary)
+            ForEach(Array(roots.prefix(analysisReportLimit).enumerated()), id: \.offset) { _, root in
+                row(for: root)
+            }
+            if isFallbackOnly {
+                Label {
+                    Text(.app("View.DiscoveredRootsView.NoBuildSystemRecognised"))
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("healthReport.noBuildSystemRecognised")
+            }
+        }
+        .accessibilityIdentifier("healthReport.discoveredRoots")
+    }
+
+    private func row(for root: CodeArtifact.DiscoveredRoot) -> some View {
+        let languages = root.languages.map(\.rawValue).joined(separator: ", ")
+        let sources = root.sourceDirs.joined(separator: ", ")
+        return VStack(alignment: .leading, spacing: .spacingXXS) {
+            Text(verbatim: root.path).font(.callout.monospaced())
+            Text(verbatim: "\(root.detector) · \(languages)")
+                .font(.caption).foregroundStyle(.secondary)
+            if !sources.isEmpty {
+                Text(.app("View.DiscoveredRootsView.Sources \(sources)"))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }

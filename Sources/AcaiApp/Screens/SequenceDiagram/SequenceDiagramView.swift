@@ -2,6 +2,7 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 import AcaiDiff
+import AcaiQuality
 import AcaiRender
 import UniformTypeIdentifiers
 
@@ -118,10 +119,7 @@ struct SequenceDiagramView: View {
                 model.diagrams.updateSequenceConfiguration(diagramID: diagram.id, configuration: config)
                 centerDiagram()
             },
-            onApplyFilter: { filter in
-                viewModel.applyFilter(filter)
-                model.diagrams.updateSequenceFilter(diagramID: diagram.id, filter: filter)
-            },
+            onApplyFilter: applyFilter,
             onSaveAsFreeform: {
                 // Pass every participant's live x (not just dragged overrides) so the freeform
                 // copy reproduces the current layout exactly.
@@ -181,25 +179,29 @@ struct SequenceDiagramView: View {
     // MARK: - Empty state
 
     private var emptyState: some View {
-        VStack(spacing: .spacingL) {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 40))
-                .foregroundStyle(.secondary)
-            Text(.app("View.SequenceDiagramView.NoCallsCouldTraced"))
-                .foregroundStyle(.secondary)
-            Text(.app("View.SequenceDiagramView.CallsAreFollowedThrough"))
-                .font(.callout)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 360)
-            Button {
-                sidebarTab = .settings
-                showSidebar = true
-            } label: {
-                Label(.app("View.SequenceDiagramView.EditConfiguration"), systemImage: "slider.horizontal.3")
+        DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+            ContentUnavailableView {
+                Label(.app("View.SequenceDiagramView.NoCallsCouldTraced"), systemImage: "arrow.triangle.branch")
+            } description: {
+                Text(.app("View.SequenceDiagramView.CallsAreFollowedThrough"))
+            } actions: {
+                Button {
+                    sidebarTab = .settings
+                    showSidebar = true
+                } label: {
+                    Label(.app("View.SequenceDiagramView.EditConfiguration"), systemImage: "slider.horizontal.3")
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("diagram.emptyScope.editConfigurationButton")
             }
+        } onUndo: {
+            applyFilter(nil)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func applyFilter(_ filter: AcaiQuality.Selector?) {
+        viewModel.applyFilter(filter)
+        model.diagrams.updateSequenceFilter(diagramID: diagram.id, filter: filter)
     }
 
     // MARK: - Persistence & layout

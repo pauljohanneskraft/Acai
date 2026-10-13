@@ -50,6 +50,28 @@ struct SwiftDeferredCallSiteTests {
         #expect(light?.callSites.contains { $0.methodName == "make" && $0.receiver == .selfDispatch } == true)
     }
 
+    /// The same walker serves a *subscript* access in either context, which it previously ignored:
+    /// `Thing()[0]` in a stored property's initializer and `thing[1]` in a computed accessor each
+    /// leave a `Thing.subscript` caller edge, so the subscript isn't reported uncalled.
+    @Test func capturesSubscriptAccessInPropertyInitializerAndAccessor() {
+        let source = """
+        class Thing {
+            subscript(i: Int) -> Int { 0 }
+        }
+        class Worker {
+            let thing = Thing()
+            let firstStored = Thing()[0]
+            var firstComputed: Int { thing[1] }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Worker.swift")
+        let worker = artifact.types.first { $0.name == "Worker" }
+        let stored = worker?.members.first { $0.name == "firstStored" }
+        let computed = worker?.members.first { $0.name == "firstComputed" }
+        #expect(stored?.callSites.contains { $0.methodName == "subscript" && $0.receiverType == "Thing" } == true)
+        #expect(computed?.callSites.contains { $0.methodName == "subscript" && $0.receiverType == "Thing" } == true)
+    }
+
     /// A closure's implicit `$0` inside a recognised iteration method (`.map { $0.describe() }`)
     /// resolves to the iterated array property's *element* type, not the array itself.
     @Test func resolvesClosureImplicitParameterElementType() {

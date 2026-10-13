@@ -54,6 +54,15 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
         return .visitChildren
     }
 
+    override func visit(_ node: SubscriptCallExprSyntax) -> SyntaxVisitorContinueKind {
+        if let site = collector.subscriptCallSite(
+            from: node, propertyMap: receiverMap,
+            enclosingTypeName: enclosingTypeName, knownLocalNames: knownLocalNames) {
+            collected.append(site)
+        }
+        return .visitChildren
+    }
+
     override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
         guard collector.isBareReferenceUse(node),
               let site = collector.methodReference(

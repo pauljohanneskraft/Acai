@@ -1,25 +1,25 @@
 classDiagram
-    class Account["Account"]
-    class AdminUser["AdminUser"]
-    class LegacyAudit["LegacyAudit"] {
+    class root_Account["Account"]
+    class root_AdminUser["AdminUser"]
+    class root_LegacyAudit["LegacyAudit"] {
         +review()
     }
-    class OrderService["OrderService"] {
+    class root_OrderService["OrderService"] {
         +gateway PaymentGateway
         +place()
     }
-    class PaymentGateway["PaymentGateway"]
-    class Receipt["Receipt"] {
+    class root_PaymentGateway["PaymentGateway"]
+    class root_Receipt["Receipt"] {
         +total String
     }
-    class User["User"] {
+    class root_User["User"] {
         +name String
         +email String
     }
-    style LegacyAudit stroke:#c62828,stroke-width:3px
-    style OrderService stroke:#f9a825,stroke-width:3px
-    style Receipt stroke:#2e7d32,stroke-width:3px
-    style User stroke:#f9a825,stroke-width:3px
-    User <|-- AdminUser
-    OrderService *-- "1" PaymentGateway : gateway
-    Account <|-- User
+    style root_LegacyAudit stroke:#c62828,stroke-width:3px
+    style root_OrderService stroke:#f9a825,stroke-width:3px
+    style root_Receipt stroke:#2e7d32,stroke-width:3px
+    style root_User stroke:#f9a825,stroke-width:3px
+    root_User <|-- root_AdminUser
+    root_OrderService *-- "1" root_PaymentGateway : gateway
+    root_Account <|-- root_User

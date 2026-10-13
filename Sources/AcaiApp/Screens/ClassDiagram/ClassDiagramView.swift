@@ -11,9 +11,9 @@ struct ClassDiagramView: View {
     let isComparePresented: Binding<Bool>
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @StateObject private var viewModel: ClassDiagramViewModel
+    @StateObject var viewModel: ClassDiagramViewModel
 
     @State var canvasScale: CGFloat
     @State var canvasOffset: CGPoint
@@ -21,18 +21,18 @@ struct ClassDiagramView: View {
     @State private var activeDragCanvasLocation: CGPoint?
     @State private var canvasAutoPanController = EdgeAutoPanController()
     @State private var activeResizeState: DiagramResizeState?
-    @State private var showSidebar = false
-    @State private var sidebarTab: ClassDiagramSidebarTab = .settings
+    @State var showSidebar = false
+    @State var sidebarTab: ClassDiagramSidebarTab = .settings
     @State private var hasCenteredAfterMeasurement = false
     @Environment(\.diagramHasBeenFitted) private var hostHasBeenFitted
     /// `.zero` until the canvas reports its real size, so `FitToView` declines to fit against a placeholder.
-    @State private var canvasViewportSize = CGSize.zero
-    @State private var isSearchBarVisible = false
-    @FocusState private var isSearchFieldFocused: Bool
+    @State var canvasViewportSize = CGSize.zero
+    @State var isSearchBarVisible = false
+    @FocusState var isSearchFieldFocused: Bool
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
-    @Environment(\.compareChangedFileSelection) private var changedFileSelection
+    @Environment(\.compareChangedFileSelection) var changedFileSelection
 
     private var isCompactWidth: Bool {
         #if os(iOS)
@@ -201,6 +201,16 @@ struct ClassDiagramView: View {
         .overlay {
             if let nodeLimitError = viewModel.nodeLimitError {
                 nodeLimitErrorState(message: nodeLimitError.message)
+            } else if viewModel.nodes.isEmpty {
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    ContentUnavailableView {
+                        Label(.app("View.ClassDiagramView.NoTypesToDiagram"), systemImage: "square.dashed")
+                    } description: {
+                        Text(.app("View.ClassDiagramView.NoTypesToDiagramDetail"))
+                    }
+                } onUndo: {
+                    editor.clearEmptyScope(for: viewModel.emptyReason)
+                }
             }
         }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
@@ -257,6 +267,7 @@ extension ClassDiagramView {
 
     @ViewBuilder private var edgeLayer: some View {
         let edges = viewModel.edges.removingDuplicates(by: \.id)
+        let names = viewModel.nodeNamesByID
         ForEach(edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
                let targetRect = viewModel.nodeRect(for: edge.targetID) {
@@ -266,13 +277,20 @@ extension ClassDiagramView {
                     targetRect: targetRect,
                     sourceLabel: edge.sourceLabel,
                     targetLabel: edge.targetLabel,
-                    strokeColor: viewModel.deltaColor(for: edge)
+                    strokeColor: viewModel.deltaColor(for: edge),
+                    accessibilityDescription: viewModel.edgeAccessibility(for: edge, nodeNames: names)
                 )
             }
         }
     }
 
     // MARK: - Node Layer
+
+    private func showDetails(for id: String) {
+        viewModel.selectNode(id, extending: false)
+        sidebarTab = .inspector
+        showSidebar = true
+    }
 
     private var editor: ClassDiagramConfigEditor {
         ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
@@ -308,11 +326,16 @@ extension ClassDiagramView {
                         RoundedRectangle(cornerRadius: 5).stroke(Color.yellow, lineWidth: 3)
                     }
                 }
+                .diagramNodeAccessibility(
+                    DiagramElementDescription(typeNode: node, delta: deltaBadge),
+                    identifier: "diagram.typeNode.\(node.name)",
+                    isSelected: selected,
+                    onSelect: { viewModel.selectNode(node.id, extending: false) },
+                    onShowDetails: { showDetails(for: node.id) }
+                )
                 .position(position)
                 .onTapGesture(count: 2) {
-                    viewModel.selectNode(node.id, extending: false)
-                    sidebarTab = .inspector
-                    showSidebar = true
+                    showDetails(for: node.id)
                 }
                 .onTapGesture(count: 1) {
                     #if os(macOS)
@@ -330,9 +353,7 @@ extension ClassDiagramView {
                 ))
                 .contextMenu {
                     Button {
-                        viewModel.selectNode(node.id, extending: false)
-                        sidebarTab = .inspector
-                        showSidebar = true
+                        showDetails(for: node.id)
                     } label: {
                         Label(.app("View.ClassDiagramView.Details"), systemImage: "info")
                     }
@@ -404,7 +425,7 @@ extension ClassDiagramView {
         savePositions(debounced: false)
     }
 
-    private func savePositions(debounced: Bool) {
+    func savePositions(debounced: Bool) {
         model.diagrams.updatePositions(
             diagramID: diagram.id,
             positions: viewModel.nodePositions,
@@ -435,52 +456,5 @@ extension ClassDiagramView {
         canvasOffset = fit.offset
         savePositions()
         return true
-    }
-}
-
-// MARK: - Search
-
-extension ClassDiagramView {
-    private func showSearchBar() {
-        // Focus is set by the search field's own onAppear, not here — the field doesn't exist in
-        // the hierarchy yet on this line, so a focus request now would just be dropped.
-        isSearchBarVisible = true
-    }
-
-    private func selectChangedFileTypes(_ ids: Set<String>) {
-        viewModel.selectedNodeIDs = ids
-        sidebarTab = .inspector
-        showSidebar = true
-    }
-
-    /// Applies a changed-file pick from the iOS compare sheet, which can arrive while this view is
-    /// being recreated for a new comparison — hence also on appear.
-    private func applyChangedFileSelection() {
-        guard let ids = changedFileSelection.wrappedValue else { return }
-        changedFileSelection.wrappedValue = nil
-        selectChangedFileTypes(ids)
-    }
-
-    /// Clears the query too, so a later ⌘F/toolbar tap starts fresh rather than reopening on a
-    /// stale query with its dimming still applied for a frame.
-    private func hideSearchBar() {
-        viewModel.dismissSearch()
-        isSearchFieldFocused = false
-        isSearchBarVisible = false
-    }
-
-    /// Pans (without changing zoom) so `nodeID`'s current position is centered — the "jump to
-    /// match" behaviour, distinct from `centerDiagram()`'s fit-everything-to-view.
-    private func centerOnSearchMatch(_ nodeID: String?) {
-        guard let nodeID, let position = viewModel.nodePosition(nodeID) else { return }
-        withAnimation(Animation.canvasPan.respecting(reduceMotion: reduceMotion)) {
-            canvasOffset = CGPoint(
-                x: canvasViewportSize.width / 2 - position.x * canvasScale,
-                y: canvasViewportSize.height / 2 - position.y * canvasScale
-            )
-        }
-        // Held-down stepping walks matches faster than a file write completes, so the transform is
-        // saved on the trailing edge of the burst instead of once per match.
-        savePositions(debounced: true)
     }
 }

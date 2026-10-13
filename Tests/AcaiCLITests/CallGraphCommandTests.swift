@@ -72,7 +72,7 @@ struct CallGraphCommandTests {
             #expect(contents.contains("Service.helper"))
             let json = try JSONSerialization.jsonObject(with: Data(contents.utf8)) as? [String: Any]
             let deadCode = json?["deadCode"] as? [String: Any]
-            #expect(deadCode?["scannedKinds"] as? [String] == ["method"])
+            #expect(deadCode?["scannedKinds"] as? [String] == ["method", "initializer", "subscript"])
         }
     }
 
@@ -87,7 +87,7 @@ struct CallGraphCommandTests {
             ])
             try await cmd.run()
             let contents = try String(contentsOf: output, encoding: .utf8)
-            #expect(contents.contains("Scanned: methods."))
+            #expect(contents.contains("Scanned: methods, initializers, subscripts."))
         }
     }
 

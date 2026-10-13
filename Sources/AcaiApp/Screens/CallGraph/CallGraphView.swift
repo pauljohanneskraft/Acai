@@ -214,6 +214,15 @@ private struct CallGraphCanvasView: View {
                 }
             }
         )
+        .overlay {
+            if viewModel.isEmpty {
+                DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
+                    noCallsState
+                } onUndo: {
+                    clearEmptyScope()
+                }
+            }
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
@@ -221,55 +230,37 @@ private struct CallGraphCanvasView: View {
         }
     }
 
-    private func callEdges(_ layout: CallGraphLayoutModel) -> some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(layout.edges) { edge in
-                if let sourceRect = layout.frame(for: edge.from),
-                   let targetRect = layout.frame(for: edge.to) {
-                    RelationshipEdgeView(
-                        kind: .dependency,
-                        sourceRect: sourceRect,
-                        targetRect: targetRect,
-                        lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
-                        strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to)
-                    )
-                }
+    private var noCallsState: some View {
+        ContentUnavailableView {
+            Label(
+                .app("View.CallGraphCanvasView.NoCallsResolved"), systemImage: "point.3.connected.trianglepath.dotted"
+            )
+        } description: {
+            Text(.app("View.CallGraphCanvasView.NoCallsResolvedDetail"))
+        } actions: {
+            Button {
+                sidebarTab = .settings
+                showSidebar = true
+            } label: {
+                Label(.app("View.CallGraphCanvasView.EditConfiguration"), systemImage: "slider.horizontal.3")
             }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("diagram.emptyScope.editConfigurationButton")
         }
     }
 
-    @ViewBuilder
-    private func deltaBorder(_ color: Color?) -> some View {
-        if let color {
-            RoundedRectangle(cornerRadius: 8).stroke(color, lineWidth: 3)
+    private func clearEmptyScope() {
+        switch viewModel.emptyReason {
+        case .scope:
+            onApplyScope(.wholeCodebase)
+        case .filter:
+            filterBinding.wrappedValue = nil
+        case .scopeAndFilter:
+            filterBinding.wrappedValue = nil
+            onApplyScope(.wholeCodebase)
+        case .codebase:
+            break
         }
-    }
-
-    private func methodNode(_ node: CallGraphLayoutModel.NodeFrame) -> some View {
-        CallGraphNodeView(
-            node: node.node,
-            isSelected: viewModel.selectedNodeIDs.contains(node.id)
-        )
-        .frame(width: node.rect.width, height: node.rect.height)
-        .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
-        .deltaBadge(viewModel.nodeDeltaStatus(id: node.id))
-        .position(x: node.rect.midX, y: node.rect.midY)
-        .onTapGesture(count: 2) {
-            viewModel.selectNode(node.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
-        }
-        .diagramNodeInteraction(
-            id: node.id,
-            model: viewModel,
-            dragStartPositions: $dragStartPositions,
-            activeDragCanvasLocation: $activeDragCanvasLocation,
-            onCommit: savePositions
-        )
-    }
-
-    private static func lineWidthScale(forWeight weight: Int) -> CGFloat {
-        min(1 + CGFloat(weight - 1) * 0.35, 3)
     }
 
     // MARK: - Toolbar
@@ -341,6 +332,80 @@ private struct CallGraphCanvasView: View {
         canvasScale = fit.scale
         canvasOffset = fit.offset
         savePositions()
+    }
+}
+
+// MARK: - Canvas Elements
+
+extension CallGraphCanvasView {
+    private func callEdges(_ layout: CallGraphLayoutModel) -> some View {
+        let labels = Dictionary(layout.nodes.map { ($0.id, $0.node.label) }, uniquingKeysWith: { first, _ in first })
+        return ZStack(alignment: .topLeading) {
+            ForEach(layout.edges) { edge in
+                if let sourceRect = layout.frame(for: edge.from),
+                   let targetRect = layout.frame(for: edge.to) {
+                    RelationshipEdgeView(
+                        kind: .dependency,
+                        sourceRect: sourceRect,
+                        targetRect: targetRect,
+                        lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
+                        strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
+                        accessibilityDescription: DiagramElementDescription(
+                            dependencyFrom: labels[edge.from] ?? edge.from,
+                            to: labels[edge.to] ?? edge.to,
+                            callSites: edge.weight,
+                            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
+                        ).edgeAccessibility(identifier: "diagram.callEdge.\(edge.from)->\(edge.to)")
+                    )
+                }
+            }
+        }
+    }
+
+    private func showDetails(for id: String) {
+        viewModel.selectNode(id, extending: false)
+        sidebarTab = .inspector
+        showSidebar = true
+    }
+
+    @ViewBuilder
+    private func deltaBorder(_ color: Color?) -> some View {
+        if let color {
+            RoundedRectangle(cornerRadius: 8).stroke(color, lineWidth: 3)
+        }
+    }
+
+    private func methodNode(_ node: CallGraphLayoutModel.NodeFrame) -> some View {
+        CallGraphNodeView(
+            node: node.node,
+            isSelected: viewModel.selectedNodeIDs.contains(node.id)
+        )
+        .frame(width: node.rect.width, height: node.rect.height)
+        .overlay(deltaBorder(viewModel.nodeDeltaColor(id: node.id)))
+        .deltaBadge(viewModel.nodeDeltaStatus(id: node.id))
+        .diagramNodeAccessibility(
+            DiagramElementDescription(
+                callGraphNode: node.node, counts: viewModel.callCounts, delta: viewModel.nodeDeltaStatus(id: node.id)),
+            identifier: "diagram.callGraphNode.\(node.id)",
+            isSelected: viewModel.selectedNodeIDs.contains(node.id),
+            onSelect: { viewModel.selectNode(node.id, extending: false) },
+            onShowDetails: { showDetails(for: node.id) }
+        )
+        .position(x: node.rect.midX, y: node.rect.midY)
+        .onTapGesture(count: 2) {
+            showDetails(for: node.id)
+        }
+        .diagramNodeInteraction(
+            id: node.id,
+            model: viewModel,
+            dragStartPositions: $dragStartPositions,
+            activeDragCanvasLocation: $activeDragCanvasLocation,
+            onCommit: savePositions
+        )
+    }
+
+    private static func lineWidthScale(forWeight weight: Int) -> CGFloat {
+        min(1 + CGFloat(weight - 1) * 0.35, 3)
     }
 }
 

@@ -33,11 +33,12 @@ struct SwiftCallSiteBroadeningTests {
     @Test func capturesPropertySelfStaticAndTypedLocalReceivers() {
         let sites = runCallSites()
         // process (property → Helper), validate (self → nil), log (static → Logger),
-        // doThing (local `Helper()` → Helper).
-        #expect(sites.count == 4)
+        // init (construction `Helper()` → Helper), doThing (local `Helper()` → Helper).
+        #expect(sites.count == 5)
         #expect(sites.contains { $0.methodName == "process" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "validate" && $0.receiverType == nil })
         #expect(sites.contains { $0.methodName == "log" && $0.receiverType == "Logger" })
+        #expect(sites.contains { $0.methodName == "init" && $0.receiverType == "Helper" })
         #expect(sites.contains { $0.methodName == "doThing" && $0.receiverType == "Helper" })
     }
 
@@ -60,20 +61,38 @@ struct SwiftCallSiteBroadeningTests {
         #expect(sites.contains { $0.methodName == "parse" && $0.receiverType == nil })
     }
 
-    /// `Foo()` / `UUID()` are constructions, not calls: a same-file declared type or any capitalised
-    /// identifier is treated as a type name and dropped, so they never masquerade as method calls.
-    @Test func doesNotCaptureConstruction() {
+    /// `Foo()` is a construction, not a method call, but is still recorded as a call site targeting
+    /// `init` — a same-file declared type resolves to `.type`, so the dead-code scan can find an
+    /// uncalled initializer (issue #412).
+    @Test func capturesConstructionAsInitCallSite() {
         let sites = callSites(in: """
         struct Widget {}
         class Worker {
             func run() {
                 let w = Widget()
-                _ = UUID()
                 _ = w
             }
         }
         """, method: "run")
-        #expect(sites.isEmpty)
+        #expect(sites.count == 1)
+        #expect(sites.contains { $0.methodName == "init" && $0.receiverType == "Widget" })
+    }
+
+    /// `UUID()` constructs a capitalised identifier not declared in this file — deferred the same way
+    /// an unqualified cross-file `Thing.init(x:)` already is, rather than treated as `.type` directly.
+    @Test func capturesConstructionOfUnknownTypeAsUnresolvedInitCallSite() {
+        let sites = callSites(in: """
+        class Worker {
+            func run() {
+                _ = UUID()
+            }
+        }
+        """, method: "run")
+        #expect(sites.count == 1)
+        let site = sites.first
+        #expect(site?.methodName == "init")
+        #expect(site?.receiverType == nil)
+        #expect(site?.receiver == .unresolvedTypeName("UUID"))
     }
 
     /// Generic-specialised (`render<Int>()`), trailing-closure (`build { }`), and optional-chained

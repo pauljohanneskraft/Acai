@@ -4,3 +4,4 @@
 *.png filter=lfs diff=lfs merge=lfs -text
 
 App/**/*.png !filter !diff !merge -text
+Tests/AcaiWidgetTests/__Snapshots__/*.png !filter !diff !merge -text

@@ -307,8 +307,8 @@ struct ProjectRootDiscoveryTests {
 
             let edges = Set(artifact.relationships.map { "\($0.kind) \($0.source)->\($0.target)" })
             #expect(edges == [
-                "inheritance com.app.Derived->com.core.Base",
-                "composition com.app.Derived->com.core.Engine"
+                "inheritance app.com.app.Derived->core.com.core.Base",
+                "composition app.com.app.Derived->core.com.core.Engine"
             ])
             #expect(artifact.metadata.discoveredRoots.map(\.path).sorted() == ["app", "core"])
         }

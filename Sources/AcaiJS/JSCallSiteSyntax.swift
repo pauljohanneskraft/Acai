@@ -11,8 +11,18 @@ struct JSCallSiteSyntax: CallSiteSyntax {
 
     /// Matches JS/TS `call_expression { function: member_expression { object, property } }`:
     /// `receiver.method(args)` (object is a known property/type), `this.receiver.method(args)`,
-    /// `this.method(args)`, `TypeName.method(args)`.
+    /// `this.method(args)`, `TypeName.method(args)`; and `new_expression` nodes (`new Thing()`),
+    /// resolved the same way a static `Thing.method()` call would be — `constructor` is the member
+    /// name both TS and JS give every constructor. A qualified `new ns.Thing()` stays dropped, since
+    /// the namespace hop makes the constructed type unprovable.
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite? {
+        if node.nodeType == "new_expression" {
+            guard let ctor = node.child(byFieldName: "constructor"), ctor.nodeType == "identifier"
+            else { return nil }
+            return scope.constructionCallSite(
+                typeName: ctor.text(in: context), methodName: "constructor", location: node.location(in: context))
+        }
+
         guard node.nodeType == "call_expression",
               let funcNode = node.child(byFieldName: "function")
         else { return nil }

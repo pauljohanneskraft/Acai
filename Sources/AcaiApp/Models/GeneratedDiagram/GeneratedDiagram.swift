@@ -105,7 +105,8 @@ extension GeneratedDiagram {
 
     /// The name derived from the diagram's configuration, e.g. `"MyApp — Sequence: Foo.bar"`.
     /// Used while `isNameUserDefined` is `false` so the name tracks configuration changes.
-    func autoName(codebaseName: String) -> String {
+    /// `artifact` names a state diagram's type as the app shows it rather than by its id.
+    func autoName(codebaseName: String, artifact: CodeArtifact? = nil) -> String {
         let prefix = codebaseName.isEmpty ? "" : "\(codebaseName) — "
         switch content {
         case .sequenceDiagram(let config):
@@ -115,7 +116,8 @@ extension GeneratedDiagram {
                 : "\(config.entryTypeName).\(config.entryMethodName)"
             return "\(prefix)Sequence: \(entry)"
         case .stateDiagram(let config?):
-            let variable = config.typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
+            let typeName = config.typeName.map { artifact?.typeDisplayNames.name(forID: $0) ?? $0 }
+            let variable = typeName.map { "\($0).\(config.variableName)" } ?? config.variableName
             return "\(prefix)State: \(variable)"
         case .callGraph(let scope):
             switch scope {

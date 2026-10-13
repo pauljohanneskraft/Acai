@@ -9,6 +9,7 @@ import AcaiRender
 final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let codebase: Codebase
     let artifact: CodeArtifact
+    let typeDisplayNames: TypeDisplayNames
     private let comparisonArtifact: CodeArtifact?
     private var diff: ArtifactDiff?
     /// O(1) status lookups derived from `diff` once per build, so per-element tinting stays cheap on
@@ -29,6 +30,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// out and measuring that many nodes is the hang the ceiling exists to prevent, so this stops
     /// short of it rather than attempting it behind the progress indicator.
     @Published private(set) var nodeLimitError: DiagramRequestError?
+    @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
     private(set) var configuration: ClassDiagramConfiguration
     private var restoredPositions: [String: CGPoint]?
@@ -67,6 +69,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     ) {
         self.codebase = codebase
         self.artifact = artifact
+        self.typeDisplayNames = artifact.typeDisplayNames
         self.comparisonArtifact = comparisonArtifact
         self.configuration = configuration
         self.restoredPositions = restoredPositions
@@ -115,6 +118,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         }
         nodes = model.nodes
         edges = model.edges
+        emptyReason = resolvedEmptyReason(in: renderArtifact)
 
         for node in nodes {
             nodeSizes[node.id] = DiagramLayoutModel.estimateSize(for: node)
@@ -136,6 +140,19 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         } else {
             performLayout()
         }
+    }
+
+    // MARK: - Empty Scope
+
+    private func resolvedEmptyReason(in renderArtifact: CodeArtifact) -> DiagramEmptyReason {
+        guard model.nodes.isEmpty else { return .codebase }
+        let undos: [DiagramEmptyReason] = configuration.isFocused ? [.scope, .filter, .scopeAndFilter] : [.filter]
+        return undos.first { undo in
+            !DiagramLayoutModel(
+                artifact: renderArtifact, configuration: configuration.widened(undoing: undo),
+                languages: renderArtifact.standardLanguageResolver
+            ).nodes.isEmpty
+        } ?? .codebase
     }
 
     // MARK: - Apply Configuration
@@ -239,10 +256,27 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// The delta tint for an edge (added green / removed red / changed amber), or `nil` when the
     /// edge is unchanged or the diagram isn't in delta mode.
     func deltaColor(for edge: GeneratedDiagramEdge) -> Color? {
-        guard let edgeStatus else { return nil }
-        let relationship = Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID)
-        guard let hex = edgeStatus(relationship).deltaHex else { return nil }
+        guard let hex = deltaStatus(for: edge)?.deltaHex else { return nil }
         return Color(hex: hex)
+    }
+
+    /// Non-color complement to `deltaColor(for:)`, for VoiceOver.
+    func deltaStatus(for edge: GeneratedDiagramEdge) -> DeltaStatus? {
+        guard let edgeStatus else { return nil }
+        return edgeStatus(Relationship(kind: edge.kind, source: edge.sourceID, target: edge.targetID))
+    }
+
+    var nodeNamesByID: [String: String] {
+        Dictionary(nodes.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    func edgeAccessibility(for edge: GeneratedDiagramEdge, nodeNames: [String: String]) -> EdgeAccessibility {
+        DiagramElementDescription(
+            classEdge: edge,
+            sourceName: nodeNames[edge.sourceID] ?? edge.sourceID,
+            targetName: nodeNames[edge.targetID] ?? edge.targetID,
+            delta: deltaStatus(for: edge)
+        ).edgeAccessibility(identifier: "diagram.edge.\(edge.sourceID)->\(edge.targetID)")
     }
 
     /// The delta fill for a type node (added green / removed red / changed amber), or `nil` when

@@ -48,14 +48,22 @@ struct ComparisonViewModelTests {
     @Test func comparisonRefsComeFromTheCheckoutInspector() async throws {
         let (model, codebaseID, _) = try makeModel(checkouts: FakeCheckoutInspector(refs: refs, currentRef: "main"))
 
-        #expect(await model.comparisonRefs(codebaseID: codebaseID) == refs)
-        #expect(await model.comparisonRefs(codebaseID: UUID()).isEmpty)
+        #expect(try await model.comparisonRefs(codebaseID: codebaseID) == refs)
+        #expect(try await model.comparisonRefs(codebaseID: UUID()).isEmpty)
     }
 
     @Test func aFolderOutsideAnyRepositoryOffersNoRefs() async throws {
         let (model, codebaseID, _) = try makeModel(checkouts: FakeCheckoutInspector())
 
-        #expect(await model.comparisonRefs(codebaseID: codebaseID).isEmpty)
+        #expect(try await model.comparisonRefs(codebaseID: codebaseID).isEmpty)
+    }
+
+    @Test func anUnreadableRepositoryFailsRatherThanOfferingNoRefs() async throws {
+        let (model, codebaseID, _) = try makeModel(checkouts: FakeCheckoutInspector(refsAreUnreadable: true))
+
+        await #expect(throws: FakeCheckoutInspector.Unreadable.self) {
+            _ = try await model.comparisonRefs(codebaseID: codebaseID)
+        }
     }
 
     @Test func clearingTheComparisonRefDropsTheComparisonAndItsError() async throws {
@@ -73,6 +81,33 @@ struct ComparisonViewModelTests {
         #expect(diagram.comparisonBaseRef == nil)
         #expect(model.comparisonArtifact(for: diagram) == nil)
         #expect(model.comparisonError == nil)
+    }
+
+    @Test func aComparisonChangeFromThePanelAppliesAfterTheTapOnlyOnIOS() async throws {
+        let (model, _, diagramID) = try makeModel()
+
+        model.changeComparisonAfterTouchRelease { $0.updateComparisonGitRef(diagramID: diagramID, ref: "main") }
+
+        #if os(macOS)
+        #expect(model.generatedDiagram(for: diagramID)?.comparisonGitRef == "main")
+        #else
+        #expect(model.generatedDiagram(for: diagramID)?.comparisonGitRef == nil)
+        await withCheckedContinuation { continuation in DispatchQueue.main.async { continuation.resume() } }
+        #expect(model.generatedDiagram(for: diagramID)?.comparisonGitRef == "main")
+        #endif
+    }
+
+    @Test func theComparisonAnalysisNeedsTheSnapshotLoadedFirst() async throws {
+        let (model, _, diagramID) = try makeModel(comparisonSources: CannedComparisonSource(artifact: oldArtifact))
+        model.updateComparisonGitRef(diagramID: diagramID, ref: "main")
+        let diagram = try #require(model.generatedDiagram(for: diagramID))
+
+        await model.ensureComparisonAnalysisLoaded(for: diagram)
+        #expect(model.comparisonAnalysis(for: diagram) == nil)
+
+        await model.ensureComparisonLoaded(for: diagram)
+        await model.ensureComparisonAnalysisLoaded(for: diagram)
+        #expect(model.comparisonAnalysis(for: diagram) != nil)
     }
 
     @Test func aFailedSnapshotLoadReportsItsError() async throws {

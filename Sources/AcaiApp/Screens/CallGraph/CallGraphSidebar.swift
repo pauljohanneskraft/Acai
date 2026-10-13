@@ -162,8 +162,9 @@ struct CallGraphSidebar: View {
     }
 
     private var moduleNames: [String] {
-        artifact.types
-            .map { ModuleResolver.standard.productName(forFilePath: $0.location?.filePath ?? "") }
+        let modules = ModuleMap(artifact: artifact)
+        return artifact.types
+            .map { modules.module(forFilePath: $0.location?.filePath ?? "") }
             .uniqued()
             .sorted()
     }

@@ -24,6 +24,11 @@ public struct PackageDiagramSnapshotView: View {
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
+            ForEach(layout.projectBoxes) { box in
+                GroupingBoxView(label: box.label)
+                    .frame(width: box.rect.width, height: box.rect.height)
+                    .position(x: box.rect.midX, y: box.rect.midY)
+            }
             ForEach(layout.edges) { edge in
                 if let source = layout.frame(for: edge.from), let target = layout.frame(for: edge.to) {
                     RelationshipEdgeView(
@@ -48,7 +53,7 @@ public struct PackageDiagramSnapshotView: View {
     private func moduleBox(_ node: PackageLayoutModel.NodeFrame) -> some View {
         let module = node.node
         return VStack(spacing: 2) {
-            Text(module.name)
+            Text(module.moduleName)
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundColor(Color(white: 0.1))
             Text("I=\(format(module.instability))  A=\(format(module.abstractness))")

@@ -1,8 +1,8 @@
 import XCTest
 
 /// Golden screenshots for the four generated diagram types not already covered by
-/// `ScreenshotJourneyTests`/`CompareGitRevisionTests` (Class Diagram): Sequence, State, Package, and
-/// Call Graph. The seeded fixture's `Base`/`Derived`/`Helper`/`Worker` types are patterned directly
+/// `SeededProjectWalkthroughJourneyTests`/`CompareGitRevisionTests` (Class Diagram): Sequence, State, Package, and
+/// Call Graph — each also filtered to nothing and back through the empty-scope overlay. The seeded fixture's `Base`/`Derived`/`Helper`/`Worker` types are patterned directly
 /// on `Examples/CallGraph/Swift`, `Examples/SequenceDiagram/Swift`, and
 /// `Examples/StateDiagram/Swift/Download.swift` so this fixture doesn't invent a fifth shape of demo
 /// content.
@@ -24,6 +24,10 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
 
         sequence.tapFitToView()
         validateScreenshot("SequenceDiagram", state: "populated")
+
+        sequence.filterEverythingAway(hiding: sequence.participant(named: "Helper"))
+        XCTAssertFalse(sequence.participant(named: "Derived").exists, "the entry point's lifeline should be hidden too")
+        sequence.clearEmptyFilter(restoring: sequence.participant(named: "Helper"))
     }
 
     func testStateDiagramScreenshot() throws {
@@ -44,6 +48,9 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
 
         state.tapFitToView()
         validateScreenshot("StateDiagram", state: "populated")
+
+        state.filterEverythingAway(hiding: state.stateNode(named: "\"idle\""))
+        state.clearEmptyFilter(restoring: state.stateNode(named: "\"idle\""))
     }
 
     func testPackageDiagramScreenshot() throws {
@@ -54,6 +61,11 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
 
         package.tapFitToView()
         validateScreenshot("PackageDiagram", state: "populated")
+
+        // A type glob would hide no module: package nodes match only on the module facet.
+        let module = package.containerNode(named: "SampleSwiftPackage")
+        package.filterEverythingAway(using: package.filterModuleGlobField, hiding: module)
+        package.clearEmptyFilter(restoring: module)
     }
 
     func testCallGraphScreenshot() throws {
@@ -66,8 +78,13 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
         callGraph.node(id: "Derived.doWork").waitOrFail("the Derived.doWork node", timeout: .uiWork)
         XCTAssertTrue(callGraph.node(id: "Helper.performTask").exists, "Helper.performTask should be drawn")
         XCTAssertTrue(callGraph.node(id: "Worker.execute").exists, "Worker.execute should be drawn")
+        callGraph.describedNode(id: "Derived.doWork").waitOrFail("the Derived.doWork node, described to VoiceOver")
+        callGraph.describedCall.waitOrFail("a call edge, described to VoiceOver")
 
         callGraph.tapFitToView()
         validateScreenshot("CallGraph", state: "populated")
+
+        callGraph.filterEverythingAway(hiding: callGraph.node(id: "Derived.doWork"))
+        callGraph.clearEmptyFilter(restoring: callGraph.node(id: "Derived.doWork"))
     }
 }

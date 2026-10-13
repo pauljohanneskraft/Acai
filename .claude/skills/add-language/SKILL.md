@@ -111,12 +111,20 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
      `ModifierClassifier(defaultAccessLevel:annotationNodeTypes:classify:postProcess:)` and call
      `.modifierInfo(for: modifiersNode, in: context)` per declaration — `JavaExtractor` and
      `KotlinExtractor` each hold one instance with their own lookup table.
+   - For documentation comments, build one
+     `DocumentationReader(convention:commentNodeTypes:transparentParentTypes:skippedSiblingTypes:)`
+     around a `DocumentationComment` describing only the markers your language really uses, and set
+     `documentation` on every `TypeDeclaration`, `Member` and `EnumCase` from
+     `.documentation(above:in:)`. For a top-level walk, `DeclarationBuilder.mark` and
+     `.attachDocumentation(since:_:)` cover whichever of a type/function/variable it produced. A
+     language whose documentation lives inside the declaration's body rather than above it reads it
+     with `.prose(fromLiteral:)` — see `AcaiPython`'s `PythonDocstring`.
    - Reach for the shared pieces before writing your own: `TypeNamePrepass` (the declared-type
      pre-pass, run in `init` before its result is captured), `MemberIndex` / `UnambiguousTypeNames`
      (property and return-type maps), `LiteralClassifier` + `LiteralNodeTypes`, `ModifierClassifier`,
      `ParseDiagnosticsCollector` (already wired for you by `TreeSitterGrammar.parse` — don't call it
-     yourself), `Node.cyclomaticComplexity(branchKinds:)`, `Node.referencedTypeNames(in:)`, and
-     `TypeReference.relationship(kind:source:)`.
+     yourself), `Node.cyclomaticComplexity(branchKinds:)`, `Node.referencedTypeNames(in:)`,
+     `DocumentationReader` + `DocumentationComment`, and `TypeReference.relationship(kind:source:)`.
    - Split what remains by responsibility into stateless value types that take their dependencies as
      stored `let`s — `<Lang>TypeDeclarationExtractor`, `<Lang>MemberExtractor`,
      `<Lang>ParameterExtractor`, `<Lang>BaseClassResolver`, `<Lang>TypeReferenceResolver`. Each takes

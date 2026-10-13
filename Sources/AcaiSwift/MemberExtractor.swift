@@ -7,6 +7,7 @@ struct MemberExtractor {
 
     private let signatures = DeclarationSignatureExtractor()
     private let typeReferences = TypeReferenceExtractor()
+    private let documentation = SwiftDocumentationReader()
     private let sourceLocations: SourceLocationResolver
     /// Simple names of every type declared in the file — the same recognition set
     /// `CallSiteCollector.knownTypeNames` uses, kept identical so a property's inferred type
@@ -53,7 +54,8 @@ struct MemberExtractor {
             callSites: callSites,
             assignments: assignments,
             fieldReads: fieldReads,
-            cyclomaticComplexity: SwiftCyclomaticComplexity(body: node.body).value
+            cyclomaticComplexity: SwiftCyclomaticComplexity(body: node.body).value,
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -63,7 +65,8 @@ struct MemberExtractor {
             setAccessLevel: signatures.extractSetAccessLevel(from: node.modifiers),
             modifiers: signatures.extractModifiers(from: node.modifiers),
             annotations: signatures.extractAttributes(from: node.attributes),
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
         let bindings = Array(node.bindings)
 
@@ -98,6 +101,7 @@ struct MemberExtractor {
         let modifiers: [Modifier]
         let annotations: [String]
         let location: AcaiCore.SourceLocation
+        let documentation: String?
     }
 
     private func makeProperty(
@@ -117,7 +121,8 @@ struct MemberExtractor {
             isComputed: isComputed,
             annotations: attributes.annotations,
             location: attributes.location,
-            initialValue: initialValue
+            initialValue: initialValue,
+            documentation: attributes.documentation
         )
     }
 
@@ -204,7 +209,8 @@ struct MemberExtractor {
             callSites: callSites,
             assignments: assignments,
             fieldReads: fieldReads,
-            cyclomaticComplexity: SwiftCyclomaticComplexity(body: node.body).value
+            cyclomaticComplexity: SwiftCyclomaticComplexity(body: node.body).value,
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -217,7 +223,8 @@ struct MemberExtractor {
             kind: .deinitializer,
             accessLevel: accessLevel,
             modifiers: modifiers,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -243,7 +250,8 @@ struct MemberExtractor {
             parameters: parameters,
             genericParameters: genericParams,
             annotations: annotations,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            documentation: documentation.documentation(of: node)
         )
     }
 
@@ -270,7 +278,8 @@ struct MemberExtractor {
                 name: element.name.text,
                 rawValue: rawValue,
                 associatedValues: associatedValues,
-                location: sourceLocations.sourceLocation(of: node)
+                location: sourceLocations.sourceLocation(of: node),
+                documentation: documentation.documentation(of: node)
             )
         }
     }

@@ -6,7 +6,7 @@ struct CodebaseTypesSection: View {
     let artifact: CodeArtifact
 
     private func displayName(for id: String) -> String {
-        artifact.types.first {
+        artifact.flattened().first {
             $0.id == id || $0.qualifiedName == id
         }?.name ?? id
     }

@@ -43,9 +43,11 @@ struct StateConfigSheet: View {
                                     Text(.app("View.StateConfigSheet.GlobalVariables"))
                                         .tag(StateConfigModel.Scope?.some(.globals))
                                 }
-                                let scopeNames = model.typeNamesWithStoredProperties.filtered(by: scopeQuery)
-                                ForEach(scopeNames, id: \.self) { name in
-                                    Text(verbatim: name).tag(StateConfigModel.Scope?.some(.type(name)))
+                                let names = model.typeDisplayNames
+                                let scopeIDs = model.typeIDsWithStoredProperties
+                                    .filtered(by: scopeQuery, label: names.name(forID:))
+                                ForEach(scopeIDs, id: \.self) { id in
+                                    Text(verbatim: names.name(forID: id)).tag(StateConfigModel.Scope?.some(.type(id)))
                                 }
                             }
                             .labelsHidden()

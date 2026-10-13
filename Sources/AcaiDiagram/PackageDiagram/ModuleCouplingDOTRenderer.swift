@@ -36,11 +36,11 @@ public struct ModuleCouplingDOTRenderer: DOTRenderer {
         }
         out += graphAttributes()
 
-        for node in diagram.nodes {
-            out += "  \(node.id.dotNodeID) [label=\"\(nodeLabel(node).dotEscaped)\""
-            out += " fillcolor=\"\(node.zoneColorHex)\""
-            if let border = nodeColor?(node.id) { out += " color=\"\(border)\" penwidth=3" }
-            out += "];\n"
+        out += PackageProjectClusters(theme: theme).render(nodes: diagram.nodes) { node in
+            var line = "  \(node.id.dotNodeID) [label=\"\(nodeLabel(node).dotEscaped)\""
+            line += " fillcolor=\"\(node.zoneColorHex)\""
+            if let border = nodeColor?(node.id) { line += " color=\"\(border)\" penwidth=3" }
+            return line + "];\n"
         }
 
         let breaches = diagram.stableDependencyBreaches
@@ -65,7 +65,7 @@ public struct ModuleCouplingDOTRenderer: DOTRenderer {
     private func nodeLabel(_ node: PackageDiagram.Node) -> String {
         let types = node.typeCount == 1 ? "1 type" : "\(node.typeCount) types"
         return """
-            \(node.name)
+            \(node.moduleName)
             Ca=\(node.afferentCoupling)  Ce=\(node.efferentCoupling)
             I=\(twoDecimals(node.instability))  A=\(twoDecimals(node.abstractness))  \
             D=\(twoDecimals(node.distanceFromMainSequence))

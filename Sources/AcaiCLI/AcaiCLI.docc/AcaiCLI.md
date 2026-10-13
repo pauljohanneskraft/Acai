@@ -156,7 +156,7 @@ copying it in place.
 | Flag | Meaning |
 | --- | --- |
 | `--module <glob>` | Module/target name; supports `*` and `?`. |
-| `--type <glob>` | Type id / qualified name glob. |
+| `--type <glob>` | Type id glob — the module-scoped id (`Billing.OrderService`; `api/Billing.OrderService` when the tree holds several projects) or the name as the source spells it (`OrderService`). |
 | `--kind <kind>` | `class`, `actor`, `struct`, `enum`, `protocol`, `interface`, `trait`, `typeAlias`, `object`, `extension`, `annotation`, `module`, `record`, `mixin` |
 | `--min-access <level>` | `public`, `open`, `internal`, `protected`, `private`, `filePrivate`, `packagePrivate` |
 | `--stereotype <name>` | UML stereotype, e.g. `entity`, `repository`. |
@@ -216,6 +216,15 @@ looking at without guessing from a decode failure; a file written before this fi
 `--health`'s diagnostics include `skipped` (a file over the size ceiling) and `invalidPattern` (a
 `.gitignore` line no rule could be read from) alongside the parser's own `error`, `missing`,
 `unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed).
+
+The report also carries the scope the parse ran over, under `discoveredRoots`: one entry per project
+root discovery claimed, each with its `path` (relative to the analysed folder, `"."` for the folder
+itself), the `detector` that claimed it, its `languages`, the `sourceDirs` it contributed, and
+`isFallback`. That last one is the answer to "why did this folder analyse to fewer types than it
+contains": when every root reads `isFallback: true`, no build system's manifest was recognised
+anywhere and the file set is an extension match over the tree rather than a manifest's declared
+scope — which `--format human` says outright as *No build system recognised; analysed by file
+extension.*
 
 ```sh
 acai analyze --source . --health --format human    # run this first

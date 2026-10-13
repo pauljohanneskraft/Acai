@@ -9,7 +9,8 @@
 ///   and `CallSite`. A naive plugin that swaps these silently renders broken/empty diagrams.
 public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     /// Stable, namespace-qualified identity (equal to ``qualifiedName``). Relationship endpoints,
-    /// ``extensionOf``, and nested-type ids resolve against this.
+    /// ``extensionOf``, and nested-type ids resolve against this. Project analysis prefixes it with
+    /// ``module`` or, when file-scoped, the file path; ``unqualifiedID`` undoes that.
     public var id: String
     /// The **simple** (unqualified) source name — must match the simple names used in
     /// `TypeReference.name` and a `CallReceiver.type` receiver for resolution to succeed.
@@ -46,6 +47,10 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
     /// `LanguageConfiguration` rather than a single artifact-wide one. `nil` for a type produced
     /// outside the enrichment pipeline; a `LanguageConfigurationResolver` maps that to its default.
     public var sourceLanguage: CodeArtifact.SourceLanguage?
+    /// The declaration's documentation as prose, markers stripped. `nil` when it carries none.
+    public var documentation: String?
+    /// The ``ModuleMap`` module project analysis scoped ``id`` with; `nil` for an unscoped type.
+    public var module: String?
 
     public init(
         id: String,
@@ -64,7 +69,8 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         extensionOf: String? = nil,
         namespace: String? = nil,
         location: SourceLocation? = nil,
-        sourceLanguage: CodeArtifact.SourceLanguage? = nil
+        sourceLanguage: CodeArtifact.SourceLanguage? = nil,
+        documentation: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -83,6 +89,7 @@ public struct TypeDeclaration: Codable, Equatable, Hashable, Sendable {
         self.namespace = namespace
         self.location = location
         self.sourceLanguage = sourceLanguage
+        self.documentation = documentation
     }
 
     /// A copy of this type (and its nested types, recursively) stamped with `language`.

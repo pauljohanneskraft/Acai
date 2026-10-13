@@ -70,10 +70,14 @@ public struct AnalysisService: Sendable {
     /// `respectingGitignore` composes the project's own `.gitignore` rules into that same predicate,
     /// so a file the repository ignores is not analyzed. Pass `false` to analyze a tree exactly as it
     /// sits on disk.
+    ///
+    /// `cache` only replaces parsing an unchanged file; enrichment and cross-file resolution still run
+    /// over the whole project, so a warm analysis returns exactly what a cold one would.
     public func analyzeProject(
         at rootURL: URL,
         allowedLanguages: [CodeArtifact.SourceLanguage],
         respectingGitignore: Bool = true,
+        reusing cache: AnalysisCache = .disabled,
         includingFile: (String) -> Bool = { _ in true }
     ) async throws -> CodeArtifact {
         guard FileManager.default.fileExists(atPath: rootURL.path) else {
@@ -92,12 +96,25 @@ public struct AnalysisService: Sendable {
             throw ValidationError("Could not discover any source files in \(rootURL.path). \(hint)")
         }
 
-        var combinedArtifact: CodeArtifact?
-
+        let reusable = cache.reusableFragments()
+        let discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
+        let modules = ModuleMap(roots: discoveredRoots.map(\.path), filePaths: [])
+        var parsedSpecs: [ParsedSpec] = []
+        var freshEntries: [String: ParsedFileCache.Entry] = [:]
         for spec in specs.mergedByLanguage {
-            if let artifact = try await parseSpec(
-                spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
+            if let parsed = try await parseSpec(
+                spec, rootURL: rootURL, gitignore: gitignore, fileCache: reusable, includingFile: includingFile
             ) {
+                freshEntries.merge(parsed.fileCacheEntries) { _, new in new }
+                parsedSpecs.append(parsed.scopingTypeIDs(modules: modules))
+            }
+        }
+
+        // Only a name one module declares non-privately in several files collides; every spec is in.
+        let collisions = CollidingTypeIDs(files: parsedSpecs.flatMap(\.files))
+        var combinedArtifact: CodeArtifact?
+        for parsed in parsedSpecs {
+            if let artifact = assemble(parsed.disambiguating(collisions)) {
                 combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
             }
         }
@@ -108,8 +125,9 @@ public struct AnalysisService: Sendable {
         // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
         // per-language-group before specs are merged, so it can't see cross-spec call receivers.
         var result = combined.resolvingCallSiteReceivers()
-        result.metadata.discoveredRoots = specs.discoveredRoots(relativeTo: rootURL)
+        result.metadata.discoveredRoots = discoveredRoots
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
+        cache.save(freshEntries)
         return result
     }
 
@@ -117,8 +135,9 @@ public struct AnalysisService: Sendable {
         _ spec: SourceSpec,
         rootURL: URL,
         gitignore: GitignoreFilter?,
+        fileCache: ParsedFileCache?,
         includingFile: (String) -> Bool
-    ) async throws -> CodeArtifact? {
+    ) async throws -> ParsedSpec? {
         guard let codeParser = parser(for: spec.language) else {
             assertionFailure(
                 "No parser registered for language \(spec.language); wire it into AnalysisService.parsers."
@@ -129,21 +148,42 @@ public struct AnalysisService: Sendable {
             for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
         )
         guard !collected.files.isEmpty else {
-            let diagnostics = spec.diagnostics + collected.diagnostics
-            guard !diagnostics.isEmpty else { return nil }
-            var result = CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-            result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
-            return result
+            return ParsedSpec(
+                spec: spec, fallback: codeParser.configuration, files: [],
+                diagnostics: spec.diagnostics + collected.diagnostics, fileCacheEntries: [:])
         }
 
-        let parsed = try await parseFiles(collected.files, using: codeParser, rootURL: rootURL)
-        let enriched = enrichPerLanguage(
-            (byLanguage: parsed.byLanguage, order: parsed.order), spec: spec, fallback: codeParser.configuration
+        let batch = SourceFileBatchParser(
+            codeParser: codeParser, rootURL: rootURL,
+            concurrencyLimit: fileParsingConcurrencyLimit, maximumFileBytes: maximumSourceFileBytes
         )
-        let diagnostics = spec.diagnostics + collected.diagnostics + parsed.diagnostics
-        guard !diagnostics.isEmpty else { return enriched }
-        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: spec.language))
-        result.metadata.parseDiagnostics.append(contentsOf: diagnostics)
+        let parsed = try await batch.parse(collected.files, reusing: fileCache)
+        return ParsedSpec(
+            spec: spec, fallback: codeParser.configuration,
+            files: parsed.files,
+            diagnostics: spec.diagnostics + collected.diagnostics + parsed.diagnostics,
+            fileCacheEntries: parsed.fileCacheEntries)
+    }
+
+    /// Enriches by each file's own `metadata.sourceLanguage`, which may differ from the spec's, in first-seen order.
+    private func assemble(_ parsed: ParsedSpec) -> CodeArtifact? {
+        var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
+        var order: [CodeArtifact.SourceLanguage] = []
+        for file in parsed.files {
+            let language = file.metadata.sourceLanguage
+            if let existing = byLanguage[language] {
+                byLanguage[language] = existing.merging(with: file)
+            } else {
+                byLanguage[language] = file
+                order.append(language)
+            }
+        }
+        let enriched = enrichPerLanguage(
+            (byLanguage: byLanguage, order: order), spec: parsed.spec, fallback: parsed.fallback
+        )
+        guard !parsed.diagnostics.isEmpty else { return enriched }
+        var result = enriched ?? CodeArtifact(metadata: CodeArtifact.Metadata(sourceLanguage: parsed.spec.language))
+        result.metadata.parseDiagnostics.append(contentsOf: parsed.diagnostics)
         return result
     }
 
@@ -174,103 +214,13 @@ public struct AnalysisService: Sendable {
                     ))
                 }
             }
-            .removingDuplicates { $0 }
+            .removingDuplicates { $0.standardizedFileURL.path }
             .filter { !spec.excludes($0) }
             .filter { url in
                 let path = url.relativePath(from: rootURL)
                 return (gitignore?.includes(path) ?? true) && includingFile(path)
             }
         return (files, diagnostics)
-    }
-
-    /// Parses every file concurrently (bounded by `fileParsingConcurrencyLimit`, or the processor
-    /// count when unset) and groups results by each file's *own* `metadata.sourceLanguage` rather
-    /// than the spec's nominal language — a parser may classify a file differently than the extension
-    /// that discovered it (e.g. the C parser owns `.h` but reports C++ for a C++ header). Files merge
-    /// back in their original order regardless of completion order, so the result — and therefore
-    /// `order`, which preserves first-seen order so the merged artifact's top-level language is
-    /// stable — is identical to serial parsing.
-    private func parseFiles(
-        _ files: [URL], using codeParser: any CodeParser, rootURL: URL
-    ) async throws -> (
-        byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact],
-        order: [CodeArtifact.SourceLanguage],
-        diagnostics: [ParseDiagnostic]
-    ) {
-        guard !files.isEmpty else { return ([:], [], []) }
-        let concurrency = fileParsingConcurrencyLimit ?? ProcessInfo.processInfo.activeProcessorCount
-        let limit = max(1, min(files.count, concurrency))
-
-        var outcomeByIndex = [ParseOutcome?](repeating: nil, count: files.count)
-        try await withThrowingTaskGroup(of: (index: Int, outcome: ParseOutcome).self) { group in
-            var nextIndex = 0
-            func scheduleNext() {
-                guard nextIndex < files.count else { return }
-                let index = nextIndex
-                nextIndex += 1
-                let file = files[index]
-                group.addTask {
-                    try Task.checkCancellation()
-                    let outcome = self.parseFile(file, using: codeParser, rootURL: rootURL)
-                    try Task.checkCancellation()
-                    return (index, outcome)
-                }
-            }
-            for _ in 0..<limit { scheduleNext() }
-            while let next = try await group.next() {
-                outcomeByIndex[next.index] = next.outcome
-                scheduleNext()
-            }
-        }
-
-        var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
-        var order: [CodeArtifact.SourceLanguage] = []
-        var diagnostics: [ParseDiagnostic] = []
-        for case let outcome? in outcomeByIndex {
-            switch outcome {
-            case .parsed(let parsed):
-                let language = parsed.metadata.sourceLanguage
-                if let existing = byLanguage[language] {
-                    byLanguage[language] = existing.merging(with: parsed)
-                } else {
-                    byLanguage[language] = parsed
-                    order.append(language)
-                }
-            case .diagnostic(let diagnostic):
-                diagnostics.append(diagnostic)
-            }
-        }
-        return (byLanguage, order, diagnostics)
-    }
-
-    /// Reads and parses one file in isolation; a read failure becomes a `.unreadable` diagnostic
-    /// rather than failing the whole batch, matching the serial loop's per-file failure isolation.
-    ///
-    /// The size check resolves the symlink first: `attributesOfItem(atPath:)` does not traverse a
-    /// terminal symbolic link, so a link to a huge file reports the length of the *link itself* (a
-    /// handful of bytes) and sails under the ceiling. Now that links are followed on purpose, that
-    /// would silently reintroduce the unbounded read #303 asks to bound.
-    private func parseFile(_ file: URL, using codeParser: any CodeParser, rootURL: URL) -> ParseOutcome {
-        let relativePath = file.relativePath(from: rootURL)
-        let resolvedPath = file.resolvingSymlinksInPath().path
-        let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath)
-        if let size = (attributes?[.size] as? NSNumber)?.intValue, size > maximumSourceFileBytes {
-            return .diagnostic(ParseDiagnostic(
-                location: SourceLocation(filePath: relativePath, line: 0, column: 0),
-                kind: .skipped,
-                message: "\(size) bytes, over the \(maximumSourceFileBytes)-byte per-file ceiling"
-            ))
-        }
-        do {
-            let source = try String(contentsOf: file, encoding: .utf8)
-            return .parsed(codeParser.parse(source: source, fileName: relativePath))
-        } catch {
-            return .diagnostic(ParseDiagnostic(
-                location: SourceLocation(filePath: relativePath, line: 0, column: 0),
-                kind: .unreadable,
-                message: error.localizedDescription
-            ))
-        }
     }
 
     /// Runs the enrichment pipeline once per detected language, each with that language's configuration
@@ -306,11 +256,25 @@ public struct AnalysisService: Sendable {
     }
 }
 
-/// The result of reading and parsing one file: either a parsed artifact, or a diagnostic when the
-/// file itself couldn't be read.
-private enum ParseOutcome: Sendable {
-    case parsed(CodeArtifact)
-    case diagnostic(ParseDiagnostic)
+/// One spec's files, parsed but not yet enriched, held until collisions across every spec are known.
+private struct ParsedSpec {
+    let spec: SourceSpec
+    let fallback: LanguageConfiguration
+    var files: [CodeArtifact]
+    let diagnostics: [ParseDiagnostic]
+    let fileCacheEntries: [String: ParsedFileCache.Entry]
+
+    func scopingTypeIDs(modules: ModuleMap) -> ParsedSpec {
+        var copy = self
+        copy.files = files.map { $0.scopingTypeIDs(modules: modules) }
+        return copy
+    }
+
+    func disambiguating(_ collisions: CollidingTypeIDs) -> ParsedSpec {
+        var copy = self
+        copy.files = files.map(collisions.disambiguating)
+        return copy
+    }
 }
 
 extension URL {

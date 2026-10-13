@@ -9,20 +9,24 @@ import AcaiDiagram
 /// the parser behaviour it rests on — so an opt-in has to be a deliberate change to both.
 @Suite("Dead-code member-kind audit")
 struct DeadCodeMemberKindAuditTests {
+    static let initializerScanningLanguages: [CodeArtifact.SourceLanguage] =
+        [.java, .kotlin, .dart, .cpp, .typeScript, .javaScript, .python]
 
-    /// Java, Kotlin and Dart now also scan `.initializer` — each has its own dedicated pair of tests
-    /// below pinning the parser behaviour that justifies it. Every other built-in language still
-    /// scans methods only.
     @Test(arguments: AnalysisService.standardParsers
         .map(\.language)
-        .filter { $0 != .java && $0 != .kotlin && $0 != .dart })
+        .filter { $0 != .swift && !Self.initializerScanningLanguages.contains($0) })
     func everyOtherBuiltInLanguageScansMethodsOnly(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method])
     }
 
-    @Test(arguments: [CodeArtifact.SourceLanguage.java, .kotlin, .dart])
-    func javaKotlinAndDartAlsoScanInitializers(language: CodeArtifact.SourceLanguage) throws {
+    @Test func swiftScansMethodsInitializersAndSubscripts() throws {
+        let parser = try #require(AnalysisService.standardParsers.first { $0.language == .swift })
+        #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer, .subscript])
+    }
+
+    @Test(arguments: Self.initializerScanningLanguages)
+    func anInitializerScanningLanguageClaimsBothKinds(language: CodeArtifact.SourceLanguage) throws {
         let parser = try #require(AnalysisService.standardParsers.first { $0.language == language })
         #expect(parser.configuration.deadCodeMemberKinds == [.method, .initializer])
     }
@@ -42,9 +46,9 @@ struct DeadCodeMemberKindAuditTests {
         return Dictionary(members.map { ($0.name, $0.kind) }) { first, _ in first }
     }
 
-    /// Why Swift declines `.initializer`: the dominant `Thing()` spelling is read as a construction and
-    /// dropped, so only the explicit `Thing.init(…)` form leaves an edge behind.
-    @Test func swiftRecordsAnExplicitInitCallButNotAConstruction() throws {
+    /// Why Swift opts `.initializer` in: both the dominant `Thing()` spelling and the explicit
+    /// `Thing.init(…)` form now leave a caller edge behind.
+    @Test func swiftRecordsBothAConstructionAndAnExplicitInitCall() throws {
         let sites = try callSites("""
         class Thing {
             init() {}
@@ -57,12 +61,13 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: SwiftCodeParser(), fileName: "Thing.swift")
 
-        #expect(sites.map(\.methodName) == ["init"])
-        #expect(sites.map(\.receiver) == [.type("Thing")])
+        #expect(sites.map(\.methodName) == ["init", "init"])
+        #expect(sites.map(\.receiver) == [.type("Thing"), .type("Thing")])
     }
 
-    /// Why Swift declines `.subscript`: a subscript access is not recorded at all, in any position.
-    @Test func swiftRecordsNoSubscriptAccess() throws {
+    /// Why Swift opts `.subscript` in: a subscript access on a same-file declared type now leaves a
+    /// caller edge behind, in both its `self` and property/local-receiver forms.
+    @Test func swiftRecordsSubscriptAccessOnALocallyDeclaredType() throws {
         let sites = try callSites("""
         class Thing {
             subscript(i: Int) -> Int { 0 }
@@ -74,7 +79,10 @@ struct DeadCodeMemberKindAuditTests {
         }
         """, in: "use", of: SwiftCodeParser(), fileName: "Thing.swift")
 
-        #expect(sites.isEmpty)
+        let subscriptSites = sites.filter { $0.methodName == "subscript" }
+        #expect(subscriptSites.count == 2)
+        #expect(subscriptSites.contains { $0.receiver == .type("Thing") })
+        #expect(subscriptSites.contains { $0.receiver == .selfDispatch })
     }
 
     /// Why Kotlin now accepts `.initializer`: a bare construction reaches the shared
@@ -122,19 +130,40 @@ struct DeadCodeMemberKindAuditTests {
         #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "Thing" })
     }
 
+    /// Why TypeScript and JavaScript now accept `.initializer`: `new Thing()` resolves the same way a
+    /// static `Thing.method()` call would, targeting `constructor` — the member name both languages
+    /// give every constructor. Neither has a subscript operator, so `.subscript` stays undeclarable.
     @Test(arguments: [true, false])
-    func jsRecordsNoConstructorCall(isTypeScript: Bool) throws {
+    func jsRecordsAConstructorCall(isTypeScript: Bool) throws {
         let sites = try callSites("""
         class Thing {
             constructor(x) {}
             use() {
                 const made = new Thing(1);
+                const empty = new Thing();
             }
         }
         """, in: "use", of: JSCodeParser(isTypeScript: isTypeScript),
            fileName: isTypeScript ? "Thing.ts" : "Thing.js")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 2)
+        #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "constructor" })
+    }
+
+    /// There is no `.subscript` member for either to declare: `grid[i]` reaches no declaration, and a
+    /// TypeScript index signature — the nearest thing to one — isn't modeled as a member.
+    @Test func typeScriptModelsNoSubscriptMember() throws {
+        let kinds = try memberKinds("""
+        interface Indexed {
+            [key: string]: number;
+            at(i: number): number;
+        }
+        class Grid {
+            at(i) { return i; }
+        }
+        """, of: JSCodeParser(), fileName: "Grid.ts")
+        #expect(kinds["at"] == .method)
+        #expect(!kinds.values.contains(.subscript))
     }
 
     /// Why Dart now accepts `.initializer`: a bare default-constructor call `Thing()` now resolves
@@ -168,9 +197,11 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!kinds.values.contains(.subscript))
     }
 
-    /// Why Python declines `.initializer`: a construction is recorded, but as a free call named after
-    /// the class, which no `Thing.__init__` edge can come from.
-    @Test func pythonRecordsAConstructionAsAFreeCallNamedAfterTheClass() throws {
+    /// Why Python now accepts `.initializer`: a construction reaches the shared
+    /// `CallSiteScope.bareCall`, which resolves it to the initializer's fixed `__init__` member
+    /// instead of recording a free call named after the class, which no `Thing.__init__` edge could
+    /// have come from.
+    @Test func pythonRecordsAConstructorCall() throws {
         let sites = try callSites("""
         class Thing:
             def __init__(self):
@@ -180,8 +211,8 @@ struct DeadCodeMemberKindAuditTests {
                 made = Thing()
         """, in: "use", of: PythonCodeParser(), fileName: "thing.py")
 
-        #expect(sites.map(\.receiver) == [.free])
-        #expect(sites.map(\.methodName) == ["Thing"])
+        #expect(sites.map(\.receiver) == [.type("Thing")])
+        #expect(sites.map(\.methodName) == ["__init__"])
     }
 
     @Test func pythonExtractsGetItemAsAMethod() throws {
@@ -193,7 +224,9 @@ struct DeadCodeMemberKindAuditTests {
         #expect(kinds["__getitem__"] == .method)
     }
 
-    @Test func cppRecordsNoConstructorCall() throws {
+    /// Why C++ takes `.initializer`: construction is a declaration rather than a call, and every
+    /// spelling of it — including the heap allocation — now resolves to the constructor.
+    @Test func cppRecordsAConstructorCallForEveryConstructionForm() throws {
         let sites = try callSites("""
         class Thing {
         public:
@@ -202,11 +235,14 @@ struct DeadCodeMemberKindAuditTests {
             void use() {
                 Thing made;
                 Thing other(1);
+                Thing braced{1};
+                Thing* owned = new Thing(2);
             }
         };
         """, in: "use", of: CppCodeParser(), fileName: "Thing.cpp")
 
-        #expect(sites.isEmpty)
+        #expect(sites.count == 4)
+        #expect(sites.allSatisfy { $0.receiver == .type("Thing") && $0.methodName == "Thing" })
     }
 
     @Test func cppExtractsAnIndexOperatorAsAMethod() throws {
@@ -241,22 +277,9 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!members.contains { $0.kind == .initializer || $0.kind == .subscript })
         #expect(artifact.freestandingFunctions.filter { $0.name == "grid_resize" }.map(\.kind) == [.method])
     }
+}
 
-    /// The end-to-end consequence, through the real registry rather than a fixture configuration: an
-    /// uncalled Swift initializer and subscript are not reported, while an uncalled method still is.
-    @Test func aSwiftInitializerAndSubscriptAreNotReportedWhileAMethodIs() {
-        let artifact = SwiftCodeParser().parse(source: """
-        class Thing {
-            init(unused: Int) {}
-            subscript(i: Int) -> Int { 0 }
-            private func unusedMethod() {}
-        }
-        """, fileName: "Thing.swift")
-        let report = DeadCodeScan(
-            artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id) == ["Thing.unusedMethod"])
-    }
-
+extension DeadCodeMemberKindAuditTests {
     /// The end-to-end consequence for Java: a called constructor is not reported, while an uncalled
     /// one now is. Java's package-private default keeps both out of the public-API exemption.
     @Test func aCalledJavaConstructorIsNotReportedWhileAnUncalledOneIs() {
@@ -321,6 +344,55 @@ struct DeadCodeMemberKindAuditTests {
         #expect(!report.candidates.map(\.id).contains("_Called._Called"))
     }
 
+    /// The end-to-end consequence for Python, which differs from the three languages above: the
+    /// construction resolves to a real `Thing.use -> Thing.__init__` edge, but an *uncalled*
+    /// `__init__` is still not reported. `__init__` is a dunder, and `PythonName` maps dunders to
+    /// `.public`, which `DeadCodeScan` exempts as API reachable from outside the analysed sources —
+    /// so for Python the opt-in widens the report's `scannedKinds` and feeds the call graph without
+    /// ever producing an initializer candidate. Pinned so the divergence is deliberate.
+    @Test func aPythonConstructionResolvesToAnInitEdgeWhileAnUncalledInitIsStillExempt() {
+        let artifact = PythonCodeParser().parse(source: """
+        class Called:
+            def __init__(self): pass
+
+        class Uncalled:
+            def __init__(self): pass
+
+        class Worker:
+            def run(self): Called()
+        """, fileName: "worker.py")
+
+        let graph = CallGraphBuilder().build(from: artifact)
+        #expect(graph.edges.contains { $0.from == "Worker.run" && $0.to == "Called.__init__" })
+
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.scannedKinds.contains(.initializer))
+        #expect(!report.candidates.map(\.id).contains("Uncalled.__init__"))
+    }
+
+    /// The end-to-end consequence for C++: a constructed class's constructor is not reported, while
+    /// an unconstructed one now is. Both are `private`, since C++'s own `class` default would
+    /// otherwise exempt neither — the members are listed under `public:` to be callable at all, so
+    /// the access level is what keeps the public-API exemption out of the comparison.
+    @Test func aCalledCppConstructorIsNotReportedWhileAnUncalledOneIs() {
+        let artifact = CppCodeParser().parse(source: """
+        class Called {
+            Called() {}
+        };
+        class Uncalled {
+            Uncalled() {}
+        };
+        class Worker {
+            void run() { Called made; }
+        };
+        """, fileName: "Worker.cpp")
+        let report = DeadCodeScan(
+            artifact: artifact, languages: artifact.standardLanguageResolver).report
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(!report.candidates.map(\.id).contains("Called.Called"))
+    }
+
     /// The end-to-end consequence for Dart's named constructors: a called one is not reported, while
     /// an uncalled one now is.
     @Test func aCalledDartNamedConstructorIsNotReportedWhileAnUncalledOneIs() {
@@ -340,4 +412,5 @@ struct DeadCodeMemberKindAuditTests {
         #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed"))
         #expect(!report.candidates.map(\.id).contains("Widget._calledNamed"))
     }
+
 }

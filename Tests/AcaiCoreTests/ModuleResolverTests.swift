@@ -50,4 +50,44 @@ struct ModuleResolverTests {
         #expect(product("/Sources/AcaiCore/Foo.swift") == "AcaiCore")
         #expect(product("./Sources/AcaiCore/Foo.swift") == "AcaiCore")
     }
+
+    // MARK: - Qualified by project root
+
+    private func product(_ path: String, inRoot root: String) -> String {
+        ModuleResolver.standard.productName(forFilePath: path, inRoot: root)
+    }
+
+    @Test func rootQualifiesTheAnchorDerivedName() {
+        #expect(product("app-ios/Sources/Networking/Client.swift", inRoot: "app-ios") == "app-ios/Networking")
+        #expect(product("web/packages/core/src/index.ts", inRoot: "web") == "web/core")
+        #expect(product("jvm/feature/login/src/main/java/L.java", inRoot: "jvm") == "jvm/login")
+    }
+
+    @Test func sameNamedTargetsInTwoRootsStayDistinct() {
+        #expect(product("app-ios/Sources/Core/A.swift", inRoot: "app-ios") == "app-ios/Core")
+        #expect(product("app-mac/Sources/Core/A.swift", inRoot: "app-mac") == "app-mac/Core")
+    }
+
+    /// A single-module project — `src` at the root's head, or no anchor at all — is the root itself,
+    /// rather than inventing a module from the leading directory.
+    @Test func aRootWithoutAnAnchorIsTheRootItself() {
+        #expect(product("web/src/app.ts", inRoot: "web") == "web")
+        #expect(product("proxy/app.py", inRoot: "proxy") == "proxy")
+        #expect(product("lib/main.dart", inRoot: "lib") == "lib")
+    }
+
+    @Test func theAnalysedFolderItselfIsNamedByTheFallbackGroup() {
+        #expect(product("Sources/AcaiCore/Foo.swift", inRoot: ".") == "\(fallback)/AcaiCore")
+        #expect(product("Foo.swift", inRoot: ".") == fallback)
+    }
+
+    @Test func aNestedRootIsStrippedWhole() {
+        #expect(product("apps/web/packages/ui/Button.tsx", inRoot: "apps/web") == "web/ui")
+    }
+
+    /// A path that does not sit under the root it was handed is scanned whole rather than silently
+    /// mis-stripped.
+    @Test func aPathOutsideItsRootKeepsTheRootsName() {
+        #expect(product("other/Sources/Core/A.swift", inRoot: "web") == "web/Core")
+    }
 }

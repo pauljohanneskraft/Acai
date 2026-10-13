@@ -14,10 +14,9 @@ final class NewWindowJourneyTests: UIJourneyTestCase {
 
         // The new window opens in front, covering the first one.
         ProjectBrowserScreen(app: app).cycleWindows()
-        let row = detail.freeformDiagramRow(id: freeformDiagramID)
-        row.tapWhenReady("the freeform diagram's row in the first window")
         let showWindow = app.buttons["diagramOpenElsewhere.showWindowButton"]
-        showWindow.waitOrFail("the placeholder for a diagram another window shows")
+        detail.freeformDiagramRow(id: freeformDiagramID)
+            .tap("the freeform diagram's row in the first window", until: showWindow)
 
         showWindow.tapWhenReady("Show Window")
         app.windows.firstMatch.descendants(matching: .any)["diagram.checkpointsButton"]

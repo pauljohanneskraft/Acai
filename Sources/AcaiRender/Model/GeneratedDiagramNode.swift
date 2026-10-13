@@ -14,6 +14,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     public let genericParameters: [String]
     /// e.g. `Sources/AcaiCore/ClassDiagram`.
     public let directoryPath: String?
+    /// `<project>/<module>` when the folder holds several projects, so the grouped layout boxes each project.
     public let productGroup: String?
 
     public init(
@@ -21,7 +22,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         configuration: ClassDiagramConfiguration? = nil,
         annotationStereotypes: [String: String] = [:],
         collectionTypeNames: Set<String> = [],
-        varianceKeywords: [Variance: String]
+        varianceKeywords: [Variance: String],
+        modules: ModuleMap
     ) {
         let config = configuration ?? .init()
 
@@ -68,7 +70,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         if let filePath = type.location?.filePath {
             let dirComponents = filePath.split(separator: "/").dropLast().map(String.init)
             self.directoryPath = dirComponents.isEmpty ? nil : dirComponents.joined(separator: "/")
-            self.productGroup = ModuleResolver.standard.productName(forFilePath: filePath)
+            self.productGroup = modules.module(forFilePath: filePath)
         } else {
             self.directoryPath = nil
             self.productGroup = nil

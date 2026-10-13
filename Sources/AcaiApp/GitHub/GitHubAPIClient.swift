@@ -25,18 +25,38 @@ struct GitHubAPIClient {
 
     private var baseURL: URL { URL(string: "https://api.github.com")! }
 
-    enum Failure: LocalizedError {
+    enum Failure: LocalizedError, Equatable {
         case http(Int, String)
         case decoding(String)
+        case rateLimited(resetAt: Date?)
+        case unauthorized
 
-        var errorDescription: String? {
+        var message: LocalizedStringResource {
             switch self {
             case .http(let status, let message):
-                String(localized: .app("Error.GitHubAPIClient.Http \(status) \(message)"))
+                .app("Error.GitHubAPIClient.Http \(status) \(message)")
             case .decoding(let message):
-                String(localized: .app("Error.GitHubAPIClient.Decoding \(message)"))
+                .app("Error.GitHubAPIClient.Decoding \(message)")
+            case .rateLimited(nil):
+                .app("Error.GitHubAPIClient.RateLimited")
+            case .rateLimited(let resetAt?):
+                .app("Error.GitHubAPIClient.RateLimitedUntil \(resetAt.formatted(.relative(presentation: .named)))")
+            case .unauthorized:
+                .app("Error.GitHubAPIClient.Unauthorized")
             }
         }
+
+        /// Already names the reader's next step — wait for the reset, or sign in again.
+        var isActionable: Bool {
+            switch self {
+            case .rateLimited, .unauthorized:
+                true
+            case .http, .decoding:
+                false
+            }
+        }
+
+        var errorDescription: String? { String(localized: message) }
     }
 
     struct User: Decodable {
@@ -138,15 +158,36 @@ struct GitHubAPIClient {
     }
 
     private func validate(_ response: URLResponse, data: Data) throws {
-        guard let http = response as? HTTPURLResponse else { return }
-        guard (200..<300).contains(http.statusCode) else {
-            let message = String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
-            throw Failure.http(http.statusCode, message)
-        }
+        guard let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) else { return }
+        if http.statusCode == 401 { throw Failure.unauthorized }
+        if http.isGitHubRateLimited { throw Failure.rateLimited(resetAt: http.gitHubRateLimitResetAt) }
+        throw Failure.http(http.statusCode, String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)")
     }
 }
 
 extension HTTPURLResponse {
+    /// A 403 is a rate limit only with a spent quota or a `retry-after`; otherwise it is a permission failure.
+    var isGitHubRateLimited: Bool {
+        switch statusCode {
+        case 429:
+            true
+        case 403:
+            value(forHTTPHeaderField: "x-ratelimit-remaining") == "0"
+                || value(forHTTPHeaderField: "retry-after") != nil
+        default:
+            false
+        }
+    }
+
+    /// `retry-after` is seconds from now and takes precedence; `x-ratelimit-reset` is epoch seconds.
+    var gitHubRateLimitResetAt: Date? {
+        if let raw = value(forHTTPHeaderField: "retry-after"), let seconds = Double(raw) {
+            return Date(timeIntervalSinceNow: seconds)
+        }
+        guard let raw = value(forHTTPHeaderField: "x-ratelimit-reset"), let seconds = Double(raw) else { return nil }
+        return Date(timeIntervalSince1970: seconds)
+    }
+
     var gitHubOAuthScopes: [String]? {
         guard let raw = value(forHTTPHeaderField: "X-OAuth-Scopes"), !raw.isEmpty else { return nil }
         return raw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }

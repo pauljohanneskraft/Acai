@@ -145,6 +145,21 @@ extension XCUIElement {
         destination.waitOrFail("the destination of tapping \(description)", file: file, line: line)
     }
 
+    /// `tap(_:until:)` for a gesture that only reveals (opening a context menu), never one that acts.
+    func reveal(
+        _ description: String, until destination: XCUIElement, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line, _ gesture: @MainActor (XCUIElement) -> Void
+    ) {
+        for _ in 0..<attempts {
+            waitUntilReady(description, file: file, line: line)
+            SystemBanners().dismiss(file: file, line: line)
+            gesture(self)
+            if destination.waitForExistence(timeout: .uiTransition / Double(attempts)) { return }
+            if !exists || !isHittable { break }
+        }
+        destination.waitOrFail("the destination of revealing \(description)", file: file, line: line)
+    }
+
     /// Waits for `self` to go away, failing immediately with `failure`'s label if that appears first —
     /// for an operation whose success dismisses its own screen and whose failure shows an alert.
     func waitForDisappearanceOrFail(
@@ -189,5 +204,20 @@ extension XCUIApplication {
             if region.waitForNonExistence(timeout: .uiTransition / Double(attempts)) { return }
         }
         region.waitForDisappearanceOrFail("the popover", file: file, line: line)
+    }
+
+    /// `tap(_:until:)` for a keyboard shortcut, so only for one that navigates. iPadOS registers the
+    /// menu's key commands shortly after the first frame, so a press right after launch can go nowhere.
+    func typeShortcut(
+        _ description: String, key: String, modifierFlags: XCUIElement.KeyModifierFlags,
+        until destination: XCUIElement, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        for _ in 0..<attempts {
+            SystemBanners().dismiss(file: file, line: line)
+            typeKey(key, modifierFlags: modifierFlags)
+            if destination.appears(within: .uiTransition / Double(attempts)) { return }
+        }
+        destination.waitOrFail("the destination of \(description)", file: file, line: line)
     }
 }
