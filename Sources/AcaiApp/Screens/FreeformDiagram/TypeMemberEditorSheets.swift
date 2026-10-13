@@ -179,9 +179,12 @@ struct ParameterListEditor: View {
                 Button(role: .destructive) {
                     parameters.remove(at: index)
                 } label: {
-                    Image(systemName: "minus.circle")
+                    Label(.app("View.ParameterListEditor.DeleteParameter"), systemImage: "minus.circle")
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless)
+                .help(.app("View.ParameterListEditor.DeleteParameter"))
                 .accessibilityIdentifier("\(accessibilityPrefix).removeParameterButton.\(index)")
             }
         }
