@@ -101,7 +101,7 @@ struct ProjectBrowserViewModelExportTests {
 
         let pending = try #require(model.pendingExport)
         #expect(pending.filename == "C.dot")
-        #expect(String(decoding: pending.data, as: UTF8.self).hasPrefix("digraph"))
+        #expect(String(data: pending.data, encoding: .utf8)?.hasPrefix("digraph") == true)
     }
 
     @Test func exportingDOTForAnUnknownCodebaseStillNamesTheFileDot() async throws {
@@ -109,7 +109,8 @@ struct ProjectBrowserViewModelExportTests {
 
         await model.exportDOT(for: UUID())
 
-        #expect(try #require(model.pendingExport).filename == "diagram.dot")
+        let pending = try #require(model.pendingExport)
+        #expect(pending.filename == "diagram.dot")
     }
 
     @Test func exportingMermaidQueuesAnMMDFileNamedAfterTheCodebase() async throws {
