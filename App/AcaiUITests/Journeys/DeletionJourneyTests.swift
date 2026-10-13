@@ -26,8 +26,7 @@ final class DeletionJourneyTests: UIJourneyTestCase {
         let projectDetail = openSeededProject(analysis: .parsed)
         let browser = ProjectBrowserScreen(app: app)
 
-        // ⌫ on the sidebar's selection, the only Delete a keyboard reaches. macOS only: iPadOS does
-        // not deliver an unmodified ⌫ to a SwiftUI `keyboardShortcut`, so the key is not bound there.
+        // macOS only: iPadOS does not deliver an unmodified ⌫ to a SwiftUI `keyboardShortcut`.
         #if os(macOS)
         browser.deleteCodebaseWithKeyboard(
             browser.codebaseRow(id: seeded.codebaseID),

@@ -25,10 +25,7 @@ final class ProjectBrowserScreen {
         app.descendants(matching: .any)["sidebar.project.\(id)"]
     }
 
-    /// A predicate with `firstMatch` rather than a subscript: the identifier sits on the composite
-    /// row, so it reaches the row's icon as well as its label and a subscript's uniqueness requirement
-    /// can fail. An icon never reports hittable, so this matches the label — what the row is tapped
-    /// by, as `repositoryRow(remoteURL:)` below does for the same reason.
+    /// The row's label, not a subscript: the identifier also reaches the never-hittable icon.
     func codebaseRow(id: String) -> XCUIElement {
         app.staticTexts.matching(
             NSPredicate(format: "identifier == %@", "sidebar.codebase.\(id)")
@@ -63,9 +60,7 @@ final class ProjectBrowserScreen {
     }
 
     #if os(macOS)
-    /// The keyboard path: selects the codebase's sidebar row, presses ⌫
-    /// (`KeyboardShortcutReference.deleteSidebarItem`), then confirms. `selected` is what the row's
-    /// selection brings up, since a key acts on the sidebar's selection rather than on a row.
+    /// Selects the row (until `selected` shows), presses ⌫, then confirms.
     func deleteCodebaseWithKeyboard(
         _ row: XCUIElement, until selected: XCUIElement,
         file: StaticString = #filePath, line: UInt = #line
