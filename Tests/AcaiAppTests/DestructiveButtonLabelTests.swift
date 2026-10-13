@@ -2,17 +2,12 @@ import Foundation
 import Testing
 @testable import AcaiApp
 
-/// A delete button that renders a bare glyph names neither what it deletes nor that it deletes —
-/// the consistency bar allows icon-only buttons on a canvas-viewport toolbar, and a destructive
-/// action is never one of those. The buttons this covers live in forms, which the render-snapshot
-/// layer cannot resolve, so the check reads the source instead of a rendered view.
+/// Reads source rather than a rendered view: these buttons live in forms the render snapshots cannot resolve.
 @Suite("Destructive button labels", .timeLimit(.minutes(1)))
 struct DestructiveButtonLabelTests {
 
     private static let declaration = "Button(role: .destructive)"
 
-    /// A `Button` declaration spans at most this many lines; past that the scan has lost the brace
-    /// it was matching and would read the rest of the file as one button.
     private static let maximumDeclarationLines = 40
 
     private let sourceRoot = URL(fileURLWithPath: #filePath)
@@ -23,7 +18,9 @@ struct DestructiveButtonLabelTests {
 
     @Test("Every destructive button states its action, not just an icon")
     func destructiveButtonsCarryATitle() throws {
-        for file in swiftFiles() {
+        let files = swiftFiles()
+        #expect(!files.isEmpty, "found no sources under \(sourceRoot.path)")
+        for file in files {
             let lines = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
             for (offset, line) in lines.enumerated()
             where line.trimmingCharacters(in: .whitespaces).hasPrefix(Self.declaration) {
@@ -40,9 +37,7 @@ struct DestructiveButtonLabelTests {
         }
     }
 
-    /// The source of the button starting on `offset`, up to the line closing its last closure. The
-    /// `} label: {` form reopens on the same line it closes, so the depth is read per line rather
-    /// than per brace.
+    /// Depth is read per line, since `} label: {` closes and reopens on the same line.
     private func button(in lines: [String], from offset: Int) -> String {
         var depth = 0
         var opened = false
