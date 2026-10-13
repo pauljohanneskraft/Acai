@@ -126,6 +126,7 @@ public struct ProjectBrowserView: View {
         .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
         .onDisappear { browserWindows.windowClosed(windowToken) }
         .focusedSceneValue(\.browserWindowActions, windowActions)
+        .focusedSceneValue(\.newProjectAction, NewProjectAction { newProjectPresented = true })
         #if os(macOS)
         .focusedSceneObject(quickOpenPresenter)
         .background {

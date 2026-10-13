@@ -32,6 +32,12 @@ struct KeyboardShortcutReference: Identifiable, Sendable {
 }
 
 extension KeyboardShortcutReference {
+    static let newProject = KeyboardShortcutReference(
+        id: "newProject", shortcut: KeyboardShortcut("n", modifiers: .command),
+        name: .app("KeyboardShortcutReference.NewProject"))
+    static let addCodebase = KeyboardShortcutReference(
+        id: "addCodebase", shortcut: KeyboardShortcut("n", modifiers: [.command, .shift]),
+        name: .app("KeyboardShortcutReference.AddCodebase"))
     static let fitToView = KeyboardShortcutReference(
         id: "fitToView", shortcut: KeyboardShortcut("0", modifiers: .command),
         name: .app("KeyboardShortcutReference.FitToView"))
@@ -105,6 +111,9 @@ extension KeyboardShortcutReference {
     }
 
     static let allGroups: [Group] = [
+        Group(
+            id: "creation", title: .app("KeyboardShortcutReference.ProjectsAndCodebases"),
+            shortcuts: [.newProject, .addCodebase]),
         Group(id: "canvas", title: .app("KeyboardShortcutReference.Canvas"), shortcuts: [.fitToView]),
         Group(
             id: "find", title: .app("KeyboardShortcutReference.FindClassDiagrams"),
