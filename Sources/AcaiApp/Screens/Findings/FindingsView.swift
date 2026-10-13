@@ -284,9 +284,7 @@ struct FindingsView: View {
         Button {
             list = list.clearingFilters()
         } label: {
-            Label(
-                .app("View.FindingsView.ClearFilters"),
-                systemImage: "line.3.horizontal.decrease.circle")
+            Label(.app("View.FindingsView.ClearFilters"), systemImage: "line.3.horizontal.decrease.circle")
         }
         .accessibilityIdentifier("findings.clearFiltersButton")
     }
