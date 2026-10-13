@@ -80,6 +80,13 @@ struct FindingsView: View {
     }
 
     private func emptyState(text: LocalizedStringResource, identifier: String) -> some View {
+        emptyState(text: text, identifier: identifier) { EmptyView() }
+    }
+
+    /// `children: .contain` keeps `action`'s own button queryable beside the container's identifier.
+    private func emptyState<Action: View>(
+        text: LocalizedStringResource, identifier: String, @ViewBuilder action: () -> Action
+    ) -> some View {
         VStack(spacing: .spacingM) {
             Image(systemName: "checkmark.seal")
                 .font(.system(size: 40))
@@ -89,8 +96,14 @@ struct FindingsView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, .spacingXXL)
+            action()
+                // Bordered and large: the same empty-state action treatment `emptyProjectContentState`
+                // uses, which carries the 44pt hit target on touch.
+                .buttonStyle(.bordered)
+                .controlSize(.large)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(identifier)
     }
 
@@ -125,7 +138,10 @@ struct FindingsView: View {
                     text: allFindings.isEmpty
                         ? .app("View.FindingsView.NoFindingsClean")
                         : .app("View.FindingsView.NoFindingsMatchFilters"),
-                    identifier: "findings.emptyState")
+                    identifier: "findings.emptyState"
+                ) {
+                    if !allFindings.isEmpty, list.hasActiveFilters { clearFiltersButton }
+                }
             } else {
                 List(visible) { finding in
                     FindingRow(
@@ -261,6 +277,18 @@ struct FindingsView: View {
         }
         .padding(.horizontal)
         .padding(.top, .spacingS)
+    }
+
+    /// Shown only while a filter is actually narrowing the list, so it never offers to undo nothing.
+    private var clearFiltersButton: some View {
+        Button {
+            list = list.clearingFilters()
+        } label: {
+            Label(
+                .app("View.FindingsView.ClearFilters"),
+                systemImage: "line.3.horizontal.decrease.circle")
+        }
+        .accessibilityIdentifier("findings.clearFiltersButton")
     }
 
     private func kindChip(_ kind: Finding.Kind) -> some View {

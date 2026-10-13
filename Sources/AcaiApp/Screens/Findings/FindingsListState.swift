@@ -27,6 +27,19 @@ struct FindingsListState: Equatable {
             }
     }
 
+    /// `baseline` is loaded data rather than a filter, so clearing the filters leaves it alone.
+    var hasActiveFilters: Bool {
+        kinds != Set(Finding.Kind.allCases) || codebaseID != nil || showSuppressed
+    }
+
+    func clearingFilters() -> FindingsListState {
+        var state = self
+        state.kinds = Set(Finding.Kind.allCases)
+        state.codebaseID = nil
+        state.showSuppressed = false
+        return state
+    }
+
     func toggling(_ kind: Finding.Kind) -> FindingsListState {
         var state = self
         if !state.kinds.insert(kind).inserted { state.kinds.remove(kind) }
