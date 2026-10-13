@@ -37,6 +37,7 @@ public struct ProjectBrowserView: View {
     @State var renamingText: String = ""
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
+    @State var diagramPendingDeletion: SidebarDiagramDeletion?
     @State private var newProjectPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility
 
@@ -157,6 +158,7 @@ public struct ProjectBrowserView: View {
             if shown, presentedSheetCount > 1 { quickOpenPresenter.isPresented = false }
         }
         #endif
+        .modifier(SidebarDiagramDeletionConfirmation(deletion: $diagramPendingDeletion, model: model))
         .modifier(ExportPresentation(model: model))
         .modifier(StoreErrorAlert(
             store: model.store, model: model,
@@ -214,6 +216,7 @@ public struct ProjectBrowserView: View {
 
                 repositoriesSection
             }
+            .background { deleteSelectionShortcut }
 
             // On compact width (iPhone) this action lives in the toolbar instead — a footer button
             // pinned below a short (or empty) list reads as an unexpected floating control there.

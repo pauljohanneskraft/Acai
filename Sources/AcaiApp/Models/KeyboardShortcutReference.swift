@@ -88,6 +88,11 @@ extension KeyboardShortcutReference {
     static let copyLink = KeyboardShortcutReference(
         id: "copyLink", shortcut: KeyboardShortcut("c", modifiers: [.command, .option]),
         name: .app("KeyboardShortcutReference.CopyLink"))
+    /// ⌫ on the project browser's sidebar, where the platform convention is that Delete deletes the
+    /// selected row. Distinct from `deleteSelection`, which is a freeform canvas's own selection.
+    static let deleteSidebarItem = KeyboardShortcutReference(
+        id: "deleteSidebarItem", shortcut: KeyboardShortcut(.delete, modifiers: []),
+        name: .app("KeyboardShortcutReference.DeleteSelectedRow"))
     static let keyboardShortcuts = KeyboardShortcutReference(
         // Not ⇧⌘/: iPadOS keeps that for itself, and the Mac and iPad share one set of keys.
         id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: .command),
@@ -117,6 +122,9 @@ extension KeyboardShortcutReference {
             id: "dialogs", title: .app("KeyboardShortcutReference.Dialogs"),
             shortcuts: [.confirmDialog, .cancelDialog]),
         Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
+        Group(
+            id: "sidebar", title: .app("KeyboardShortcutReference.Sidebar"),
+            shortcuts: [.deleteSidebarItem]),
         Group(
             id: "windows", title: .app("KeyboardShortcutReference.Windows"),
             shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),
