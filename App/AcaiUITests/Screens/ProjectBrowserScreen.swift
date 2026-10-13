@@ -26,9 +26,9 @@ final class ProjectBrowserScreen {
     }
 
     /// A predicate with `firstMatch` rather than a subscript: the identifier sits on the composite
-    /// row, so it reaches the row's icon as well as its label and the subscript's uniqueness
-    /// requirement fails on iPad. An icon never reports hittable, so this matches the label — what
-    /// the row is tapped by, as `repositoryRow(remoteURL:)` below does for the same reason.
+    /// row, so it reaches the row's icon as well as its label and a subscript's uniqueness requirement
+    /// can fail. An icon never reports hittable, so this matches the label — what the row is tapped
+    /// by, as `repositoryRow(remoteURL:)` below does for the same reason.
     func codebaseRow(id: String) -> XCUIElement {
         app.staticTexts.matching(
             NSPredicate(format: "identifier == %@", "sidebar.codebase.\(id)")
@@ -62,6 +62,7 @@ final class ProjectBrowserScreen {
         row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
     }
 
+    #if os(macOS)
     /// The keyboard path: selects the codebase's sidebar row, presses ⌫
     /// (`KeyboardShortcutReference.deleteSidebarItem`), then confirms. `selected` is what the row's
     /// selection brings up, since a key acts on the sidebar's selection rather than on a row.
@@ -76,6 +77,7 @@ final class ProjectBrowserScreen {
         deleteCodebaseConfirmButton.tapWhenReady("the codebase delete confirmation", file: file, line: line)
         row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
     }
+    #endif
 
     /// For a codebase added at test runtime (e.g. cloned from GitHub), whose `id` is a fresh random
     /// UUID the test can't predict ahead of time — matches the row's visible name label instead.

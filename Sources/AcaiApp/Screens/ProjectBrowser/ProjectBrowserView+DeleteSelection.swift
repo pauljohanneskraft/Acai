@@ -1,7 +1,12 @@
 import SwiftUI
 
+// macOS only: iPadOS does not deliver an unmodified ⌫ to a SwiftUI `keyboardShortcut`, so the
+// sidebar's Delete is a Mac key. `KeyboardShortcutReference`'s sidebar group is macOS-only to match,
+// which keeps the ⌘/ panel from listing a key an iPad keyboard never fires.
+#if os(macOS)
+
 /// A sidebar diagram row's pending deletion. Projects and codebases already have a confirmation of
-/// their own (and their own `@State`); a diagram row had none, so deleting one by key needs this.
+/// their own (and their own `@State`); a diagram row has none, so deleting one by key needs this.
 struct SidebarDiagramDeletion {
     enum Kind {
         case generated
@@ -16,8 +21,7 @@ struct SidebarDiagramDeletion {
 extension ProjectBrowserView {
     /// ⌫ on the selected sidebar row, as `KeyboardShortcutReference.deleteSidebarItem`. A hidden
     /// button is how this app binds a key an external keyboard sends (see `FreeformDiagramView`), and
-    /// the only form the shortcut reference lists — a `List`'s own delete callback would be
-    /// macOS-only and invisible to both the reference and an iPad.
+    /// the only form the shortcut reference lists.
     var deleteSelectionShortcut: some View {
         Button("") { requestDeletionOfSelection() }
             .keyboardShortcut(.deleteSidebarItem)
@@ -86,3 +90,4 @@ struct SidebarDiagramDeletionConfirmation: ViewModifier {
         }
     }
 }
+#endif
