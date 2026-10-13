@@ -1,6 +1,94 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Intent.CodebaseInsights.CodebaseNotFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Codebase ist nicht mehr in Açaí vorhanden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That codebase is no longer in Açaí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette codebase n’est plus dans Açaí."
+          }
+        }
+      }
+    },
+    "Intent.CodebaseInsights.NotIndexed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wurde noch nicht indiziert, daher gibt es nichts zu berichten. Indiziere sie zuerst neu."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn’t been indexed yet, so there’s nothing to report. Reindex it first."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ n’a pas encore été indexée, il n’y a donc rien à signaler. Réindexez-la d’abord."
+          }
+        }
+      }
+    },
+    "Intent.CodebaseInsights.AnalysisUnavailable %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Analyse von %@ wurde vor dem Abschluss ersetzt. Versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The analysis of %@ was superseded before it finished. Try again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’analyse de %@ a été remplacée avant la fin. Réessayez."
+          }
+        }
+      }
+    },
+    "Intent.CodebaseInsights.TypeNotFound %@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In %2$@ wurde kein Typ namens %1$@ gefunden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No type called %1$@ was found in %2$@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun type nommé %1$@ n’a été trouvé dans %2$@."
+          }
+        }
+      }
+    },
     "KeyboardShortcutReference.Windows" : {
       "localizations" : {
         "de" : {
