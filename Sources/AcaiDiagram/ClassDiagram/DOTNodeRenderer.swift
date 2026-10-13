@@ -10,7 +10,8 @@ struct DOTNodeRenderer {
     func render(_ type: TypeDeclaration) -> String {
         let nodeId = type.id.dotNodeID
         let label = buildHTMLLabel(for: type, config: options.languages.configuration(for: type))
-        return "  \(nodeId) [label=<\(label)>];\n"
+        let tooltip = type.documentation.map { ", tooltip=\"\($0.dotEscaped)\"" } ?? ""
+        return "  \(nodeId) [label=<\(label)>\(tooltip)];\n"
     }
 
     func renderExternal(types: [TypeDeclaration]) -> String {

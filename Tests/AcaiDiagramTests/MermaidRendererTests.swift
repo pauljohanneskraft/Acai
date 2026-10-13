@@ -58,6 +58,14 @@ struct MermaidRendererTests {
         #expect(mermaid.contains("Pet <|.. Cat"))
     }
 
+    @Test func classDiagramCarriesDocumentationAsComments() {
+        var artifact = classArtifact()
+        artifact.types[1].documentation = "A loyal animal.\n\nBarks."
+        let mermaid = ClassDiagramMermaidRenderer().generate(from: artifact)
+        #expect(mermaid.contains("    %% A loyal animal.\n    %%\n    %% Barks.\n    class Dog[\"Dog\"]"))
+        #expect(mermaid.components(separatedBy: "%%").count == 4)
+    }
+
     @Test func classDiagramStructuralArrows() {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .swift, filePaths: ["X.swift"]),

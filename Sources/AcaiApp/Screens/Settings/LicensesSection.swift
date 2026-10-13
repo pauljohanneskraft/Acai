@@ -2,41 +2,64 @@ import SwiftUI
 
 struct LicensesSection: View {
     @State private var dependencies: [DependencyLicense] = []
-    @State private var loadError: LicenseLoadFailure?
+    @State private var phase: AsyncOperationPhase = .loading(.app("View.LicensesSection.LoadingLicenses"))
+    @State private var attempt = 0
 
     var body: some View {
         Group {
-            if dependencies.isEmpty && loadError == nil {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .accessibilityIdentifier("licenses.loadingIndicator")
-            } else {
-                ForEach(dependencies) { dependency in
-                    DisclosureGroup {
-                        licenseDetail(dependency)
-                    } label: {
-                        VStack(alignment: .leading, spacing: .spacingXXS) {
-                            Text(verbatim: dependency.name)
-                            Text(verbatim: dependency.licenseIdentifier)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+            status
+            if case .loaded = phase {
+                if dependencies.isEmpty {
+                    emptyState
+                } else {
+                    ForEach(dependencies) { dependency in
+                        licenseRow(dependency)
                     }
-                    .accessibilityIdentifier("licenses.row.\(dependency.name)")
-                    .accessibilityLabel(
-                        .app("View.LicensesSection.License \(dependency.name) \(dependency.licenseIdentifier)")
-                    )
                 }
             }
         }
-        .task { await load() }
-        .alert(item: $loadError) { failure in
-            Alert(
-                title: Text(.app("View.LicensesSection.SomethingWentWrong")),
-                message: Text(verbatim: failure.message),
-                dismissButton: .default(Text(.app("View.LicensesSection.OK")))
-            )
+        .task(id: attempt) { await load() }
+    }
+
+    private var status: some View {
+        HStack(spacing: .spacingS) {
+            AsyncOperationStatusView(identifierPrefix: "licenses", phase: phase)
+            if case .failed = phase {
+                Button {
+                    attempt += 1
+                } label: {
+                    Label(.app("View.LicensesSection.Retry"), systemImage: "arrow.clockwise")
+                }
+                .accessibilityIdentifier("licenses.retryButton")
+            }
         }
+    }
+
+    private var emptyState: some View {
+        ContentUnavailableView {
+            Label(.app("View.LicensesSection.NoLicensesListed"), systemImage: "doc.plaintext")
+        } description: {
+            Text(.app("View.LicensesSection.NoLicensesDetail"))
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("licenses.emptyState")
+    }
+
+    private func licenseRow(_ dependency: DependencyLicense) -> some View {
+        DisclosureGroup {
+            licenseDetail(dependency)
+        } label: {
+            VStack(alignment: .leading, spacing: .spacingXXS) {
+                Text(verbatim: dependency.name)
+                Text(verbatim: dependency.licenseIdentifier)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityIdentifier("licenses.row.\(dependency.name)")
+        .accessibilityLabel(
+            .app("View.LicensesSection.License \(dependency.name) \(dependency.licenseIdentifier)")
+        )
     }
 
     @ViewBuilder
@@ -61,18 +84,19 @@ struct LicensesSection: View {
     }
 
     private func load() async {
+        phase = .loading(.app("View.LicensesSection.LoadingLicenses"))
         let catalog = LicenseCatalog()
         do {
-            dependencies = try await Task.detached(priority: .userInitiated) {
+            let loaded = try await Task.detached(priority: .userInitiated) {
                 try catalog.load()
             }.value
+            guard !Task.isCancelled else { return }
+            dependencies = loaded
+            phase = .loaded
         } catch {
-            loadError = LicenseLoadFailure(message: error.localizedDescription)
+            guard !Task.isCancelled else { return }
+            dependencies = []
+            phase = .failed(error.localizedDescription)
         }
     }
-}
-
-private struct LicenseLoadFailure: Identifiable {
-    let id = UUID()
-    let message: String
 }

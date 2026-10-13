@@ -73,10 +73,11 @@ enum CFamilyDialect: Sendable {
                 ),
                 excludedDirectories: Self.excludedDirectories,
                 entryPointMarkers: EntryPointMarkers(methodNames: ["main"]),
-                // A constructor call is a declaration (`Thing t;`, `Thing t(1);`), not a
-                // `call_expression`, so it is never recorded and a constructor has no caller edge.
-                // An `operator[]` is extracted as a method and is scanned as one.
-                deadCodeMemberKinds: [.method]
+                // Construction is recorded even though C++ spells it as a declaration
+                // (`Thing t;`, `Thing t(1);`) rather than a `call_expression`, so a constructor
+                // does have caller edges. An `operator[]` is extracted as a method and is scanned
+                // as one.
+                deadCodeMemberKinds: [.method, .initializer]
             )
         }
     }

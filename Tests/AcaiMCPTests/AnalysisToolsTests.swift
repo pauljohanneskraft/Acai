@@ -58,6 +58,27 @@ struct AnalysisToolsTests {
         }
     }
 
+    @Test func inspectRowsCarryDocumentationAndOmitItWhereThereIsNone() async throws {
+        try await MCPTestSupport.withTempDirectory { dir in
+            try MCPTestSupport.writeDocumentedSwiftSource(in: dir)
+            let value = try await MCPTestSupport.call("acai_inspect", on: .standard, path: dir)
+            let rows = try #require(value.objectValue?["types"]?.arrayValue)
+
+            let repository = try #require(
+                rows.first { $0.objectValue?["qualifiedName"]?.stringValue == "root.Repository" })
+            #expect(repository.objectValue?["documentation"]?.stringValue == "Stores and retrieves orders.")
+            let members = try #require(repository.objectValue?["members"]?.arrayValue)
+            let save = try #require(members.first { $0.objectValue?["name"]?.stringValue == "save" })
+            #expect(save.objectValue?["documentation"]?.stringValue == "Writes the order to disk.")
+            let load = try #require(members.first { $0.objectValue?["name"]?.stringValue == "load" })
+            #expect(load.objectValue?["documentation"] == nil)
+
+            let undocumented = try #require(
+                rows.first { $0.objectValue?["qualifiedName"]?.stringValue == "root.Undocumented" })
+            #expect(undocumented.objectValue?["documentation"] == nil)
+        }
+    }
+
     @Test func impactReportsBlastRadiusWithDependents() async throws {
         try await MCPTestSupport.withTempDirectory { dir in
             try MCPTestSupport.writeSampleSwiftSource(in: dir)

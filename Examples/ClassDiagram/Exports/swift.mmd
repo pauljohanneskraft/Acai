@@ -1,10 +1,12 @@
 classDiagram
+    %% The user's whole collection: every playlist in one place.
     class Swift_Library["Library"] {
         +playlists Array~Playlist~
         +init(playlists Array~Playlist~)
         +addPlaylist(playlist Playlist)
         +playlist(name String) Playlist?
     }
+    %% Shared base for every item in the library.
     class Swift_MediaItem["MediaItem"] {
         +title String
         +duration TimeInterval
@@ -12,12 +14,14 @@ classDiagram
         +init(title String, duration TimeInterval, genre Genre)
         +play()
     }
+    %% Anything the player knows how to play.
     class Swift_Playable["Playable"] {
         <<interface>>
         +title String
         +duration TimeInterval
         +play()
     }
+    %% A coarse classification for a piece of media.
     class Swift_Genre["Genre"] {
         <<enumeration>>
         pop
@@ -27,6 +31,7 @@ classDiagram
         electronic
         spokenWord
     }
+    %% Drives playback over a library. Depends on `Library` and the `Playable` protocol.
     class Swift_Player["Player"] {
         -library Library
         +nowPlaying Playable?
@@ -34,6 +39,7 @@ classDiagram
         +play(item Playable)
         +playFirstItem(name String)
     }
+    %% An ordered collection of media items the user has curated.
     class Swift_Playlist["Playlist"] {
         <<struct>>
         +name String
@@ -42,12 +48,14 @@ classDiagram
         +init(name String, items Array~MediaItem~)
         +add(item MediaItem)
     }
+    %% One episode of a podcast.
     class Swift_Podcast["Podcast"] {
         +host String
         +episodeNumber Int
         +init(title String, duration TimeInterval, host String, episodeNumber Int)
         +play()
     }
+    %% A single track by an artist.
     class Swift_Song["Song"] {
         +artist String
         +album String?
