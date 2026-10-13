@@ -79,12 +79,22 @@ class DiagramScreenBase {
         _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
     ) {
         openSettingsTab(file: file, line: line)
+        // A macOS scroll view exposes rows scrolled out of sight, so existing isn't the same as visible.
         for _ in 0..<8 {
-            if element.appears(within: .uiTransition / 8) { return }
             SystemBanners().dismiss(file: file, line: line)
-            settingsContent.swipeUp()
+            guard element.appears(within: .uiTransition / 8) else {
+                settingsContent.swipeUp()
+                continue
+            }
+            let visible = settingsContent.frame
+            let frame = element.frame
+            if visible.contains(frame) { return }
+            if frame.minY < visible.minY { settingsContent.swipeDown() } else { settingsContent.swipeUp() }
         }
         element.waitOrFail(description, file: file, line: line)
+        XCTAssertTrue(
+            settingsContent.frame.contains(element.frame), "\(description) stayed scrolled out of view",
+            file: file, line: line)
     }
 
     /// Taps exactly once — every tap creates another copy — and waits for the copy to open.
