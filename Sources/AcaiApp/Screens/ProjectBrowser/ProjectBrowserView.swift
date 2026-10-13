@@ -51,7 +51,7 @@ public struct ProjectBrowserView: View {
             return model
         }())
         self.windowAddress = windowAddress
-        _columnVisibility = State(initialValue: windowAddress == nil ? .automatic : .detailOnly)
+        _columnVisibility = State(initialValue: initialAddress == nil ? .automatic : .detailOnly)
     }
 
     public var body: some View {
@@ -126,7 +126,9 @@ public struct ProjectBrowserView: View {
         .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
         .onDisappear { browserWindows.windowClosed(windowToken) }
         .focusedSceneValue(\.browserWindowActions, windowActions)
-        .focusedSceneValue(\.newProjectAction, NewProjectAction { newProjectPresented = true })
+        .focusedSceneValue(
+            \.newProjectAction,
+            NewProjectAction(isPresentingSheet: isPresentingSheet) { newProjectPresented = true })
         #if os(macOS)
         .focusedSceneObject(quickOpenPresenter)
         .background {
@@ -202,6 +204,14 @@ public struct ProjectBrowserView: View {
         ].filter { $0 }.count
     }
     #endif
+
+    private var isPresentingSheet: Bool {
+        #if os(macOS)
+        newProjectPresented || quickOpenPresenter.isPresented
+        #else
+        presentedSheetCount > 0
+        #endif
+    }
 
     // MARK: - Sidebar (Left Column)
 

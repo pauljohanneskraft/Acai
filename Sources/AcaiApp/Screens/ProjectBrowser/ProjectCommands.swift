@@ -2,12 +2,13 @@ import SwiftUI
 
 /// Presents the New Project sheet, which `ProjectBrowserView` owns.
 struct NewProjectAction {
+    var isPresentingSheet: Bool
     var present: () -> Void
 }
 
-/// Presents the Add Codebase sheet for the project on screen, which `ProjectDetailView` owns — so the
-/// menu item is enabled exactly while a project's detail is showing.
+/// Published only while a project's detail is showing, which owns the Add Codebase sheet.
 struct AddCodebaseAction {
+    var isPresentingSheet: Bool
     var present: () -> Void
 }
 
@@ -31,9 +32,13 @@ extension FocusedValues {
     }
 }
 
-/// The two creation actions, in the File menu. `replacing:` rather than `after:` because the group's
-/// own "New Window" item already holds ⌘N, and of two items sharing a shortcut macOS fires only the
-/// first — "Open in New Window" stays, since `BrowserWindowCommands` appends it after this group.
+extension ProjectDetailView {
+    var addCodebaseAction: AddCodebaseAction {
+        AddCodebaseAction(isPresentingSheet: addingCodebase) { addingCodebase = true }
+    }
+}
+
+/// Replaces `.newItem` because its automatic "New Window" holds ⌘N; `BrowserWindowCommands` re-adds it.
 struct ProjectCommands: Commands {
     @FocusedValue(\.newProjectAction) private var newProject
     @FocusedValue(\.addCodebaseAction) private var addCodebase
@@ -45,18 +50,23 @@ struct ProjectCommands: Commands {
     }
 }
 
-/// Takes the actions as plain values: a `Commands` struct's own property wrappers are not in scope for
-/// the buttons' actions, which is why `QuickOpenMenuButton` does the same.
 struct ProjectCreationMenuButtons: View {
     let newProject: NewProjectAction?
     let addCodebase: AddCodebaseAction?
 
+    // A sheet presented over another is dropped and leaves its flag stuck, so both wait for it to close.
+    private var isPresentingSheet: Bool {
+        newProject?.isPresentingSheet == true || addCodebase?.isPresentingSheet == true
+    }
+
     var body: some View {
         Button(.app("View.ProjectCommands.NewProject")) { newProject?.present() }
             .keyboardShortcut(.newProject)
-            .disabled(newProject == nil)
+            .disabled(newProject == nil || isPresentingSheet)
+            .accessibilityIdentifier("menu.newProject")
         Button(.app("View.ProjectCommands.AddCodebase")) { addCodebase?.present() }
             .keyboardShortcut(.addCodebase)
-            .disabled(addCodebase == nil)
+            .disabled(addCodebase == nil || isPresentingSheet)
+            .accessibilityIdentifier("menu.addCodebase")
     }
 }
