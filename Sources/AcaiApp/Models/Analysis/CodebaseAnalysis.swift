@@ -9,6 +9,9 @@ struct CodebaseAnalysis: Sendable {
     let guidedRoute: [GuidedRouteStop]
     let deadCode: DeadCodeScan.Report
     let health: HealthCheck.Report
+    /// Dependency cycles between types. Counted here, on the same filtered artifact as every other
+    /// number in this report, because `quality` only reports cycles when a rule asks it to.
+    let typeCycleCount: Int
     /// Always present: the configured `quality.yml` if a check is configured and its rules load,
     /// otherwise the built-in curated smell budgets.
     let quality: QualityReport
@@ -51,6 +54,9 @@ extension CodebaseAnalysis {
             languages: artifact.standardLanguageResolver
         ).report
         self.health = HealthCheck(artifact: artifact).report
+        self.typeCycleCount = CycleFinder(
+            artifact: artifact, languageResolver: artifact.standardLanguageResolver
+        ).cycles(scope: .types).count
         self.quality = rules.report(for: artifact)
     }
 }

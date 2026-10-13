@@ -33,26 +33,17 @@ struct CodebaseInsights {
         }
     }
 
+    /// Every number comes off one `CodebaseAnalysis`, so they are all readings of the same artifact
+    /// under the same generated-type filtering rather than of two artifacts that could disagree.
     func metrics(codebaseID: UUID) async throws -> CodebaseMetricsEntity {
         let (codebase, analysis) = try await analyzed(codebaseID: codebaseID)
-        guard let artifact = browser.semanticArtifact(for: codebaseID) else {
-            throw Failure.codebaseNotIndexed(codebase.name)
-        }
-        // Counted here rather than read off `analysis`, which only reports cycles when a configured
-        // rule asks for them — the same `CycleFinder` at the same scope the CLI and MCP count with.
-        let cycles = await Task.detached(priority: .userInitiated) {
-            CycleFinder(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
-                .cycles(scope: .types)
-                .count
-        }.value
-        try Task.checkCancellation()
         return CodebaseMetricsEntity(
             id: codebase.id,
             codebaseName: codebase.name,
             typeCount: analysis.metrics.counts.totalTypes,
             moduleCount: analysis.metrics.modules.count,
             maxComplexity: analysis.metrics.types.map(\.maxCyclomaticComplexity).max() ?? 0,
-            cycleCount: cycles,
+            cycleCount: analysis.typeCycleCount,
             deadCodeCount: analysis.deadCode.candidates.count,
             healthScore: analysis.health.score)
     }
