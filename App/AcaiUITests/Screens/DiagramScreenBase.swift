@@ -89,7 +89,12 @@ class DiagramScreenBase {
             let visible = settingsContent.frame
             let frame = element.frame
             if visible.contains(frame) { return }
-            if frame.minY < visible.minY { settingsContent.swipeDown() } else { settingsContent.swipeUp() }
+            // Slow: a default swipe flings further than the visible height and overshoots both ways.
+            if frame.minY < visible.minY {
+                settingsContent.swipeDown(velocity: .slow)
+            } else {
+                settingsContent.swipeUp(velocity: .slow)
+            }
         }
         element.waitOrFail(description, file: file, line: line)
         XCTAssertTrue(
