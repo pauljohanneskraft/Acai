@@ -25,8 +25,7 @@ struct GitHubAccountSection: View {
     /// running for up to the code's ~15 minute lifetime and could still sign the user in after
     /// they'd already backed out.
     @State private var pollTask: Task<Void, Never>?
-    /// The login of the account the sign-out confirmation is asking about, so the dialog keeps
-    /// naming it while it animates away.
+    /// Held rather than read from the store, so the dialog keeps naming the account while it animates away.
     @State private var accountPendingSignOut: String?
     #if os(iOS)
     @State private var isPresentingVerificationPage = false
@@ -53,6 +52,8 @@ struct GitHubAccountSection: View {
                 accountStore.signOut()
             }
             .accessibilityIdentifier("github.signOut.confirmButton")
+            Button(.app("View.GitHubAccountSection.SignOutCancel"), role: .cancel) {}
+                .accessibilityIdentifier("github.signOut.cancelButton")
         } message: { _ in
             Text(localized: signOutConsequenceLine)
         }
@@ -156,7 +157,9 @@ struct GitHubAccountSection: View {
     }
 
     private var signOutConsequenceLine: LocalizedStringResource {
-        .app("View.GitHubAccountSection.SignOutLosesAccess \(projectStore.gitHubBackedCodebaseCount)")
+        let count = projectStore.gitHubBackedCodebaseCount
+        guard count > 0 else { return .app("View.GitHubAccountSection.SignOutAffectsNoCodebase") }
+        return .app("View.GitHubAccountSection.SignOutLosesAccess \(count)")
     }
 
     private var expiryMessage: LocalizedStringResource? {

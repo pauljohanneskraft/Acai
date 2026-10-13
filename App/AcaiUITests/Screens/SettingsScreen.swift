@@ -24,10 +24,7 @@ final class SettingsScreen {
     var licensesEmptyState: XCUIElement { app.descendants(matching: .any)["licenses.emptyState"] }
 
     #if os(macOS)
-    /// The `Settings` scene takes its size from this pane, and a sheet presented over it centres on
-    /// the window rather than on the display: a window taller than the screen puts its own
-    /// confirmation's buttons below the visible area, where nothing can tap them. Heights rather
-    /// than frames, so no assumption is made about which corner either coordinate space starts in.
+    /// A sheet centres on its window, so a window taller than the screen puts a sheet's buttons off-display.
     func assertWindowFitsTheScreen(file: StaticString = #filePath, line: UInt = #line) {
         let window = app.windows.containing(.any, identifier: "settings.accountsPane").firstMatch
         window.waitOrFail("the Settings window", file: file, line: line)
