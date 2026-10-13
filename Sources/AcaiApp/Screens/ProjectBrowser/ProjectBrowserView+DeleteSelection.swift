@@ -16,8 +16,8 @@ struct SidebarDiagramDeletion {
 extension ProjectBrowserView {
     /// ⌫ on the selected sidebar row, as `KeyboardShortcutReference.deleteSidebarItem`. A hidden
     /// button is how this app binds a key an external keyboard sends (see `FreeformDiagramView`), and
-    /// the only form the shortcut reference lists — a `List`'s `onDeleteCommand` would be macOS-only
-    /// and invisible to both the reference and an iPad.
+    /// the only form the shortcut reference lists — a `List`'s own delete callback would be
+    /// macOS-only and invisible to both the reference and an iPad.
     var deleteSelectionShortcut: some View {
         Button("") { requestDeletionOfSelection() }
             .keyboardShortcut(.deleteSidebarItem)
