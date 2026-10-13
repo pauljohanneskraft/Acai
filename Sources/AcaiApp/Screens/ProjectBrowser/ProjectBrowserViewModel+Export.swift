@@ -90,7 +90,7 @@ extension ProjectBrowserViewModel {
     func exportDOT(for codebaseID: UUID) async {
         let dot = await generateDOT(for: codebaseID)
         let name = codebase(for: codebaseID)?.name ?? "diagram"
-        pendingExport = PendingExport(filename: "\(name).txt", contentType: .plainText, data: Data(dot.utf8))
+        pendingExport = PendingExport(filename: "\(name).dot", contentType: .plainText, data: Data(dot.utf8))
     }
 
     // MARK: Mermaid Export
