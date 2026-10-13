@@ -25,6 +25,54 @@
         }
       }
     },
+    "Intent.CodebaseMetricsEntity.Subtitle %lld %lld" : {
+      "comment" : "Summary under a codebase's metrics in Shortcuts. A labelled readout, so no count agrees with a noun.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typen: %1$lld · Module: %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Types: %1$lld · Modules: %2$lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Types : %1$lld · Modules : %2$lld"
+          }
+        }
+      }
+    },
+    "Intent.CodebaseMetricsEntity.TypeName" : {
+      "comment" : "What a codebase's metrics are called where Shortcuts lists the kinds of things the app offers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase-Metriken"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase Metrics"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Métriques de codebase"
+          }
+        }
+      }
+    },
     "Intent.DiagramEntity.TypeName" : {
       "comment" : "What a diagram is called where Shortcuts lists the kinds of things the app offers.",
       "extractionState" : "manual",
@@ -121,6 +169,174 @@
         }
       }
     },
+    "Intent.GetCodebaseMetrics.Codebase" : {
+      "comment" : "The codebase the Get Metrics action reads.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        }
+      }
+    },
+    "Intent.GetCodebaseMetrics.Description" : {
+      "comment" : "What the Get Metrics action does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gibt Typen- und Modulanzahl, höchste Komplexität, Zyklen, toten Code und Health-Score einer Codebase zurück, ohne Açaí zu öffnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answers with a codebase's type and module counts, highest complexity, cycles, dead code and health score, without opening Açaí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renvoie le nombre de types et de modules, la complexité maximale, les cycles, le code mort et le score de santé d’une codebase, sans ouvrir Açaí."
+          }
+        }
+      }
+    },
+    "Intent.GetCodebaseMetrics.Title" : {
+      "comment" : "The name of the Get Metrics action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metriken abrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Metrics"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenir les métriques"
+          }
+        }
+      }
+    },
+    "Intent.GetDependents.Codebase" : {
+      "comment" : "The codebase the Get Dependents action looks in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        }
+      }
+    },
+    "Intent.GetDependents.Description" : {
+      "comment" : "What the Get Dependents action does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gibt jeden Typ zurück, der transitiv von einem Typ abhängt, ohne Açaí zu öffnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answers with every type that transitively depends on a type, without opening Açaí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renvoie chaque type qui dépend transitivement d’un type, sans ouvrir Açaí."
+          }
+        }
+      }
+    },
+    "Intent.GetDependents.Title" : {
+      "comment" : "The name of the Get Dependents action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abhängige abrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Dependents"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenir les dépendants"
+          }
+        }
+      }
+    },
+    "Intent.GetDependents.Type" : {
+      "comment" : "The type whose dependents the Get Dependents action answers with.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type"
+          }
+        }
+      }
+    },
     "Intent.OpenDiagram.Description" : {
       "comment" : "Shortcuts' description of the Open Diagram action.",
       "extractionState" : "manual",
@@ -193,6 +409,78 @@
         }
       }
     },
+    "Intent.QualityCheckResultEntity.Failed %lld" : {
+      "comment" : "Summary under a quality check that found something, in Shortcuts. A labelled readout, so no count agrees with a noun.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fehlgeschlagen · Befunde: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed · Findings: %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Échec · Résultats : %lld"
+          }
+        }
+      }
+    },
+    "Intent.QualityCheckResultEntity.Passed" : {
+      "comment" : "Summary under a quality check that found nothing, in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestanden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réussi"
+          }
+        }
+      }
+    },
+    "Intent.QualityCheckResultEntity.TypeName" : {
+      "comment" : "What a quality check's outcome is called where Shortcuts lists the kinds of things the app offers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualitätsprüfungsergebnis"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quality Check Result"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Résultat du contrôle qualité"
+          }
+        }
+      }
+    },
     "Intent.ReindexCodebase.Codebase" : {
       "comment" : "The Reindex Codebase action's parameter: which codebase to reindex.",
       "extractionState" : "manual",
@@ -261,6 +549,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Réindexer la codebase"
+          }
+        }
+      }
+    },
+    "Intent.RunQualityCheck.Codebase" : {
+      "comment" : "The codebase the Run Quality Check action checks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase"
+          }
+        }
+      }
+    },
+    "Intent.RunQualityCheck.Description" : {
+      "comment" : "What the Run Quality Check action does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Führt die Qualitätsprüfung einer Codebase aus und gibt zurück, ob sie bestanden wurde und wie viele Befunde es je Schweregrad gibt, ohne Açaí zu öffnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runs a codebase's quality check and answers with whether it passed and how many findings there are by severity, without opening Açaí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exécute le contrôle qualité d’une codebase et indique s’il a réussi et combien de résultats il y a par gravité, sans ouvrir Açaí."
+          }
+        }
+      }
+    },
+    "Intent.RunQualityCheck.Title" : {
+      "comment" : "The name of the Run Quality Check action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualitätsprüfung ausführen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run Quality Check"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exécuter le contrôle qualité"
+          }
+        }
+      }
+    },
+    "Intent.TypeEntity.TypeName" : {
+      "comment" : "What a declared type is called where Shortcuts lists the kinds of things the app offers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type"
           }
         }
       }
