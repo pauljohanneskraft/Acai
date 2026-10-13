@@ -1,9 +1,9 @@
 import XCTest
 
 /// Every distinct deletion presentation, once per platform, in one launch: the row's reveal gesture
-/// and its confirmation's Cancel, then the "Delete Codebase…"/"Delete Project…" buttons at the bottom
-/// of the detail screens. Cancel has to leave the row alone and confirming has to remove it — never
-/// closing without acting, never acting without asking.
+/// and its confirmation's Cancel, the sidebar selection's ⌫, then the "Delete Codebase…"/"Delete
+/// Project…" buttons at the bottom of the detail screens. Cancel has to leave the row alone and
+/// confirming has to remove it — never closing without acting, never acting without asking.
 @MainActor
 final class DeletionJourneyTests: UIJourneyTestCase {
     func testCancellingKeepsTheCodebaseThenItsOwnDeleteButtonRemovesIt() throws {
@@ -24,11 +24,22 @@ final class DeletionJourneyTests: UIJourneyTestCase {
     /// above has already navigated away from.
     func testDeleteProjectButtonOnItsOwnDetailScreenRemovesIt() throws {
         let projectDetail = openSeededProject(analysis: .parsed)
+        let browser = ProjectBrowserScreen(app: app)
+
+        // ⌫ on the sidebar's selection, the only Delete a keyboard reaches. Compact width has no
+        // sidebar to select in — the pushed detail screen covers it.
+        if !SnapshotPlatform().usesCompactLayout {
+            browser.deleteCodebaseWithKeyboard(
+                browser.codebaseRow(id: seeded.codebaseID),
+                until: CodebaseDetailScreen(app: app).deleteCodebaseButton)
+            browser.projectRow(id: seeded.projectID)
+                .tap("the seeded project's sidebar row", until: projectDetail.deleteProjectButton)
+        }
 
         projectDetail.deleteProjectButton.tapWhenReady("Delete Project…")
         projectDetail.deleteProjectConfirmButton.tapWhenReady("the project delete confirmation")
 
-        ProjectBrowserScreen(app: app).projectRow(id: seeded.projectID)
+        browser.projectRow(id: seeded.projectID)
             .waitForDisappearanceOrFail("the deleted project's row")
     }
 

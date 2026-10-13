@@ -56,6 +56,21 @@ final class ProjectBrowserScreen {
         row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
     }
 
+    /// The keyboard path: selects the codebase's sidebar row, presses ⌫
+    /// (`KeyboardShortcutReference.deleteSidebarItem`), then confirms. `selected` is what the row's
+    /// selection brings up, since a key acts on the sidebar's selection rather than on a row.
+    func deleteCodebaseWithKeyboard(
+        _ row: XCUIElement, until selected: XCUIElement,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        row.tap("the codebase's sidebar row", until: selected, file: file, line: line)
+        app.typeShortcut(
+            "⌫", key: XCUIKeyboardKey.delete.rawValue, modifierFlags: [],
+            until: deleteCodebaseConfirmButton, file: file, line: line)
+        deleteCodebaseConfirmButton.tapWhenReady("the codebase delete confirmation", file: file, line: line)
+        row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
+    }
+
     /// For a codebase added at test runtime (e.g. cloned from GitHub), whose `id` is a fresh random
     /// UUID the test can't predict ahead of time — matches the row's visible name label instead.
     func codebaseRow(named name: String) -> XCUIElement {
