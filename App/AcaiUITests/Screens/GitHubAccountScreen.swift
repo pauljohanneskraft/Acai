@@ -20,8 +20,8 @@ final class GitHubAccountScreen {
     var signInWithDeviceFlowButton: XCUIElement { app.buttons["github.signInWithDeviceFlowButton"] }
     var signedInRow: XCUIElement { app.descendants(matching: .any)["github.signedInRow"] }
     var signOutButton: XCUIElement { app.buttons["github.signOutButton"] }
-    /// `.firstMatch`: a system-styled `.confirmationDialog` action resolves to more than one
-    /// accessibility node, and an ambiguous query never reports hittable. Any one of them taps it.
+    /// `.firstMatch`: this identifier can resolve to more than one accessibility node for a
+    /// system-styled `.confirmationDialog` action; any one of them performs the same tap.
     var signOutConfirmButton: XCUIElement { app.buttons["github.signOut.confirmButton"].firstMatch }
 
     /// Taps Sign Out, leaving its confirmation on screen for the caller to answer.
