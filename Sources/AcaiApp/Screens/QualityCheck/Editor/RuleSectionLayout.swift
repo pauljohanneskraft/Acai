@@ -38,13 +38,13 @@ struct RuleSection<Content: View>: View {
     }
 }
 
-/// A single rule row rendered as a card with a remove button in the corner.
+/// A single rule row rendered as a card with a delete button in the corner.
 struct RuleCard<Content: View>: View {
-    let onRemove: () -> Void
+    let onDelete: () -> Void
     @ViewBuilder let content: Content
 
-    init(onRemove: @escaping () -> Void, @ViewBuilder content: () -> Content) {
-        self.onRemove = onRemove
+    init(onDelete: @escaping () -> Void, @ViewBuilder content: () -> Content) {
+        self.onDelete = onDelete
         self.content = content()
     }
 
@@ -52,11 +52,12 @@ struct RuleCard<Content: View>: View {
         VStack(alignment: .leading, spacing: .spacingS) {
             HStack {
                 Spacer()
-                Button(action: onRemove) {
+                Button(action: onDelete) {
                     Image(systemName: "minus.circle.fill").foregroundStyle(.red)
                 }
                 .buttonStyle(.plain)
                 .help(.app("View.RuleCard.Delete"))
+                .accessibilityLabel(.app("View.RuleCard.Delete"))
             }
             content
         }
