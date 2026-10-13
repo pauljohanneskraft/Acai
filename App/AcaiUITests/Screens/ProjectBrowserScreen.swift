@@ -25,8 +25,14 @@ final class ProjectBrowserScreen {
         app.descendants(matching: .any)["sidebar.project.\(id)"]
     }
 
+    /// A predicate with `firstMatch` rather than a subscript: the identifier sits on the composite
+    /// row, so it reaches the row's icon as well as its label and the subscript's uniqueness
+    /// requirement fails on iPad. An icon never reports hittable, so this matches the label — what
+    /// the row is tapped by, as `repositoryRow(remoteURL:)` below does for the same reason.
     func codebaseRow(id: String) -> XCUIElement {
-        app.descendants(matching: .any)["sidebar.codebase.\(id)"]
+        app.staticTexts.matching(
+            NSPredicate(format: "identifier == %@", "sidebar.codebase.\(id)")
+        ).firstMatch
     }
 
     /// A predicate rather than a subscript: identifier subscripts are capped at 128 characters, which a
