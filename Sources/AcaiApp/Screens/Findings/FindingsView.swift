@@ -97,8 +97,7 @@ struct FindingsView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, .spacingXXL)
             action()
-                // Bordered and large: the same empty-state action treatment `emptyProjectContentState`
-                // uses, which carries the 44pt hit target on touch.
+                // Same treatment as `emptyProjectContentState`'s actions, which gives the 44pt touch target.
                 .buttonStyle(.bordered)
                 .controlSize(.large)
         }

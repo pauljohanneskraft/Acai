@@ -34,9 +34,7 @@ final class FindingsJourneyTests: UIJourneyTestCase {
         )
         findings.kindFilter("violation").waitOrFail("the violation kind filter")
 
-        // Filtered to nothing has to offer a way back. Deselecting every kind empties the list
-        // whatever the fixture's findings happen to be, and the button only exists in that branch,
-        // so reaching it is the assertion that the empty state carries its action.
+        // Deselecting every kind empties the list whatever the fixture holds.
         for kind in ["violation", "deadCode", "health"] {
             findings.kindFilter(kind).tapWhenReady("the \(kind) kind filter")
         }
