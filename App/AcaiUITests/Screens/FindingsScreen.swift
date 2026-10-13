@@ -14,6 +14,8 @@ final class FindingsScreen {
     var noCodebasesState: XCUIElement { app.descendants(matching: .any)["findings.noCodebasesState"] }
     var notIndexedState: XCUIElement { app.descendants(matching: .any)["findings.notIndexedState"] }
 
+    var clearFiltersButton: XCUIElement { app.buttons["findings.clearFiltersButton"] }
+
     var codebaseFilter: XCUIElement { app.descendants(matching: .any)["findings.codebaseFilter"] }
     /// Not a `.buttons` query — `.toggleStyle(.button)` still renders as a native `Switch` in this
     /// accessibility tree (confirmed via a live UI-test run).
