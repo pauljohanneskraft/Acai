@@ -12,6 +12,8 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
     public let methods: [DiagramMember]
     public let enumCases: [DiagramEnumCase]
     public let genericParameters: [String]
+    /// The type's own documentation as prose. `nil` when it carries none.
+    public let documentation: String?
     /// e.g. `Sources/AcaiCore/ClassDiagram`.
     public let directoryPath: String?
     /// `<project>/<module>` when the folder holds several projects, so the grouped layout boxes each project.
@@ -35,6 +37,7 @@ public struct GeneratedDiagramNode: Identifiable, Sendable {
         )
         self.genericParameters = type.genericParameters
             .map { $0.umlDisplayString(varianceKeywords: varianceKeywords) }
+        self.documentation = type.documentation
 
         let accessFilter = config.minimumAccessLevel
 

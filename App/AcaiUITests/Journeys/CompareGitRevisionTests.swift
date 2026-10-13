@@ -23,6 +23,9 @@ final class CompareGitRevisionTests: UIJourneyTestCase {
         let findingsSummary = diagram.compareFindingsSummary.waitOrFail("the compare panel's findings summary")
         findingsSummary.waitUntilFrameStable("the compare panel's findings summary")
         validateScreenshot("ClassDiagram", state: "deltaComparison")
+        XCTAssertGreaterThanOrEqual(
+            diagram.compareRefRow("HEAD").frame.minY, diagram.compareClearButton.frame.maxY,
+            "the loaded panel overflowed and slid the ref list under the Clear button")
 
         // Clear disables the comparison directly — there's no "None" row to pick instead.
         diagram.compareClearButton.tapWhenReady("the compare panel's Clear button")

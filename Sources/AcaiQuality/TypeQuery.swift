@@ -50,6 +50,8 @@ public struct TypeQuery: Sendable {
         public var module: String
         public var access: AccessLevel
         public var stereotype: String?
+        /// The declaration's own documentation as prose. `nil` when it carries none.
+        public var documentation: String?
         public var location: SourceLocation?
         public var members: [MemberRow]
     }
@@ -59,6 +61,8 @@ public struct TypeQuery: Sendable {
         public var kind: MemberKind
         public var access: AccessLevel
         public var parameterCount: Int
+        /// The member's own documentation as prose. `nil` when it carries none.
+        public var documentation: String?
         public var location: SourceLocation?
     }
 
@@ -100,6 +104,7 @@ public struct TypeQuery: Sendable {
                 module: node.module,
                 access: node.access,
                 stereotype: node.stereotype,
+                documentation: type.documentation,
                 location: node.location,
                 members: members.map { member in
                     MemberRow(
@@ -107,6 +112,7 @@ public struct TypeQuery: Sendable {
                         kind: member.kind,
                         access: member.accessLevel,
                         parameterCount: member.parameters.count,
+                        documentation: member.documentation,
                         location: member.location)
                 })
         }

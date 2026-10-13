@@ -1,4 +1,5 @@
 classDiagram
+    %% A coarse classification for a piece of media.
     class Java_medialibrary_Genre["Genre"] {
         <<enumeration>>
         POP
@@ -8,6 +9,7 @@ classDiagram
         ELECTRONIC
         SPOKEN_WORD
     }
+    %% The user's whole collection: every playlist in one place.
     class Java_medialibrary_Library["Library"] {
         -playlists List~Playlist~
         +Library(playlists List~Playlist~)
@@ -15,6 +17,7 @@ classDiagram
         +addPlaylist(playlist Playlist) void
         +playlist(named String) Playlist
     }
+    %% Shared base for every item in the library.
     class Java_medialibrary_MediaItem["MediaItem"] {
         -title String
         -duration double
@@ -25,12 +28,14 @@ classDiagram
         +genre() Genre
         +play() void
     }
+    %% Anything the player knows how to play.
     class Java_medialibrary_Playable["Playable"] {
         <<interface>>
         ~title() String
         ~duration() double
         ~play() void
     }
+    %% Drives playback over a library. Depends on {@link Library} and the {@link Playable} interface.
     class Java_medialibrary_Player["Player"] {
         -library Library
         -nowPlaying Playable
@@ -39,6 +44,7 @@ classDiagram
         +play(item Playable) void
         +playFirstItem(playlistNamed String) void
     }
+    %% An ordered collection of media items the user has curated.
     class Java_medialibrary_Playlist["Playlist"] {
         -name String
         -items List~MediaItem~
@@ -48,12 +54,14 @@ classDiagram
         +totalDuration() double
         +add(item MediaItem) void
     }
+    %% One episode of a podcast.
     class Java_medialibrary_Podcast["Podcast"] {
         -host String
         -episodeNumber int
         +Podcast(title String, duration double, host String, episodeNumber int)
         +play() void
     }
+    %% A single track by an artist.
     class Java_medialibrary_Song["Song"] {
         -artist String
         -album String

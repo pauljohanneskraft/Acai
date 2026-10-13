@@ -1,10 +1,12 @@
 classDiagram
+    %% The user's whole collection: every playlist in one place.
     class Dart_Library["Library"] {
         +playlists List~Playlist~
         +Library(playlists List)
         +addPlaylist(playlist Playlist) void
         +playlist(named String) Playlist
     }
+    %% Shared base for every item in the library.
     class Dart_MediaItem["MediaItem"] {
         +title String
         +duration double
@@ -12,11 +14,13 @@ classDiagram
         +MediaItem(title String, duration double, genre Genre)
         +play() void
     }
+    %% Anything the player knows how to play.
     class Dart_Playable["Playable"] {
         +title String
         +duration double
         +play() void*
     }
+    %% A coarse classification for a piece of media.
     class Dart_Genre["Genre"] {
         <<enumeration>>
         pop
@@ -26,6 +30,7 @@ classDiagram
         electronic
         spokenWord
     }
+    %% Drives playback over a library. Depends on [Library] and the [Playable] interface.
     class Dart_Player["Player"] {
         +library Library
         +nowPlaying Playable?
@@ -33,6 +38,7 @@ classDiagram
         +play(item Playable) void
         +playFirstItem(playlistNamed String) void
     }
+    %% An ordered collection of media items the user has curated.
     class Dart_Playlist["Playlist"] {
         +name String
         +items List~MediaItem~
@@ -40,12 +46,14 @@ classDiagram
         +Playlist(name String, items List)
         +add(item MediaItem) void
     }
+    %% One episode of a podcast.
     class Dart_Podcast["Podcast"] {
         +host String
         +episodeNumber int
         +Podcast(title String, duration double, host String, episodeNumber int)
         +play() void
     }
+    %% A single track by an artist.
     class Dart_Song["Song"] {
         +artist String
         +album String?
