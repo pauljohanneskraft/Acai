@@ -29,6 +29,24 @@ struct TypeQueryTests {
         CodeArtifact(metadata: .init(sourceLanguage: .swift), types: types)
     }
 
+    @Test func rowsCarryTheDocumentationTheParserCapturedAndNothingWhereThereIsNone() throws {
+        let documented = TypeDeclaration(
+            id: "Repository", name: "Repository", qualifiedName: "Repository",
+            kind: .class, accessLevel: .public,
+            members: [
+                Member(name: "save", kind: .method, accessLevel: .public, documentation: "Writes the order."),
+                Member(name: "load", kind: .method, accessLevel: .public)
+            ],
+            documentation: "Stores and retrieves orders.")
+        let rows = TypeQuery(artifact: artifact([documented, type("Bare")])).rows
+
+        let repository = try #require(rows.first { $0.qualifiedName == "Repository" })
+        #expect(repository.documentation == "Stores and retrieves orders.")
+        #expect(repository.members.first { $0.name == "save" }?.documentation == "Writes the order.")
+        #expect(repository.members.first { $0.name == "load" }?.documentation == nil)
+        #expect(rows.first { $0.qualifiedName == "Bare" }?.documentation == nil)
+    }
+
     @Test func selectorNarrowsTypesAndRowsCarryLocations() {
         let service = type("Service", kind: .class, members: [method("run", params: 1)])
         let proto = type("Runnable", kind: .protocol)

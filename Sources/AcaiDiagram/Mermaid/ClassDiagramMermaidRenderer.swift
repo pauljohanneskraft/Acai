@@ -58,6 +58,11 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
         let config = options.languages.configuration(for: type)
         let name = displayName(for: type, config: config).mermaidLabelEscaped
         let header = "    class \(safeID)[\"\(name)\"]"
+        // The type's documentation rides along as comments, since a class label has no room for prose.
+        let documentation = type.documentation.map { prose in
+            prose.split(separator: "\n", omittingEmptySubsequences: false)
+                .map { $0.isEmpty ? "    %%" : "    %% \($0)" }
+        } ?? []
 
         var body: [String] = []
         if let stereotype = stereotypeString(for: type, config: config) {
@@ -70,8 +75,8 @@ public struct ClassDiagramMermaidRenderer: MermaidRenderer {
             body += type.enumCases.map { "        \($0.name)" }
         }
 
-        guard !body.isEmpty else { return [header] }
-        return [header + " {"] + body + ["    }"]
+        guard !body.isEmpty else { return documentation + [header] }
+        return documentation + [header + " {"] + body + ["    }"]
     }
 
     private func displayName(for type: TypeDeclaration, config: LanguageConfiguration) -> String {

@@ -76,7 +76,8 @@ struct QuickOpenIndexBuilder: Sendable {
                 subtitle: "\(project.title) — \(codebase.name)",
                 projectID: project.id,
                 codebaseID: codebase.id,
-                reference: .type(id: type.id)
+                reference: .type(id: type.id),
+                documentation: type.documentation
             ))
             for member in type.members where member.isMethod {
                 entries.append(QuickOpenEntry(

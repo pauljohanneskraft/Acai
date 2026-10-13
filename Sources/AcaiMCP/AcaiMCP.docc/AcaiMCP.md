@@ -233,6 +233,8 @@ Legal values for `kind`, `minAccess` and `memberKind` are the same lists the CLI
 
 Result shape: `{ "types": [<TypeQuery.TypeRow>], "health": <HealthCheck.Summary> }`, or with `enums: true`: `{ "enums": [<EnumInventory.Entry>], "health": <HealthCheck.Summary> }`.
 
+Each type, member and enum case carries the `documentation` the source declared, as prose with the comment markers stripped. The field is absent where a declaration carries none, so it is never a placeholder to filter out.
+
 ### `acai_dependents`
 
 The blast radius of a type: every type that transitively depends on it, with `file:line`. Use it before refactoring or deleting something.

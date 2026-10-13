@@ -50,6 +50,26 @@ struct QuickOpenIndexBuilderTests {
         #expect(moduleEntry?.reference == .module(name: "Widgets"))
     }
 
+    @Test func aTypeEntryCarriesItsOwnDocumentationAndNoOtherEntryDoes() {
+        let codebaseID = UUID()
+        var documented = TypeDeclaration(
+            id: "Widget", name: "Widget", qualifiedName: "Widget", kind: .class, accessLevel: .public,
+            members: [member("doWork")])
+        documented.documentation = "Renders one dashboard tile."
+        let bare = TypeDeclaration(id: "Bare", name: "Bare", qualifiedName: "Bare", kind: .class, accessLevel: .public)
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: []), types: [documented, bare])
+        let project = Project(
+            id: UUID(), title: "Demo", subtitle: "",
+            codebases: [Codebase(id: codebaseID, name: "Demo Codebase", directoryPath: "/tmp/demo")])
+        let entries = QuickOpenIndexBuilder(
+            projects: [project], artifacts: [codebaseID: artifact], generatedDiagrams: [:], freeformDiagrams: [:]
+        ).entries()
+
+        #expect(entries.first { $0.reference == .type(id: "Widget") }?.documentation == "Renders one dashboard tile.")
+        #expect(entries.filter { $0.documentation != nil }.count == 1)
+    }
+
     @Test func indexesGeneratedAndFreeformDiagramsByName() {
         let projectID = UUID()
         let codebaseID = UUID()

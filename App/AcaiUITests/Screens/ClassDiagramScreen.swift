@@ -6,6 +6,27 @@ final class ClassDiagramScreen: DiagramScreenBase {
         app.descendants(matching: .any)["diagram.typeNode.\(name)"]
     }
 
+    /// A type node as VoiceOver reads it: labelled with its name and carrying a non-empty description.
+    func describedTypeNode(named name: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier == %@ AND label == %@ AND value != nil AND value != ''",
+            "diagram.typeNode.\(name)", name
+        )).firstMatch
+    }
+
+    /// Matched by its spoken label, which names both ends and what kind of relationship it is. An edge is
+    /// drawn rather than a control, so macOS exposes no accessibility value for it — the label is all
+    /// VoiceOver gets, and `describing` proves the details reached it.
+    func relationship(from source: String, to target: String, describing kind: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: """
+                identifier BEGINSWITH 'diagram.edge.' AND label CONTAINS %@ AND label CONTAINS %@ \
+                AND label CONTAINS %@
+                """,
+            source, target, kind
+        )).firstMatch
+    }
+
     // MARK: - Focus (Settings tab)
 
     var focusToggle: XCUIElement { app.descendants(matching: .any)["diagram.focus.toggle"].firstMatch }
