@@ -50,11 +50,16 @@ extension StateDiagramView {
         )
         .frame(width: node.rect.width, height: node.rect.height)
         .deltaBadge(viewModel.stateDeltaStatus(node.id))
+        .diagramNodeAccessibility(
+            DiagramElementDescription(state: node.state, delta: viewModel.stateDeltaStatus(node.id)),
+            identifier: "diagram.stateNode.\(node.state.name)",
+            isSelected: viewModel.selectedNodeIDs.contains(node.id),
+            onSelect: { viewModel.selectNode(node.id, extending: false) },
+            onShowDetails: { showDetails(forState: node.id) }
+        )
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
-            viewModel.selectNode(node.id, extending: false)
-            sidebarTab = .inspector
-            showSidebar = true
+            showDetails(forState: node.id)
         }
         .diagramNodeInteraction(
             id: node.id,
@@ -92,17 +97,45 @@ extension StateDiagramView {
                 edge.label.map { Text(.app("View.StateDiagramView.TransitionLabel \($0)")) }
                     ?? Text(.app("View.StateDiagramView.Transition"))
             )
-            .accessibilityAddTraits(.isButton)
+            .accessibilityValue(Text(verbatim: transitionDescription(edge).summary))
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { toggleTransitionSelection(edge.id) }
+            .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
+                showDetails(forTransition: edge.id)
+            }
             .onTapGesture(count: 2) {
-                viewModel.clearSelection()
-                viewModel.selectedTransitionID = edge.id
-                sidebarTab = .inspector
-                showSidebar = true
+                showDetails(forTransition: edge.id)
             }
             .onTapGesture(count: 1) {
-                let newSelection: Int? = (viewModel.selectedTransitionID == edge.id) ? nil : edge.id
-                viewModel.clearSelection()
-                viewModel.selectedTransitionID = newSelection
+                toggleTransitionSelection(edge.id)
             }
+    }
+
+    private func transitionDescription(_ edge: StateLayoutModel.EdgeLayout) -> DiagramElementDescription {
+        let transitions = viewModel.diagram?.transitions ?? []
+        return DiagramElementDescription(
+            edgeFrom: viewModel.stateName(edge.from) ?? edge.from,
+            to: viewModel.stateName(edge.to) ?? edge.to,
+            details: [],
+            delta: transitions.indices.contains(edge.id) ? viewModel.transitionDeltaStatus(transitions[edge.id]) : nil)
+    }
+
+    private func toggleTransitionSelection(_ id: Int) {
+        let newSelection: Int? = (viewModel.selectedTransitionID == id) ? nil : id
+        viewModel.clearSelection()
+        viewModel.selectedTransitionID = newSelection
+    }
+
+    private func showDetails(forTransition id: Int) {
+        viewModel.clearSelection()
+        viewModel.selectedTransitionID = id
+        sidebarTab = .inspector
+        showSidebar = true
+    }
+
+    private func showDetails(forState id: String) {
+        viewModel.selectNode(id, extending: false)
+        sidebarTab = .inspector
+        showSidebar = true
     }
 }
