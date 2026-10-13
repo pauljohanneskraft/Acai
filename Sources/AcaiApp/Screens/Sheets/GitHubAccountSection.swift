@@ -53,8 +53,6 @@ struct GitHubAccountSection: View {
                 accountStore.signOut()
             }
             .accessibilityIdentifier("github.signOut.confirmButton")
-            Button(.app("View.GitHubAccountSection.CancelSignOut"), role: .cancel) {}
-                .accessibilityIdentifier("github.signOut.cancelButton")
         } message: { _ in
             Text(localized: signOutConsequenceLine)
         }

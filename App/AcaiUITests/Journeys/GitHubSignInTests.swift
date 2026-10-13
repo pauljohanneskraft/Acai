@@ -24,9 +24,11 @@ final class GitHubSignInTests: UIJourneyTestCase {
         github.signedInRow.waitOrFail("the signed-in account row")
         XCTAssertTrue(app.staticTexts[fixtureLogin].firstMatch.exists)
 
-        github.cancelSignOut()
-        github.signedInRow.waitOrFail("the signed-in account row, after cancelling sign-out")
-
-        github.signOut()
+        // The confirmation having to be there to answer is what proves Sign Out asks first: a
+        // Sign Out that acted on one tap would leave nothing to confirm. The row underneath is
+        // not asserted on while the dialog is up — a modal presentation takes the content behind
+        // it out of the accessibility tree on iOS.
+        github.openSignOutConfirmation()
+        github.confirmSignOut()
     }
 }

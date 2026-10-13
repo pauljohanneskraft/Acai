@@ -20,20 +20,18 @@ final class GitHubAccountScreen {
     var signInWithDeviceFlowButton: XCUIElement { app.buttons["github.signInWithDeviceFlowButton"] }
     var signedInRow: XCUIElement { app.descendants(matching: .any)["github.signedInRow"] }
     var signOutButton: XCUIElement { app.buttons["github.signOutButton"] }
-    var signOutConfirmButton: XCUIElement { app.buttons["github.signOut.confirmButton"] }
-    var signOutCancelButton: XCUIElement { app.buttons["github.signOut.cancelButton"] }
+    /// `.firstMatch`: a system-styled `.confirmationDialog` action resolves to more than one
+    /// accessibility node, and an ambiguous query never reports hittable. Any one of them taps it.
+    var signOutConfirmButton: XCUIElement { app.buttons["github.signOut.confirmButton"].firstMatch }
 
-    /// Opens the sign-out confirmation and backs out of it, leaving the account signed in.
-    func cancelSignOut(file: StaticString = #filePath, line: UInt = #line) {
+    /// Taps Sign Out, leaving its confirmation on screen for the caller to answer.
+    func openSignOutConfirmation(file: StaticString = #filePath, line: UInt = #line) {
         signOutButton.tapWhenReady("Sign Out", file: file, line: line)
-        signOutCancelButton.tapWhenReady("Cancel, in the sign-out confirmation", file: file, line: line)
-        signOutCancelButton.waitForDisappearanceOrFail("the sign-out confirmation", file: file, line: line)
+        signOutConfirmButton.waitOrFail("the sign-out confirmation", file: file, line: line)
     }
 
-    /// Sign Out asks first — the confirmation names the account and how many codebases stop
-    /// pulling — so the signed-in row only goes away once its destructive button is tapped.
-    func signOut(file: StaticString = #filePath, line: UInt = #line) {
-        signOutButton.tapWhenReady("Sign Out", file: file, line: line)
+    /// Answers the confirmation with its destructive button, which is what actually signs out.
+    func confirmSignOut(file: StaticString = #filePath, line: UInt = #line) {
         signOutConfirmButton.tapWhenReady("Sign Out, in the confirmation", file: file, line: line)
         signedInRow.waitForDisappearanceOrFail("the signed-in account row", file: file, line: line)
     }
