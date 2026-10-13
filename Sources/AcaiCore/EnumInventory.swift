@@ -4,6 +4,8 @@
 public struct EnumInventory: Sendable {
     public struct Entry: Codable, Equatable, Sendable {
         public var type: String
+        /// The declaration's own documentation as prose. `nil` when it carries none.
+        public var documentation: String?
         public var location: SourceLocation?
         public var cases: [Case]
     }
@@ -12,6 +14,8 @@ public struct EnumInventory: Sendable {
         public var name: String
         public var rawValue: String?
         public var associatedValues: [String]
+        /// The case's own documentation as prose. `nil` when it carries none.
+        public var documentation: String?
     }
 
     private let artifact: CodeArtifact
@@ -28,6 +32,7 @@ public struct EnumInventory: Sendable {
             .map { type in
                 Entry(
                     type: type.qualifiedName,
+                    documentation: type.documentation,
                     location: type.location,
                     cases: type.enumCases.map { $0.inventoryDescription })
             }
@@ -46,6 +51,7 @@ extension EnumCase {
                 let type = parameter.type?.name ?? "_"
                 let label = parameter.externalName ?? parameter.internalName
                 return label.isEmpty || label == "_" ? type : "\(label): \(type)"
-            })
+            },
+            documentation: documentation)
     }
 }

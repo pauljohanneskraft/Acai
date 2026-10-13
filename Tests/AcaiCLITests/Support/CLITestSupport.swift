@@ -123,6 +123,33 @@ enum CLITestSupport {
         return fileURL
     }
 
+    /// Documented declarations beside undocumented ones.
+    @discardableResult
+    static func writeDocumentedSwiftSource(in directory: URL) throws -> URL {
+        let source = """
+        /// Stores and retrieves orders.
+        class Repository {
+            /// Writes the order to disk.
+            func save() {}
+            func load() {}
+        }
+
+        class Undocumented {
+            func run() {}
+        }
+
+        /// A playing card's suit.
+        enum Suit {
+            /// The red one.
+            case hearts
+            case spades
+        }
+        """
+        let fileURL = directory.appendingPathComponent("Documented.swift")
+        try source.write(to: fileURL, atomically: true, encoding: .utf8)
+        return fileURL
+    }
+
     /// A source with a real parse diagnostic (an unclosed brace), driving `HealthCheck` below
     /// `HealthCheck.trustThreshold` so a low-trust `health` field/warning is exercised.
     @discardableResult
