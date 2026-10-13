@@ -80,6 +80,10 @@ class DiagramScreenBase {
     ) {
         openSettingsTab(file: file, line: line)
         // A macOS scroll view exposes rows scrolled out of sight, so existing isn't the same as visible.
+        #if os(macOS)
+        var wheelDirection: CGFloat = 1
+        var lastOffset: CGFloat?
+        #endif
         for _ in 0..<8 {
             SystemBanners().dismiss(file: file, line: line)
             guard element.appears(within: .uiTransition / 8) else {
@@ -89,12 +93,21 @@ class DiagramScreenBase {
             let visible = settingsContent.frame
             let frame = element.frame
             if visible.contains(frame) { return }
+            #if os(macOS)
+            // A swipe barely moves a macOS scroll view; a wheel scroll by the offset centres the element,
+            // and reverses if the last one carried it further away.
+            let offset = visible.midY - frame.midY
+            if let lastOffset, abs(offset) >= abs(lastOffset) { wheelDirection = -wheelDirection }
+            lastOffset = offset
+            settingsContent.scroll(byDeltaX: 0, deltaY: wheelDirection * offset)
+            #else
             // Slow: a default swipe flings further than the visible height and overshoots both ways.
             if frame.minY < visible.minY {
                 settingsContent.swipeDown(velocity: .slow)
             } else {
                 settingsContent.swipeUp(velocity: .slow)
             }
+            #endif
         }
         element.waitOrFail(description, file: file, line: line)
         XCTAssertTrue(
