@@ -71,6 +71,9 @@ extension KeyboardShortcutReference {
     static let cancelPlacement = KeyboardShortcutReference(
         id: "cancelPlacement", shortcut: .cancelAction,
         name: .app("KeyboardShortcutReference.CancelPlacement"))
+    static let cancelRename = KeyboardShortcutReference(
+        id: "cancelRename", shortcut: .cancelAction,
+        name: .app("KeyboardShortcutReference.CancelRename"))
     static let confirmDialog = KeyboardShortcutReference(
         id: "confirmDialog", shortcut: .defaultAction,
         name: .app("KeyboardShortcutReference.ConfirmDialog"))
@@ -117,6 +120,8 @@ extension KeyboardShortcutReference {
             id: "dialogs", title: .app("KeyboardShortcutReference.Dialogs"),
             shortcuts: [.confirmDialog, .cancelDialog]),
         Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
+        Group(
+            id: "sidebar", title: .app("KeyboardShortcutReference.Sidebar"), shortcuts: [.cancelRename]),
         Group(
             id: "windows", title: .app("KeyboardShortcutReference.Windows"),
             shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),

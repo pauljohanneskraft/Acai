@@ -3733,6 +3733,28 @@
         }
       }
     },
+    "KeyboardShortcutReference.CancelRename" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen abbrechen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel Renaming"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler le renommage"
+          }
+        }
+      }
+    },
     "KeyboardShortcutReference.Canvas" : {
       "localizations" : {
         "de" : {
@@ -4015,6 +4037,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Navigation"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.Sidebar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seitenleiste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sidebar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barre latérale"
           }
         }
       }

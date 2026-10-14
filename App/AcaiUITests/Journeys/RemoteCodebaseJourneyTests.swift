@@ -41,18 +41,16 @@ final class RemoteCodebaseJourneyTests: UIJourneyTestCase {
 
         // The sheet never asked for a name — the codebase took the remote's. Renaming its row in
         // place is what replaces the name field it no longer has.
-        returnToSidebar(browser: browser, detail: detail)
+        returnToSidebar(browser: browser)
         browser.renameCodebase(from: "TeamRemote", to: "Team Checkout")
     }
 
-    /// Compact width covers the sidebar with the pushed project and codebase screens; regular width
-    /// keeps it on screen throughout.
-    private func returnToSidebar(browser: ProjectBrowserScreen, detail: ProjectDetailScreen) {
+    /// `ProjectDetailView` and `CodebaseDetailView` share one `NavigationSplitView` detail slot, so
+    /// one pop reaches the sidebar from either; regular width keeps it on screen throughout.
+    private func returnToSidebar(browser: ProjectBrowserScreen) {
         guard SnapshotPlatform().usesCompactLayout else { return }
-        browser.backButton.tap(
-            "the back button to the project", until: detail.codebaseRow(id: seeded.codebaseID))
-        browser.backButton.tap(
-            "the back button to the sidebar", until: browser.projectRow(id: seeded.projectID))
+        browser.backButton.tapWhenReady("the back button to the sidebar")
+        browser.projectRow(id: seeded.projectID).waitOrFail("the sidebar")
     }
 
     /// A repository GitHub reports as large asks before cloning; the latest-snapshot clone says so,

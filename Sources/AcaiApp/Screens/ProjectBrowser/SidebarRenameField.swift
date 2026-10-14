@@ -24,22 +24,12 @@ struct SidebarRenameField: View {
             if !name.isEmpty { rename(name) }
             finish()
         }
-        .onCancelKey(finish)
-    }
-}
-
-private extension View {
-    /// ⎋ while the field is up. macOS routes Escape through `onExitCommand`, which iOS doesn't have
-    /// — there a hardware keyboard's Escape arrives as a key press instead.
-    @ViewBuilder
-    func onCancelKey(_ action: @escaping () -> Void) -> some View {
-        #if os(macOS)
-        onExitCommand(perform: action)
-        #else
-        onKeyPress(.escape) {
-            action()
-            return .handled
+        .background {
+            // Hidden button so Escape (macOS, external keyboard on iPad) backs out of the rename,
+            // the way `FreeformDiagramView` backs out of placement.
+            Button("") { finish() }
+                .keyboardShortcut(.cancelRename)
+                .hidden()
         }
-        #endif
     }
 }
