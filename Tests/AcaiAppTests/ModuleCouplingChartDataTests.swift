@@ -63,6 +63,27 @@ struct ModuleCouplingChartDataTests {
         #expect(data.rankedByDistance.map(\.name) == ["Far", "Mid", "Close"])
     }
 
+    @Test("A codebase that resolved no modules says exactly that")
+    func noModulesIsItsOwnReason() {
+        #expect(ModuleCouplingChartData(modules: []).emptyReason == .noModules)
+    }
+
+    @Test("A lone module names itself, since coupling has nothing to compare it against")
+    func singleModuleNamesItself() throws {
+        let data = ModuleCouplingChartData(
+            modules: [try module(name: "Only", instability: 0, abstractness: 0.5, distance: 0.5)])
+        #expect(data.emptyReason == .singleModule(name: "Only"))
+    }
+
+    @Test("Two modules are enough to plot, so there is no reason to report")
+    func twoModulesArePlottable() throws {
+        let data = ModuleCouplingChartData(modules: [
+            try module(name: "A", instability: 0.2, abstractness: 0.8, distance: 0),
+            try module(name: "B", instability: 0.8, abstractness: 0.2, distance: 0)
+        ])
+        #expect(data.emptyReason == nil)
+    }
+
     @Test("Every module produces exactly one point")
     func onePointPerModule() throws {
         let data = ModuleCouplingChartData(modules: [

@@ -17249,6 +17249,28 @@
         }
       }
     },
+    "View.HotspotChartView.Retry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayer"
+          }
+        }
+      }
+    },
     "View.HotspotChartView.Sidebar" : {
       "localizations" : {
         "de" : {
@@ -18041,24 +18063,112 @@
         }
       }
     },
-    "View.ModuleCouplingChartView.NoModulesPlotYet" : {
+    "View.ModuleCouplingChartView.NoModulesResolved" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Module zum Darstellen — Codebase zuerst neu indizieren."
+            "value" : "Keine Module zum Darstellen – diese Codebase wurde noch nicht indiziert, oder die Indizierung hat aus ihren Dateipfaden keine Module aufgelöst."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No modules to plot yet — reindex the codebase first."
+            "value" : "No modules to plot — this codebase hasn't been indexed yet, or indexing resolved no modules from its file paths."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucun module à tracer pour le moment — réindexez d'abord la codebase."
+            "value" : "Aucun module à tracer — cette codebase n'a pas encore été indexée, ou l'indexation n'a résolu aucun module à partir de ses chemins de fichiers."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.OnlyOneModule %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ ist hier das einzige Modul. Kopplung misst, wie Module voneinander abhängen – bei einem einzigen Modul gibt es also nichts darzustellen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” is the only module here. Coupling measures how modules depend on each other, so a single module has nothing to plot."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » est le seul module ici. Le couplage mesure la façon dont les modules dépendent les uns des autres : un module unique n'a donc rien à tracer."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.Reindex" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu indizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindex"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexer"
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.ReindexFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.Reindexing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird indiziert…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexation…"
           }
         }
       }

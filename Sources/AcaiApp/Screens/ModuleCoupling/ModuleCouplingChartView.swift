@@ -13,15 +13,19 @@ import AcaiCore
 /// in the ranked legend list and in each point's accessibility value.
 struct ModuleCouplingChartView: View {
     let diagram: GeneratedDiagram
+    let codebase: Codebase
     private let data: ModuleCouplingChartData
 
+    @EnvironmentObject private var model: ProjectBrowserViewModel
     @State private var showSidebar = false
+    @State private var reindexPhase: AsyncOperationPhase = .idle
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
-    init(diagram: GeneratedDiagram, artifact: CodeArtifact) {
+    init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
+        self.codebase = codebase
         self.data = ModuleCouplingChartData(modules: artifact.computeMetrics().modules)
     }
 
@@ -78,8 +82,8 @@ struct ModuleCouplingChartView: View {
 
     private var chartContent: some View {
         Group {
-            if data.points.isEmpty {
-                emptyState
+            if let reason = data.emptyReason {
+                emptyState(reason)
             } else {
                 chart
                     .padding()
@@ -88,14 +92,57 @@ struct ModuleCouplingChartView: View {
         }
     }
 
-    private var emptyState: some View {
+    /// Only the no-modules case has an action: a single module is what the codebase *is*, so
+    /// reindexing it would resolve the same one module again.
+    private func emptyState(_ reason: ModuleCouplingChartData.EmptyReason) -> some View {
         VStack(spacing: .spacingM) {
             Image(systemName: "chart.xyaxis.line").font(.system(size: 28)).foregroundStyle(.secondary)
-            Text(.app("View.ModuleCouplingChartView.NoModulesPlotYet"))
+            Text(localized: text(for: reason))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            if reason == .noModules {
+                reindexButton
+                AsyncOperationStatusView(identifierPrefix: "moduleCoupling.reindex", phase: reindexPhase)
+            }
         }
+        .padding(.spacingXL)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("moduleCoupling.emptyState")
+    }
+
+    private func text(for reason: ModuleCouplingChartData.EmptyReason) -> LocalizedStringResource {
+        switch reason {
+        case .noModules:
+            .app("View.ModuleCouplingChartView.NoModulesResolved")
+        case .singleModule(let name):
+            .app("View.ModuleCouplingChartView.OnlyOneModule \(name)")
+        }
+    }
+
+    private var reindexButton: some View {
+        Button(action: reindex) {
+            Label(.app("View.ModuleCouplingChartView.Reindex"), systemImage: "arrow.clockwise")
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .disabled(reindexPhase.isInFlight)
+        .accessibilityIdentifier("moduleCoupling.reindexButton")
+        .contextMenu {
+            Button(action: reindex) {
+                Label(.app("View.ModuleCouplingChartView.Reindex"), systemImage: "arrow.clockwise")
+            }
+        }
+    }
+
+    private func reindex() {
+        guard !reindexPhase.isInFlight else { return }
+        reindexPhase = .loading(.app("View.ModuleCouplingChartView.Reindexing"))
+        Task {
+            let outcome = await model.editing.reindex(codebaseID: codebase.id)
+            reindexPhase = AsyncOperationPhase(
+                outcome, failure: .app("View.ModuleCouplingChartView.ReindexFailed"))
+        }
     }
 
     private var chart: some View {
