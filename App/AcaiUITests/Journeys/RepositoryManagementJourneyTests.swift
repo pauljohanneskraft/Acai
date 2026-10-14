@@ -12,7 +12,8 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         }
         GitHubAccountScreen(app: app).signInWithToken(through: browser)
         // `main` for both on purpose: the point is two codebases sharing one clone, not two branches.
-        addCodebases([("fixture-repo", "main"), ("fixture-repo-2", "main")], browser: browser)
+        // Both take the repository's own name, so the second one is numbered.
+        addCodebases([("fixture-repo", "main"), ("fixture-repo 2", "main")], browser: browser)
 
         let repositoryRow = browser.repositoryRow(remoteURL: remoteURL)
         let repository = RepositoryDetailScreen(app: app)
@@ -25,12 +26,12 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         repository.loadedValue(identifier: "repository.lastFetchedValue", excluding: "Never")
             .waitOrFail("the clone's last-fetched time")
         repository.referencingCodebase(named: "fixture-repo").waitOrFail("the first referencing codebase")
-        repository.referencingCodebase(named: "fixture-repo-2").waitOrFail("the second referencing codebase")
+        repository.referencingCodebase(named: "fixture-repo 2").waitOrFail("the second referencing codebase")
 
         returnToSidebar(browser: browser)
-        browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-repo-2"))
+        browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-repo 2"))
         repositoryRow.tap("the repository's sidebar row", until: repository.referencingCodebase(named: "fixture-repo"))
-        repository.referencingCodebase(named: "fixture-repo-2")
+        repository.referencingCodebase(named: "fixture-repo 2")
             .waitForDisappearanceOrFail("the deleted codebase in the repository's list")
     }
 
@@ -47,7 +48,7 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
             "the seeded project's sidebar row", until: detail.codebaseRow(id: seeded.codebaseID)
         )
         for codebase in codebases {
-            detail.addFixtureGitHubCodebase(named: codebase.name, ref: codebase.ref)
+            detail.addFixtureGitHubCodebase(expecting: codebase.name, ref: codebase.ref)
         }
         returnToSidebar(browser: browser)
     }

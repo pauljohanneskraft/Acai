@@ -86,55 +86,77 @@ extension ProjectBrowserView {
     fileprivate func codebaseRows(project: Project) -> some View {
         let sortedCodebases = project.codebases.sorted(byLocalizedName: \.name)
         ForEach(sortedCodebases) { codebase in
-            SidebarCodebaseRow(activityCenter: model.store.activityCenter, codebase: codebase)
-                .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
-                .help(codebase.name)
-                .accessibilityIdentifier("sidebar.codebase.\(codebase.id)")
-                .contextMenu {
-                    addressMenuItems(for: .codebase(codebase.id), idPrefix: "sidebar.codebase.\(codebase.id)")
-                    Divider()
+            if renamingCodebaseID == codebase.id {
+                renameField(identifier: "sidebar.codebase.renameField") {
+                    model.editing.updateCodebase(id: codebase.id, name: $0)
+                }
+            } else {
+                codebaseRow(codebase: codebase)
+            }
+        }
+    }
+
+    fileprivate func codebaseRow(codebase: Codebase) -> some View {
+        SidebarCodebaseRow(activityCenter: model.store.activityCenter, codebase: codebase)
+            .tag(ProjectBrowserViewModel.Selection.codebase(codebase.id))
+            .help(codebase.name)
+            .accessibilityIdentifier("sidebar.codebase.\(codebase.id)")
+            .contextMenu {
+                addressMenuItems(for: .codebase(codebase.id), idPrefix: "sidebar.codebase.\(codebase.id)")
+                Divider()
+                Button {
+                    Task { await model.editing.reindex(codebaseID: codebase.id) }
+                } label: {
+                    Label(.app("View.ProjectBrowserView.Reindex"), systemImage: "arrow.clockwise")
+                }
+                renameMenuItem(name: codebase.name) { renamingCodebaseID = codebase.id }
+                    .accessibilityIdentifier("sidebar.codebase.\(codebase.id).rename")
+                Divider()
+                Button(role: .destructive) {
+                    codebasePendingDeletion = codebase
+                } label: {
+                    Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
+                }
+            }
+            .swipeActions(edge: .leading) {
+                if horizontalSizeClass == .compact {
                     Button {
                         Task { await model.editing.reindex(codebaseID: codebase.id) }
                     } label: {
                         Label(.app("View.ProjectBrowserView.Reindex"), systemImage: "arrow.clockwise")
                     }
-                    Divider()
-                    Button(role: .destructive) {
+                    .tint(.blue)
+                }
+            }
+            .swipeActions(edge: .trailing) {
+                if horizontalSizeClass == .compact {
+                    // Not `role: .destructive`: `List` would animate the row out before the confirmation.
+                    Button {
                         codebasePendingDeletion = codebase
                     } label: {
                         Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
                     }
+                    .tint(.red)
                 }
-                .swipeActions(edge: .leading) {
-                    if horizontalSizeClass == .compact {
-                        Button {
-                            Task { await model.editing.reindex(codebaseID: codebase.id) }
-                        } label: {
-                            Label(.app("View.ProjectBrowserView.Reindex"), systemImage: "arrow.clockwise")
-                        }
-                        .tint(.blue)
-                    }
-                }
-                .swipeActions(edge: .trailing) {
-                    if horizontalSizeClass == .compact {
-                        // Not `role: .destructive`: `List` would animate the row out before the confirmation.
-                        Button {
-                            codebasePendingDeletion = codebase
-                        } label: {
-                            Label(.app("View.ProjectBrowserView.Delete"), systemImage: "trash")
-                        }
-                        .tint(.red)
-                    }
-                }
+            }
+    }
+
+    /// Starting a rename seeds the field with the current name, so ⏎ on an untouched field is a no-op.
+    fileprivate func renameMenuItem(name: String, begin: @escaping () -> Void) -> some View {
+        Button {
+            renamingText = name
+            begin()
+        } label: {
+            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
         }
     }
 
-    fileprivate func renameMenuItem(diagramID: UUID, name: String) -> some View {
-        Button {
-            renamingText = name
-            renamingDiagramID = diagramID
-        } label: {
-            Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
+    fileprivate func renameField(
+        identifier: String, rename: @escaping (String) -> Void
+    ) -> some View {
+        SidebarRenameField(text: $renamingText, identifier: identifier, rename: rename) {
+            renamingCodebaseID = nil
+            renamingDiagramID = nil
         }
     }
 
@@ -144,15 +166,9 @@ extension ProjectBrowserView {
             .sorted(byLocalizedName: \.name)
         ForEach(generatedDiagrams) { diagram in
             if renamingDiagramID == diagram.id {
-                TextField(text: $renamingText) {
-                    Text(.app("View.ProjectBrowserView.Name"))
+                renameField(identifier: "sidebar.generatedDiagram.renameField") {
+                    model.diagrams.rename(diagram.id, name: $0)
                 }
-                .onSubmit {
-                    model.diagrams.rename(diagram.id, name: renamingText)
-                    renamingDiagramID = nil
-                }
-                .textFieldStyle(.roundedBorder)
-                .font(.callout)
             } else {
                 Label(diagram.name, systemImage: diagram.type.systemImage)
                     .tag(ProjectBrowserViewModel.Selection.generatedDiagram(diagram.id))
@@ -161,7 +177,7 @@ extension ProjectBrowserView {
                         addressMenuItems(
                             for: .generatedDiagram(diagram.id), idPrefix: "sidebar.generatedDiagram.\(diagram.id)")
                         Divider()
-                        renameMenuItem(diagramID: diagram.id, name: diagram.name)
+                        renameMenuItem(name: diagram.name) { renamingDiagramID = diagram.id }
                         Button {
                             if let id = model.diagrams.duplicate(diagram.id) {
                                 model.open(.generatedDiagram(id))
@@ -195,15 +211,9 @@ extension ProjectBrowserView {
             .sorted(byLocalizedName: \.name)
         ForEach(freeformDiagrams) { diagram in
             if renamingDiagramID == diagram.id {
-                TextField(text: $renamingText) {
-                    Text(.app("View.ProjectBrowserView.Name"))
+                renameField(identifier: "sidebar.freeformDiagram.renameField") {
+                    model.freeforms.rename(diagram.id, name: $0)
                 }
-                .onSubmit {
-                    model.freeforms.rename(diagram.id, name: renamingText)
-                    renamingDiagramID = nil
-                }
-                .textFieldStyle(.roundedBorder)
-                .font(.callout)
             } else {
                 Label(diagram.name, systemImage: FreeformDiagram.systemImage)
                     .tag(ProjectBrowserViewModel.Selection.freeformDiagram(diagram.id))
@@ -212,7 +222,7 @@ extension ProjectBrowserView {
                         addressMenuItems(
                             for: .freeformDiagram(diagram.id), idPrefix: "sidebar.freeformDiagram.\(diagram.id)")
                         Divider()
-                        renameMenuItem(diagramID: diagram.id, name: diagram.name)
+                        renameMenuItem(name: diagram.name) { renamingDiagramID = diagram.id }
                         Button {
                             if let id = model.freeforms.duplicate(diagram.id) {
                                 model.open(.freeformDiagram(id))

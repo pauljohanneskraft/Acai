@@ -38,6 +38,19 @@ final class RemoteCodebaseJourneyTests: UIJourneyTestCase {
         // `ProjectCodebaseEditorRemoteSyncTests.switchingRefMovesTheWorktreeAndRecordsTheNewRef`,
         // so this no longer builds a diagram to read `Extra` off the canvas.
         codebaseDetail.switchRef(to: "feature")
+
+        // The sheet never asked for a name — the codebase took the remote's. Renaming its row in
+        // place is what replaces the name field it no longer has.
+        returnToSidebar(browser: browser)
+        browser.renameCodebase(from: "TeamRemote", to: "Team Checkout")
+    }
+
+    /// `ProjectDetailView` and `CodebaseDetailView` share one `NavigationSplitView` detail slot, so
+    /// one pop reaches the sidebar from either; regular width keeps it on screen throughout.
+    private func returnToSidebar(browser: ProjectBrowserScreen) {
+        guard SnapshotPlatform().usesCompactLayout else { return }
+        browser.backButton.tapWhenReady("the back button to the sidebar")
+        browser.projectRow(id: seeded.projectID).waitOrFail("the sidebar")
     }
 
     /// A repository GitHub reports as large asks before cloning; the latest-snapshot clone says so,

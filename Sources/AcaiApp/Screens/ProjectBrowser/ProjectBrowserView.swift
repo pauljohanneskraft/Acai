@@ -34,6 +34,7 @@ public struct ProjectBrowserView: View {
     @State var windowToken = UUID()
     @State var collapsedProjects = Set<UUID>()
     @State var renamingDiagramID: UUID?
+    @State var renamingCodebaseID: UUID?
     @State var renamingText: String = ""
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
