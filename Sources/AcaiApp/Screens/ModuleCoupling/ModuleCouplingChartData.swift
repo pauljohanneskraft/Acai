@@ -70,6 +70,21 @@ struct ModuleCouplingChartData {
     var rankedByDistance: [Point] {
         points.sorted { $0.distance > $1.distance }
     }
+
+    /// `nil` once there are at least two modules to compare; otherwise why the chart has nothing
+    /// to say, so the empty state can name it rather than leaving the user to guess.
+    var emptyReason: EmptyReason? {
+        guard let only = points.first else { return .noModules }
+        return points.count == 1 ? .singleModule(name: only.name) : nil
+    }
+
+    /// Instability is a ratio of *cross-module* dependencies, so a lone module's is 0 by
+    /// construction rather than measured — plotting that one point would read as a finding
+    /// ("perfectly stable") instead of as the absence of anything to compare.
+    enum EmptyReason: Equatable {
+        case noModules
+        case singleModule(name: String)
+    }
 }
 
 extension ModuleCouplingChartData.Zone {
