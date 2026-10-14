@@ -279,7 +279,6 @@ extension HotspotChartView {
             Label(.app("View.HotspotChartView.Retry"), systemImage: "arrow.clockwise")
         }
         .disabled(reloadPhase.isInFlight)
-        .keyboardShortcut("r")
         .accessibilityIdentifier("hotspot.retryButton")
         .contextMenu {
             Button(action: reload) {

@@ -127,7 +127,6 @@ struct ModuleCouplingChartView: View {
         .buttonStyle(.bordered)
         .controlSize(.large)
         .disabled(reindexPhase.isInFlight)
-        .keyboardShortcut("r")
         .accessibilityIdentifier("moduleCoupling.reindexButton")
         .contextMenu {
             Button(action: reindex) {
