@@ -92,6 +92,36 @@ struct ProjectBrowserViewModelExportTests {
         #expect(Set(freeform.nodes.map(\.name)) == ["A", "B"])
     }
 
+    // MARK: - Text Export
+
+    @Test func exportingDOTQueuesADotFileNamedAfterTheCodebase() async throws {
+        let (model, _, codebaseID) = makeModel()
+
+        await model.exportDOT(for: codebaseID)
+
+        let pending = try #require(model.pendingExport)
+        #expect(pending.filename == "C.dot")
+        #expect(String(data: pending.data, encoding: .utf8)?.hasPrefix("digraph") == true)
+    }
+
+    @Test func exportingDOTForAnUnknownCodebaseStillNamesTheFileDot() async throws {
+        let (model, _, _) = makeModel()
+
+        await model.exportDOT(for: UUID())
+
+        let pending = try #require(model.pendingExport)
+        #expect(pending.filename == "diagram.dot")
+    }
+
+    @Test func exportingMermaidQueuesAnMMDFileNamedAfterTheCodebase() async throws {
+        let (model, _, codebaseID) = makeModel()
+
+        await model.exportMermaid(for: codebaseID)
+
+        let pending = try #require(model.pendingExport)
+        #expect(pending.filename == "C.mmd")
+    }
+
     // MARK: - Image Export
 
     @Test func exportingAnImageQueuesAPNGNamedAfterTheDiagram() throws {
