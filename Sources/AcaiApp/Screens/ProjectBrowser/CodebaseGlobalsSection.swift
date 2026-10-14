@@ -13,9 +13,13 @@ struct CodebaseGlobalsSection: View {
             SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.globalVariables.count)"))
         } content: {
             let sortedGlobals = artifact.globalVariables.sorted(byLocalizedName: \.name)
-            LazyVStack(spacing: .spacingXXS) {
-                ForEach(Array(sortedGlobals.enumerated()), id: \.offset) { _, global in
-                    globalRow(global: global)
+            if sortedGlobals.isEmpty {
+                SectionEmptyMessage(text: .app("View.CodebaseGlobalsSection.NoGlobals"))
+            } else {
+                LazyVStack(spacing: .spacingXXS) {
+                    ForEach(Array(sortedGlobals.enumerated()), id: \.offset) { _, global in
+                        globalRow(global: global)
+                    }
                 }
             }
         }

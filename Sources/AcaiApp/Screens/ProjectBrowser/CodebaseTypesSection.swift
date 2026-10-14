@@ -18,9 +18,13 @@ struct CodebaseTypesSection: View {
             let sortedTypes = artifact.types
                 .removingDuplicates(by: \.id)
                 .sorted(byLocalizedName: \.name)
-            LazyVStack(spacing: .spacingXXS) {
-                ForEach(sortedTypes, id: \.id) { type in
-                    typeRow(type: type)
+            if sortedTypes.isEmpty {
+                SectionEmptyMessage(text: .app("View.CodebaseTypesSection.NoTypes"))
+            } else {
+                LazyVStack(spacing: .spacingXXS) {
+                    ForEach(sortedTypes, id: \.id) { type in
+                        typeRow(type: type)
+                    }
                 }
             }
         }
