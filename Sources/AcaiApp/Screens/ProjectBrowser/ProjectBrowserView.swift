@@ -269,8 +269,8 @@ public struct ProjectBrowserView: View {
             FindingsView(projectID: projectID)
                 .id(projectID)
                 .environmentObject(model)
-        case .query(let codebaseID):
-            QueryView(codebaseID: codebaseID)
+        case .inspect(let codebaseID):
+            InspectView(codebaseID: codebaseID)
                 .id(codebaseID)
                 .environmentObject(model)
         case .none:

@@ -6,11 +6,11 @@ import AcaiLibrary
 /// Queries one codebase's types and members by structural properties — backed by the same
 /// `TypeQuery` the CLI's `inspect` command and the MCP server's inspect tool already run, so this
 /// view can never disagree with what those report.
-struct QueryView: View {
+struct InspectView: View {
     let codebaseID: UUID
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @State private var filter = QueryFilterState()
+    @State private var filter = InspectFilterState()
     @State private var reindexPhase: AsyncOperationPhase = .idle
     /// A sheet, not inline: stacking `SelectorEditor` and `MemberFilterEditor` inline squeezes the
     /// results list too short to render on a compact-height screen.
@@ -39,13 +39,13 @@ struct QueryView: View {
                     notIndexedState(codebase: codebase)
                 }
             } else {
-                Text(.app("View.QueryView.CodebaseNotFound"))
+                Text(.app("View.InspectView.CodebaseNotFound"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier("query.codebaseNotFoundState")
+                    .accessibilityIdentifier("inspect.codebaseNotFoundState")
             }
         }
-        .navigationTitle(.app("View.QueryView.Query"))
+        .navigationTitle(.app("View.InspectView.Inspect"))
     }
 
     // MARK: - Not indexed
@@ -55,24 +55,24 @@ struct QueryView: View {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text(.app("View.QueryView.NotIndexedYet"))
+            Text(.app("View.InspectView.NotIndexedYet"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button {
-                reindexPhase = .loading(.app("View.QueryView.Indexing"))
+                reindexPhase = .loading(.app("View.InspectView.Indexing"))
                 Task {
                     let outcome = await model.editing.reindex(codebaseID: codebase.id)
-                    reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.QueryView.IndexingFailed"))
+                    reindexPhase = AsyncOperationPhase(outcome, failure: .app("View.InspectView.IndexingFailed"))
                 }
             } label: {
-                Label(.app("View.QueryView.IndexNow"), systemImage: "arrow.clockwise")
+                Label(.app("View.InspectView.IndexNow"), systemImage: "arrow.clockwise")
             }
             .disabled(reindexPhase.isInFlight)
-            .accessibilityIdentifier("query.indexNowButton")
-            AsyncOperationStatusView(identifierPrefix: "query.reindex", phase: reindexPhase)
+            .accessibilityIdentifier("inspect.indexNowButton")
+            AsyncOperationStatusView(identifierPrefix: "inspect.reindex", phase: reindexPhase)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("query.notIndexedState")
+        .accessibilityIdentifier("inspect.notIndexedState")
     }
 
     // MARK: - Content
@@ -91,7 +91,7 @@ struct QueryView: View {
                     typeRow(row, displayName: names.name(forID: row.id), codebase: codebase)
                         .listRowSeparator(.hidden)
                 }
-                .accessibilityIdentifier("query.list")
+                .accessibilityIdentifier("inspect.list")
                 #if os(iOS)
                 .listStyle(.plain)
                 #endif
@@ -103,19 +103,19 @@ struct QueryView: View {
         Button {
             showFilterSheet = true
         } label: {
-            Label(.app("View.QueryView.Filter"), systemImage: "line.3.horizontal.decrease.circle")
+            Label(.app("View.InspectView.Filter"), systemImage: "line.3.horizontal.decrease.circle")
         }
-        .accessibilityIdentifier("query.filterButton")
+        .accessibilityIdentifier("inspect.filterButton")
     }
 
     private var filterSheet: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: .spacingL) {
-                SelectorEditor(title: .app("View.QueryView.ShowOnly"), selector: $filter.selector)
-                MemberFilterEditor(title: .app("View.QueryView.MemberFilter"), filter: $filter.members)
+                SelectorEditor(title: .app("View.InspectView.ShowOnly"), selector: $filter.selector)
+                MemberFilterEditor(title: .app("View.InspectView.MemberFilter"), filter: $filter.members)
                 if !filter.isEmpty {
-                    Button(.app("View.QueryView.ClearFilters")) { filter.clear() }
-                    .accessibilityIdentifier("query.clearFiltersButton")
+                    Button(.app("View.InspectView.ClearFilters")) { filter.clear() }
+                    .accessibilityIdentifier("inspect.clearFiltersButton")
                 }
                 Spacer()
             }
@@ -123,21 +123,21 @@ struct QueryView: View {
             #if os(macOS)
             .frame(minWidth: 420, minHeight: 480)
             #endif
-            .navigationTitle(.app("View.QueryView.Filter"))
+            .navigationTitle(.app("View.InspectView.Filter"))
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(.app("View.QueryView.Done")) { showFilterSheet = false }
+                    Button(.app("View.InspectView.Done")) { showFilterSheet = false }
                         .keyboardShortcut(.confirmDialog)
-                        .accessibilityIdentifier("query.filterSheetDoneButton")
+                        .accessibilityIdentifier("inspect.filterSheetDoneButton")
                 }
             }
         }
     }
 
-    private func emptyState(reason: QueryFilterState.EmptyStateReason) -> some View {
+    private func emptyState(reason: InspectFilterState.EmptyStateReason) -> some View {
         let text: LocalizedStringResource = reason == .codebaseHasNoTypes
-            ? .app("View.QueryView.NoTypesInCodebase")
-            : .app("View.QueryView.NoTypesMatchFilters")
+            ? .app("View.InspectView.NoTypesInCodebase")
+            : .app("View.InspectView.NoTypesMatchFilters")
         return VStack(spacing: .spacingM) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 40))
@@ -149,7 +149,7 @@ struct QueryView: View {
                 .padding(.horizontal, .spacingXXL)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("query.emptyState")
+        .accessibilityIdentifier("inspect.emptyState")
     }
 
     // MARK: - Rows
@@ -164,7 +164,7 @@ struct QueryView: View {
                     .fontWeight(.medium)
                 Spacer()
                 if !filter.members.hasActiveFacet {
-                    Text(.app("View.QueryView.Members \(row.members.count)"))
+                    Text(.app("View.InspectView.Members \(row.members.count)"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -186,7 +186,7 @@ struct QueryView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("query.row.\(row.id).documentation")
+                    .accessibilityIdentifier("inspect.row.\(row.id).documentation")
             }
             if filter.members.hasActiveFacet {
                 memberRows(row, codebase: codebase)
@@ -195,7 +195,7 @@ struct QueryView: View {
         .padding(.horizontal)
         .padding(.vertical, .spacingXS)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("query.row.\(row.id)")
+        .accessibilityIdentifier("inspect.row.\(row.id)")
     }
 
     private func locationRow(_ location: SourceLocation, codebase: Codebase) -> some View {
@@ -242,7 +242,7 @@ struct QueryView: View {
         .openInCodeElement(
             .method(typeName: typeRow.qualifiedName, methodName: member.name),
             codebase: codebase, relativePath: member.location?.filePath)
-        .accessibilityIdentifier("query.row.\(typeRow.id).member.\(member.name)")
+        .accessibilityIdentifier("inspect.row.\(typeRow.id).member.\(member.name)")
     }
 }
 
