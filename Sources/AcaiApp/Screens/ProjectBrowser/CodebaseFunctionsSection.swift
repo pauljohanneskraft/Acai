@@ -10,9 +10,13 @@ struct CodebaseFunctionsSection: View {
             SectionCountBadge(text: .app("View.SectionCountBadge.Count \(artifact.freestandingFunctions.count)"))
         } content: {
             let sortedFunctions = artifact.freestandingFunctions.sorted(byLocalizedName: \.name)
-            LazyVStack(spacing: .spacingXXS) {
-                ForEach(Array(sortedFunctions.enumerated()), id: \.offset) { _, function in
-                    functionRow(function: function)
+            if sortedFunctions.isEmpty {
+                SectionEmptyMessage(text: .app("View.CodebaseFunctionsSection.NoTopLevelFunctions"))
+            } else {
+                LazyVStack(spacing: .spacingXXS) {
+                    ForEach(Array(sortedFunctions.enumerated()), id: \.offset) { _, function in
+                        functionRow(function: function)
+                    }
                 }
             }
         }

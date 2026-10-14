@@ -62,3 +62,18 @@ extension CollapsibleSection where Accessory == EmptyView {
         self.init(title: title, defaultExpanded: defaultExpanded, accessory: { EmptyView() }, content: content)
     }
 }
+
+/// Stands in for a section's content when it has nothing to list, so an expanded section reads as
+/// empty rather than broken.
+struct SectionEmptyMessage: View {
+    let text: LocalizedStringResource
+
+    var body: some View {
+        Text(localized: text)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
+            .padding(.vertical, .spacingXS)
+    }
+}
