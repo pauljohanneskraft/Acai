@@ -67,6 +67,7 @@ extension CollapsibleSection where Accessory == EmptyView {
 /// empty rather than broken.
 struct SectionEmptyMessage: View {
     let text: LocalizedStringResource
+    let identifier: String
 
     var body: some View {
         Text(localized: text)
@@ -75,5 +76,6 @@ struct SectionEmptyMessage: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)
             .padding(.vertical, .spacingXS)
+            .accessibilityIdentifier(identifier)
     }
 }

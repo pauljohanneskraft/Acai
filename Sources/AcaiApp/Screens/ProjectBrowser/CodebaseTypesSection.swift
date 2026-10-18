@@ -19,7 +19,10 @@ struct CodebaseTypesSection: View {
                 .removingDuplicates(by: \.id)
                 .sorted(byLocalizedName: \.name)
             if sortedTypes.isEmpty {
-                SectionEmptyMessage(text: .app("View.CodebaseTypesSection.NoTypes"))
+                SectionEmptyMessage(
+                    text: .app("View.CodebaseTypesSection.NoTypes"),
+                    identifier: "codebaseDetail.types.emptyState"
+                )
             } else {
                 LazyVStack(spacing: .spacingXXS) {
                     ForEach(sortedTypes, id: \.id) { type in

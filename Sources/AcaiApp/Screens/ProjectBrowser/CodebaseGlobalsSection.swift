@@ -14,7 +14,10 @@ struct CodebaseGlobalsSection: View {
         } content: {
             let sortedGlobals = artifact.globalVariables.sorted(byLocalizedName: \.name)
             if sortedGlobals.isEmpty {
-                SectionEmptyMessage(text: .app("View.CodebaseGlobalsSection.NoGlobals"))
+                SectionEmptyMessage(
+                    text: .app("View.CodebaseGlobalsSection.NoGlobals"),
+                    identifier: "codebaseDetail.globals.emptyState"
+                )
             } else {
                 LazyVStack(spacing: .spacingXXS) {
                     ForEach(Array(sortedGlobals.enumerated()), id: \.offset) { _, global in

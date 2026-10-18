@@ -26,7 +26,10 @@ struct CodebaseRelationshipsSection: View {
                     ($0.source, $0.target) < ($1.source, $1.target)
                 }
             if sortedRelationships.isEmpty {
-                SectionEmptyMessage(text: .app("View.CodebaseRelationshipsSection.NoRelationships"))
+                SectionEmptyMessage(
+                    text: .app("View.CodebaseRelationshipsSection.NoRelationships"),
+                    identifier: "codebaseDetail.relationships.emptyState"
+                )
             } else {
                 LazyVStack(spacing: .spacingXXS) {
                     ForEach(Array(sortedRelationships.enumerated()), id: \.offset) { _, rel in
