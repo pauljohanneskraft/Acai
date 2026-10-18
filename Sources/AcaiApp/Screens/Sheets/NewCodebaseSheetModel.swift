@@ -289,11 +289,14 @@ extension NewCodebaseSheetModel {
         return editor.insertCodebases(from: splitCodebaseFolders(directoryURL), to: projectID).addedIDs
     }
 
-    /// Whether Add would create anything. A folder that holds one project keeps the rule it always
-    /// had — a name and a folder; several projects additionally need something checked.
+    /// Whether Add would create anything. One project keeps the rule it always had — a name and a
+    /// folder — and so does combining several, which names the one codebase it makes. Splitting
+    /// needs a checked root instead: each codebase is named after its own folder, so the name field
+    /// has nothing to name and must not block the step.
     var canAddLocalFolder: Bool {
-        guard directoryURL != nil, !name.isEmpty else { return false }
-        return plan.isOffered ? plan.isSatisfiable : true
+        guard directoryURL != nil else { return false }
+        guard plan.isOffered else { return !name.isEmpty }
+        return plan.combinesIntoOne ? !name.isEmpty : plan.isSatisfiable
     }
 
     func setRootChecked(_ isChecked: Bool, for root: CodeArtifact.DiscoveredRoot) {

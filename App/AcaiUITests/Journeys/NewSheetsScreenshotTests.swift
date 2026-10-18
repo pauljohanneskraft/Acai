@@ -4,8 +4,9 @@ import XCTest
 /// `NewProjectSheet`'s empty form, and `NewCodebaseSheet`'s local-folder tab (the default tab,
 /// distinct from the GitHub tab already exercised by `GitHubSignInTests`/`GitHubAddCodebaseTests`).
 /// The local tab's "Choose…" button opens a real system file picker (`NSOpenPanel`/document
-/// picker), which XCUITest can't drive without further plumbing — this only captures the tab's
-/// empty state, not a "directory chosen" state.
+/// picker), which XCUITest can't drive — this only captures the tab's empty state, not a "directory
+/// chosen" state. A journey that needs a picked folder stages one instead
+/// (`UITestFixtureResolver.resolveLocalFolderURL()`), as `MultiRootFolderJourneyTests` does.
 @MainActor
 final class NewSheetsScreenshotTests: UIJourneyTestCase {
 
