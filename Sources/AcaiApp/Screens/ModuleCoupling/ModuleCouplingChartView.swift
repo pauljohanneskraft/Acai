@@ -80,15 +80,24 @@ struct ModuleCouplingChartView: View {
 
     // MARK: - Chart
 
+    /// The reindex's status sits above the state branches rather than inside the empty one: a
+    /// reindex that resolves modules replaces the empty state with the chart, so a signal rendered
+    /// inside it would be torn down by the very work it reports on.
     private var chartContent: some View {
-        Group {
-            if let reason = data.emptyReason {
-                emptyState(reason)
-            } else {
-                chart
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+        VStack(spacing: .zero) {
+            AsyncOperationStatusView(identifierPrefix: "moduleCoupling.reindex", phase: reindexPhase)
+            stateContent
+        }
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
+        if let reason = data.emptyReason {
+            emptyState(reason)
+        } else {
+            chart
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -102,7 +111,6 @@ struct ModuleCouplingChartView: View {
                 .multilineTextAlignment(.center)
             if reason == .noModules {
                 reindexButton
-                AsyncOperationStatusView(identifierPrefix: "moduleCoupling.reindex", phase: reindexPhase)
             }
         }
         .padding(.spacingXL)
