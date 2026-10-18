@@ -250,15 +250,18 @@ struct ProjectCodebaseEditor {
     /// folder is already a git working directory with an `origin` remote (the transparent
     /// upgrade, via `LocalGitRepositoryDetector`) — `nil` for a plain folder, which behaves exactly
     /// as before.
+    @discardableResult
     func addCodebase(
         to projectID: UUID, name: String, directoryURL: URL,
         securityScopedBookmark: SecurityScopedBookmark? = nil, repository: CodebaseRepositoryReference? = nil
-    ) {
-        guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
-        store.projects[index].codebases.append(Codebase(
+    ) -> UUID? {
+        guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
+        let codebase = Codebase(
             name: name, directoryPath: directoryURL.path, securityScopedBookmark: securityScopedBookmark,
-            repository: repository))
+            repository: repository)
+        store.projects[index].codebases.append(codebase)
         persist()
+        return codebase.id
     }
 
     func updateCodebase(id: UUID, name: String) {
