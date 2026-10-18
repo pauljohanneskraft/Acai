@@ -28,6 +28,13 @@ extension NewCodebaseSheetContent {
                     ? .app("View.NewCodebaseSheet.CombinedFooter")
                     : .app("View.NewCodebaseSheet.SplitFooter"))
             }
+            // The step is what the user has to answer once it appears, so focus moves to its first
+            // row. `initial` covers the appearance itself: the section only exists once the walk
+            // produced roots, so there is no earlier render to focus.
+            .onChange(of: sheet.plan.roots.count, initial: true) { _, _ in
+                guard let first = sheet.plan.roots.first else { return }
+                focusedField = .root(first.path)
+            }
         }
     }
 
