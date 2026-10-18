@@ -129,11 +129,17 @@ final class NewCodebaseSheetScreen {
     }
 
     /// The local-folder tab's own name field, which names the one codebase a combined add creates.
+    ///
+    /// Return is sent on iOS only, where it dismisses the keyboard. On macOS it would activate Add,
+    /// the sheet's `.confirmationAction` and so its default button, adding the folder before the
+    /// several-projects question has been answered.
     func enterLocalName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
         localNameField.tapWhenReady("the codebase name field", file: file, line: line)
-        localNameField.typeText(name + "\n")
         #if os(iOS)
+        localNameField.typeText(name + "\n")
         app.keyboards.firstMatch.waitForDisappearanceOrFail("the keyboard", file: file, line: line)
+        #else
+        localNameField.typeText(name)
         #endif
     }
 
