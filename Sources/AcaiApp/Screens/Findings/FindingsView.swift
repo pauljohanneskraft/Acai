@@ -13,7 +13,7 @@ struct FindingsView: View {
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
     @StateObject private var blame = FindingsBlameViewModel()
-    @State private var list = FindingsListState()
+    @State var list = FindingsListState()
     @State private var isLoadingSuppression = true
     @State private var suppressionError: String?
     @State private var suppressionSavePhase: AsyncOperationPhase = .idle
@@ -80,6 +80,13 @@ struct FindingsView: View {
     }
 
     private func emptyState(text: LocalizedStringResource, identifier: String) -> some View {
+        emptyState(text: text, identifier: identifier) { EmptyView() }
+    }
+
+    /// `children: .contain` keeps `action`'s own button queryable beside the container's identifier.
+    private func emptyState<Action: View>(
+        text: LocalizedStringResource, identifier: String, @ViewBuilder action: () -> Action
+    ) -> some View {
         VStack(spacing: .spacingM) {
             Image(systemName: "checkmark.seal")
                 .font(.system(size: 40))
@@ -89,8 +96,13 @@ struct FindingsView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, .spacingXXL)
+            action()
+                // Same treatment as `emptyProjectContentState`'s actions, which gives the 44pt touch target.
+                .buttonStyle(.bordered)
+                .controlSize(.large)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(identifier)
     }
 
@@ -105,7 +117,7 @@ struct FindingsView: View {
         .accessibilityIdentifier("findings.loadingState")
     }
 
-    // MARK: - List + filters
+    // MARK: - List
 
     @ViewBuilder
     private func listContent(
@@ -125,7 +137,10 @@ struct FindingsView: View {
                     text: allFindings.isEmpty
                         ? .app("View.FindingsView.NoFindingsClean")
                         : .app("View.FindingsView.NoFindingsMatchFilters"),
-                    identifier: "findings.emptyState")
+                    identifier: "findings.emptyState"
+                ) {
+                    if !allFindings.isEmpty, list.hasActiveFilters { clearFiltersButton }
+                }
             } else {
                 List(visible) { finding in
                     FindingRow(
@@ -234,49 +249,6 @@ struct FindingsView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, .spacingXS)
-    }
-
-    private func filterBar(project: Project) -> some View {
-        VStack(alignment: .leading, spacing: .spacingS) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: .spacingS) {
-                    ForEach(Finding.Kind.allCases) { kind in
-                        kindChip(kind)
-                    }
-                }
-            }
-            HStack {
-                Picker(.app("View.FindingsView.Codebase"), selection: $list.codebaseID) {
-                    Text(.app("View.FindingsView.AllCodebases")).tag(UUID?.none)
-                    ForEach(project.codebases.sorted { $0.name < $1.name }) { codebase in
-                        Text(verbatim: codebase.name).tag(Optional(codebase.id))
-                    }
-                }
-                .accessibilityIdentifier("findings.codebaseFilter")
-                Spacer()
-                Toggle(.app("View.FindingsView.ShowSuppressedToo"), isOn: $list.showSuppressed)
-                    .toggleStyle(.button)
-                    .accessibilityIdentifier("findings.showSuppressedToggle")
-            }
-        }
-        .padding(.horizontal)
-        .padding(.top, .spacingS)
-    }
-
-    private func kindChip(_ kind: Finding.Kind) -> some View {
-        let isSelected = list.kinds.contains(kind)
-        return Button {
-            list = list.toggling(kind)
-        } label: {
-            Label(kind.title, systemImage: kind.systemImage)
-                .font(.caption.weight(isSelected ? .semibold : .regular))
-                .padding(.horizontal, .spacingS).padding(.vertical, .spacingXS)
-                .background(isSelected ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.08))
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("findings.kindFilter.\(kind.rawValue)")
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     // MARK: - Loading analyses / suppression
