@@ -42,6 +42,25 @@ struct InspectEnumsCommandTests {
         }
     }
 
+    @Test func humanInventoryCarriesDocumentationOnTheEnumAndItsCases() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            try CLITestSupport.writeDocumentedSwiftSource(in: dir)
+            let output = dir.appendingPathComponent("enums.txt")
+            var cmd = try CLITestSupport.parseInspect(
+                ["--source", dir.path, "--language", "swift", "--enums",
+                 "--format", "human", "--output", output.path])
+            try await cmd.run()
+            let lines = try String(contentsOf: output, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map(String.init)
+            #expect(lines.contains("  // A playing card's suit."))
+            #expect(lines.contains("    // The red one."))
+            // `spades` carries none, so its row is the last thing the report says about it.
+            let index = try #require(lines.firstIndex { $0.hasPrefix("  - spades") })
+            #expect(!lines[index + 1].contains("//"))
+        }
+    }
+
     @Test func noEnumsProducesEmptyList() async throws {
         try await CLITestSupport.withTempDirectory { dir in
             try CLITestSupport.writeSampleSwiftSource(in: dir)

@@ -51,6 +51,7 @@ public struct AcaiRootScene: Scene {
         // keyboard. `KeyboardShortcutReferenceTests` rejects that unless the shortcut's group is
         // `isMacOSOnly`, which is why only `BrowserWindowCommands` is attached on macOS alone.
         .commands {
+            ProjectCommands()
             DiagramThemeCommands()
             KeyboardShortcutCommands()
             QuickOpenCommands()

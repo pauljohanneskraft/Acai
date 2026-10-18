@@ -27,6 +27,7 @@ struct BrowserWindowCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .newItem) {
+            NewBrowserWindowMenuButton()
             Button(.app("View.BrowserWindowCommands.OpenInNewWindow")) {
                 actions?.openInNewWindow()
             }
@@ -38,6 +39,18 @@ struct BrowserWindowCommands: Commands {
             .keyboardShortcut(.copyLink)
             .disabled(actions?.address == nil)
         }
+    }
+}
+
+struct NewBrowserWindowMenuButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button(.app("View.NewBrowserWindowMenuButton.NewWindow")) {
+            openWindow(id: BrowserWindowCommands.windowID)
+        }
+        .keyboardShortcut(.newWindow)
+        .accessibilityIdentifier("menu.newWindow")
     }
 }
 

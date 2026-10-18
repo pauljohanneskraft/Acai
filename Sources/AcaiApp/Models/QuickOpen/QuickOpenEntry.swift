@@ -32,6 +32,8 @@ struct QuickOpenEntry: Identifiable, Hashable {
     var reference: CodeElementReference?
     var generatedDiagramID: UUID?
     var freeformDiagramID: UUID?
+    /// A type's own documentation; `nil` for every other kind and for an undocumented type.
+    var documentation: String?
 
     var systemImage: String {
         switch kind {

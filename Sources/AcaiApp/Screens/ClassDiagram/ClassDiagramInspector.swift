@@ -184,6 +184,10 @@ struct ClassDiagramSidebar: View {
                                 Text(.app("View.ClassDiagramSidebar.Kind"))
                             }
 
+                            if let documentation = node.documentation {
+                                documentationSection(documentation)
+                            }
+
                             if let change = viewModel.typeChange(for: node) {
                                 whatChangedSection(change)
                             }
@@ -342,6 +346,21 @@ struct ClassDiagramSidebar: View {
 }
 
 private extension ClassDiagramSidebar {
+    func documentationSection(_ documentation: String) -> some View {
+        VStack(alignment: .leading, spacing: .spacingXXS) {
+            Text(.app("View.ClassDiagramSidebar.Documentation"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(verbatim: documentation)
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("diagram.inspector.documentation")
+    }
+
     @ViewBuilder
     func whatChangedSection(_ change: TypeChange) -> some View {
         DisclosureGroup {
