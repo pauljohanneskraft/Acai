@@ -71,6 +71,15 @@ final class NewCodebaseSheetScreen {
             "the Add Codebase sheet", failingOn: app.alerts.firstMatch, file: file, line: line)
     }
 
+    /// Dismisses the sheet without adding anything. `.firstMatch` of a descendants query: a toolbar
+    /// button's identifier resolves to more than one accessibility node.
+    func cancel(file: StaticString = #filePath, line: UInt = #line) {
+        let cancelButton = app.descendants(matching: .any)
+            .matching(identifier: "newCodebase.cancelButton").firstMatch
+        cancelButton.tapWhenReady("Cancel", file: file, line: line)
+        cancelButton.waitForDisappearanceOrFail("the Add Codebase sheet", file: file, line: line)
+    }
+
     /// `source` is the segment's `NewCodebaseSheet.Source` raw value. Segments surface as different
     /// element kinds on macOS (`NSSegmentedControl`) and iOS, and not every one carries the segment
     /// label's identifier, so the English label is matched as well.

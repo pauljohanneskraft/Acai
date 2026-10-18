@@ -95,6 +95,7 @@ struct NewCodebaseSheetContent: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(.app("View.NewCodebaseSheet.Cancel")) { dismiss() }
+                        .accessibilityIdentifier("newCodebase.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     confirmButton
