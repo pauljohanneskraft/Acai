@@ -2,8 +2,8 @@ import AcaiGit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The sheet's focusable controls, in Tab order: the name, then one per discovered root, then the
-/// combine toggle.
+/// The sheet's focusable controls, in Tab order: the name, then the combine toggle, then one per
+/// discovered root.
 enum NewCodebaseField: Hashable {
     case name
     case root(String)

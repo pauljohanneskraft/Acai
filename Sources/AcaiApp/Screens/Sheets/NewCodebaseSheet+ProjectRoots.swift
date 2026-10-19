@@ -12,14 +12,17 @@ extension NewCodebaseSheetContent {
             }
         } else if sheet.plan.isOffered {
             Section {
-                ForEach(sheet.plan.roots, id: \.path) { root in
-                    rootRow(root)
-                }
+                // Above the rows it governs: the form outgrows a short window, and the control that
+                // answers the question has to stay reachable without scrolling past the list that
+                // only describes it.
                 Toggle(isOn: $sheet.plan.combinesIntoOne) {
                     Text(.app("View.NewCodebaseSheet.CombineIntoOneCodebase"))
                 }
                 .accessibilityIdentifier("newCodebase.combineRootsToggle")
                 .focused($focusedField, equals: .combineRoots)
+                ForEach(sheet.plan.roots, id: \.path) { root in
+                    rootRow(root)
+                }
             } header: {
                 Text(.app("View.NewCodebaseSheet.ProjectsFound \(sheet.plan.roots.count)"))
                     .accessibilityIdentifier("newCodebase.rootsHeader")
@@ -32,8 +35,7 @@ extension NewCodebaseSheetContent {
             // row. `initial` covers the appearance itself: the section only exists once the walk
             // produced roots, so there is no earlier render to focus.
             .onChange(of: sheet.plan.roots.count, initial: true) { _, _ in
-                guard let first = sheet.plan.roots.first else { return }
-                focusedField = .root(first.path)
+                focusedField = .combineRoots
             }
         }
     }
