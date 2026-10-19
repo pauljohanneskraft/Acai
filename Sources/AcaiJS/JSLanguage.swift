@@ -31,7 +31,10 @@ extension JSCodeParser {
             // `JSCallSiteSyntax` also matches `new_expression`: `new Thing()` resolves to a
             // call-site edge targeting `constructor`, the member name TS and JS give every
             // constructor. Neither language has a subscript operator to declare.
-            deadCodeMemberKinds: [.method, .initializer]
+            deadCodeMemberKinds: [.method, .initializer],
+            // TypeScript 4.7 declaration-site variance. `in out` is one keyword in two words,
+            // which is how TypeScript itself spells invariance.
+            varianceKeywords: [.covariant: "out", .contravariant: "in", .invariant: "in out"]
         )
     }
 }

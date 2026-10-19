@@ -32,9 +32,13 @@ struct JSExtractor {
     var topLevelCallSites: [CallSite] = []
 
     /// Takes the tree so the declared-type pre-pass runs before the collaborators that read it.
-    init(source: String, fileName: String, isTypeScript: Bool, root: Node) {
+    init(
+        source: String, fileName: String, isTypeScript: Bool, root: Node,
+        varianceModifiers: TypeScriptVarianceModifiers
+    ) {
         let context = SourceFileContext(source: source, fileName: fileName)
-        let typeReferences = JSTypeReferenceResolver(context: context, isTypeScript: isTypeScript)
+        let typeReferences = JSTypeReferenceResolver(
+            context: context, isTypeScript: isTypeScript, varianceModifiers: varianceModifiers)
         let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: [
             "class_declaration", "class", "abstract_class_declaration",
             "interface_declaration", "enum_declaration"

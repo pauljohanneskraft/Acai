@@ -23,8 +23,15 @@ public struct JSCodeParser: CodeParser {
     }
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
-        grammar.parse(source: source, fileName: fileName) { root in
-            var extractor = JSExtractor(source: source, fileName: fileName, isTypeScript: isTypeScript, root: root)
+        let varianceModifiers = isTypeScript
+            ? TypeScriptVarianceModifiers(source: source, fileName: fileName, grammar: grammar)
+            : TypeScriptVarianceModifiers(unmodified: source)
+        let source = varianceModifiers.rewrittenSource
+        return grammar.parse(source: source, fileName: fileName) { root in
+            var extractor = JSExtractor(
+                source: source, fileName: fileName, isTypeScript: isTypeScript, root: root,
+                varianceModifiers: varianceModifiers
+            )
             return extractor.extract(from: root)
         }
     }

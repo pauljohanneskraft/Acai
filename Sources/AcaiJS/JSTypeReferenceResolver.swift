@@ -9,6 +9,9 @@ import AcaiTreeSitter
 struct JSTypeReferenceResolver {
     let context: SourceFileContext
     let isTypeScript: Bool
+    /// Carries the declaration-site variance the vendored grammar cannot parse, keyed on the
+    /// offsets of the source it was read from.
+    let varianceModifiers: TypeScriptVarianceModifiers
 
     private static let passthroughNodeTypes: Set<String> = [
         "predefined_type", "type_identifier", "identifier",
@@ -124,8 +127,8 @@ struct JSTypeReferenceResolver {
         var params: [GenericParameter] = []
         for child in typeParamsNode.namedChildren() {
             guard child.nodeType == "type_parameter" else { continue }
-            let nameNode = child.child(byFieldName: "name") ?? child.namedChildren().first
-            let name = nameNode.map { $0.text(in: context) } ?? ""
+            guard let nameNode = child.child(byFieldName: "name") ?? child.namedChildren().first else { continue }
+            let name = nameNode.text(in: context)
             guard !name.isEmpty else { continue }
 
             var constraints: [GenericConstraint] = []
@@ -133,7 +136,9 @@ struct JSTypeReferenceResolver {
                let boundNode = constraintNode.namedChildren().first {
                 constraints.append(GenericConstraint(kind: .conformance, type: extractTypeReference(boundNode)))
             }
-            params.append(GenericParameter(name: name, constraints: constraints))
+            params.append(GenericParameter(
+                name: name, constraints: constraints, variance: varianceModifiers.variance(of: nameNode)
+            ))
         }
         return params
     }
