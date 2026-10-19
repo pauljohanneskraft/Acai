@@ -32,6 +32,12 @@ struct KeyboardShortcutReference: Identifiable, Sendable {
 }
 
 extension KeyboardShortcutReference {
+    static let newProject = KeyboardShortcutReference(
+        id: "newProject", shortcut: KeyboardShortcut("n", modifiers: .command),
+        name: .app("KeyboardShortcutReference.NewProject"))
+    static let addCodebase = KeyboardShortcutReference(
+        id: "addCodebase", shortcut: KeyboardShortcut("n", modifiers: [.command, .shift]),
+        name: .app("KeyboardShortcutReference.AddCodebase"))
     static let fitToView = KeyboardShortcutReference(
         id: "fitToView", shortcut: KeyboardShortcut("0", modifiers: .command),
         name: .app("KeyboardShortcutReference.FitToView"))
@@ -82,6 +88,9 @@ extension KeyboardShortcutReference {
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("o", modifiers: [.command, .shift]),
         name: .app("KeyboardShortcutReference.QuickOpen"))
+    static let newWindow = KeyboardShortcutReference(
+        id: "newWindow", shortcut: KeyboardShortcut("n", modifiers: [.command, .option]),
+        name: .app("KeyboardShortcutReference.NewWindow"))
     static let openInNewWindow = KeyboardShortcutReference(
         id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),
         name: .app("KeyboardShortcutReference.OpenInNewWindow"))
@@ -105,6 +114,9 @@ extension KeyboardShortcutReference {
     }
 
     static let allGroups: [Group] = [
+        Group(
+            id: "creation", title: .app("KeyboardShortcutReference.ProjectsAndCodebases"),
+            shortcuts: [.newProject, .addCodebase]),
         Group(id: "canvas", title: .app("KeyboardShortcutReference.Canvas"), shortcuts: [.fitToView]),
         Group(
             id: "find", title: .app("KeyboardShortcutReference.FindClassDiagrams"),
@@ -119,7 +131,7 @@ extension KeyboardShortcutReference {
         Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
         Group(
             id: "windows", title: .app("KeyboardShortcutReference.Windows"),
-            shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),
+            shortcuts: [.newWindow, .openInNewWindow, .copyLink], isMacOSOnly: true),
         Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
     ]
 

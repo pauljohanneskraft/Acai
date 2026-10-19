@@ -1,10 +1,12 @@
 classDiagram
+    %% The user's whole collection: every playlist in one place.
     class TypeScript_Library["Library"] {
         +playlists Playlist[]
         +constructor(playlists Playlist[])
         +addPlaylist(playlist Playlist) void
         +playlist(named string) Playlist | undefined
     }
+    %% Shared base for every item in the library.
     class TypeScript_MediaItem["MediaItem"] {
         +title string
         +duration number
@@ -12,12 +14,14 @@ classDiagram
         +constructor(title string, duration number, genre Genre)
         +play() void
     }
+    %% Anything the player knows how to play.
     class TypeScript_Playable["Playable"] {
         <<interface>>
         +title string
         +duration number
         +play() void
     }
+    %% A coarse classification for a piece of media.
     class TypeScript_Genre["Genre"] {
         <<enumeration>>
         Pop
@@ -27,6 +31,7 @@ classDiagram
         Electronic
         SpokenWord
     }
+    %% Drives playback over a library. Depends on Library and the Playable interface.
     class TypeScript_Player["Player"] {
         -nowPlaying Playable | null
         -library Library
@@ -34,6 +39,7 @@ classDiagram
         +play(item Playable) void
         +playFirstItem(playlistNamed string) void
     }
+    %% An ordered collection of media items the user has curated.
     class TypeScript_Playlist["Playlist"] {
         +name string
         +items MediaItem[]
@@ -41,12 +47,14 @@ classDiagram
         +constructor(name string, items MediaItem[])
         +add(item MediaItem) void
     }
+    %% One episode of a podcast.
     class TypeScript_Podcast["Podcast"] {
         +host string
         +episodeNumber number
         +constructor(title string, duration number, host string, episodeNumber number)
         +play() void
     }
+    %% A single track by an artist.
     class TypeScript_Song["Song"] {
         +artist string
         +album string

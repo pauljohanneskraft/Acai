@@ -50,6 +50,24 @@ struct FindingsListStateTests {
         ])
     }
 
+    @Test func clearingFiltersRestoresTheDefaultsAndKeepsTheBaseline() {
+        let suppressed = finding("suppressed", kind: .deadCode, codebaseID: codebaseB)
+        let findings = [finding("violation-a", kind: .violation, codebaseID: codebaseA), suppressed]
+        var state = FindingsListState()
+        #expect(!state.hasActiveFilters)
+
+        state = state.toggling(.violation).toggling(.deadCode).toggling(.health).toggling(suppressed)
+        state.codebaseID = codebaseB
+        state.showSuppressed = true
+        #expect(state.hasActiveFilters)
+        #expect(state.visible(from: findings).isEmpty)
+
+        let cleared = state.clearingFilters()
+        #expect(!cleared.hasActiveFilters)
+        #expect(cleared.visible(from: findings).map(\.id) == ["violation-a"])
+        #expect(cleared.isSuppressed(suppressed))
+    }
+
     @Test func kindAndCodebaseFiltersCompose() {
         let findings = [
             finding("violation-a", kind: .violation, codebaseID: codebaseA),

@@ -85,6 +85,7 @@ extension AcaiCommand {
             var lines: [String] = []
             for entry in entries {
                 lines.append("\(entry.type)\(entry.location.suffix)")
+                lines.append(contentsOf: entry.documentation.documentationLines(indent: "  "))
                 for enumCase in entry.cases {
                     var text = "  - \(enumCase.name)"
                     if !enumCase.associatedValues.isEmpty {
@@ -94,6 +95,7 @@ extension AcaiCommand {
                         text += " = \(rawValue)"
                     }
                     lines.append(text)
+                    lines.append(contentsOf: enumCase.documentation.documentationLines(indent: "    "))
                 }
             }
             return lines.joined(separator: "\n") + "\n"
@@ -104,11 +106,13 @@ extension AcaiCommand {
             var lines: [String] = []
             for row in rows {
                 lines.append("\(row.qualifiedName) [\(row.kind.rawValue), \(row.module)]\(row.location.suffix)")
+                lines.append(contentsOf: row.documentation.documentationLines(indent: "  "))
                 for member in row.members {
                     let params = member.parameterCount > 0 ? "(\(member.parameterCount))" : ""
                     lines.append(
                         "  - \(member.name)\(params): \(member.kind.rawValue) "
                         + "(\(member.access.rawValue))\(member.location.suffix)")
+                    lines.append(contentsOf: member.documentation.documentationLines(indent: "    "))
                 }
             }
             lines.append("")

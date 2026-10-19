@@ -1,12 +1,7 @@
 import XCTest
 
-/// A link to something that no longer exists says so.
-///
-/// Only the failing half is here: `openLink` relaunches the app on iOS, and four launches put this
-/// over its execution allowance on a cold iPad. What the other launches proved is covered without
-/// them — which address maps to which destination by `AppAddressTests`, and that a live link really
-/// opens its destination by `ScreenCatalogTests`, which reaches the seeded freeform diagram through
-/// `acai://diagram/…` rather than by tapping.
+/// A link to something that no longer exists says so. Which address maps to which destination is
+/// `AppAddressTests`; that a live link opens its destination is covered by `ScreenCatalogTests`.
 @MainActor
 final class AppAddressJourneyTests: UIJourneyTestCase {
 
@@ -25,10 +20,10 @@ final class AppAddressJourneyTests: UIJourneyTestCase {
         okButton.waitOrFail("the error alert for a link to a deleted diagram")
         // macOS exposes an alert's message as the element's `value`, iOS as its `label`.
         let expected = "The linked diagram no longer exists"
-        let message = alert.staticTexts
+        alert.staticTexts
             .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", expected, expected))
             .firstMatch
-        XCTAssertTrue(message.exists, "The alert must say the linked diagram no longer exists.")
+            .waitOrFail("the alert's message naming the deleted diagram")
         okButton.tapWhenReady("the alert's OK button")
         okButton.waitForDisappearanceOrFail("the error alert")
     }

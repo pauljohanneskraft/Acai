@@ -71,6 +71,7 @@ struct ProjectDetailView: View {
                 NewCodebaseSheet(projectID: project.id)
                     .environmentObject(model)
             }
+            .focusedSceneValue(\.addCodebaseAction, addCodebaseAction)
             .confirmationDialog(
                 .app("View.ProjectDetailView.ConfirmDeleteCodebase \(codebasePendingDeletion?.name ?? "")"),
                 isPresented: Binding(

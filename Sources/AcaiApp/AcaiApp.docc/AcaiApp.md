@@ -136,7 +136,8 @@ or isn't an Açaí link at all, the app says so and stays where it was.
 ## Windows
 
 On macOS, **Open in New Window** in a project, codebase or diagram's context menu (or **File › Open
-in New Window**, ⌥⌘O, for the selection) gives it a window of its own. Each window navigates
+in New Window**, ⌥⌘O, for the selection) gives it a window of its own, and **File › New Window**, ⌥⌘N,
+opens an empty one. Each window navigates
 independently; what you select in one doesn't move another. Windows reopen where they were after a
 relaunch.
 
