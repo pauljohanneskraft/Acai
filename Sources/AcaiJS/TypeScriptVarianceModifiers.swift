@@ -53,8 +53,7 @@ struct TypeScriptVarianceModifiers {
     }
 }
 
-/// One type parameter whose modifiers the grammar mis-parsed: the variance they declared, the
-/// offset of the name they were written before, and the ranges to blank so that name is read.
+/// One type parameter whose modifiers the grammar mis-parsed.
 private struct VarianceModifier {
     let variance: Variance
     let nameOffset: Int
@@ -120,24 +119,28 @@ private struct VarianceModifierScan {
 
         // Everything the recovery holds before the name has to be a keyword too — `in out T`
         // recovers both the second modifier and the name into one node.
-        var keywords: Set<String> = [nameNode.text(in: context)]
+        var declared: Set<String> = [nameNode.text(in: context)]
         var blanked = [nameNode.range]
         for leading in recovered.dropLast() {
             let text = leading.text(in: context)
             guard Self.keywords.contains(text) else { return nil }
-            keywords.insert(text)
+            declared.insert(text)
             blanked.append(leading.range)
         }
-        guard let variance = variance(declaredBy: keywords) else { return nil }
+        guard let variance = variance(declaredBy: declared) else { return nil }
         return VarianceModifier(variance: variance, nameOffset: name.range.location, blankedRanges: blanked)
     }
 
     private func variance(declaredBy keywords: Set<String>) -> Variance? {
         switch keywords.sorted() {
-        case ["out"]: .covariant
-        case ["in"]: .contravariant
-        case ["in", "out"]: .invariant
-        default: nil
+        case ["out"]:
+            .covariant
+        case ["in"]:
+            .contravariant
+        case ["in", "out"]:
+            .invariant
+        default:
+            nil
         }
     }
 }

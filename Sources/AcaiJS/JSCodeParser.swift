@@ -26,10 +26,10 @@ public struct JSCodeParser: CodeParser {
         let varianceModifiers = isTypeScript
             ? TypeScriptVarianceModifiers(source: source, fileName: fileName, grammar: grammar)
             : TypeScriptVarianceModifiers(unmodified: source)
-        let source = varianceModifiers.rewrittenSource
-        return grammar.parse(source: source, fileName: fileName) { root in
+        let parsedSource = varianceModifiers.rewrittenSource
+        return grammar.parse(source: parsedSource, fileName: fileName) { root in
             var extractor = JSExtractor(
-                source: source, fileName: fileName, isTypeScript: isTypeScript, root: root,
+                source: parsedSource, fileName: fileName, isTypeScript: isTypeScript, root: root,
                 varianceModifiers: varianceModifiers
             )
             return extractor.extract(from: root)
