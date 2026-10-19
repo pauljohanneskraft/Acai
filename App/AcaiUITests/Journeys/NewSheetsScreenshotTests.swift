@@ -72,6 +72,9 @@ final class NewSheetsScreenshotTests: UIJourneyTestCase {
         sheet.flip(sheet.combineRootsToggle, "the Combine into one codebase toggle")
         sheet.add()
 
+        // Adding selects the codebase it created, whose own screen renames it through a text field
+        // rather than showing it as a row, so the project is reopened here too.
+        reopenSeededProject(browser, detail)
         detail.codebaseRow(named: "Everything").waitOrFail("the combined codebase's row")
     }
 
