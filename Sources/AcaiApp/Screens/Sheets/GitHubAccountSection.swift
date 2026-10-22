@@ -25,6 +25,8 @@ struct GitHubAccountSection: View {
     /// running for up to the code's ~15 minute lifetime and could still sign the user in after
     /// they'd already backed out.
     @State private var pollTask: Task<Void, Never>?
+    /// Held rather than read from the store, so the dialog keeps naming the account while it animates away.
+    @State private var accountPendingSignOut: String?
     #if os(iOS)
     @State private var isPresentingVerificationPage = false
     #endif
@@ -38,6 +40,23 @@ struct GitHubAccountSection: View {
             }
         }
         .onDisappear { pollTask?.cancel() }
+        .confirmationDialog(
+            .app("View.GitHubAccountSection.ConfirmSignOut \(accountPendingSignOut ?? "")"),
+            isPresented: Binding(
+                get: { accountPendingSignOut != nil },
+                set: { if !$0 { accountPendingSignOut = nil } }
+            ),
+            presenting: accountPendingSignOut
+        ) { _ in
+            Button(.app("View.GitHubAccountSection.SignOutConfirm"), role: .destructive) {
+                accountStore.signOut()
+            }
+            .accessibilityIdentifier("github.signOut.confirmButton")
+            Button(.app("View.GitHubAccountSection.SignOutCancel"), role: .cancel) {}
+                .accessibilityIdentifier("github.signOut.cancelButton")
+        } message: { _ in
+            Text(localized: signOutConsequenceLine)
+        }
         #if os(iOS)
         // Attaching the sheet to a background view hides the presentation anchor from the root of
         // the hierarchy, avoiding conflicts with the host sheet already presented.
@@ -83,7 +102,7 @@ struct GitHubAccountSection: View {
             }
             Spacer()
             Button(.app("View.GitHubAccountSection.SignOut"), role: .destructive) {
-                accountStore.signOut()
+                accountPendingSignOut = account.login
             }
             .accessibilityIdentifier("github.signOutButton")
         }
@@ -135,6 +154,12 @@ struct GitHubAccountSection: View {
 
     private var codebaseCountLine: LocalizedStringResource {
         .app("View.GitHubAccountSection.UsedByCodebases \(projectStore.gitHubBackedCodebaseCount)")
+    }
+
+    private var signOutConsequenceLine: LocalizedStringResource {
+        let count = projectStore.gitHubBackedCodebaseCount
+        guard count > 0 else { return .app("View.GitHubAccountSection.SignOutAffectsNoCodebase") }
+        return .app("View.GitHubAccountSection.SignOutLosesAccess \(count)")
     }
 
     private var expiryMessage: LocalizedStringResource? {

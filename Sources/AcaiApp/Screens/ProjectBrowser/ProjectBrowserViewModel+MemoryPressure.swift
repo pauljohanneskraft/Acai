@@ -41,7 +41,7 @@ extension ProjectBrowserViewModel {
 
     var displayedCodebaseIDs: Set<UUID> {
         switch selection {
-        case .codebase(let id), .query(let id):
+        case .codebase(let id), .inspect(let id):
             return [id]
         case .generatedDiagram(let id):
             return Set(generatedDiagram(for: id).map { [$0.codebaseID] } ?? [])
