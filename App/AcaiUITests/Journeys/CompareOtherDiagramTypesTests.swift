@@ -55,7 +55,7 @@ final class CompareOtherDiagramTypesTests: UIJourneyTestCase {
     func testCallGraphComparisonLoads() throws {
         let codebaseDetail = openPreindexedSeededCodebase(analysis: .preindexedComparedWithHEAD)
         let callGraph = codebaseDetail.openDiagramConfiguration(
-            type: "callGraph", as: CallGraphScreen.self, until: { $0.createButton }
+            type: "callgraph", as: CallGraphScreen.self, until: { $0.createButton }
         )
         callGraph.createButton.tapWhenReady("the call graph configuration's Create button")
 

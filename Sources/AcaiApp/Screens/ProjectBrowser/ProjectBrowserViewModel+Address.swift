@@ -54,7 +54,7 @@ extension ProjectBrowserViewModel.Selection {
         switch self {
         case .project(let id), .findings(let id):
             .project(id)
-        case .codebase(let id), .query(let id):
+        case .codebase(let id), .inspect(let id):
             .codebase(id)
         case .generatedDiagram(let id), .freeformDiagram(let id):
             .diagram(id)
