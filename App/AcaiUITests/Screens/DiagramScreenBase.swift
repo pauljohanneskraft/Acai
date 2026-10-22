@@ -73,13 +73,11 @@ class DiagramScreenBase {
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// Opens the Settings tab and scrolls until `element` is in the tree: the tab is a `Form`, which
-    /// on iOS is a lazy `List` whose further-down rows don't exist until they scroll into view.
+    /// Opens the Settings tab and scrolls until `element` lies within the visible settings.
     func revealInSettings(
         _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
     ) {
         openSettingsTab(file: file, line: line)
-        // A macOS scroll view exposes rows scrolled out of sight, so existing isn't the same as visible.
         #if os(macOS)
         var wheelDirection: CGFloat = 1
         var lastOffset: CGFloat?
@@ -94,8 +92,7 @@ class DiagramScreenBase {
             let frame = element.frame
             if visible.contains(frame) { return }
             #if os(macOS)
-            // A swipe barely moves a macOS scroll view; a wheel scroll by the offset centres the element,
-            // and reverses if the last one carried it further away.
+            // A swipe barely moves a macOS scroll view; the wheel reverses if it carried the element further away.
             let offset = visible.midY - frame.midY
             if let lastOffset, abs(offset) >= abs(lastOffset) { wheelDirection = -wheelDirection }
             lastOffset = offset
