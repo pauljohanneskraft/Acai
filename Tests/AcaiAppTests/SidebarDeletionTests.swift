@@ -81,7 +81,7 @@ struct SidebarDeletionTests {
     @Test(arguments: [
         ProjectBrowserViewModel.Selection.repository(URL(fileURLWithPath: "/repos/acai.git")),
         .findings(UUID()),
-        .query(UUID()),
+        .inspect(UUID()),
         .project(UUID()),
         .codebase(UUID()),
         .generatedDiagram(UUID()),
