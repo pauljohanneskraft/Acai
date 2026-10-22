@@ -36,7 +36,7 @@ struct SeededFixtureContractTests {
     }
 
     /// The journeys assert these answers through the interface, so they hold only while the fixture
-    /// produces them: the Query journey expects the mutable-public-state filter to leave exactly
+    /// produces them: the Inspect journey expects the mutable-public-state filter to leave exactly
     /// `Base`, and the guided-route journey expects `Helper` to be the most depended-upon type.
     @Test func theFixtureStillGivesTheAnswersTheJourneysAssert() throws {
         let artifact = try canned("seeded.json")

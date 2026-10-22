@@ -63,7 +63,7 @@ struct AppAddressResolutionTests {
     @Test func everySelectionTheAppOwnsHasAnAddress() {
         let id = UUID()
         #expect(ProjectBrowserViewModel.Selection.findings(id).address == .project(id))
-        #expect(ProjectBrowserViewModel.Selection.query(id).address == .codebase(id))
+        #expect(ProjectBrowserViewModel.Selection.inspect(id).address == .codebase(id))
         #expect(ProjectBrowserViewModel.Selection.freeformDiagram(id).address == .diagram(id))
         #expect(ProjectBrowserViewModel.Selection.repository(URL(string: "https://example.com/r.git")!).address == nil)
     }

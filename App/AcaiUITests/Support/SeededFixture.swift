@@ -141,7 +141,7 @@ extension UIJourneyTestCase {
             analysis: analysis, dynamicTypeSize: dynamicTypeSize, file: file, line: line, function: function)
         let codebaseDetail = CodebaseDetailScreen(app: app)
         detail.codebaseRow(id: seeded.codebaseID).tap(
-            "the seeded codebase's row", until: codebaseDetail.queryButton, file: file, line: line)
+            "the seeded codebase's row", until: codebaseDetail.inspectButton, file: file, line: line)
         return codebaseDetail
     }
 }

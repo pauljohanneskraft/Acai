@@ -2,10 +2,10 @@ import Testing
 import AcaiQuality
 @testable import AcaiApp
 
-@Suite("Query filter state")
-struct QueryFilterStateTests {
+@Suite("Inspect filter state")
+struct InspectFilterStateTests {
     @Test func aFreshFilterIsEmptyAndClearingRestoresThat() {
-        var filter = QueryFilterState()
+        var filter = InspectFilterState()
         #expect(filter.isEmpty)
 
         filter.members.isPublicVar = true
@@ -21,7 +21,7 @@ struct QueryFilterStateTests {
     /// "nothing matched" — showing "no types match your filters" to someone who never set one is the
     /// bug this guards.
     @Test func anEmptyListMeansNoTypesUntilAFilterIsSet() {
-        var filter = QueryFilterState()
+        var filter = InspectFilterState()
         #expect(filter.emptyStateReason(hasAnyType: false) == .codebaseHasNoTypes)
         #expect(filter.emptyStateReason(hasAnyType: true) == .codebaseHasNoTypes)
 

@@ -129,9 +129,13 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
         selectedNodeIDs.subtract(ids)
     }
 
+    var hasDeletableSelection: Bool {
+        !selectedNodeIDs.isEmpty || selectedEdgeID != nil
+    }
+
     /// Deletes the selected edge and/or all selected nodes as a single undoable action.
     func deleteSelection() {
-        guard !selectedNodeIDs.isEmpty || selectedEdgeID != nil else { return }
+        guard hasDeletableSelection else { return }
         recordUndo()
         if let edgeID = selectedEdgeID {
             edges.removeAll { $0.id == edgeID }

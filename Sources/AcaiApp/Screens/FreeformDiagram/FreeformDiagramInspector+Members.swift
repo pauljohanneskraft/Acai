@@ -65,9 +65,12 @@ extension FreeformDiagramInspector {
             Button(role: .destructive) {
                 viewModel.members.removeProperty(from: nodeID, memberID: prop.id)
             } label: {
-                Image(systemName: "minus.circle")
+                Label(.app("View.FreeformDiagramInspector.DeleteProperty"), systemImage: "minus.circle")
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
+            .help(.app("View.FreeformDiagramInspector.DeleteProperty"))
             .accessibilityIdentifier("inspector.removePropertyButton.\(prop.id)")
         }
         .accessibilityIdentifier("inspector.propertyRow.\(prop.id)")
@@ -134,9 +137,12 @@ extension FreeformDiagramInspector {
             Button(role: .destructive) {
                 viewModel.members.removeMethod(from: nodeID, memberID: method.id)
             } label: {
-                Image(systemName: "minus.circle")
+                Label(.app("View.FreeformDiagramInspector.DeleteMethod"), systemImage: "minus.circle")
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
+            .help(.app("View.FreeformDiagramInspector.DeleteMethod"))
             .accessibilityIdentifier("inspector.removeMethodButton.\(method.id)")
         }
         .accessibilityIdentifier("inspector.methodRow.\(method.id)")
