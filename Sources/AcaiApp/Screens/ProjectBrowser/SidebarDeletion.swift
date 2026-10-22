@@ -19,7 +19,7 @@ struct SidebarDiagramDeletion: Equatable {
 }
 
 extension ProjectBrowserViewModel {
-    /// Nil for a row the sidebar does not own (repository, findings, query) or one that no longer exists.
+    /// Nil for a row the sidebar does not own (repository, findings, inspect) or one that no longer exists.
     var selectionDeletion: SidebarDeletion? {
         switch selection {
         case .project(let id):
@@ -32,7 +32,7 @@ extension ProjectBrowserViewModel {
         case .freeformDiagram(let id):
             freeformDiagram(for: id)
                 .map { .diagram(SidebarDiagramDeletion(diagramID: $0.id, name: $0.name, kind: .freeform)) }
-        case .repository, .findings, .query, .none:
+        case .repository, .findings, .inspect, .none:
             nil
         }
     }
