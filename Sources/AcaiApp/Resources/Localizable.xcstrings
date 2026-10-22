@@ -12187,28 +12187,6 @@
         }
       }
     },
-    "View.CodebaseGlobalsSection.NoGlobals" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keine globalen Variablen oder Konstanten in dieser Codebase."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No global variables or constants in this codebase."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune variable ou constante globale dans cette codebase."
-          }
-        }
-      }
-    },
     "View.CodebaseGlobalsSection.GlobalVariablesConstants" : {
       "localizations" : {
         "de" : {
@@ -12227,6 +12205,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Variables et constantes globales"
+          }
+        }
+      }
+    },
+    "View.CodebaseGlobalsSection.NoGlobals" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine globalen Variablen oder Konstanten in dieser Codebase."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No global variables or constants in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune variable ou constante globale dans cette codebase."
           }
         }
       }
@@ -12341,28 +12341,6 @@
         }
       }
     },
-    "View.CodebaseTypesSection.NoTypes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keine Typen in dieser Codebase."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No types in this codebase."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun type dans cette codebase."
-          }
-        }
-      }
-    },
     "View.CodebaseTypesSection.Members %lld" : {
       "localizations" : {
         "de" : {
@@ -12381,6 +12359,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld membres"
+          }
+        }
+      }
+    },
+    "View.CodebaseTypesSection.NoTypes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Typen in dieser Codebase."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No types in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun type dans cette codebase."
           }
         }
       }

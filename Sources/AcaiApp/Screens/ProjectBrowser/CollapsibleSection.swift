@@ -63,8 +63,7 @@ extension CollapsibleSection where Accessory == EmptyView {
     }
 }
 
-/// Stands in for a section's content when it has nothing to list, so an expanded section reads as
-/// empty rather than broken.
+/// Stands in for a section's content when it has nothing to list.
 struct SectionEmptyMessage: View {
     let text: LocalizedStringResource
     let identifier: String
