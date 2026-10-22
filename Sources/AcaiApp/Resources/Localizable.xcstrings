@@ -2539,7 +2539,7 @@
         }
       }
     },
-    "View.QueryView.Done" : {
+    "View.InspectView.Done" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2561,7 +2561,7 @@
         }
       }
     },
-    "View.QueryView.Filter" : {
+    "View.InspectView.Filter" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2583,51 +2583,51 @@
         }
       }
     },
-    "View.CodebaseDetailView.Query" : {
+    "View.CodebaseDetailView.Inspect" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abfrage"
+            "value" : "Inspizieren"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Query"
+            "value" : "Inspect"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Requête"
+            "value" : "Inspecter"
           }
         }
       }
     },
-    "View.QueryView.Query" : {
+    "View.InspectView.Inspect" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abfrage"
+            "value" : "Inspizieren"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Query"
+            "value" : "Inspect"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Requête"
+            "value" : "Inspecter"
           }
         }
       }
     },
-    "View.QueryView.CodebaseNotFound" : {
+    "View.InspectView.CodebaseNotFound" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2649,7 +2649,7 @@
         }
       }
     },
-    "View.QueryView.NotIndexedYet" : {
+    "View.InspectView.NotIndexedYet" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2671,7 +2671,7 @@
         }
       }
     },
-    "View.QueryView.IndexNow" : {
+    "View.InspectView.IndexNow" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2693,7 +2693,7 @@
         }
       }
     },
-    "View.QueryView.Indexing" : {
+    "View.InspectView.Indexing" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2715,7 +2715,7 @@
         }
       }
     },
-    "View.QueryView.IndexingFailed" : {
+    "View.InspectView.IndexingFailed" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2737,7 +2737,7 @@
         }
       }
     },
-    "View.QueryView.ShowOnly" : {
+    "View.InspectView.ShowOnly" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2759,7 +2759,7 @@
         }
       }
     },
-    "View.QueryView.MemberFilter" : {
+    "View.InspectView.MemberFilter" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2781,7 +2781,7 @@
         }
       }
     },
-    "View.QueryView.ClearFilters" : {
+    "View.InspectView.ClearFilters" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2803,7 +2803,7 @@
         }
       }
     },
-    "View.QueryView.NoTypesMatchFilters" : {
+    "View.InspectView.NoTypesMatchFilters" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2825,7 +2825,7 @@
         }
       }
     },
-    "View.QueryView.NoTypesInCodebase" : {
+    "View.InspectView.NoTypesInCodebase" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2847,7 +2847,7 @@
         }
       }
     },
-    "View.QueryView.Members %lld" : {
+    "View.InspectView.Members %lld" : {
       "localizations" : {
         "de" : {
           "variations" : {
@@ -4019,6 +4019,28 @@
         }
       }
     },
+    "KeyboardShortcutReference.DeleteSelectedRow" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählte Zeile löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Selected Row"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la ligne sélectionnée"
+          }
+        }
+      }
+    },
     "KeyboardShortcutReference.Dialogs" : {
       "localizations" : {
         "de" : {
@@ -4323,6 +4345,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sélection (diagrammes libres)"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.Sidebar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seitenleiste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sidebar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barre latérale"
           }
         }
       }
@@ -5665,6 +5709,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Créer un diagramme à partir de la sélection"
+          }
+        }
+      }
+    },
+    "View.FreeformDiagramInspector.DeleteMethod" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Methode löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Method"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la méthode"
+          }
+        }
+      }
+    },
+    "View.FreeformDiagramInspector.DeleteOperand" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operand löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Operand"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l’opérande"
+          }
+        }
+      }
+    },
+    "View.FreeformDiagramInspector.DeleteProperty" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Property löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Property"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la property"
           }
         }
       }
@@ -16377,6 +16487,28 @@
         }
       }
     },
+    "View.GitHubAccountSection.ConfirmSignOut %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von „%@“ abmelden?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out of \"%@\"?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se déconnecter de \"%@\" ?"
+          }
+        }
+      }
+    },
     "View.GitHubAccountSection.CopiedClipboard" : {
       "localizations" : {
         "de" : {
@@ -16571,6 +16703,130 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se déconnecter"
+          }
+        }
+      }
+    },
+    "View.GitHubAccountSection.SignOutAffectsNoCodebase" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Codebase verwendet dieses Konto. Du kannst dich jederzeit wieder anmelden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No codebase uses this account. You can sign in again at any time."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune codebase n'utilise ce compte. Vous pourrez vous reconnecter à tout moment."
+          }
+        }
+      }
+    },
+    "View.GitHubAccountSection.SignOutCancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
+          }
+        }
+      }
+    },
+    "View.GitHubAccountSection.SignOutConfirm" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abmelden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se déconnecter"
+          }
+        }
+      }
+    },
+    "View.GitHubAccountSection.SignOutLosesAccess %lld" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Codebase kann erst nach erneuter Anmeldung wieder pullen oder vergleichen."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Codebases können erst nach erneuter Anmeldung wieder pullen oder vergleichen."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld codebase can no longer pull or compare until you sign in again."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld codebases can no longer pull or compare until you sign in again."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld codebase ne pourra plus puller ni comparer avant votre reconnexion."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld codebases ne pourront plus puller ni comparer avant votre reconnexion."
+                }
+              }
+            }
           }
         }
       }
@@ -20087,6 +20343,28 @@
         }
       }
     },
+    "View.ParameterListEditor.DeleteParameter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parameter löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Parameter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le paramètre"
+          }
+        }
+      }
+    },
     "View.ParameterListEditor.Name" : {
       "localizations" : {
         "de" : {
@@ -20365,6 +20643,28 @@
         }
       }
     },
+    "View.ProjectBrowserView.ConfirmDeleteDiagram %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ löschen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete \"%@\"?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer \"%@\" ?"
+          }
+        }
+      }
+    },
     "View.ProjectBrowserView.ConfirmDeleteProject %@" : {
       "localizations" : {
         "de" : {
@@ -20405,6 +20705,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Supprimer la codebase"
+          }
+        }
+      }
+    },
+    "View.ProjectBrowserView.DeleteDiagram" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Diagram"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le diagramme"
           }
         }
       }
@@ -20669,6 +20991,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Réglages"
+          }
+        }
+      }
+    },
+    "View.ProjectBrowserView.ThisCannotBeUndone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dies kann nicht rückgängig gemacht werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This cannot be undone."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette action est irréversible."
           }
         }
       }
@@ -22705,18 +23049,18 @@
         }
       }
     },
-    "View.RuleCard.Remove" : {
+    "View.RuleCard.Delete" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entfernen"
+            "value" : "Löschen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remove"
+            "value" : "Delete"
           }
         },
         "fr" : {
@@ -24065,6 +24409,94 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Licences"
+          }
+        }
+      }
+    },
+    "View.SidebarDeleteCommands.Delete" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer…"
+          }
+        }
+      }
+    },
+    "View.SidebarDeleteCommands.DeleteCodebase" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase löschen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Codebase…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la codebase…"
+          }
+        }
+      }
+    },
+    "View.SidebarDeleteCommands.DeleteDiagram" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm löschen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Diagram…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le diagramme…"
+          }
+        }
+      }
+    },
+    "View.SidebarDeleteCommands.DeleteProject" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projekt löschen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Project…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le projet…"
           }
         }
       }

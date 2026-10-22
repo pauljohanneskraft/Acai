@@ -149,19 +149,20 @@ struct FreeformDiagramView: View {
                     }
                 }
             }
+            .onChange(of: viewModel.hasDeletableSelection, initial: true) { _, hasSelection in
+                browserModel.canvasHasDeletableSelection = hasSelection
+            }
             .onDisappear {
                 viewModel.saveCanvasState(scale: canvasScale, offset: canvasOffset)
+                browserModel.canvasHasDeletableSelection = false
             }
             .background {
                 // Hidden buttons to capture keyboard shortcuts (external keyboard on iPad/Mac). Touch
                 // users reach the same actions via `canvasContextMenu`'s selection section below.
                 Group {
-                    Button("") {
-                        if !viewModel.selectedNodeIDs.isEmpty || viewModel.selectedEdgeID != nil {
-                            showDeleteConfirmation = true
-                        }
-                    }
-                    .keyboardShortcut(.deleteSelection)
+                    Button("") { showDeleteConfirmation = true }
+                        .keyboardShortcut(.deleteSelection)
+                        .disabled(!viewModel.hasDeletableSelection)
 
                     Button("") { viewModel.clipboard.copySelection() }
                         .keyboardShortcut(.copy)

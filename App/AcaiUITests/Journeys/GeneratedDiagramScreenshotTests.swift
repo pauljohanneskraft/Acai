@@ -71,7 +71,7 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
     func testCallGraphScreenshot() throws {
         let codebaseDetail = openPreindexedSeededCodebase()
         let callGraph = codebaseDetail.openDiagramConfiguration(
-            type: "callGraph", as: CallGraphScreen.self, until: { $0.createButton }
+            type: "callgraph", as: CallGraphScreen.self, until: { $0.createButton }
         )
         callGraph.createButton.tapWhenReady("the call graph configuration's Create button")
 
