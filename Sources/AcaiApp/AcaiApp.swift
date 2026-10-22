@@ -49,7 +49,7 @@ public struct AcaiRootScene: Scene {
         }
         // A shortcut bound only in a macOS-only command is silently missing from an iPad's hardware
         // keyboard. `KeyboardShortcutReferenceTests` rejects that unless the shortcut's group is
-        // `isMacOSOnly`, which is why only `BrowserWindowCommands` is attached on macOS alone.
+        // `isMacOSOnly`, which is why only the commands below are attached on macOS alone.
         .commands {
             ProjectCommands()
             DiagramThemeCommands()
@@ -57,6 +57,7 @@ public struct AcaiRootScene: Scene {
             QuickOpenCommands()
             #if os(macOS)
             BrowserWindowCommands()
+            SidebarDeleteCommands()
             #endif
         }
         // Scene-level (not just on the `WindowGroup`'s content view) so `.commands` above — which

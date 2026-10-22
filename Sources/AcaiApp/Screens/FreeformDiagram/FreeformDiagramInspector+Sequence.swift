@@ -114,9 +114,13 @@ extension FreeformDiagramInspector {
                         operands.remove(at: index)
                         viewModel.sequence.updateFragment(nodeID, operands: operands)
                     } label: {
-                        Image(systemName: "minus.circle")
+                        Label(.app("View.FreeformDiagramInspector.DeleteOperand"), systemImage: "minus.circle")
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.borderless)
+                    .help(.app("View.FreeformDiagramInspector.DeleteOperand"))
+                    .accessibilityIdentifier("inspector.removeOperandButton.\(index)")
                 }
             }
             operandRangeRow(nodeID: nodeID, content: content, index: index, operand: operand)

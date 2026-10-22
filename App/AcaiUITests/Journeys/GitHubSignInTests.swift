@@ -11,7 +11,7 @@ final class GitHubSignInTests: UIJourneyTestCase {
     /// — this out-of-process UI test target has no access to `AcaiApp`'s internal symbols.
     private let fixtureLogin = "octocat"
 
-    func testSigningInWithATokenShowsTheAccountRowThenSigningOutRemovesIt() throws {
+    func testSigningInWithATokenShowsTheAccountRowAndSigningOutAsksFirst() throws {
         let browser = launchSeeded(analysis: .parsed)
         browser.openSettings()
 
@@ -24,7 +24,10 @@ final class GitHubSignInTests: UIJourneyTestCase {
         github.signedInRow.waitOrFail("the signed-in account row")
         XCTAssertTrue(app.staticTexts[fixtureLogin].firstMatch.exists)
 
-        github.signOutButton.tapWhenReady("Sign Out")
-        github.signedInRow.waitForDisappearanceOrFail("the signed-in account row")
+        // Cancelling must keep the account; only the dialog's own Sign Out removes it.
+        github.openSignOutConfirmation()
+        github.cancelSignOut()
+        github.openSignOutConfirmation()
+        github.confirmSignOut()
     }
 }

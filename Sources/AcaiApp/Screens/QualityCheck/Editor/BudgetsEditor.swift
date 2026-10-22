@@ -18,7 +18,7 @@ struct BudgetsEditor: View {
     }
 
     private func row(_ index: Int) -> some View {
-        RuleCard(onRemove: { budgets.remove(at: index) }, content: {
+        RuleCard(onDelete: { budgets.remove(at: index) }, content: {
             Picker(.app("View.BudgetsEditor.Metric"), selection: $budgets[index].metric) {
                 ForEach(MetricBudget.Metric.allCases, id: \.self) { metric in
                     Text(verbatim: metric.rawValue).tag(metric)

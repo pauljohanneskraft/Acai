@@ -22,7 +22,7 @@ final class ScreenCatalogTests: UIJourneyTestCase {
         browser.projectRow(id: seeded.projectID).tap("the seeded project's sidebar row", until: codebaseRow)
 
         let codebaseDetail = CodebaseDetailScreen(app: app)
-        codebaseRow.tap("the seeded codebase's row", until: codebaseDetail.queryButton)
+        codebaseRow.tap("the seeded codebase's row", until: codebaseDetail.inspectButton)
         validateScreenshot("CodebaseDetail", state: "indexed")
 
         // Findings lives on the project screen, so the detail slot has to hold it again: compact

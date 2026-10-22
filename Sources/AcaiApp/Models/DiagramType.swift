@@ -1,11 +1,11 @@
 import Foundation
 
-enum DiagramType: String, Codable, CaseIterable, Identifiable, Sendable {
+enum DiagramType: String, CaseIterable, Identifiable, Sendable {
     case classDiagram = "class"
     case sequenceDiagram = "sequence"
     case stateDiagram = "state"
     case packageDiagram = "package"
-    case callGraph = "callGraph"
+    case callGraph = "callgraph"
     case moduleCoupling = "moduleCoupling"
     case hotspot = "hotspot"
 
