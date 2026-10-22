@@ -19,8 +19,7 @@ final class HotspotScreen: DiagramScreenBase {
     var retryButton: XCUIElement { app.buttons["hotspot.retryButton"].firstMatch }
     var reload: AsyncOperation { AsyncOperation(app: app, identifierPrefix: "hotspot.reload") }
 
-    /// Observed through the reload's own status rather than the error state disappearing: a retry
-    /// that hits the same failure leaves that state exactly where it was.
+    /// A retry that fails again leaves the error state in place, so this waits on the reload's status.
     func retry(file: StaticString = #filePath, line: UInt = #line) {
         retryButton.tapWhenReady("Retry", file: file, line: line)
         reload.waitUntilLoaded("Reloading the hotspot chart", file: file, line: line)

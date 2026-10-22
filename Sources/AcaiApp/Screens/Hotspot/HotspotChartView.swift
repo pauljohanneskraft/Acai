@@ -20,6 +20,7 @@ struct HotspotChartView: View {
     @State private var showSidebar = false
     @State private var fullHistoryPhase: AsyncOperationPhase = .idle
     @State private var reloadPhase: AsyncOperationPhase = .idle
+    @State private var reloadTask: Task<Void, Never>?
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -48,6 +49,7 @@ struct HotspotChartView: View {
             .task {
                 await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
             }
+            .onDisappear { reloadTask?.cancel() }
     }
 
     @ViewBuilder
@@ -84,12 +86,11 @@ struct HotspotChartView: View {
 
     // MARK: - Chart
 
-    /// The retry's status sits above the state branches rather than inside the error one: a retry
-    /// replaces the error state with `loadingState`, so a signal rendered inside it would be torn
-    /// down by the very work it reports on.
+    /// Outside the error state, which a retry replaces; `loadingState` stands in for its spinner.
     private var chartContent: some View {
         VStack(spacing: .zero) {
-            AsyncOperationStatusView(identifierPrefix: "hotspot.reload", phase: reloadPhase)
+            AsyncOperationStatusView(
+                identifierPrefix: "hotspot.reload", phase: reloadPhase.isInFlight ? .idle : reloadPhase)
             stateContent
         }
     }
@@ -139,7 +140,8 @@ struct HotspotChartView: View {
                 FetchFullHistoryButton(
                     remoteURL: remoteURL, phase: $fullHistoryPhase, identifierPrefix: "hotspot.fullHistory"
                 ) {
-                    Task {
+                    reloadTask?.cancel()
+                    reloadTask = Task {
                         await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
                     }
                 }
@@ -162,7 +164,7 @@ struct HotspotChartView: View {
             Text(.app("View.HotspotChartView.WalkingCommitHistory")).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("hotspot.loading")
+        .accessibilityIdentifier(reloadPhase.isInFlight ? "hotspot.reload.loading" : "hotspot.loading")
     }
 
     private func statusState(identifier: String, systemImage: String, text: LocalizedStringResource) -> some View {
@@ -290,13 +292,15 @@ extension HotspotChartView {
     private func reload() {
         guard !reloadPhase.isInFlight else { return }
         reloadPhase = .loading(.app("View.HotspotChartView.WalkingCommitHistory"))
-        Task {
+        reloadTask = Task {
             await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
-            if let message = viewModel.loadError {
-                reloadPhase = .failed(message)
-            } else {
-                reloadPhase = .loaded
+            guard !Task.isCancelled else {
+                reloadPhase = .idle
+                return
             }
+            reloadPhase = viewModel.loadError == nil
+                ? .loaded
+                : .failed(String(localized: .app("View.HotspotChartView.RetryFailed")))
         }
     }
 }

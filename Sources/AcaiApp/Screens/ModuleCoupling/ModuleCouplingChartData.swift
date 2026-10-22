@@ -50,10 +50,14 @@ struct ModuleCouplingChartData {
     }
 
     let points: [Point]
+    private let fallbackGroup: String
 
     /// The line itself is fixed geometry (`A + I = 1`, from `(0, 1)` to `(1, 0)`) rather than data —
     /// callers draw it directly rather than reading it off this type.
-    init(modules: [CodeMetrics.ModuleCoupling]) {
+    ///
+    /// - Parameter fallbackGroup: the module every file with no recognisable module layout falls into.
+    init(modules: [CodeMetrics.ModuleCoupling], fallbackGroup: String) {
+        self.fallbackGroup = fallbackGroup
         points = modules.map { module in
             Point(
                 id: module.name,
@@ -71,18 +75,17 @@ struct ModuleCouplingChartData {
         points.sorted { $0.distance > $1.distance }
     }
 
-    /// `nil` once there are at least two modules to compare; otherwise why the chart has nothing
-    /// to say, so the empty state can name it rather than leaving the user to guess.
+    /// `nil` once there are at least two modules to compare.
     var emptyReason: EmptyReason? {
-        guard let only = points.first else { return .noModules }
-        return points.count == 1 ? .singleModule(name: only.name) : nil
+        guard let only = points.first else { return .noTypes }
+        guard points.count == 1 else { return nil }
+        return only.name == fallbackGroup ? .noModuleLayout : .singleModule(name: only.name)
     }
 
-    /// Instability is a ratio of *cross-module* dependencies, so a lone module's is 0 by
-    /// construction rather than measured — plotting that one point would read as a finding
-    /// ("perfectly stable") instead of as the absence of anything to compare.
+    /// A lone module's instability is 0 by construction, so plotting it would read as a finding.
     enum EmptyReason: Equatable {
-        case noModules
+        case noTypes
+        case noModuleLayout
         case singleModule(name: String)
     }
 }

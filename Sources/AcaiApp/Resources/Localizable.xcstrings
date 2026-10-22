@@ -17271,6 +17271,28 @@
         }
       }
     },
+    "View.HotspotChartView.RetryFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der erneute Versuch ist fehlgeschlagen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The retry didn't succeed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La nouvelle tentative a échoué."
+          }
+        }
+      }
+    },
     "View.HotspotChartView.Sidebar" : {
       "localizations" : {
         "de" : {
@@ -18063,24 +18085,46 @@
         }
       }
     },
-    "View.ModuleCouplingChartView.NoModulesResolved" : {
+    "View.ModuleCouplingChartView.NoModuleLayout" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keine Module zum Darstellen – diese Codebase wurde noch nicht indiziert, oder die Indizierung hat aus ihren Dateipfaden keine Module aufgelöst."
+            "value" : "Alle Dateien landen hier in einem einzigen, unbenannten Modul – ihre Pfade lassen sich nicht in erkannte Module aufteilen, etwa Sources/<Modul>, packages/<Paket> oder <Modul>/src. Kopplung vergleicht Module miteinander, daher gibt es nichts darzustellen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No modules to plot — this codebase hasn't been indexed yet, or indexing resolved no modules from its file paths."
+            "value" : "Every file here falls into a single unnamed module — its paths don't split into recognised modules, such as Sources/<Module>, packages/<Package> or <module>/src. Coupling compares modules with each other, so there is nothing to plot."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucun module à tracer — cette codebase n'a pas encore été indexée, ou l'indexation n'a résolu aucun module à partir de ses chemins de fichiers."
+            "value" : "Tous les fichiers relèvent ici d'un seul module sans nom : leurs chemins ne se répartissent pas en modules reconnus, comme Sources/<Module>, packages/<Package> ou <module>/src. Le couplage compare les modules entre eux, il n'y a donc rien à tracer."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.NoTypesFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung hat in dieser Codebase keine Typen gefunden, daher gibt es keine Module darzustellen. Wenn sich ihre Quellen seit der letzten Indizierung geändert haben, indiziere sie neu."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing found no types in this codebase, so there are no modules to plot. If its sources have changed since it was last indexed, reindex it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a trouvé aucun type dans cette codebase, il n'y a donc aucun module à tracer. Si ses sources ont changé depuis la dernière indexation, réindexez-la."
           }
         }
       }

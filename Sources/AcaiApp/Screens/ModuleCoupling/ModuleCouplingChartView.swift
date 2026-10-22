@@ -26,7 +26,10 @@ struct ModuleCouplingChartView: View {
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
         self.codebase = codebase
-        self.data = ModuleCouplingChartData(modules: artifact.computeMetrics().modules)
+        let modules = ModuleMap(artifact: artifact)
+        self.data = ModuleCouplingChartData(
+            modules: artifact.computeMetrics(modules: modules).modules,
+            fallbackGroup: modules.resolver.fallbackGroup)
     }
 
     private var isCompactWidth: Bool {
@@ -80,9 +83,7 @@ struct ModuleCouplingChartView: View {
 
     // MARK: - Chart
 
-    /// The reindex's status sits above the state branches rather than inside the empty one: a
-    /// reindex that resolves modules replaces the empty state with the chart, so a signal rendered
-    /// inside it would be torn down by the very work it reports on.
+    /// Outside the empty state, which a successful reindex replaces.
     private var chartContent: some View {
         VStack(spacing: .zero) {
             AsyncOperationStatusView(identifierPrefix: "moduleCoupling.reindex", phase: reindexPhase)
@@ -101,15 +102,14 @@ struct ModuleCouplingChartView: View {
         }
     }
 
-    /// Only the no-modules case has an action: a single module is what the codebase *is*, so
-    /// reindexing it would resolve the same one module again.
+    /// Reindexing unchanged paths would resolve the same modules, so only "no types" offers it.
     private func emptyState(_ reason: ModuleCouplingChartData.EmptyReason) -> some View {
         VStack(spacing: .spacingM) {
             Image(systemName: "chart.xyaxis.line").font(.system(size: 28)).foregroundStyle(.secondary)
             Text(localized: text(for: reason))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            if reason == .noModules {
+            if reason == .noTypes {
                 reindexButton
             }
         }
@@ -121,8 +121,10 @@ struct ModuleCouplingChartView: View {
 
     private func text(for reason: ModuleCouplingChartData.EmptyReason) -> LocalizedStringResource {
         switch reason {
-        case .noModules:
-            .app("View.ModuleCouplingChartView.NoModulesResolved")
+        case .noTypes:
+            .app("View.ModuleCouplingChartView.NoTypesFound")
+        case .noModuleLayout:
+            .app("View.ModuleCouplingChartView.NoModuleLayout")
         case .singleModule(let name):
             .app("View.ModuleCouplingChartView.OnlyOneModule \(name)")
         }

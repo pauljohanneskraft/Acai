@@ -1,7 +1,5 @@
 import XCTest
 
-/// The chart's own marks are `Charts`-drawn and matched by their accessibility labels, so what this
-/// adds over `DiagramScreenBase` is the empty state and the Reindex it offers.
 final class ModuleCouplingScreen: DiagramScreenBase {
     var emptyState: XCUIElement { app.descendants(matching: .any)["moduleCoupling.emptyState"].firstMatch }
     var reindexButton: XCUIElement { app.buttons["moduleCoupling.reindexButton"].firstMatch }

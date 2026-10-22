@@ -28,28 +28,31 @@ struct ModuleCouplingChartDataTests {
     @Test("A module on the main sequence is balanced")
     func onLineIsBalanced() throws {
         let data = ModuleCouplingChartData(
-            modules: [try module(name: "M", instability: 0.5, abstractness: 0.5, distance: 0)])
+            modules: [try module(name: "M", instability: 0.5, abstractness: 0.5, distance: 0)], fallbackGroup: "root")
         #expect(data.points.first?.zone == .balanced)
     }
 
     @Test("Stable and concrete, far from the line, is the Zone of Pain")
     func stableConcreteIsPainful() throws {
         let data = ModuleCouplingChartData(
-            modules: [try module(name: "Core", instability: 0.05, abstractness: 0.0, distance: 0.95)])
+            modules: [try module(name: "Core", instability: 0.05, abstractness: 0.0, distance: 0.95)],
+            fallbackGroup: "root")
         #expect(data.points.first?.zone == .painful)
     }
 
     @Test("Unstable and abstract, far from the line, is the Zone of Uselessness")
     func unstableAbstractIsUseless() throws {
         let data = ModuleCouplingChartData(
-            modules: [try module(name: "Plugin", instability: 0.95, abstractness: 1.0, distance: 0.95)])
+            modules: [try module(name: "Plugin", instability: 0.95, abstractness: 1.0, distance: 0.95)],
+            fallbackGroup: "root")
         #expect(data.points.first?.zone == .useless)
     }
 
     @Test("A small distance stays balanced regardless of instability")
     func smallDistanceStaysBalanced() throws {
         let data = ModuleCouplingChartData(
-            modules: [try module(name: "Near", instability: 0.1, abstractness: 0.85, distance: 0.05)])
+            modules: [try module(name: "Near", instability: 0.1, abstractness: 0.85, distance: 0.05)],
+            fallbackGroup: "root")
         #expect(data.points.first?.zone == .balanced)
     }
 
@@ -59,20 +62,47 @@ struct ModuleCouplingChartDataTests {
             try module(name: "Close", instability: 0.5, abstractness: 0.5, distance: 0.1),
             try module(name: "Far", instability: 0.9, abstractness: 0.9, distance: 0.8),
             try module(name: "Mid", instability: 0.3, abstractness: 0.3, distance: 0.4)
-        ])
+        ], fallbackGroup: "root")
         #expect(data.rankedByDistance.map(\.name) == ["Far", "Mid", "Close"])
     }
 
-    @Test("A codebase that resolved no modules says exactly that")
-    func noModulesIsItsOwnReason() {
-        #expect(ModuleCouplingChartData(modules: []).emptyReason == .noModules)
+    @Test("A codebase whose indexing found no types says exactly that")
+    func noTypesIsItsOwnReason() {
+        #expect(ModuleCouplingChartData(modules: [], fallbackGroup: "root").emptyReason == .noTypes)
     }
 
     @Test("A lone module names itself, since coupling has nothing to compare it against")
     func singleModuleNamesItself() throws {
         let data = ModuleCouplingChartData(
-            modules: [try module(name: "Only", instability: 0, abstractness: 0.5, distance: 0.5)])
+            modules: [try module(name: "Only", instability: 0, abstractness: 0.5, distance: 0.5)],
+            fallbackGroup: "root")
         #expect(data.emptyReason == .singleModule(name: "Only"))
+    }
+
+    @Test("A lone fallback group means the paths had no module layout, not that there is one module")
+    func fallbackGroupIsNoModuleLayout() throws {
+        let data = ModuleCouplingChartData(
+            modules: [try module(name: "root", instability: 0, abstractness: 0, distance: 1)],
+            fallbackGroup: "root")
+        #expect(data.emptyReason == .noModuleLayout)
+    }
+
+    @Test("The fallback group is whatever the resolver names it")
+    func fallbackGroupIsNotHardcoded() throws {
+        let modules = [try module(name: "root", instability: 0, abstractness: 0, distance: 1)]
+        #expect(ModuleCouplingChartData(modules: modules, fallbackGroup: "other").emptyReason
+            == .singleModule(name: "root"))
+        let ungrouped = [try module(name: "other", instability: 0, abstractness: 0, distance: 1)]
+        #expect(ModuleCouplingChartData(modules: ungrouped, fallbackGroup: "other").emptyReason == .noModuleLayout)
+    }
+
+    @Test("A fallback group beside a real module is still plotted")
+    func fallbackGroupBesideAModuleIsPlottable() throws {
+        let data = ModuleCouplingChartData(modules: [
+            try module(name: "root", instability: 0.2, abstractness: 0.8, distance: 0),
+            try module(name: "Core", instability: 0.8, abstractness: 0.2, distance: 0)
+        ], fallbackGroup: "root")
+        #expect(data.emptyReason == nil)
     }
 
     @Test("Two modules are enough to plot, so there is no reason to report")
@@ -80,7 +110,7 @@ struct ModuleCouplingChartDataTests {
         let data = ModuleCouplingChartData(modules: [
             try module(name: "A", instability: 0.2, abstractness: 0.8, distance: 0),
             try module(name: "B", instability: 0.8, abstractness: 0.2, distance: 0)
-        ])
+        ], fallbackGroup: "root")
         #expect(data.emptyReason == nil)
     }
 
@@ -89,7 +119,7 @@ struct ModuleCouplingChartDataTests {
         let data = ModuleCouplingChartData(modules: [
             try module(name: "A", instability: 0, abstractness: 1, distance: 0),
             try module(name: "B", instability: 1, abstractness: 0, distance: 0)
-        ])
+        ], fallbackGroup: "root")
         #expect(data.points.count == 2)
         #expect(Set(data.points.map(\.id)) == ["A", "B"])
     }
