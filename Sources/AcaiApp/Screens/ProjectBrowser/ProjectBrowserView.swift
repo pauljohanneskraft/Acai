@@ -38,6 +38,10 @@ public struct ProjectBrowserView: View {
     @State var renamingText: String = ""
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
+    #if os(macOS)
+    @State var diagramPendingDeletion: SidebarDiagramDeletion?
+    @FocusState var sidebarIsFocused: Bool
+    #endif
     @State private var newProjectPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility
 
@@ -52,7 +56,7 @@ public struct ProjectBrowserView: View {
             return model
         }())
         self.windowAddress = windowAddress
-        _columnVisibility = State(initialValue: windowAddress == nil ? .automatic : .detailOnly)
+        _columnVisibility = State(initialValue: initialAddress == nil ? .automatic : .detailOnly)
     }
 
     public var body: some View {
@@ -127,8 +131,12 @@ public struct ProjectBrowserView: View {
         .onChange(of: model.selection, initial: true) { _, selection in updateDiagramClaim(for: selection) }
         .onDisappear { browserWindows.windowClosed(windowToken) }
         .focusedSceneValue(\.browserWindowActions, windowActions)
+        .focusedSceneValue(
+            \.newProjectAction,
+            NewProjectAction(isPresentingSheet: isPresentingSheet) { newProjectPresented = true })
         #if os(macOS)
         .focusedSceneObject(quickOpenPresenter)
+        .focusedSceneValue(\.sidebarDeleteAction, sidebarDeleteAction)
         .background {
             HostingWindowReader { window in
                 browserWindows.windowOpened(windowToken) { [weak window] in
@@ -157,6 +165,9 @@ public struct ProjectBrowserView: View {
         .onChange(of: quickOpenPresenter.isPresented) { _, shown in
             if shown, presentedSheetCount > 1 { quickOpenPresenter.isPresented = false }
         }
+        #endif
+        #if os(macOS)
+        .modifier(SidebarDiagramDeletionConfirmation(deletion: $diagramPendingDeletion, model: model))
         #endif
         .modifier(ExportPresentation(model: model))
         .modifier(StoreErrorAlert(
@@ -203,6 +214,14 @@ public struct ProjectBrowserView: View {
     }
     #endif
 
+    private var isPresentingSheet: Bool {
+        #if os(macOS)
+        newProjectPresented || quickOpenPresenter.isPresented
+        #else
+        presentedSheetCount > 0
+        #endif
+    }
+
     // MARK: - Sidebar (Left Column)
 
     private var sidebarContent: some View {
@@ -215,6 +234,10 @@ public struct ProjectBrowserView: View {
 
                 repositoriesSection
             }
+            #if os(macOS)
+            .focused($sidebarIsFocused)
+            .background { deleteSelectionShortcut }
+            #endif
 
             // On compact width (iPhone) this action lives in the toolbar instead — a footer button
             // pinned below a short (or empty) list reads as an unexpected floating control there.
@@ -270,8 +293,8 @@ public struct ProjectBrowserView: View {
             FindingsView(projectID: projectID)
                 .id(projectID)
                 .environmentObject(model)
-        case .query(let codebaseID):
-            QueryView(codebaseID: codebaseID)
+        case .inspect(let codebaseID):
+            InspectView(codebaseID: codebaseID)
                 .id(codebaseID)
                 .environmentObject(model)
         case .none:

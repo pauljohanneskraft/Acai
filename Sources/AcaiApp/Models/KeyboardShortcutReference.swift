@@ -32,6 +32,12 @@ struct KeyboardShortcutReference: Identifiable, Sendable {
 }
 
 extension KeyboardShortcutReference {
+    static let newProject = KeyboardShortcutReference(
+        id: "newProject", shortcut: KeyboardShortcut("n", modifiers: .command),
+        name: .app("KeyboardShortcutReference.NewProject"))
+    static let addCodebase = KeyboardShortcutReference(
+        id: "addCodebase", shortcut: KeyboardShortcut("n", modifiers: [.command, .shift]),
+        name: .app("KeyboardShortcutReference.AddCodebase"))
     static let fitToView = KeyboardShortcutReference(
         id: "fitToView", shortcut: KeyboardShortcut("0", modifiers: .command),
         name: .app("KeyboardShortcutReference.FitToView"))
@@ -85,12 +91,19 @@ extension KeyboardShortcutReference {
     static let quickOpen = KeyboardShortcutReference(
         id: "quickOpen", shortcut: KeyboardShortcut("o", modifiers: [.command, .shift]),
         name: .app("KeyboardShortcutReference.QuickOpen"))
+    static let newWindow = KeyboardShortcutReference(
+        id: "newWindow", shortcut: KeyboardShortcut("n", modifiers: [.command, .option]),
+        name: .app("KeyboardShortcutReference.NewWindow"))
     static let openInNewWindow = KeyboardShortcutReference(
         id: "openInNewWindow", shortcut: KeyboardShortcut("o", modifiers: [.command, .option]),
         name: .app("KeyboardShortcutReference.OpenInNewWindow"))
     static let copyLink = KeyboardShortcutReference(
         id: "copyLink", shortcut: KeyboardShortcut("c", modifiers: [.command, .option]),
         name: .app("KeyboardShortcutReference.CopyLink"))
+    /// The sidebar's selected row; `deleteSelection` is the freeform canvas's.
+    static let deleteSidebarItem = KeyboardShortcutReference(
+        id: "deleteSidebarItem", shortcut: KeyboardShortcut(.delete, modifiers: []),
+        name: .app("KeyboardShortcutReference.DeleteSelectedRow"))
     static let keyboardShortcuts = KeyboardShortcutReference(
         // Not ⇧⌘/: iPadOS keeps that for itself, and the Mac and iPad share one set of keys.
         id: "keyboardShortcuts", shortcut: KeyboardShortcut("/", modifiers: .command),
@@ -102,12 +115,14 @@ extension KeyboardShortcutReference {
         let id: String
         let title: LocalizedStringResource
         let shortcuts: [KeyboardShortcutReference]
-        /// The feature behind these shortcuts is macOS-only, so the panel hides the group elsewhere and
-        /// `KeyboardShortcutReferenceTests` lets their menu command be attached on macOS only.
+        /// Set when the feature or the key itself is macOS-only; the panel hides the group elsewhere.
         var isMacOSOnly = false
     }
 
     static let allGroups: [Group] = [
+        Group(
+            id: "creation", title: .app("KeyboardShortcutReference.ProjectsAndCodebases"),
+            shortcuts: [.newProject, .addCodebase]),
         Group(id: "canvas", title: .app("KeyboardShortcutReference.Canvas"), shortcuts: [.fitToView]),
         Group(
             id: "find", title: .app("KeyboardShortcutReference.FindClassDiagrams"),
@@ -121,10 +136,12 @@ extension KeyboardShortcutReference {
             shortcuts: [.confirmDialog, .cancelDialog]),
         Group(id: "navigation", title: .app("KeyboardShortcutReference.Navigation"), shortcuts: [.quickOpen]),
         Group(
-            id: "sidebar", title: .app("KeyboardShortcutReference.Sidebar"), shortcuts: [.cancelRename]),
+            id: "sidebar", title: .app("KeyboardShortcutReference.Sidebar"),
+            shortcuts: [.deleteSidebarItem], isMacOSOnly: true),
+        Group(id: "renaming", title: .app("KeyboardShortcutReference.Renaming"), shortcuts: [.cancelRename]),
         Group(
             id: "windows", title: .app("KeyboardShortcutReference.Windows"),
-            shortcuts: [.openInNewWindow, .copyLink], isMacOSOnly: true),
+            shortcuts: [.newWindow, .openInNewWindow, .copyLink], isMacOSOnly: true),
         Group(id: "help", title: .app("KeyboardShortcutReference.Help"), shortcuts: [.keyboardShortcuts])
     ]
 

@@ -17,20 +17,20 @@ struct MemberFilterEditor: View {
                     Text(verbatim: kind.rawValue).tag(MemberKind?.some(kind))
                 }
             }
-            .accessibilityIdentifier("query.memberFilter.kindPicker")
+            .accessibilityIdentifier("inspect.memberFilter.kindPicker")
             TextField(text: $filter.minParameters.asText) {
                 Text(.app("View.MemberFilterEditor.MinParametersEG"))
             }
             .textFieldStyle(.roundedBorder)
-            .accessibilityIdentifier("query.memberFilter.minParametersField")
+            .accessibilityIdentifier("inspect.memberFilter.minParametersField")
             // `.toggleStyle(.button)`: a native `Switch` isn't reliably tappable by identifier
             // across platforms, matching `FindingsView.showSuppressedToggle`.
             Toggle(.app("View.MemberFilterEditor.MutablePublicStateOnly"), isOn: $filter.isPublicVar.or(default: false))
                 .toggleStyle(.button)
-                .accessibilityIdentifier("query.memberFilter.mutablePublicStateToggle")
+                .accessibilityIdentifier("inspect.memberFilter.mutablePublicStateToggle")
             Toggle(.app("View.MemberFilterEditor.OverridesOnly"), isOn: $filter.isOverride.or(default: false))
                 .toggleStyle(.button)
-                .accessibilityIdentifier("query.memberFilter.overridesToggle")
+                .accessibilityIdentifier("inspect.memberFilter.overridesToggle")
         }
     }
 }

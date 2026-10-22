@@ -28,7 +28,7 @@ struct LayersEditor: View {
     private func enabledBody(_ rule: Binding<LayerRule>) -> some View {
         Text(.app("View.LayersEditor.LayersTopHighestLevel")).font(.caption).foregroundStyle(.secondary)
         ForEach(rule.layers.indices, id: \.self) { index in
-            RuleCard(onRemove: { rule.wrappedValue.layers.remove(at: index) }, content: {
+            RuleCard(onDelete: { rule.wrappedValue.layers.remove(at: index) }, content: {
                 TextField(text: rule.layers[index].name) {
                     Text(.app("View.LayersEditor.LayerNameEG"))
                 }

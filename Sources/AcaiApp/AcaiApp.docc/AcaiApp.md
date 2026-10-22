@@ -117,6 +117,14 @@ The comparison side is extracted read-only — the working tree, index and `HEAD
 and no `git` executable is involved, so it behaves identically on iOS. Changed elements are
 colour-coded and badged; the panel also lists changed files and the findings delta.
 
+## Inspect
+
+**Inspect** in a codebase's header lists every type the index found, each expanding to its members.
+The filter sheet takes the same selector vocabulary the quality rules and the class diagram's filter
+use, plus member-level conditions — kind, a minimum parameter count, mutable public state,
+overrides. It is the same structural query `acai inspect` and the MCP server's inspect tool run, so
+a rule tried here reads the same way on the command line.
+
 ## Search
 
 Types, diagrams and codebases are searchable through quick-open — ⇧⌘O on macOS and on an iPad with a
@@ -141,7 +149,8 @@ or isn't an Açaí link at all, the app says so and stays where it was.
 ## Windows
 
 On macOS, **Open in New Window** in a project, codebase or diagram's context menu (or **File › Open
-in New Window**, ⌥⌘O, for the selection) gives it a window of its own. Each window navigates
+in New Window**, ⌥⌘O, for the selection) gives it a window of its own, and **File › New Window**, ⌥⌘N,
+opens an empty one. Each window navigates
 independently; what you select in one doesn't move another. Windows reopen where they were after a
 relaunch.
 

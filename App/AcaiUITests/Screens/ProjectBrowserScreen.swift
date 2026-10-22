@@ -25,8 +25,11 @@ final class ProjectBrowserScreen {
         app.descendants(matching: .any)["sidebar.project.\(id)"]
     }
 
+    /// The row's label, not a subscript: the identifier also reaches the never-hittable icon.
     func codebaseRow(id: String) -> XCUIElement {
-        app.descendants(matching: .any)["sidebar.codebase.\(id)"]
+        app.staticTexts.matching(
+            NSPredicate(format: "identifier == %@", "sidebar.codebase.\(id)")
+        ).firstMatch
     }
 
     /// A predicate rather than a subscript: identifier subscripts are capped at 128 characters, which a
@@ -72,6 +75,21 @@ final class ProjectBrowserScreen {
         deleteCodebaseConfirmButton.tapWhenReady("the codebase delete confirmation", file: file, line: line)
         row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
     }
+
+    #if os(macOS)
+    /// Selects the row (until `selected` shows), presses ⌫, then confirms.
+    func deleteCodebaseWithKeyboard(
+        _ row: XCUIElement, until selected: XCUIElement,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        row.tap("the codebase's sidebar row", until: selected, file: file, line: line)
+        app.typeShortcut(
+            "⌫", key: XCUIKeyboardKey.delete.rawValue, modifierFlags: [],
+            until: deleteCodebaseConfirmButton, file: file, line: line)
+        deleteCodebaseConfirmButton.tapWhenReady("the codebase delete confirmation", file: file, line: line)
+        row.waitForDisappearanceOrFail("the deleted codebase's sidebar row", file: file, line: line)
+    }
+    #endif
 
     /// For a codebase added at test runtime (e.g. cloned from GitHub), whose `id` is a fresh random
     /// UUID the test can't predict ahead of time — matches the row's visible name label instead.
