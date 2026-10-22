@@ -5669,6 +5669,72 @@
         }
       }
     },
+    "View.FreeformDiagramInspector.DeleteMethod" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Methode löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Method"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la méthode"
+          }
+        }
+      }
+    },
+    "View.FreeformDiagramInspector.DeleteOperand" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operand löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Operand"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l’opérande"
+          }
+        }
+      }
+    },
+    "View.FreeformDiagramInspector.DeleteProperty" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Property löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Property"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer la property"
+          }
+        }
+      }
+    },
     "View.FreeformDiagramInspector.DeleteSelected" : {
       "localizations" : {
         "de" : {
@@ -19973,6 +20039,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajouter un paramètre"
+          }
+        }
+      }
+    },
+    "View.ParameterListEditor.DeleteParameter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parameter löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Parameter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le paramètre"
           }
         }
       }
