@@ -24,8 +24,8 @@ struct SettingsView: View {
         // `minWidth`/`idealWidth`, not a fixed `width`: at the default text size the window sizes
         // to 420pt exactly as before, but a fixed width left no room to grow into at the largest
         // accessibility text sizes, where rows need more than 420pt to stay legible.
-        .frame(minWidth: 420, idealWidth: 420)
-        .fixedSize(horizontal: false, vertical: true)
+        // A bounded, scrolling height: sized to the licence list, the window outgrew the screen.
+        .frame(minWidth: 420, idealWidth: 420, minHeight: 320, idealHeight: 560)
         .padding()
         .accessibilityIdentifier("settings.accountsPane")
     }

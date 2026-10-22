@@ -24,7 +24,7 @@ final class CodebaseDetailScreen {
         reindexOperation.waitUntilLoaded("Reindexing the codebase", file: file, line: line)
     }
 
-    /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callGraph"`).
+    /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callgraph"`).
     func diagramButton(type: String) -> XCUIElement {
         app.buttons["codebaseDetail.diagramButton.\(type)"]
     }
@@ -89,9 +89,9 @@ final class CodebaseDetailScreen {
         return diagram
     }
 
-    /// Opens `QueryView`. Shown only once the codebase has an artifact — same gating as
+    /// Opens `InspectView`. Shown only once the codebase has an artifact — same gating as
     /// `diagramButton`, so it only appears after a successful reindex.
-    var queryButton: XCUIElement { app.buttons["codebaseDetail.queryButton"] }
+    var inspectButton: XCUIElement { app.buttons["codebaseDetail.inspectButton"] }
 
     /// Shown once a first reindex finishes, until hidden; `guidedRouteButton` brings it back.
     var guidedRouteCard: XCUIElement { app.descendants(matching: .any)["guidedRoute.card"] }
