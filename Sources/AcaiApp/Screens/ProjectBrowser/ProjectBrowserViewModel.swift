@@ -11,6 +11,8 @@ import AcaiRender
 final class ProjectBrowserViewModel: ObservableObject {
     @Published var store: ProjectStore
     @Published var selection: Selection?
+    /// While set, ⌫ belongs to the freeform canvas rather than to the sidebar's selection.
+    @Published var canvasHasDeletableSelection = false
     @Published var pendingExport: PendingExport?
 
     enum Selection: Hashable {

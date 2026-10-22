@@ -37,6 +37,10 @@ public struct ProjectBrowserView: View {
     @State var renamingText: String = ""
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
+    #if os(macOS)
+    @State var diagramPendingDeletion: SidebarDiagramDeletion?
+    @FocusState var sidebarIsFocused: Bool
+    #endif
     @State private var newProjectPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility
 
@@ -131,6 +135,7 @@ public struct ProjectBrowserView: View {
             NewProjectAction(isPresentingSheet: isPresentingSheet) { newProjectPresented = true })
         #if os(macOS)
         .focusedSceneObject(quickOpenPresenter)
+        .focusedSceneValue(\.sidebarDeleteAction, sidebarDeleteAction)
         .background {
             HostingWindowReader { window in
                 browserWindows.windowOpened(windowToken) { [weak window] in
@@ -159,6 +164,9 @@ public struct ProjectBrowserView: View {
         .onChange(of: quickOpenPresenter.isPresented) { _, shown in
             if shown, presentedSheetCount > 1 { quickOpenPresenter.isPresented = false }
         }
+        #endif
+        #if os(macOS)
+        .modifier(SidebarDiagramDeletionConfirmation(deletion: $diagramPendingDeletion, model: model))
         #endif
         .modifier(ExportPresentation(model: model))
         .modifier(StoreErrorAlert(
@@ -225,6 +233,10 @@ public struct ProjectBrowserView: View {
 
                 repositoriesSection
             }
+            #if os(macOS)
+            .focused($sidebarIsFocused)
+            .background { deleteSelectionShortcut }
+            #endif
 
             // On compact width (iPhone) this action lives in the toolbar instead — a footer button
             // pinned below a short (or empty) list reads as an unexpected floating control there.
