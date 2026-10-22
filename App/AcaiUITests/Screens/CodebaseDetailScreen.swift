@@ -24,7 +24,7 @@ final class CodebaseDetailScreen {
         reindexOperation.waitUntilLoaded("Reindexing the codebase", file: file, line: line)
     }
 
-    /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callGraph"`).
+    /// `type` is a `DiagramType.rawValue` (e.g. `"class"`, `"sequence"`, `"callgraph"`).
     func diagramButton(type: String) -> XCUIElement {
         app.buttons["codebaseDetail.diagramButton.\(type)"]
     }
