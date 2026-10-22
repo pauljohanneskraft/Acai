@@ -11,6 +11,8 @@ import AcaiRender
 final class ProjectBrowserViewModel: ObservableObject {
     @Published var store: ProjectStore
     @Published var selection: Selection?
+    /// While set, ⌫ belongs to the freeform canvas rather than to the sidebar's selection.
+    @Published var canvasHasDeletableSelection = false
     @Published var pendingExport: PendingExport?
 
     enum Selection: Hashable {
@@ -21,9 +23,9 @@ final class ProjectBrowserViewModel: ObservableObject {
         /// Identified by its credential-free remote URL.
         case repository(URL)
         case findings(UUID)
-        /// Identified by codebase id — the query is scoped to one codebase's already-parsed
+        /// Identified by codebase id — the inspection is scoped to one codebase's already-parsed
         /// artifact, the same way `TypeQuery` itself is.
-        case query(UUID)
+        case inspect(UUID)
     }
 
     private(set) var pendingOpen: Task<Void, Never>?
@@ -103,7 +105,7 @@ final class ProjectBrowserViewModel: ObservableObject {
             repositoryIndex().contains { $0.remoteURL == remoteURL }
         case .findings(let projectID):
             store.projects.contains { $0.id == projectID }
-        case .query(let id):
+        case .inspect(let id):
             codebase(for: id) != nil
         }
     }

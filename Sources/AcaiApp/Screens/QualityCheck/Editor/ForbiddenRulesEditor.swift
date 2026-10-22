@@ -22,7 +22,7 @@ struct ForbiddenRulesEditor: View {
     }
 
     private func row(_ index: Int) -> some View {
-        RuleCard(onRemove: { rules.remove(at: index) }, content: {
+        RuleCard(onDelete: { rules.remove(at: index) }, content: {
             SelectorEditor(title: .app("View.ForbiddenRulesEditor.From"), selector: $rules[index].from)
             SelectorEditor(title: .app("View.ForbiddenRulesEditor.To"), selector: $rules[index].to)
             HStack {
@@ -58,7 +58,7 @@ struct ContractsEditor: View {
     }
 
     private func row(_ index: Int) -> some View {
-        RuleCard(onRemove: { contracts.remove(at: index) }, content: {
+        RuleCard(onDelete: { contracts.remove(at: index) }, content: {
             SelectorEditor(title: .app("View.ContractsEditor.IntoProtectedRegion"), selector: $contracts[index].into)
             SelectorEditor(title: .app("View.ContractsEditor.OnlyAllowedSources"), selector: $contracts[index].only)
             HStack {

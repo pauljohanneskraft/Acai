@@ -155,7 +155,7 @@ extension CodebaseDetailView {
                 Spacer()
             }
             if artifact != nil {
-                queryButton(codebase: codebase)
+                inspectButton(codebase: codebase)
                 if codebase.guidedRoute != .offered {
                     guidedRouteButton(codebase: codebase)
                 }
@@ -182,14 +182,14 @@ extension CodebaseDetailView {
         }
     }
 
-    /// Opens `QueryView`, scoped to this codebase.
-    private func queryButton(codebase: Codebase) -> some View {
+    /// Opens `InspectView`, scoped to this codebase.
+    private func inspectButton(codebase: Codebase) -> some View {
         Button {
-            model.selection = .query(codebase.id)
+            model.selection = .inspect(codebase.id)
         } label: {
-            Label(.app("View.CodebaseDetailView.Query"), systemImage: "magnifyingglass")
+            Label(.app("View.CodebaseDetailView.Inspect"), systemImage: "magnifyingglass")
         }
-        .accessibilityIdentifier("codebaseDetail.queryButton")
+        .accessibilityIdentifier("codebaseDetail.inspectButton")
     }
 
     private func guidedRouteButton(codebase: Codebase) -> some View {

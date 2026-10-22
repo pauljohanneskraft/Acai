@@ -20,6 +20,35 @@ final class GitHubAccountScreen {
     var signInWithDeviceFlowButton: XCUIElement { app.buttons["github.signInWithDeviceFlowButton"] }
     var signedInRow: XCUIElement { app.descendants(matching: .any)["github.signedInRow"] }
     var signOutButton: XCUIElement { app.buttons["github.signOutButton"] }
+    /// `.firstMatch`: a `.confirmationDialog` action can surface as more than one accessibility node.
+    var signOutConfirmButton: XCUIElement { app.buttons["github.signOut.confirmButton"].firstMatch }
+    var signOutCancelButton: XCUIElement { app.buttons["github.signOut.cancelButton"].firstMatch }
+
+    /// Taps Sign Out, leaving its confirmation on screen for the caller to answer.
+    func openSignOutConfirmation(file: StaticString = #filePath, line: UInt = #line) {
+        signOutButton.tapWhenReady("Sign Out", file: file, line: line)
+        signOutConfirmButton.waitOrFail("the sign-out confirmation", file: file, line: line)
+    }
+
+    /// iOS presents the dialog as a popover without its Cancel button; tapping outside cancels it.
+    func cancelSignOut(file: StaticString = #filePath, line: UInt = #line) {
+        #if os(iOS)
+        // Inside the Settings sheet but off the dialog: a tap outside the sheet dismisses it too on iPad.
+        let scopeChecklist = app.descendants(matching: .any)["github.scopeChecklist"].firstMatch
+        scopeChecklist.waitOrFail("the scope checklist beside the sign-out confirmation", file: file, line: line)
+        SystemBanners().dismiss(file: file, line: line)
+        scopeChecklist.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        #else
+        signOutCancelButton.tapWhenReady("Cancel, in the sign-out confirmation", file: file, line: line)
+        #endif
+        signOutConfirmButton.waitForDisappearanceOrFail("the sign-out confirmation", file: file, line: line)
+        signedInRow.waitOrFail("the signed-in account row after cancelling", file: file, line: line)
+    }
+
+    func confirmSignOut(file: StaticString = #filePath, line: UInt = #line) {
+        signOutConfirmButton.tapWhenReady("Sign Out, in the confirmation", file: file, line: line)
+        signedInRow.waitForDisappearanceOrFail("the signed-in account row", file: file, line: line)
+    }
 
     /// `NewCodebaseSheet`'s GitHub tab reads signed-in state from Settings rather than embedding its
     /// own sign-in UI. A fixture launch redirects `GitHubTokenStore` into the run's disposable
