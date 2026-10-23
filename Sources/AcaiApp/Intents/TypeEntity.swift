@@ -2,20 +2,46 @@ import AcaiCore
 import AppIntents
 import Foundation
 
-/// A declared type, addressed by the artifact's own type id — the same identity the app's links,
-/// the CLI and the MCP server use, so a Shortcut can carry one between actions.
-///
-/// Its static strings live in the app targets' `AppIntents.xcstrings`: App Intents metadata only
-/// resolves them from the main bundle.
+/// A declared type in one codebase; its static strings live in the app targets' `AppIntents.xcstrings`.
 struct TypeEntity: AppEntity {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(
         name: LocalizedStringResource("Intent.TypeEntity.TypeName", table: "AppIntents"))
     static let defaultQuery = TypeEntityQuery()
 
+    /// A type id alone is only unique within one artifact.
+    struct Address: Hashable, Sendable {
+        let codebaseID: UUID
+        let typeID: String
+
+        var id: String { "\(codebaseID.uuidString)/\(typeID)" }
+
+        init(codebaseID: UUID, typeID: String) {
+            self.codebaseID = codebaseID
+            self.typeID = typeID
+        }
+
+        init?(_ id: String) {
+            let parts = id.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
+            guard parts.count == 2, let codebaseID = UUID(uuidString: String(parts[0])), !parts[1].isEmpty
+            else { return nil }
+            self.init(codebaseID: codebaseID, typeID: String(parts[1]))
+        }
+    }
+
     let id: String
-    let qualifiedName: String
+
+    @Property(title: LocalizedStringResource("Intent.TypeEntity.QualifiedName", table: "AppIntents"))
+    var qualifiedName: String
+
     /// `file:line`, absent for a type no parser gave an extent for.
-    let location: String?
+    @Property(title: LocalizedStringResource("Intent.TypeEntity.Location", table: "AppIntents"))
+    var location: String?
+
+    init(address: Address, qualifiedName: String, location: String?) {
+        self.id = address.id
+        self.qualifiedName = qualifiedName
+        self.location = location
+    }
 
     /// Never localized: a type name and a path are what the parser read, not chrome.
     var displayRepresentation: DisplayRepresentation {
@@ -25,15 +51,18 @@ struct TypeEntity: AppEntity {
 }
 
 extension TypeEntity {
-    init(_ dependent: ImpactAnalysis.Dependent) {
+    init(_ dependent: ImpactAnalysis.Dependent, in codebaseID: UUID) {
         self.init(
-            id: dependent.id,
+            address: Address(codebaseID: codebaseID, typeID: dependent.id),
             qualifiedName: dependent.qualifiedName,
             location: dependent.location?.intentDisplay)
     }
 
-    init(_ type: TypeDeclaration) {
-        self.init(id: type.id, qualifiedName: type.qualifiedName, location: type.location?.intentDisplay)
+    init(_ type: TypeDeclaration, in codebaseID: UUID) {
+        self.init(
+            address: Address(codebaseID: codebaseID, typeID: type.id),
+            qualifiedName: type.qualifiedName,
+            location: type.location?.intentDisplay)
     }
 }
 
@@ -43,18 +72,8 @@ extension SourceLocation {
 }
 
 struct TypeEntityQuery: EntityQuery {
-    /// A type id is unique within an artifact but not across codebases, so a stored id resolves
-    /// against every indexed codebase and the first reading of it wins.
     @MainActor
     func entities(for identifiers: [String]) async throws -> [TypeEntity] {
-        let browser = ProjectBrowserViewModel(store: .app)
-        let wanted = Set(identifiers)
-        return browser.store.projects
-            .flatMap(\.codebases)
-            .compactMap { browser.artifact(for: $0.id) }
-            .flatMap { $0.flattened() }
-            .filter { wanted.contains($0.id) }
-            .map { TypeEntity($0) }
-            .removingDuplicates(by: \.id)
+        try await CodebaseInsights(store: .app).types(identifiedBy: identifiers)
     }
 }
