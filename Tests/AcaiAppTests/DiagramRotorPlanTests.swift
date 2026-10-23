@@ -62,15 +62,15 @@ struct DiagramRotorPlanTests {
         #expect(plan.changed.map(\.id) == ["added", "removed", "edited"])
     }
 
-    @Test("Sort priority descends in reading order and stays above the default, so nodes lead edges")
-    func sortPriorityDescendsAboveTheDefault() {
+    @Test("Sort priority descends in reading order and stays below the default, so chrome leads nodes")
+    func sortPriorityDescendsBelowTheDefault() {
         let plan = DiagramRotorPlan(elements: [
             element("last", x: 10, y: 500), element("first", x: 10, y: 100), element("middle", x: 200, y: 100)
         ])
 
         let priorities = plan.elements.map { plan.sortPriority(of: $0.id) }
         #expect(priorities == priorities.sorted(by: >))
-        #expect(priorities.allSatisfy { $0 > 0 })
+        #expect(priorities.allSatisfy { $0 < 0 })
     }
 
     @Test("An element the plan never saw sorts with the canvas's other decoration")

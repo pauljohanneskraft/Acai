@@ -36,7 +36,7 @@ struct DiagramRotorPlan {
         }
         self.elements = ordered
         self.priorities = Dictionary(
-            ordered.enumerated().map { ($0.element.id, Double(ordered.count - $0.offset)) },
+            ordered.enumerated().map { ($0.element.id, -Double($0.offset + 1)) },
             uniquingKeysWith: { first, _ in first }
         )
     }
@@ -47,7 +47,10 @@ struct DiagramRotorPlan {
     }
 
     /// Higher reads first, so sweeping the canvas follows the same reading order as the rotors. Every
-    /// element scores above the default 0, which keeps the nodes ahead of the edges between them.
+    /// element scores below the default 0, because a node's frame can cover the chrome drawn over the
+    /// canvas — a package module box encloses its types and reaches under the compare button. Sorted
+    /// ahead of that button, the node answers the hit test aimed at it and the button becomes
+    /// untappable.
     func sortPriority(of id: String) -> Double {
         priorities[id] ?? 0
     }
