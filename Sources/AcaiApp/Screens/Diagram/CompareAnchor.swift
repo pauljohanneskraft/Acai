@@ -1,21 +1,30 @@
 import CoreGraphics
 
-/// Where the macOS compare popover attaches: the compare button's window frame, kept above the
-/// diagram's `.id(...)` boundary by `DeltaHostedDiagramView`.
+/// Where the macOS compare popover attaches, in `DeltaHostedDiagramView`'s own coordinates: the
+/// compare button's window frame against the host's, both taken only while the panel is closed.
 ///
-/// The button itself renders inside that boundary, so every comparison change destroys it and the
-/// rebuilt one reports its geometry again from scratch. A report that moves the popover's
-/// positioning rect while the popover is up closes it in AppKit — the panel then vanished on every
-/// pick — so a report is taken only while the panel is closed, and an empty rect never at all.
+/// Both report their geometry live, and both move when a comparison changes — the button is rebuilt
+/// inside the diagram's identity boundary, and the host's measured frame follows that content being
+/// torn down and laid out again. AppKit closes a popover whose positioning rect leaves the window,
+/// so a report arriving while the popover is up is dropped, and an empty rect never taken at all.
 struct CompareAnchor: Equatable {
-    private(set) var frame = CGRect.zero
+    private var button = CGRect.zero
+    private var host = CGRect.zero
 
-    /// `false` until the button has reported a real frame; a popover anchored at the origin with no
-    /// size would open in the window's corner instead of on the button.
-    var isResolved: Bool { !frame.isEmpty }
+    /// The button's frame relative to the host, or `nil` until both have reported a real one — a
+    /// popover anchored at the origin with no size opens in the window's corner, not on the button.
+    var placement: CGRect? {
+        guard !button.isEmpty, !host.isEmpty else { return nil }
+        return button.offsetBy(dx: -host.minX, dy: -host.minY)
+    }
 
-    mutating func update(to frame: CGRect, isPanelPresented: Bool) {
+    mutating func update(button frame: CGRect, isPanelPresented: Bool) {
         guard !frame.isEmpty, !isPanelPresented else { return }
-        self.frame = frame
+        button = frame
+    }
+
+    mutating func update(host frame: CGRect, isPanelPresented: Bool) {
+        guard !frame.isEmpty, !isPanelPresented else { return }
+        host = frame
     }
 }

@@ -23,7 +23,8 @@ extension EnvironmentValues {
     }
 
     /// Reports the compare button's window frame to its host, which anchors the macOS popover there.
-    var compareButtonFrame: Binding<CGRect>? {
+    /// Report-only: the button never reads the anchor back, which is kept in the host's coordinates.
+    var reportCompareButtonFrame: ((CGRect) -> Void)? {
         get { self[CompareButtonFrameKey.self] }
         set { self[CompareButtonFrameKey.self] = newValue }
     }
@@ -34,7 +35,7 @@ private struct DiagramHasBeenFittedKey: EnvironmentKey {
 }
 
 private struct CompareButtonFrameKey: EnvironmentKey {
-    static let defaultValue: Binding<CGRect>? = nil
+    static let defaultValue: ((CGRect) -> Void)? = nil
 }
 
 /// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
@@ -92,9 +93,9 @@ struct DeltaHostedDiagramView<Content: View>: View {
                 .environment(\.compareChangedFileSelection, $changedFileSelection)
                 .environment(\.diagramHasBeenFitted, $hasBeenFitted)
                 #if os(macOS)
-                .environment(\.compareButtonFrame, Binding(
-                    get: { compareAnchor.frame },
-                    set: { compareAnchor.update(to: $0, isPanelPresented: isComparePresented) }))
+                .environment(\.reportCompareButtonFrame) { frame in
+                    compareAnchor.update(button: frame, isPanelPresented: isComparePresented)
+                }
                 #endif
         }
         .task(id: comparisonTaskID) {
@@ -103,18 +104,18 @@ struct DeltaHostedDiagramView<Content: View>: View {
         #if os(macOS)
         // On a leaf placed over the button, not on this `ZStack`: every diagram's content carries an
         // `.inspector`, which on macOS hoists it into a split view, and a popover attached to a view
-        // wrapping that content never presents.
+        // wrapping that content never presents. The leaf's placement comes from `CompareAnchor`
+        // rather than from a live `GeometryReader`, so nothing moves it while the popover is up.
         .overlay {
-            if compareAnchor.isResolved {
-                GeometryReader { proxy in
-                    let origin = proxy.frame(in: .global).origin
-                    Color.clear
-                        .frame(width: compareAnchor.frame.width, height: compareAnchor.frame.height)
-                        .popover(isPresented: $isComparePresented) { comparePopover }
-                        .position(
-                            x: compareAnchor.frame.midX - origin.x, y: compareAnchor.frame.midY - origin.y)
-                }
+            if let placement = compareAnchor.placement {
+                Color.clear
+                    .frame(width: placement.width, height: placement.height)
+                    .popover(isPresented: $isComparePresented) { comparePopover }
+                    .position(x: placement.midX, y: placement.midY)
             }
+        }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+            compareAnchor.update(host: frame, isPanelPresented: isComparePresented)
         }
         #else
         // Not a `.popover` + `.presentationCompactAdaptation(.sheet)`: a popover anchored to a small

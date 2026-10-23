@@ -19,7 +19,7 @@ struct CompareOverlayButton: View {
     /// resets whenever the comparison ref changes.
     @Binding var isPresented: Bool
     #if os(macOS)
-    @Environment(\.compareButtonFrame) private var compareButtonFrame
+    @Environment(\.reportCompareButtonFrame) private var reportFrame
     #endif
 
     private var isOn: Bool { diagram.comparisonGitRef != nil }
@@ -53,7 +53,7 @@ struct CompareOverlayButton: View {
         .accessibilityIdentifier("delta.openButton")
         #if os(macOS)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-            compareButtonFrame?.wrappedValue = frame
+            reportFrame?(frame)
         }
         #endif
     }
