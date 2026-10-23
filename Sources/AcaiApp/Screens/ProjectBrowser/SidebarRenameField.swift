@@ -33,3 +33,19 @@ struct SidebarRenameField: View {
         }
     }
 }
+
+/// The one sidebar row being renamed, if any, and the name typed into it so far.
+struct SidebarRename {
+    private(set) var row: ProjectBrowserViewModel.Selection?
+    var text = ""
+
+    /// Seeded with the current name, so ⏎ on an untouched field is a no-op.
+    mutating func begin(_ row: ProjectBrowserViewModel.Selection, currentName: String) {
+        self.row = row
+        text = currentName
+    }
+
+    mutating func finish() {
+        row = nil
+    }
+}

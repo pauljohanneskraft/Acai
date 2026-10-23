@@ -86,7 +86,7 @@ extension ProjectBrowserView {
     fileprivate func codebaseRows(project: Project) -> some View {
         let sortedCodebases = project.codebases.sorted(byLocalizedName: \.name)
         ForEach(sortedCodebases) { codebase in
-            if renamingCodebaseID == codebase.id {
+            if sidebarRename.row == .codebase(codebase.id) {
                 renameField(identifier: "sidebar.codebase.renameField") {
                     model.editing.updateCodebase(id: codebase.id, name: $0)
                 }
@@ -109,7 +109,7 @@ extension ProjectBrowserView {
                 } label: {
                     Label(.app("View.ProjectBrowserView.Reindex"), systemImage: "arrow.clockwise")
                 }
-                renameMenuItem(name: codebase.name) { renamingCodebaseID = codebase.id }
+                renameMenuItem(.codebase(codebase.id), currentName: codebase.name)
                     .accessibilityIdentifier("sidebar.codebase.\(codebase.id).rename")
                 Divider()
                 Button(role: .destructive) {
@@ -141,11 +141,9 @@ extension ProjectBrowserView {
             }
     }
 
-    /// Starting a rename seeds the field with the current name, so ⏎ on an untouched field is a no-op.
-    fileprivate func renameMenuItem(name: String, begin: @escaping () -> Void) -> some View {
+    fileprivate func renameMenuItem(_ row: ProjectBrowserViewModel.Selection, currentName: String) -> some View {
         Button {
-            renamingText = name
-            begin()
+            sidebarRename.begin(row, currentName: currentName)
         } label: {
             Label(.app("View.ProjectBrowserView.Rename"), systemImage: "pencil")
         }
@@ -154,9 +152,8 @@ extension ProjectBrowserView {
     fileprivate func renameField(
         identifier: String, rename: @escaping (String) -> Void
     ) -> some View {
-        SidebarRenameField(text: $renamingText, identifier: identifier, rename: rename) {
-            renamingCodebaseID = nil
-            renamingDiagramID = nil
+        SidebarRenameField(text: $sidebarRename.text, identifier: identifier, rename: rename) {
+            sidebarRename.finish()
         }
     }
 
@@ -165,7 +162,7 @@ extension ProjectBrowserView {
         let generatedDiagrams = model.generatedDiagramsForProject(project.id)
             .sorted(byLocalizedName: \.name)
         ForEach(generatedDiagrams) { diagram in
-            if renamingDiagramID == diagram.id {
+            if sidebarRename.row == .generatedDiagram(diagram.id) {
                 renameField(identifier: "sidebar.generatedDiagram.renameField") {
                     model.diagrams.rename(diagram.id, name: $0)
                 }
@@ -177,7 +174,7 @@ extension ProjectBrowserView {
                         addressMenuItems(
                             for: .generatedDiagram(diagram.id), idPrefix: "sidebar.generatedDiagram.\(diagram.id)")
                         Divider()
-                        renameMenuItem(name: diagram.name) { renamingDiagramID = diagram.id }
+                        renameMenuItem(.generatedDiagram(diagram.id), currentName: diagram.name)
                         Button {
                             if let id = model.diagrams.duplicate(diagram.id) {
                                 model.open(.generatedDiagram(id))
@@ -210,7 +207,7 @@ extension ProjectBrowserView {
         let freeformDiagrams = model.freeformDiagramsForProject(project.id)
             .sorted(byLocalizedName: \.name)
         ForEach(freeformDiagrams) { diagram in
-            if renamingDiagramID == diagram.id {
+            if sidebarRename.row == .freeformDiagram(diagram.id) {
                 renameField(identifier: "sidebar.freeformDiagram.renameField") {
                     model.freeforms.rename(diagram.id, name: $0)
                 }
@@ -222,7 +219,7 @@ extension ProjectBrowserView {
                         addressMenuItems(
                             for: .freeformDiagram(diagram.id), idPrefix: "sidebar.freeformDiagram.\(diagram.id)")
                         Divider()
-                        renameMenuItem(name: diagram.name) { renamingDiagramID = diagram.id }
+                        renameMenuItem(.freeformDiagram(diagram.id), currentName: diagram.name)
                         Button {
                             if let id = model.freeforms.duplicate(diagram.id) {
                                 model.open(.freeformDiagram(id))
