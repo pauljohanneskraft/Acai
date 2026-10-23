@@ -11,12 +11,12 @@ extension View {
     func diagramRotors(_ plan: DiagramRotorPlan, in namespace: Namespace.ID) -> some View {
         accessibilityRotor(Text(.app("View.DiagramRotors.Elements"))) {
             ForEach(plan.elements) { element in
-                AccessibilityRotorEntry(Text(verbatim: element.label), element.id, in: namespace)
+                AccessibilityRotorEntry(element.label, element.id, in: namespace)
             }
         }
         .accessibilityRotor(Text(.app("View.DiagramRotors.Changed"))) {
             ForEach(plan.changed) { element in
-                AccessibilityRotorEntry(Text(verbatim: element.label), element.id, in: namespace)
+                AccessibilityRotorEntry(element.label, element.id, in: namespace)
             }
         }
     }
