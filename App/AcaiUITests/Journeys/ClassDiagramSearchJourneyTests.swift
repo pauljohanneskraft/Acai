@@ -30,8 +30,9 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         if drawn == names.count { return }
         let missing = names.filter { !diagram.typeNode(named: $0).exists }
         let detail = missing.isEmpty ? "\(drawn) of \(names.count) matched" : missing.joined(separator: ", ")
-        XCTFail("\(detail) — every one of \(names.joined(separator: ", ")) should \(expectation)",
-                file: file, line: line)
+        XCTFail(
+            "\(detail) — every one of \(names.joined(separator: ", ")) should \(expectation)",
+            file: file, line: line)
     }
 
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
