@@ -193,7 +193,7 @@ struct ClassDiagramView: View {
             content: {
                 ZStack {
                     GroupingBoxLayer(viewModel: viewModel)
-                    nodeLayer(rotors: rotors)
+                    nodeLayer
                     edgeLayer
                     resizeHandleLayer
                     selectionRectangleLayer
@@ -310,7 +310,8 @@ extension ClassDiagramView {
         })
     }
 
-    @ViewBuilder private func nodeLayer(rotors: DiagramRotorPlan) -> some View {
+    @ViewBuilder private var nodeLayer: some View {
+        let rotors = rotorPlan
         let nodes = viewModel.nodes.removingDuplicates { $0.id }
         let isSearching = !viewModel.searchQuery.isEmpty
         let searchMatches = Set(viewModel.searchMatchIDs)
