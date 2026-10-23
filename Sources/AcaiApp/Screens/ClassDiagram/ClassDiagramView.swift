@@ -28,6 +28,7 @@ struct ClassDiagramView: View {
     /// `.zero` until the canvas reports its real size, so `FitToView` declines to fit against a placeholder.
     @State var canvasViewportSize = CGSize.zero
     @State var isSearchBarVisible = false
+    @Namespace private var rotorNamespace
     @FocusState var isSearchFieldFocused: Bool
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -181,7 +182,8 @@ struct ClassDiagramView: View {
     // MARK: - Canvas Content
 
     private var canvasContent: some View {
-        PannableCanvas(
+        let rotors = rotorPlan
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -191,13 +193,14 @@ struct ClassDiagramView: View {
             content: {
                 ZStack {
                     GroupingBoxLayer(viewModel: viewModel)
-                    nodeLayer
+                    nodeLayer(rotors: rotors)
                     edgeLayer
                     resizeHandleLayer
                     selectionRectangleLayer
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace)
         .overlay {
             if let nodeLimitError = viewModel.nodeLimitError {
                 nodeLimitErrorState(message: nodeLimitError.message)
@@ -296,7 +299,18 @@ extension ClassDiagramView {
         ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
     }
 
-    @ViewBuilder private var nodeLayer: some View {
+    /// Reading order and rotor entries for the type boxes, taken from where they actually sit.
+    private var rotorPlan: DiagramRotorPlan {
+        DiagramRotorPlan(elements: viewModel.nodes.removingDuplicates { $0.id }.compactMap { node in
+            viewModel.nodePositions[node.id].map { position in
+                DiagramRotorPlan.Element(
+                    id: node.id, label: node.name, delta: viewModel.deltaBadge(for: node), center: position
+                )
+            }
+        })
+    }
+
+    @ViewBuilder private func nodeLayer(rotors: DiagramRotorPlan) -> some View {
         let nodes = viewModel.nodes.removingDuplicates { $0.id }
         let isSearching = !viewModel.searchQuery.isEmpty
         let searchMatches = Set(viewModel.searchMatchIDs)
@@ -333,6 +347,7 @@ extension ClassDiagramView {
                     onSelect: { viewModel.selectNode(node.id, extending: false) },
                     onShowDetails: { showDetails(for: node.id) }
                 )
+                .diagramRotorMember(id: node.id, in: rotors, namespace: rotorNamespace)
                 .position(position)
                 .onTapGesture(count: 2) {
                     showDetails(for: node.id)
