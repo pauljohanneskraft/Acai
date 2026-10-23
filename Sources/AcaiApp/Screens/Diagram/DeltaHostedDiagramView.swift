@@ -6,8 +6,8 @@ private struct CompareChangedFileSelectionKey: EnvironmentKey {
 }
 
 extension EnvironmentValues {
-    /// Type ids of a changed file picked in the iOS compare sheet, for the diagram to select; the
-    /// diagram clears it once applied. The sheet lives outside the diagram's identity boundary, so
+    /// Type ids of a changed file picked in the compare panel, for the diagram to select; the
+    /// diagram clears it once applied. The panel lives outside the diagram's identity boundary, so
     /// the pick can't be a closure the diagram hands to the panel.
     var compareChangedFileSelection: Binding<Set<String>?> {
         get { self[CompareChangedFileSelectionKey.self] }
@@ -21,24 +21,30 @@ extension EnvironmentValues {
         get { self[DiagramHasBeenFittedKey.self] }
         set { self[DiagramHasBeenFittedKey.self] = newValue }
     }
+
+    /// Reports the compare button's window frame to its host, which anchors the macOS popover there.
+    var compareButtonFrame: Binding<CGRect>? {
+        get { self[CompareButtonFrameKey.self] }
+        set { self[CompareButtonFrameKey.self] = newValue }
+    }
 }
 
 private struct DiagramHasBeenFittedKey: EnvironmentKey {
     static let defaultValue: Binding<Bool>? = nil
 }
 
+private struct CompareButtonFrameKey: EnvironmentKey {
+    static let defaultValue: Binding<CGRect>? = nil
+}
+
 /// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
 /// diagram's own `.id(...)` boundary, and hands it down as a `Binding` so `CompareOverlayButton`
 /// can be placed inside the diagram's own canvas without losing that state when the ref changes.
 ///
-/// Picking a ref resets `content`'s identity twice in quick succession (the ref, then `loaded`).
-/// On iOS the sheet is therefore presented from here, outside that boundary: presented from inside
-/// it, each reset tore the presenter down mid-presentation, and re-presenting raced the old sheet's
-/// dismissal — the panel intermittently vanished while the user was using it.
-///
-/// On macOS the popover must stay anchored to the button inside `content`, so a reset still tears
-/// it down; a real `false` → `true` transition after the resets settle re-presents it on the new
-/// instance, coalesced so back-to-back resets schedule one re-present.
+/// Picking a ref resets `content`'s identity twice in quick succession (the ref, then `loaded`), so
+/// both presentations are made from here, outside that boundary, where a reset never touches them:
+/// presented from inside it, each reset tore the presenter down mid-presentation and re-presenting
+/// raced the old presentation's dismissal — the panel vanished while the user was using it.
 struct DeltaHostedDiagramView<Content: View>: View {
     let diagram: GeneratedDiagram
     @ViewBuilder var content: (Binding<Bool>) -> Content
@@ -47,7 +53,7 @@ struct DeltaHostedDiagramView<Content: View>: View {
     @State private var changedFileSelection: Set<String>?
     @State private var hasBeenFitted = false
     #if os(macOS)
-    @State private var reopensCompare = false
+    @State private var compareAnchor = CompareAnchor()
     #else
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -86,22 +92,31 @@ struct DeltaHostedDiagramView<Content: View>: View {
                 .environment(\.compareChangedFileSelection, $changedFileSelection)
                 .environment(\.diagramHasBeenFitted, $hasBeenFitted)
                 #if os(macOS)
-                .onChange(of: contentIdentity) { _, _ in
-                    guard isComparePresented || reopensCompare else { return }
-                    isComparePresented = false
-                    reopensCompare = true
-                    DispatchQueue.main.async {
-                        guard reopensCompare else { return }
-                        reopensCompare = false
-                        isComparePresented = true
-                    }
-                }
+                .environment(\.compareButtonFrame, Binding(
+                    get: { compareAnchor.frame },
+                    set: { compareAnchor.update(to: $0, isPanelPresented: isComparePresented) }))
                 #endif
         }
         .task(id: comparisonTaskID) {
             await model.ensureComparisonLoaded(for: diagram)
         }
-        #if !os(macOS)
+        #if os(macOS)
+        // On a leaf placed over the button, not on this `ZStack`: every diagram's content carries an
+        // `.inspector`, which on macOS hoists it into a split view, and a popover attached to a view
+        // wrapping that content never presents.
+        .overlay {
+            if compareAnchor.isResolved {
+                GeometryReader { proxy in
+                    let origin = proxy.frame(in: .global).origin
+                    Color.clear
+                        .frame(width: compareAnchor.frame.width, height: compareAnchor.frame.height)
+                        .popover(isPresented: $isComparePresented) { comparePopover }
+                        .position(
+                            x: compareAnchor.frame.midX - origin.x, y: compareAnchor.frame.midY - origin.y)
+                }
+            }
+        }
+        #else
         // Not a `.popover` + `.presentationCompactAdaptation(.sheet)`: a popover anchored to a small
         // overlay button on a `GeometryReader`-driven canvas renders no visible content on iOS.
         .sheet(isPresented: $isComparePresented) {
@@ -127,4 +142,23 @@ struct DeltaHostedDiagramView<Content: View>: View {
         }
         #endif
     }
+
+    #if os(macOS)
+    /// Not `NavigationStack { ... .toolbar { clearButton } }`: on macOS, a `.toolbar` inside a
+    /// `NavigationStack` presented in a `.popover` renders its items in the presenting window's own
+    /// toolbar instead of inside the popover.
+    private var comparePopover: some View {
+        VStack(alignment: .leading, spacing: .zero) {
+            HStack {
+                Text(.app("View.CompareOverlayButton.CompareVsGit")).font(.headline)
+                Spacer()
+                CompareClearButton(diagram: diagram)
+            }
+            .padding()
+            Divider()
+            CompareGitPanel(diagram: diagram, onSelectChangedFileTypes: selectChangedFileTypes)
+        }
+        .environmentObject(model)
+    }
+    #endif
 }
