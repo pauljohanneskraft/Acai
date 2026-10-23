@@ -43,7 +43,7 @@ struct DiagramRotorPlan {
 
     /// The elements a comparison marks as changed, in the same reading order.
     var changed: [Element] {
-        elements.filter(\.delta.isChange)
+        elements.filter { $0.delta.isChange }
     }
 
     /// Higher reads first, so sweeping the canvas follows the same reading order as the rotors. Every
@@ -57,8 +57,10 @@ extension DeltaStatus? {
     /// `nil` and `.unchanged` alike mean no comparison is pointing at this element.
     fileprivate var isChange: Bool {
         switch self {
-        case .added, .removed, .changed: true
-        case .unchanged, nil: false
+        case .added, .removed, .changed:
+            true
+        case .unchanged, nil:
+            false
         }
     }
 }

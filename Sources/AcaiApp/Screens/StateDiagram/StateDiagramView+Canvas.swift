@@ -9,7 +9,8 @@ extension StateDiagramView {
     // MARK: - Canvas
 
     var canvasContent: some View {
-        let rotors = rotorPlan
+        let layout = viewModel.layout
+        let rotors = rotorPlan(layout)
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
@@ -18,7 +19,6 @@ extension StateDiagramView {
             autoPanController: canvasAutoPanController,
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
-                let layout = viewModel.layout
                 // A plain Sendable dictionary, not a closure capturing `viewModel` directly —
                 // `StateEnsembleView.edgeColor` is `@Sendable`, and `viewModel` (a `@MainActor`
                 // class) isn't, so this mirrors `ClassDiagramViewModel.exportPNGData`'s precomputed-
@@ -46,8 +46,8 @@ extension StateDiagramView {
     }
 
     /// Reading order and rotor entries for the state boxes, taken from where they actually sit.
-    var rotorPlan: DiagramRotorPlan {
-        DiagramRotorPlan(elements: viewModel.layout.nodes.map { node in
+    func rotorPlan(_ layout: StateLayoutModel) -> DiagramRotorPlan {
+        DiagramRotorPlan(elements: layout.nodes.map { node in
             DiagramRotorPlan.Element(
                 id: node.id, label: node.state.name, delta: viewModel.stateDeltaStatus(node.id),
                 center: CGPoint(x: node.rect.midX, y: node.rect.midY)

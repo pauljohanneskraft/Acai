@@ -9,7 +9,8 @@ extension SequenceDiagramView {
     // MARK: - Canvas
 
     var canvasContent: some View {
-        let rotors = rotorPlan
+        let layout = viewModel.layout
+        let rotors = rotorPlan(layout)
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
@@ -18,7 +19,6 @@ extension SequenceDiagramView {
             autoPanController: canvasAutoPanController,
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
-                let layout = viewModel.layout
                 // A plain Sendable dictionary, not a closure capturing `viewModel` directly —
                 // `SequenceEnsembleView.messageColor` is `@Sendable`, and `viewModel` (a `@MainActor`
                 // class) isn't, so this mirrors `ClassDiagramViewModel.exportPNGData`'s precomputed-
@@ -51,8 +51,8 @@ extension SequenceDiagramView {
     }
 
     /// Reading order and rotor entries for the participant headers, taken from where they sit.
-    var rotorPlan: DiagramRotorPlan {
-        DiagramRotorPlan(elements: viewModel.layout.participants.map { participant in
+    func rotorPlan(_ layout: SequenceLayoutModel) -> DiagramRotorPlan {
+        DiagramRotorPlan(elements: layout.participants.map { participant in
             DiagramRotorPlan.Element(
                 id: participant.id, label: participant.name,
                 delta: viewModel.participantDeltaStatus(participant.id),
