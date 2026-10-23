@@ -1,5 +1,5 @@
 #!/bin/bash
-# Samples host load, memory, swap and disk every 5s into <DIR>/samples.log, to time-align with journey stalls (#410).
+# Samples host load, memory, swap and disk every ~6s into <DIR>/samples.log, to time-align with journey stalls (#410).
 #
 # Usage: Scripts/ci_resource_sampler.sh start|stop <DIR>
 set -uo pipefail
@@ -7,6 +7,7 @@ set -uo pipefail
 ACTION="${1:?usage: Scripts/ci_resource_sampler.sh start|stop <DIR>}"
 DIR="${2:?usage: Scripts/ci_resource_sampler.sh start|stop <DIR>}"
 OUT="$DIR/samples.log"
+CORESIM_LOG="$HOME/Library/Logs/CoreSimulator/CoreSimulator.log"
 
 case "$ACTION" in
     start)
@@ -20,6 +21,8 @@ case "$ACTION" in
         while true; do
             {
                 echo "=== $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                echo "device identity errors: $(grep -c 'Failed to get a device identity' "$CORESIM_LOG" 2>/dev/null)"
+                echo "simulator apsd: $(pgrep -f 'RuntimeRoot/.*ApplePushService.framework/apsd' | tr '\n' ' ')"
                 sysctl vm.loadavg vm.swapusage kern.memorystatus_vm_pressure_level
                 memory_pressure -Q
                 vm_stat | grep -E "free|active|wired|compressor|Compressions|Decompressions|Pageins|Pageouts|Swap"
@@ -34,10 +37,19 @@ case "$ACTION" in
         [ -f "$DIR/sampler.pid" ] && kill "$(cat "$DIR/sampler.pid")" 2>/dev/null
         rm -f "$DIR/sampler.pid"
         [ -f "$OUT" ] || exit 0
+        # The loop takes ~6s per sample, so a longer gap means the host itself stalled.
+        GAPS=$(grep '^=== ' "$OUT" | cut -c5- | while read -r TS; do
+            NOW=$(date -j -u -f %Y-%m-%dT%H:%M:%SZ "$TS" +%s)
+            [ -n "${PREV:-}" ] && echo "$((NOW - PREV)) $TS"
+            PREV=$NOW
+        done | sort -rn)
         {
             echo "### Host resources"
             echo
             echo "- samples: $(grep -c '^=== ' "$OUT")"
+            echo "- sampler gaps over 10s: $(echo "$GAPS" | while read -r S _; do [ "${S:-0}" -gt 10 ] && echo; done | wc -l | tr -d ' ');" \
+                "longest: $(echo "$GAPS" | head -1 | sed 's/ /s ending /')"
+            echo "- simulator device identity errors: $(grep 'device identity errors' "$OUT" | tail -1 | cut -d: -f2)"
             echo "- peak swap used: $(grep -o 'used = [0-9.]*M' "$OUT" | sort -t= -k2 -n | tail -1)"
             echo "- memory pressure level counts (1 normal, 2 warn, 4 critical):" \
                 "$(grep 'kern.memorystatus_vm_pressure_level' "$OUT" | sort | uniq -c | tr -s ' ' | tr '\n' ';')"
