@@ -115,7 +115,7 @@ final class ActivityCenter: ObservableObject {
         operations[index].progress = progress
     }
 
-    /// Awaits the ledger writes already scheduled.
+    /// Awaits the ledger writes already scheduled; tests read the file only after this.
     func flushPersistence() async {
         await lastWrite?.value
     }
@@ -125,9 +125,13 @@ final class ActivityCenter: ObservableObject {
     /// The newest unfinished work on an existing codebase, for its screen to offer to resume.
     func interruptedOperation(forCodebase codebaseID: UUID) -> InterruptedOperationRecord? {
         interruptedOperations.last {
-            if case .clone = $0.resumption { return false }
-            return $0.resumption.codebaseID == codebaseID
+            $0.resumption.codebaseWork != nil && $0.resumption.codebaseID == codebaseID
         }
+    }
+
+    /// Whether work running now would resolve `record` once it finishes.
+    func isRedoing(_ record: InterruptedOperationRecord) -> Bool {
+        ledger.inFlight.contains { $0.resumption.resolves(record.resumption) }
     }
 
     func interruptedClones(inProject projectID: UUID) -> [InterruptedOperationRecord] {

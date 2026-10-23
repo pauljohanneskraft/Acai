@@ -10,11 +10,13 @@ extension ProjectCodebaseEditor {
     /// Clones `remoteURL` into a shared, app-managed "hub" clone (reused by every codebase that
     /// references the same remote), attaches a fresh linked worktree for this codebase at `ref`,
     /// then indexes it. Works for any git remote; a GitHub token is used only for GitHub.
+    /// `.completed` once the codebase is added, whether or not its first index then succeeds.
+    @discardableResult
     func addRemoteCodebase(
         to projectID: UUID, name: String, remoteURL: URL, ref: String, refKind: GitCheckout.Ref.Kind,
         depth: GitHistoryDepth = .full
-    ) async {
-        guard store.projects.contains(where: { $0.id == projectID }) else { return }
+    ) async -> OperationOutcome {
+        guard store.projects.contains(where: { $0.id == projectID }) else { return .cancelled }
         let codebaseID = UUID()
         let destination = worktreeDestination(codebaseID: codebaseID)
         let endpoint = RemoteEndpoint(remoteURL: remoteURL)
@@ -36,7 +38,7 @@ extension ProjectCodebaseEditor {
                 await removeWorktree(
                     codebaseID: codebaseID,
                     repository: CodebaseRepositoryReference(remoteURL: remoteURL, ref: ref))
-                return
+                return .cancelled
             }
             // The clone outlived its project. Nothing references the worktree that was just
             // attached, so take it down the same way deleting the codebase would rather than
@@ -46,7 +48,7 @@ extension ProjectCodebaseEditor {
                     codebaseID: codebaseID,
                     repository: CodebaseRepositoryReference(remoteURL: persistedRemoteURL, ref: ref))
                 store.report(.app("Error.ProjectBrowserViewModel.ProjectDeletedWhileCloning \(name)"))
-                return
+                return .failed
             }
             store.projects[index].codebases.append(Codebase(
                 id: codebaseID,
@@ -59,16 +61,17 @@ extension ProjectCodebaseEditor {
             persist()
             store.repositoryChanges.send(persistedRemoteURL)
             await reindex(codebaseID: codebaseID)
+            return .completed
         } catch {
             report(error, for: endpoint, generic: { .app("Error.ProjectBrowserViewModel.CloneFailed \($0)") })
+            return .failed
         }
     }
 
-    /// Clones again what an earlier launch never finished cloning; the new attempt records itself.
-    func retryClone(_ record: InterruptedOperationRecord) async {
-        guard case .clone(let request) = record.resumption else { return }
-        store.activityCenter.discardInterruptedOperation(record.id)
-        await addRemoteCodebase(
+    /// Clones again what an earlier launch never finished; `record` stays until the new clone lands.
+    func retryClone(_ record: InterruptedOperationRecord) async -> OperationOutcome {
+        guard case .clone(let request) = record.resumption else { return .cancelled }
+        return await addRemoteCodebase(
             to: request.projectID, name: request.name, remoteURL: request.remoteURL, ref: request.ref,
             refKind: request.refKind, depth: request.depth)
     }

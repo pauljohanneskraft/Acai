@@ -22,9 +22,11 @@ struct ActivityCenterInterruptionTests {
         InterruptedOperationRecord(id: UUID(), kind: kind, resumption: resumption, startedAt: startedAt)
     }
 
-    private func cloneRequest(projectID: UUID = UUID()) -> InterruptedOperationRecord.RemoteCloneRequest {
+    private func cloneRequest(
+        projectID: UUID = UUID(), name: String = "widgets"
+    ) -> InterruptedOperationRecord.RemoteCloneRequest {
         InterruptedOperationRecord.RemoteCloneRequest(
-            projectID: projectID, codebaseID: UUID(), name: "widgets",
+            projectID: projectID, codebaseID: UUID(), name: name,
             remoteURL: URL(fileURLWithPath: "/tmp/widgets.git"), ref: "main", refKind: .branch,
             latestSnapshotOnly: false)
     }
@@ -138,6 +140,35 @@ struct ActivityCenterInterruptionTests {
         #expect(!reindex.resolves(.reindex(codebaseID: UUID())))
     }
 
+    @Test("A clone is resolved by any clone asking for the same thing, whatever codebase it adds")
+    func clonesResolveByRequestNotByCodebase() {
+        let request = cloneRequest()
+        var retried = request
+        retried.codebaseID = UUID()
+        var otherRef = request
+        otherRef.ref = "dev"
+
+        #expect(InterruptedOperationRecord.Resumption.clone(retried).resolves(.clone(request)))
+        #expect(!InterruptedOperationRecord.Resumption.clone(otherRef).resolves(.clone(request)))
+        #expect(
+            !InterruptedOperationRecord.Resumption.reindex(codebaseID: request.codebaseID).resolves(.clone(request)))
+    }
+
+    @Test("A retried clone killed again is reported once, not once per attempt")
+    func aRetryInterruptedAgainIsReportedOnce() throws {
+        let store = makeStore()
+        let request = cloneRequest()
+        var retried = request
+        retried.codebaseID = UUID()
+        let retry = record(.clone(retried), kind: .gitClone, startedAt: Date(timeIntervalSince1970: 2))
+        try store.save(ActivityLedger(
+            inFlight: [retry],
+            interrupted: [record(.clone(request), kind: .gitClone, startedAt: Date(timeIntervalSince1970: 1))]))
+
+        let center = ActivityCenter(store: store)
+        #expect(center.interruptedClones(inProject: request.projectID).map(\.id) == [retry.id])
+    }
+
     @Test("An unfinished operation for one codebase says nothing about another")
     func recordsAreReportedPerCodebase() throws {
         let store = makeStore()
@@ -203,7 +234,7 @@ struct ActivityCenterInterruptionTests {
         let project = UUID()
         let liveClone = cloneRequest(projectID: project)
         let cloneOfDeletedProject = cloneRequest()
-        let finishedClone = cloneRequest(projectID: project)
+        let finishedClone = cloneRequest(projectID: project, name: "gadgets")
         try store.save(ActivityLedger(interrupted: [
             record(.reindex(codebaseID: kept)),
             record(.reindex(codebaseID: UUID())),
@@ -253,6 +284,26 @@ struct ActivityCenterInterruptionTests {
         try store.save(ledger)
 
         #expect(store.load() == ledger)
+    }
+
+    @Test("The ledger the banner journey stages reads back as one interruption per banner, for the seeded subjects")
+    func theJourneyLedgerFixtureNamesTheSeededProjectAndCodebase() throws {
+        let fixture = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("App/AcaiUITests/Fixtures/interrupted-ledger.json")
+        let store = makeStore()
+        try FileManager.default.createDirectory(
+            at: store.fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: fixture, to: store.fileURL)
+        let seededProject = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let seededCodebase = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+
+        let center = ActivityCenter(store: store)
+        center.pruneInterruptedOperations(existingCodebaseIDs: [seededCodebase], existingProjectIDs: [seededProject])
+
+        #expect(center.interruptedOperation(forCodebase: seededCodebase)?.resumption.codebaseWork == .reindex)
+        #expect(center.interruptedClones(inProject: seededProject).map(\.id.uuidString)
+            == ["44444444-4444-4444-4444-444444444444"])
     }
 
     @Test("A ledger that was never written reads as empty rather than failing")

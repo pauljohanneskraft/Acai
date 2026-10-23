@@ -27,12 +27,14 @@ extension CodebaseDetailView {
             CodebaseInterruptedBanner(
                 activityCenter: model.store.activityCenter,
                 codebaseID: codebaseID,
-                phase: { resumptionPhase(for: $0) },
-                resume: { resume($0) }
+                phase: { phase(resuming: $0) },
+                resume: { resume($0) },
+                staleBanner: {
+                    if model.showsStaleBanner(codebaseID: codebaseID) {
+                        staleBanner(codebase: codebase)
+                    }
+                }
             )
-            if model.showsStaleBanner(codebaseID: codebaseID) {
-                staleBanner(codebase: codebase)
-            }
         }
         .padding()
         .task(id: FreshnessCheckToken(codebaseID: codebaseID, lastIndexed: codebase.lastIndexed)) {
@@ -50,9 +52,9 @@ extension CodebaseDetailView {
         }
     }
 
-    private func resumptionPhase(for resumption: InterruptedOperationRecord.Resumption) -> AsyncOperationPhase {
-        switch resumption {
-        case .reindex, .clone:
+    private func phase(resuming work: InterruptedOperationRecord.CodebaseWork) -> AsyncOperationPhase {
+        switch work {
+        case .reindex:
             reindexPhase
         case .pull:
             pullPhase
@@ -61,13 +63,13 @@ extension CodebaseDetailView {
         }
     }
 
-    private func resume(_ resumption: InterruptedOperationRecord.Resumption) {
-        switch resumption {
-        case .reindex, .clone:
-            startReindex(codebaseID: resumption.codebaseID)
-        case .pull(let codebaseID):
+    private func resume(_ work: InterruptedOperationRecord.CodebaseWork) {
+        switch work {
+        case .reindex:
+            startReindex(codebaseID: codebaseID)
+        case .pull:
             startPull(codebaseID: codebaseID)
-        case .switchRef(let codebaseID, let ref, let refKind):
+        case .switchRef(let ref, let refKind):
             startRefSwitch(codebaseID: codebaseID, to: GitCheckout.Ref(name: ref, kind: refKind))
         }
     }

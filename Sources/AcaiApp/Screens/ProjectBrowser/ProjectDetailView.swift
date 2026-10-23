@@ -348,7 +348,7 @@ private extension ProjectDetailView {
 
     var interruptedClonesBanner: some View {
         InterruptedClonesBanner(activityCenter: model.store.activityCenter, projectID: projectID) { record in
-            Task { await model.editing.retryClone(record) }
+            await model.editing.retryClone(record)
         }
     }
 

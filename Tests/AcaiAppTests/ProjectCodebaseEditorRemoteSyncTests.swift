@@ -43,26 +43,70 @@ struct ProjectCodebaseEditorRemoteSyncTests {
         #expect(FileManager.default.fileExists(atPath: codebase.directoryPath + "/README.md"))
     }
 
-    @Test func aCloneInterruptedByTerminationIsOfferedAfterRelaunchAndRetryingItAddsTheCodebase() async throws {
-        let root = try makeTempDirectory()
-        defer { try? FileManager.default.removeItem(at: root) }
-        let remote = try GitTestRepository.make(in: root)
+    /// A project saved by an earlier launch whose clone of `remoteURL` never finished, as the relaunch finds it.
+    private func relaunchAfterAnInterruptedClone(
+        of remoteURL: URL, in root: URL
+    ) throws -> (store: ProjectStore, interrupted: InterruptedOperationRecord) {
         let storeDir = root.appendingPathComponent("store")
         let firstLaunch = ProjectStore(baseDir: storeDir)
         let projectID = makeEditor(store: firstLaunch).addProject(title: "Demo", subtitle: "")
         firstLaunch.save()
         let request = InterruptedOperationRecord.RemoteCloneRequest(
-            projectID: projectID, codebaseID: UUID(), name: "widgets", remoteURL: remote.directory, ref: "main",
+            projectID: projectID, codebaseID: UUID(), name: "widgets", remoteURL: remoteURL, ref: "main",
             refKind: .branch, latestSnapshotOnly: false)
         try InterruptedOperationStore(baseDir: storeDir).save(ActivityLedger(inFlight: [InterruptedOperationRecord(
             id: UUID(), kind: .gitClone, resumption: .clone(request), startedAt: Date())]))
 
         let relaunched = ProjectStore(baseDir: storeDir)
         let interrupted = try #require(relaunched.activityCenter.interruptedClones(inProject: projectID).first)
-        await makeEditor(store: relaunched).retryClone(interrupted)
+        return (relaunched, interrupted)
+    }
 
-        #expect(relaunched.projects.first?.codebases.map(\.name) == ["widgets"])
-        #expect(relaunched.activityCenter.interruptedOperations.isEmpty)
+    @Test func aCloneInterruptedByTerminationIsOfferedAfterRelaunchAndRetryingItAddsTheCodebase() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let (store, interrupted) = try relaunchAfterAnInterruptedClone(of: remote.directory, in: root)
+
+        let outcome = await makeEditor(store: store).retryClone(interrupted)
+
+        #expect(outcome == .completed)
+        #expect(store.projects.first?.codebases.map(\.name) == ["widgets"])
+        #expect(store.activityCenter.interruptedOperations.isEmpty)
+    }
+
+    @Test func aFailedCloneRetryKeepsTheInterruptionToRetryAgain() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let unreachable = root.appendingPathComponent("no-such-remote.git")
+        let (store, interrupted) = try relaunchAfterAnInterruptedClone(of: unreachable, in: root)
+
+        let outcome = await makeEditor(store: store).retryClone(interrupted)
+
+        #expect(outcome == .failed)
+        #expect(store.projects.first?.codebases.isEmpty == true)
+        #expect(store.activityCenter.interruptedOperations.map(\.id) == [interrupted.id])
+        await store.activityCenter.flushPersistence()
+        #expect(ActivityCenter(store: InterruptedOperationStore(baseDir: store.baseDir))
+            .interruptedOperations.map(\.id) == [interrupted.id])
+    }
+
+    @Test func aCancelledCloneRetryKeepsTheInterruption() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let remote = try GitTestRepository.make(in: root)
+        let (store, interrupted) = try relaunchAfterAnInterruptedClone(of: remote.directory, in: root)
+        let mayStart = AsyncGate()
+        let editor = makeEditor(store: store, remoteService: GatedCloneRemoteService(mayStart: mayStart))
+
+        let retry = Task { await editor.retryClone(interrupted) }
+        try await Eventually().waitUntil("the retry is running") { store.activityCenter.isRedoing(interrupted) }
+        retry.cancel()
+        await mayStart.open()
+
+        #expect(await retry.value == .cancelled)
+        #expect(!store.activityCenter.isRedoing(interrupted))
+        #expect(store.activityCenter.interruptedOperations.map(\.id) == [interrupted.id])
     }
 
     @Test func switchingRefMovesTheWorktreeAndRecordsTheNewRef() async throws {
