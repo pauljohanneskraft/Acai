@@ -29,6 +29,7 @@ struct SequenceDiagramView: View {
     @State var canvasViewportSize = CGSize(width: 900, height: 600)
     @State var showSidebar = false
     @State var sidebarTab: SequenceDiagramSidebarTab = .settings
+    @Namespace var rotorNamespace
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif

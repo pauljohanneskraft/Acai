@@ -67,6 +67,7 @@ private struct CallGraphCanvasView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: CallGraphSidebarTab = .settings
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @Namespace private var rotorNamespace
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -197,7 +198,8 @@ private struct CallGraphCanvasView: View {
     // MARK: - Canvas
 
     private var canvasContent: some View {
-        PannableCanvas(
+        let rotors = rotorPlan
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -209,11 +211,12 @@ private struct CallGraphCanvasView: View {
                 ZStack(alignment: .topLeading) {
                     callEdges(layout)
                     ForEach(layout.nodes) { node in
-                        methodNode(node)
+                        methodNode(node, rotors: rotors)
                     }
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace)
         .overlay {
             if viewModel.isEmpty {
                 DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
@@ -375,7 +378,17 @@ extension CallGraphCanvasView {
         }
     }
 
-    private func methodNode(_ node: CallGraphLayoutModel.NodeFrame) -> some View {
+    /// Reading order and rotor entries for the method boxes, taken from where they actually sit.
+    private var rotorPlan: DiagramRotorPlan {
+        DiagramRotorPlan(elements: viewModel.layout.nodes.map { node in
+            DiagramRotorPlan.Element(
+                id: node.id, label: node.node.label, delta: viewModel.nodeDeltaStatus(id: node.id),
+                center: CGPoint(x: node.rect.midX, y: node.rect.midY)
+            )
+        })
+    }
+
+    private func methodNode(_ node: CallGraphLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
         CallGraphNodeView(
             node: node.node,
             isSelected: viewModel.selectedNodeIDs.contains(node.id)
@@ -391,6 +404,7 @@ extension CallGraphCanvasView {
             onSelect: { viewModel.selectNode(node.id, extending: false) },
             onShowDetails: { showDetails(for: node.id) }
         )
+        .diagramRotorMember(id: node.id, in: rotors, namespace: rotorNamespace)
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
             showDetails(for: node.id)
