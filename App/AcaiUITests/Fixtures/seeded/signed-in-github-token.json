@@ -1,0 +1,12 @@
+{
+  "credential" : {
+    "personalAccessToken" : {
+      "_0" : "fixture-token"
+    }
+  },
+  "login" : "octocat",
+  "scopes" : [
+    "contents:read",
+    "metadata:read"
+  ]
+}
