@@ -44,9 +44,9 @@ private struct CompareButtonFrameKey: EnvironmentKey {
 /// can be placed inside the diagram's own canvas without losing that state when the ref changes.
 ///
 /// Picking a ref resets `content`'s identity twice in quick succession (the ref, then `loaded`), so
-/// both presentations are made from here, outside that boundary, where a reset never touches them:
-/// presented from inside it, each reset tore the presenter down mid-presentation and re-presenting
-/// raced the old presentation's dismissal — the panel vanished while the user was using it.
+/// both presentations are made from this view, outside that boundary, where a reset never touches
+/// them: presented from inside it, each reset tore the presenter down mid-presentation and
+/// re-presenting raced the old presentation's dismissal — the panel vanished while in use.
 struct DeltaHostedDiagramView<Content: View>: View {
     let diagram: GeneratedDiagram
     @ViewBuilder var content: (Binding<Bool>) -> Content
@@ -103,17 +103,20 @@ struct DeltaHostedDiagramView<Content: View>: View {
             await model.ensureComparisonLoaded(for: diagram)
         }
         #if os(macOS)
-        // On a leaf placed over the button, not on this `ZStack`: every diagram's content carries an
-        // `.inspector`, which on macOS hoists it into a split view, and a popover attached to a view
-        // wrapping that content never presents. The leaf's placement comes from `CompareAnchor`
-        // rather than from a live `GeometryReader`, so nothing moves it while the popover is up.
-        .overlay {
-            if let placement = compareAnchor.placement {
-                Color.clear
-                    .frame(width: placement.width, height: placement.height)
-                    .popover(isPresented: $isComparePresented) { comparePopover }
-                    .position(x: placement.midX, y: placement.midY)
-            }
+        // On this `ZStack`, the same view the iOS sheet is presented from: a presentation made here
+        // outlives `content`'s identity resetting, and one made anywhere inside or over `content`
+        // does not — on the button it was torn down and re-presented, and from a leaf in this view's
+        // overlay, pinned to a frame that could not move, AppKit still closed it on every pick.
+        //
+        // The anchor is a rect in this view's own coordinates. A `.named` space does not resolve from
+        // inside `content`, whose `.inspector` hoists it into a split view, so the button reports its
+        // window frame and `CompareAnchor` converts it against this view's — holding both still while
+        // the popover is up, since a positioning rect that leaves the window closes it.
+        .popover(
+            isPresented: $isComparePresented,
+            attachmentAnchor: .rect(.rect(compareAnchor.placement ?? .zero))
+        ) {
+            comparePopover
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
             compareAnchor.update(host: frame, isPanelPresented: isComparePresented)
