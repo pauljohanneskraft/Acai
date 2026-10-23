@@ -36,8 +36,12 @@ final class GitHubAccountScreen {
         // Inside the Settings sheet but off the dialog: a tap outside the sheet dismisses it too on iPad.
         let scopeChecklist = app.descendants(matching: .any)["github.scopeChecklist"].firstMatch
         scopeChecklist.waitOrFail("the scope checklist beside the sign-out confirmation", file: file, line: line)
-        SystemBanners().dismiss(file: file, line: line)
-        scopeChecklist.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        // Repeated only while the dialog stays: a tap beside it can only dismiss it, and the checklist is inert.
+        for _ in 0..<3 {
+            SystemBanners().dismiss(file: file, line: line)
+            scopeChecklist.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            if signOutConfirmButton.waitForNonExistence(timeout: .uiTransition / 3) { break }
+        }
         #else
         signOutCancelButton.tapWhenReady("Cancel, in the sign-out confirmation", file: file, line: line)
         #endif
