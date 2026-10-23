@@ -6,11 +6,7 @@ import XCTest
 /// nodes.
 @MainActor
 final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
-    /// Types `text` and waits for the match summary to catch up, retyping if it never arrives: a
-    /// query landing while the diagram's own state is still settling from the previous action can be
-    /// missed by SwiftUI's diffing, and a plain wait can't recover from that. Retyping is idempotent.
-    /// `appending` types into the existing query instead of replacing it, for text whose repeats don't
-    /// change the outcome.
+    /// Types `text` (onto the query when `appending`) until the summary reads `expected`; repeats don't change it.
     private func search(
         _ diagram: ClassDiagramScreen, for text: String, appending: Bool = false, expecting expected: String,
         attempts: Int = 3, file: StaticString = #filePath, line: UInt = #line
@@ -27,27 +23,19 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         XCTFail("searching for '\(text)' never reported '\(expected)'", file: file, line: line)
     }
 
-    /// Asserts every one of `names` is drawn, in a single accessibility-tree snapshot. Only a run
-    /// that is already failing pays a query per name, to report which of them is missing.
     private func assertTypeNodesDrawn(
         _ diagram: ClassDiagramScreen, _ names: [String], _ expectation: String,
         file: StaticString = #filePath, line: UInt = #line
     ) {
-        let drawn = diagram.typeNodes(named: names).count
-        if drawn == names.count { return }
         let missing = names.filter { !diagram.typeNode(named: $0).exists }
-        let detail = missing.isEmpty ? "\(drawn) of \(names.count) matched" : missing.joined(separator: ", ")
-        XCTFail(
-            "\(detail) — every one of \(names.joined(separator: ", ")) should \(expectation)",
-            file: file, line: line)
+        XCTAssertTrue(missing.isEmpty, "\(missing.joined(separator: ", ")) should \(expectation)", file: file, line: line)
     }
 
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
         let codebaseDetail = openPreindexedSeededCodebase()
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
-        // The described node matches the plain node's identifier plus its VoiceOver label and value,
-        // so this one wait covers both "the diagram has drawn Base" and "Base reaches VoiceOver".
+        // One wait for both "Base is drawn" and "Base reaches VoiceOver".
         diagram.describedTypeNode(named: "Base")
             .waitOrFail("the Base type node, described to VoiceOver", timeout: .uiWork)
         assertTypeNodesDrawn(diagram, ["Derived", "Helper", "Worker"], "be drawn alongside Base")
@@ -71,8 +59,7 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
 
         diagram.searchDismissButton.tapWhenReady("the search's Dismiss button")
         diagram.searchField.waitForDisappearanceOrFail("the search field after dismissing search")
-        // Dismissing search touches only the search UI's own state — every node from before is
-        // still exactly where it was.
+        // Dismissing search touches only the search UI's own state.
         assertTypeNodesDrawn(diagram, ["Base", "Derived", "Helper", "Worker"], "survive dismissing search")
     }
 }

@@ -6,14 +6,6 @@ final class ClassDiagramScreen: DiagramScreenBase {
         app.descendants(matching: .any)["diagram.typeNode.\(name)"]
     }
 
-    /// Several type nodes in one accessibility-tree snapshot. Asking each node for `exists` in turn
-    /// costs a snapshot per name, and a loaded CI simulator can take seconds to answer one.
-    func typeNodes(named names: [String]) -> XCUIElementQuery {
-        app.descendants(matching: .any).matching(NSPredicate(
-            format: "identifier IN %@", names.map { "diagram.typeNode.\($0)" }
-        ))
-    }
-
     /// A type node as VoiceOver reads it: labelled with its name and carrying a non-empty description.
     func describedTypeNode(named name: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(
