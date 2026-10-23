@@ -93,11 +93,8 @@ final class NewCodebaseSheetModel: ObservableObject {
     var derivedName: String {
         switch source {
         case .localFolder:
-            if let repositoryReference {
-                let repositoryName = RemoteRepositoryName(remoteURL: repositoryReference.remoteURL).value
-                if !repositoryName.isEmpty { return repositoryName }
-            }
-            return directoryURL?.lastPathComponent ?? ""
+            guard let directoryURL else { return "" }
+            return LocalFolderCodebaseName(folderURL: directoryURL, repository: repositoryReference).value
         case .remoteURL:
             guard case .success(let remoteURL) = RemoteAddress(text: remoteAddress).result else { return "" }
             return RemoteRepositoryName(remoteURL: remoteURL).value

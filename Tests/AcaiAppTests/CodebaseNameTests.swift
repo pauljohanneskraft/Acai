@@ -22,6 +22,14 @@ struct CodebaseNameTests {
         #expect(RemoteRepositoryName(remoteURL: URL(string: "https://example.com/")!).value == "example.com")
     }
 
+    @Test func aLocalFolderIsNamedAfterItsRemoteBeforeItsOwnName() {
+        let folder = URL(fileURLWithPath: "/tmp/checkout")
+        let repository = CodebaseRepositoryReference(
+            remoteURL: URL(string: "https://example.com/team/widgets.git")!, ref: "main")
+        #expect(LocalFolderCodebaseName(folderURL: folder, repository: repository).value == "widgets")
+        #expect(LocalFolderCodebaseName(folderURL: folder, repository: nil).value == "checkout")
+    }
+
     @Test func aNameTheProjectAlreadyUsesIsNumbered() {
         #expect(UniqueCodebaseName(proposed: "widgets", taken: []).value == "widgets")
         #expect(UniqueCodebaseName(proposed: "widgets", taken: ["gadgets"]).value == "widgets")

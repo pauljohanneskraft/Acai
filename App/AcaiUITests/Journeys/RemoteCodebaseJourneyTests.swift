@@ -39,8 +39,7 @@ final class RemoteCodebaseJourneyTests: UIJourneyTestCase {
         // so this no longer builds a diagram to read `Extra` off the canvas.
         codebaseDetail.switchRef(to: "feature")
 
-        // The sheet never asked for a name — the codebase took the remote's. Renaming its row in
-        // place is what replaces the name field it no longer has.
+        // The sheet asks for no name; the codebase took the remote's and is renamed in place.
         returnToSidebar(browser: browser)
         browser.renameCodebase(from: "TeamRemote", to: "Team Checkout")
     }

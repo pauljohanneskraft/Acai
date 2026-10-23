@@ -13,6 +13,20 @@ struct RemoteRepositoryName {
     }
 }
 
+/// A local folder's name, picked or dropped alike: the remote it already points at, else its own.
+struct LocalFolderCodebaseName {
+    let folderURL: URL
+    let repository: CodebaseRepositoryReference?
+
+    var value: String {
+        if let repository {
+            let name = RemoteRepositoryName(remoteURL: repository.remoteURL).value
+            if !name.isEmpty { return name }
+        }
+        return folderURL.lastPathComponent
+    }
+}
+
 /// A name no other codebase in the same project already uses, numbering the ones that repeat — two
 /// worktrees of the same repository, or two folders sharing a last path component. Names come from
 /// what a codebase is rather than from the user, so a repeat is expected rather than an error.

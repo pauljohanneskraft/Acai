@@ -35,6 +35,17 @@ struct FolderDropTests {
         #expect(codebases(in: model, projectID).map(\.name) == ["App", "Server"])
     }
 
+    @Test func aDroppedWorkingDirectoryIsNamedAfterItsRemote() throws {
+        let (model, projectID) = try makeModel()
+        let repository = CodebaseRepositoryReference(
+            remoteURL: URL(string: "https://example.com/team/widgets.git")!, ref: "main")
+
+        model.editing.addCodebases(
+            from: [DroppedFolder(url: try makeFolder("checkout"), repository: repository)], to: projectID)
+
+        #expect(codebases(in: model, projectID).map(\.name) == ["widgets"])
+    }
+
     @Test func skipsAFolderTheProjectAlreadyHas() throws {
         let (model, projectID) = try makeModel()
         let app = try makeFolder("App")

@@ -22,8 +22,8 @@ state, file filter and quality configuration. There are three ways to add one, o
 - **A local folder**, chosen through the system document picker. On iOS that reaches any file
   provider — iCloud Drive, Working Copy, and so on. Access is retained with a security-scoped
   bookmark, so it survives relaunches. Dragging one or more folders from Finder or Files onto a
-  project in the sidebar adds them too, each named after its folder; a folder the project already
-  has is skipped.
+  project in the sidebar adds them too, each named the same way a picked folder is; a folder the
+  project already has is skipped.
 - **A remote URL** — any git remote reachable over HTTPS, whoever hosts it: GitLab, Bitbucket,
   Gitea, a self-hosted server. Its branches and tags are read before anything is cloned. Public
   repositories need no account; an address carrying credentials is refused rather than stored.
