@@ -20,15 +20,29 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         XCTFail("searching for '\(text)' never reported '\(expected)'", file: file, line: line)
     }
 
+    /// Asserts every one of `names` is drawn, in a single accessibility-tree snapshot. Only a run
+    /// that is already failing pays a query per name, to report which of them is missing.
+    private func assertTypeNodesDrawn(
+        _ diagram: ClassDiagramScreen, _ names: [String], _ expectation: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let drawn = diagram.typeNodes(named: names).count
+        if drawn == names.count { return }
+        let missing = names.filter { !diagram.typeNode(named: $0).exists }
+        let detail = missing.isEmpty ? "\(drawn) of \(names.count) matched" : missing.joined(separator: ", ")
+        XCTFail("\(detail) — every one of \(names.joined(separator: ", ")) should \(expectation)",
+                file: file, line: line)
+    }
+
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
         let codebaseDetail = openPreindexedSeededCodebase()
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
-        diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
-        for name in ["Derived", "Helper", "Worker"] {
-            XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should be drawn alongside Base")
-        }
-        diagram.describedTypeNode(named: "Base").waitOrFail("the Base type node, described to VoiceOver")
+        // The described node matches the plain node's identifier plus its VoiceOver label and value,
+        // so this one wait covers both "the diagram has drawn Base" and "Base reaches VoiceOver".
+        diagram.describedTypeNode(named: "Base")
+            .waitOrFail("the Base type node, described to VoiceOver", timeout: .uiWork)
+        assertTypeNodesDrawn(diagram, ["Derived", "Helper", "Worker"], "be drawn alongside Base")
         diagram.relationship(from: "Derived", to: "Base", describing: "Inheritance")
             .waitOrFail("the Derived → Base relationship, described to VoiceOver as inheritance")
         // See `SeededProjectWalkthroughJourneyTests`: the initial centring races the status bar hiding.
@@ -56,8 +70,6 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         diagram.searchField.waitForDisappearanceOrFail("the search field after dismissing search")
         // Dismissing search touches only the search UI's own state — every node from before is
         // still exactly where it was.
-        for name in ["Base", "Derived", "Helper", "Worker"] {
-            XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should survive dismissing search")
-        }
+        assertTypeNodesDrawn(diagram, ["Base", "Derived", "Helper", "Worker"], "survive dismissing search")
     }
 }
