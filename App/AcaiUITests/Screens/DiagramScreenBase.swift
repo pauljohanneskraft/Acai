@@ -73,18 +73,43 @@ class DiagramScreenBase {
     var exportImageButton: XCUIElement { app.buttons["diagram.exportImageButton"] }
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
-    /// Opens the Settings tab and scrolls until `element` is in the tree: the tab is a `Form`, which
-    /// on iOS is a lazy `List` whose further-down rows don't exist until they scroll into view.
+    /// Opens the Settings tab and scrolls until `element` lies within the visible settings.
     func revealInSettings(
         _ element: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line
     ) {
         openSettingsTab(file: file, line: line)
+        #if os(macOS)
+        var wheelDirection: CGFloat = 1
+        var lastOffset: CGFloat?
+        #endif
         for _ in 0..<8 {
-            if element.appears(within: .uiTransition / 8) { return }
             SystemBanners().dismiss(file: file, line: line)
-            settingsContent.swipeUp()
+            guard element.appears(within: .uiTransition / 8) else {
+                settingsContent.swipeUp()
+                continue
+            }
+            let visible = settingsContent.frame
+            let frame = element.frame
+            if visible.contains(frame) { return }
+            #if os(macOS)
+            // A swipe barely moves a macOS scroll view; the wheel reverses if it carried the element further away.
+            let offset = visible.midY - frame.midY
+            if let lastOffset, abs(offset) >= abs(lastOffset) { wheelDirection = -wheelDirection }
+            lastOffset = offset
+            settingsContent.scroll(byDeltaX: 0, deltaY: wheelDirection * offset)
+            #else
+            // Slow: a default swipe flings further than the visible height and overshoots both ways.
+            if frame.minY < visible.minY {
+                settingsContent.swipeDown(velocity: .slow)
+            } else {
+                settingsContent.swipeUp(velocity: .slow)
+            }
+            #endif
         }
         element.waitOrFail(description, file: file, line: line)
+        XCTAssertTrue(
+            settingsContent.frame.contains(element.frame), "\(description) stayed scrolled out of view",
+            file: file, line: line)
     }
 
     /// Taps exactly once — every tap creates another copy — and waits for the copy to open.
