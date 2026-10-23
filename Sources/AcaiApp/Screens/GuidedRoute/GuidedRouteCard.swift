@@ -80,8 +80,7 @@ struct GuidedRouteCard: View {
             HStack(alignment: .top, spacing: .spacingM) {
                 Image(systemName: stop.kind.systemImage)
                     .font(.title3)
-                    // Leading, not centred: centring an odd-width glyph lands it on a half pixel.
-                    .frame(width: 24, alignment: .leading)
+                    .frame(width: 24)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: .spacingXS) {
                     Text(localized: stop.kind.title)
