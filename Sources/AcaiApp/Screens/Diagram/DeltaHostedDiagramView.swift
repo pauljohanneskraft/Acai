@@ -22,9 +22,10 @@ extension EnvironmentValues {
         set { self[DiagramHasBeenFittedKey.self] = newValue }
     }
 
-    /// Reports the compare button's window frame to its host, which anchors the macOS popover there.
-    /// Report-only: the button never reads the anchor back, which is kept in the host's coordinates.
-    var reportCompareButtonFrame: ((CGRect) -> Void)? {
+    /// Where the compare button reports its window frame, for the host to anchor the macOS popover
+    /// to. A `Binding` rather than a reporting closure: a closure is not `Sendable`, so it cannot be
+    /// an `EnvironmentKey`'s default value under strict concurrency.
+    var compareButtonFrame: Binding<CGRect>? {
         get { self[CompareButtonFrameKey.self] }
         set { self[CompareButtonFrameKey.self] = newValue }
     }
@@ -35,7 +36,7 @@ private struct DiagramHasBeenFittedKey: EnvironmentKey {
 }
 
 private struct CompareButtonFrameKey: EnvironmentKey {
-    static let defaultValue: ((CGRect) -> Void)? = nil
+    static let defaultValue: Binding<CGRect>? = nil
 }
 
 /// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
@@ -93,9 +94,9 @@ struct DeltaHostedDiagramView<Content: View>: View {
                 .environment(\.compareChangedFileSelection, $changedFileSelection)
                 .environment(\.diagramHasBeenFitted, $hasBeenFitted)
                 #if os(macOS)
-                .environment(\.reportCompareButtonFrame) { frame in
-                    compareAnchor.update(button: frame, isPanelPresented: isComparePresented)
-                }
+                .environment(\.compareButtonFrame, Binding(
+                    get: { compareAnchor.buttonFrame },
+                    set: { compareAnchor.update(button: $0, isPanelPresented: isComparePresented) }))
                 #endif
         }
         .task(id: comparisonTaskID) {

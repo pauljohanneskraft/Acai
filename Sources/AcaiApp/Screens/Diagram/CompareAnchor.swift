@@ -8,23 +8,25 @@ import CoreGraphics
 /// torn down and laid out again. AppKit closes a popover whose positioning rect leaves the window,
 /// so a report arriving while the popover is up is dropped, and an empty rect never taken at all.
 struct CompareAnchor: Equatable {
-    private var button = CGRect.zero
-    private var host = CGRect.zero
+    /// The button's last reported frame, readable so the reporting binding can hand it back; the
+    /// popover anchors to `placement`, not to this.
+    private(set) var buttonFrame = CGRect.zero
+    private var hostFrame = CGRect.zero
 
     /// The button's frame relative to the host, or `nil` until both have reported a real one — a
     /// popover anchored at the origin with no size opens in the window's corner, not on the button.
     var placement: CGRect? {
-        guard !button.isEmpty, !host.isEmpty else { return nil }
-        return button.offsetBy(dx: -host.minX, dy: -host.minY)
+        guard !buttonFrame.isEmpty, !hostFrame.isEmpty else { return nil }
+        return buttonFrame.offsetBy(dx: -hostFrame.minX, dy: -hostFrame.minY)
     }
 
     mutating func update(button frame: CGRect, isPanelPresented: Bool) {
         guard !frame.isEmpty, !isPanelPresented else { return }
-        button = frame
+        buttonFrame = frame
     }
 
     mutating func update(host frame: CGRect, isPanelPresented: Bool) {
         guard !frame.isEmpty, !isPanelPresented else { return }
-        host = frame
+        hostFrame = frame
     }
 }
