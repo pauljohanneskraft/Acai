@@ -153,7 +153,7 @@ struct PackageDiagramView: View {
                             .frame(width: box.rect.width, height: box.rect.height)
                             .position(x: box.rect.midX, y: box.rect.midY)
                     }
-                    packageEdges(layout)
+                    packageEdges(layout, rotors: rotors)
                     ForEach(layout.nodes) { node in
                         moduleNode(node, rotors: rotors)
                     }
@@ -181,8 +181,8 @@ struct PackageDiagramView: View {
         }
     }
 
-    private func packageEdges(_ layout: PackageLayoutModel) -> some View {
-        let names = Dictionary(layout.nodes.map { ($0.id, $0.node.name) }, uniquingKeysWith: { first, _ in first })
+    private func packageEdges(_ layout: PackageLayoutModel, rotors: DiagramRotorPlan) -> some View {
+        let names = layout.nodeNames
         return ZStack(alignment: .topLeading) {
             ForEach(layout.edges) { edge in
                 if let sourceRect = layout.frame(for: edge.from),
@@ -193,12 +193,9 @@ struct PackageDiagramView: View {
                         targetRect: targetRect,
                         lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
                         strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
-                        accessibilityDescription: DiagramElementDescription(
-                            dependencyFrom: names[edge.from] ?? edge.from,
-                            to: names[edge.to] ?? edge.to,
-                            references: edge.weight,
-                            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
-                        ).edgeAccessibility(identifier: "diagram.packageEdge.\(edge.from)->\(edge.to)")
+                        accessibilityDescription: edgeDescription(edge, names: names)
+                            .edgeAccessibility(identifier: edge.accessibilityID)
+                            .rotorMember(id: edge.accessibilityID, in: rotors, namespace: rotorNamespace)
                     )
                 }
             }
@@ -216,16 +213,6 @@ struct PackageDiagramView: View {
         if let color {
             RoundedRectangle(cornerRadius: 8).stroke(color, lineWidth: 3)
         }
-    }
-
-    /// Reading order and rotor entries for the module boxes, taken from where they actually sit.
-    private func rotorPlan(_ layout: PackageLayoutModel) -> DiagramRotorPlan {
-        DiagramRotorPlan(elements: layout.nodes.map { node in
-            DiagramRotorPlan.Element(
-                id: node.id, label: node.node.name, delta: viewModel.nodeDeltaStatus(id: node.id),
-                center: CGPoint(x: node.rect.midX, y: node.rect.midY)
-            )
-        })
     }
 
     private func moduleNode(_ node: PackageLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
@@ -334,5 +321,50 @@ struct PackageDiagramView: View {
         canvasScale = fit.scale
         canvasOffset = fit.offset
         savePositions()
+    }
+}
+
+extension PackageDiagramView {
+    private func rotorPlan(_ layout: PackageLayoutModel) -> DiagramRotorPlan {
+        let names = layout.nodeNames
+        return DiagramRotorPlan(
+            elements: layout.nodes.map { node in
+                DiagramRotorPlan.Element(
+                    id: node.id, label: node.node.name, delta: viewModel.nodeDeltaStatus(id: node.id), frame: node.rect
+                )
+            },
+            connections: layout.edges.compactMap { edge in
+                guard let source = layout.frame(for: edge.from), let target = layout.frame(for: edge.to) else {
+                    return nil
+                }
+                return DiagramRotorPlan.Element(
+                    connection: edge.accessibilityID, label: edgeDescription(edge, names: names).summary,
+                    delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to), from: source, to: target
+                )
+            }
+        )
+    }
+
+    private func edgeDescription(
+        _ edge: PackageLayoutModel.EdgeLayout, names: [String: String]
+    ) -> DiagramElementDescription {
+        DiagramElementDescription(
+            dependencyFrom: names[edge.from] ?? edge.from,
+            to: names[edge.to] ?? edge.to,
+            references: edge.weight,
+            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
+        )
+    }
+}
+
+extension PackageLayoutModel {
+    fileprivate var nodeNames: [String: String] {
+        Dictionary(nodes.map { ($0.id, $0.node.name) }, uniquingKeysWith: { first, _ in first })
+    }
+}
+
+extension PackageLayoutModel.EdgeLayout {
+    fileprivate var accessibilityID: String {
+        "diagram.packageEdge.\(from)->\(to)"
     }
 }

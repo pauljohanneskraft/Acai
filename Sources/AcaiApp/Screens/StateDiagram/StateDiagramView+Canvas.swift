@@ -32,7 +32,7 @@ extension StateDiagramView {
                         stateNode(node, rotors: rotors)
                     }
                     ForEach(layout.edges) { edge in
-                        transitionTapTarget(edge, layout: layout)
+                        transitionTapTarget(edge, layout: layout, rotors: rotors)
                     }
                 }
             }
@@ -45,14 +45,23 @@ extension StateDiagramView {
         }
     }
 
-    /// Reading order and rotor entries for the state boxes, taken from where they actually sit.
     func rotorPlan(_ layout: StateLayoutModel) -> DiagramRotorPlan {
-        DiagramRotorPlan(elements: layout.nodes.map { node in
-            DiagramRotorPlan.Element(
-                id: node.id, label: node.state.name, delta: viewModel.stateDeltaStatus(node.id),
-                center: CGPoint(x: node.rect.midX, y: node.rect.midY)
-            )
-        })
+        DiagramRotorPlan(
+            elements: layout.nodes.map { node in
+                DiagramRotorPlan.Element(
+                    id: node.id, label: node.state.name, delta: viewModel.stateDeltaStatus(node.id), frame: node.rect
+                )
+            },
+            connections: layout.edges.compactMap { edge in
+                guard let source = layout.frame(for: edge.from), let target = layout.frame(for: edge.to) else {
+                    return nil
+                }
+                return DiagramRotorPlan.Element(
+                    connection: edge.accessibilityID, label: transitionDescription(edge).summary,
+                    delta: transitionDelta(edge), from: source, to: target
+                )
+            }
+        )
     }
 
     func stateNode(_ node: StateLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
@@ -85,7 +94,9 @@ extension StateDiagramView {
 
     /// An invisible tap strip over a transition arrow, selecting it for the Inspector tab —
     /// same rationale as `SequenceDiagramView.messageTapTarget`, sized to a full 44pt hit area.
-    func transitionTapTarget(_ edge: StateLayoutModel.EdgeLayout, layout: StateLayoutModel) -> some View {
+    func transitionTapTarget(
+        _ edge: StateLayoutModel.EdgeLayout, layout: StateLayoutModel, rotors: DiagramRotorPlan
+    ) -> some View {
         let midpoint: CGPoint = {
             guard let from = layout.frame(for: edge.from), let to = layout.frame(for: edge.to) else {
                 return .zero
@@ -116,6 +127,7 @@ extension StateDiagramView {
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
                 showDetails(forTransition: edge.id)
             }
+            .diagramRotorMember(id: edge.accessibilityID, in: rotors, namespace: rotorNamespace)
             .onTapGesture(count: 2) {
                 showDetails(forTransition: edge.id)
             }
@@ -125,12 +137,16 @@ extension StateDiagramView {
     }
 
     private func transitionDescription(_ edge: StateLayoutModel.EdgeLayout) -> DiagramElementDescription {
-        let transitions = viewModel.diagram?.transitions ?? []
-        return DiagramElementDescription(
+        DiagramElementDescription(
             edgeFrom: viewModel.stateName(edge.from) ?? edge.from,
             to: viewModel.stateName(edge.to) ?? edge.to,
             details: [],
-            delta: transitions.indices.contains(edge.id) ? viewModel.transitionDeltaStatus(transitions[edge.id]) : nil)
+            delta: transitionDelta(edge))
+    }
+
+    private func transitionDelta(_ edge: StateLayoutModel.EdgeLayout) -> DeltaStatus? {
+        let transitions = viewModel.diagram?.transitions ?? []
+        return transitions.indices.contains(edge.id) ? viewModel.transitionDeltaStatus(transitions[edge.id]) : nil
     }
 
     private func toggleTransitionSelection(_ id: Int) {
@@ -150,5 +166,11 @@ extension StateDiagramView {
         viewModel.selectNode(id, extending: false)
         sidebarTab = .inspector
         showSidebar = true
+    }
+}
+
+extension StateLayoutModel.EdgeLayout {
+    fileprivate var accessibilityID: String {
+        "diagram.stateTransition.\(id)"
     }
 }

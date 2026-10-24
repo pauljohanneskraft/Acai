@@ -26173,24 +26173,24 @@
         }
       }
     },
-    "View.DiagramRotors.Elements" : {
+    "View.DiagramRotors.Canvas" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diagrammelemente"
+            "value" : "Zeichenfläche des Diagramms"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diagram Elements"
+            "value" : "Diagram Canvas"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Éléments du diagramme"
+            "value" : "Canevas du diagramme"
           }
         }
       }
@@ -26213,6 +26213,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Éléments modifiés"
+          }
+        }
+      }
+    },
+    "View.DiagramRotors.Connections" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbindungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connections"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexions"
+          }
+        }
+      }
+    },
+    "View.DiagramRotors.Elements" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagrammelemente"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagram Elements"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Éléments du diagramme"
           }
         }
       }

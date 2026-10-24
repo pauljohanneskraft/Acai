@@ -61,7 +61,7 @@ extension FreeformDiagramView {
 
     // MARK: - Edge Layer
 
-    var edgeLayer: some View {
+    func edgeLayer(rotors: DiagramRotorPlan) -> some View {
         // Sequence messages are drawn by `sequenceLayer` through the shared layout.
         let messageEdgeIDs = Set(viewModel.sequence.messageEdges.map(\.id))
         let names = nodeNames
@@ -77,7 +77,8 @@ extension FreeformDiagramView {
                     freeformEdge: edge,
                     sourceName: names[edge.sourceNodeID] ?? "",
                     targetName: names[edge.targetNodeID] ?? ""
-                ).edgeAccessibility(identifier: "diagram.freeformEdge.\(edge.id)")
+                ).edgeAccessibility(identifier: edge.rotorID)
+                    .rotorMember(id: edge.rotorID, in: rotors, namespace: rotorNamespace)
             )
             .onTapGesture(count: 2) {
                 viewModel.selectedEdgeID = (viewModel.selectedEdgeID == edge.id) ? nil : edge.id
@@ -129,21 +130,6 @@ extension FreeformDiagramView {
         .diagramRotorMember(id: node.id, in: rotors, namespace: rotorNamespace)
     }
 
-    /// Reading order and rotor entries for every freeform node, taken from where it is drawn —
-    /// lifelines sit on the shared header row rather than at their own stored y.
-    var rotorPlan: DiagramRotorPlan {
-        let lifelineY = viewModel.sequence.sequenceAnchorY + SequenceLayoutModel.headerHeight / 2
-        let stored = (viewModel.containerLayerNodes + viewModel.regularLayerNodes).map { node in
-            (node, CGPoint(x: node.positionX, y: node.positionY))
-        }
-        let lifelines = viewModel.sequence.lifelineNodes.map { node in
-            (node, CGPoint(x: node.positionX, y: lifelineY))
-        }
-        return DiagramRotorPlan(elements: (stored + lifelines).map { node, center in
-            DiagramRotorPlan.Element(id: node.id, label: node.name, delta: nil, center: center)
-        })
-    }
-
     // MARK: - Container Node Layer (lowest z-level)
 
     func containerNodeLayer(rotors: DiagramRotorPlan) -> some View {
@@ -168,8 +154,8 @@ extension FreeformDiagramView {
     /// ones. Headers stay interactive freeform nodes (select, drag, context menu); messages get
     /// tap targets that select their backing edge for the inspector.
     @ViewBuilder
-    func sequenceLayer(rotors: DiagramRotorPlan) -> some View {
-        if let layout = viewModel.sequence.sequenceLayout {
+    func sequenceLayer(_ sequenceLayout: SequenceLayoutModel?, rotors: DiagramRotorPlan) -> some View {
+        if let layout = sequenceLayout {
             let anchorY = viewModel.sequence.sequenceAnchorY
             // Resolve the backing edges once: layout message ids index this array (see
             // `messageEdges`), so the tap targets don't each re-filter and re-sort the edges.
@@ -185,7 +171,8 @@ extension FreeformDiagramView {
                     message,
                     edge: messageEdges.indices.contains(message.id) ? messageEdges[message.id] : nil,
                     names: names,
-                    anchorY: anchorY
+                    anchorY: anchorY,
+                    rotors: rotors
                 )
             }
 
@@ -196,7 +183,7 @@ extension FreeformDiagramView {
                         .offset(y: anchorY)
                         .allowsHitTesting(false)
                 }
-                fragmentTapTarget(fragment, anchorY: anchorY)
+                fragmentTapTarget(fragment, anchorY: anchorY, rotors: rotors)
             }
 
             ForEach(viewModel.sequence.lifelineNodes) { node in
@@ -209,7 +196,8 @@ extension FreeformDiagramView {
     /// however long the operator name.
     private func fragmentTapTarget(
         _ fragment: SequenceLayoutModel.FragmentFrame,
-        anchorY: CGFloat
+        anchorY: CGFloat,
+        rotors: DiagramRotorPlan
     ) -> some View {
         let tab = fragment.tabRect.insetBy(dx: -4, dy: -3)
         return Rectangle()
@@ -226,6 +214,7 @@ extension FreeformDiagramView {
                 onSelect: { viewModel.selectNode(fragment.id, extending: false) },
                 onShowDetails: { showDetails(forNode: fragment.id) }
             )
+            .diagramRotorMember(id: fragment.id, in: rotors, namespace: rotorNamespace)
             .position(x: tab.midX, y: anchorY + tab.midY)
             .onTapGesture(count: 2) {
                 showDetails(forNode: fragment.id)
@@ -244,7 +233,8 @@ extension FreeformDiagramView {
         _ message: SequenceLayoutModel.MessageLayout,
         edge: FreeformDiagram.Edge?,
         names: [String: String],
-        anchorY: CGFloat
+        anchorY: CGFloat,
+        rotors: DiagramRotorPlan
     ) -> some View {
         let width = max(abs(message.toX - message.fromX), 44)
         let midX = (message.fromX + message.toX) / 2
@@ -264,28 +254,21 @@ extension FreeformDiagramView {
             .position(x: midX, y: anchorY + message.y - 4)
             .accessibilityElement()
             .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
-            .accessibilityValue(Text(verbatim: messageSummary(edge, names: names)))
+            .accessibilityValue(Text(verbatim: edge.map {
+                DiagramElementDescription(freeformMessage: $0, names: names).summary
+            } ?? ""))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleEdgeSelection(edge) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
                 showDetails(forEdge: edge)
             }
+            .diagramRotorMember(id: message.freeformRotorID, in: rotors, namespace: rotorNamespace)
             .onTapGesture(count: 2) {
                 showDetails(forEdge: edge)
             }
             .onTapGesture(count: 1) {
                 toggleEdgeSelection(edge)
             }
-    }
-
-    private func messageSummary(_ edge: FreeformDiagram.Edge?, names: [String: String]) -> String {
-        guard let edge else { return "" }
-        return DiagramElementDescription(
-            edgeFrom: names[edge.sourceNodeID] ?? "",
-            to: names[edge.targetNodeID] ?? "",
-            details: edge.label.map { [.app("DiagramElementDescription.EdgeLabel \($0)")] } ?? [],
-            delta: nil
-        ).summary
     }
 
     private func toggleEdgeSelection(_ edge: FreeformDiagram.Edge?) {

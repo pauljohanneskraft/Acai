@@ -213,7 +213,8 @@ struct FreeformDiagramView: View {
     // MARK: - Canvas
 
     private var canvasArea: some View {
-        let rotors = rotorPlan
+        let sequenceLayout = viewModel.sequence.sequenceLayout
+        let rotors = viewModel.rotorPlan(sequenceLayout: sequenceLayout)
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
@@ -224,9 +225,9 @@ struct FreeformDiagramView: View {
         ) {
             ZStack {
                 containerNodeLayer(rotors: rotors)
-                sequenceLayer(rotors: rotors)
+                sequenceLayer(sequenceLayout, rotors: rotors)
                 regularNodeLayer(rotors: rotors)
-                edgeLayer
+                edgeLayer(rotors: rotors)
                 resizeHandleLayer
             }
             // While a catalog placement is pending, nodes stop intercepting taps so *any* tap on the

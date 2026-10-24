@@ -89,6 +89,15 @@ extension DiagramElementDescription {
         self.init(edgeFrom: sourceName, to: targetName, details: details, delta: nil)
     }
 
+    init(freeformMessage edge: FreeformDiagram.Edge, names: [String: String]) {
+        self.init(
+            edgeFrom: names[edge.sourceNodeID] ?? "",
+            to: names[edge.targetNodeID] ?? "",
+            details: edge.label.map { [.app("DiagramElementDescription.EdgeLabel \($0)")] } ?? [],
+            delta: nil
+        )
+    }
+
     /// An edge reads as "From A to B", then what kind of connection it is.
     init(edgeFrom source: String, to target: String, details: [LocalizedStringResource], delta: DeltaStatus?) {
         self.init(
