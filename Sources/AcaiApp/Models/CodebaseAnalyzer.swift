@@ -44,3 +44,10 @@ struct CodebaseAnalyzer: CodebaseAnalyzing {
         )
     }
 }
+
+extension CodeArtifact {
+    /// The flattened, generated-type-filtered form diagrams, links and type ids are read from.
+    var displayReady: CodeArtifact {
+        CodebaseAnalyzer().flattenedForDisplay(self).filteringGeneratedTypes(using: standardLanguageResolver)
+    }
+}
