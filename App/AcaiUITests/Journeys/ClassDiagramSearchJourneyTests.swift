@@ -6,29 +6,39 @@ import XCTest
 /// nodes.
 @MainActor
 final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
-    /// Types `text` and waits for the match summary to catch up, retyping if it never arrives: a
-    /// query landing while the diagram's own state is still settling from the previous action can be
-    /// missed by SwiftUI's diffing, and a plain wait can't recover from that. Retyping is idempotent.
+    /// Types `text` (onto the query when `appending`) until the summary reads `expected`; repeats don't change it.
     private func search(
-        _ diagram: ClassDiagramScreen, for text: String, expecting expected: String, attempts: Int = 3,
-        file: StaticString = #filePath, line: UInt = #line
+        _ diagram: ClassDiagramScreen, for text: String, appending: Bool = false, expecting expected: String,
+        attempts: Int = 3, file: StaticString = #filePath, line: UInt = #line
     ) {
         for _ in 0..<attempts {
-            diagram.searchField.clearAndTypeText(text, file: file, line: line)
+            if appending {
+                diagram.searchField.tapWhenReady("the search field", file: file, line: line)
+                diagram.searchField.typeText(text)
+            } else {
+                diagram.searchField.clearAndTypeText(text, file: file, line: line)
+            }
             if diagram.searchMatchSummary(reading: expected).appears(within: .uiTransition / 2) { return }
         }
         XCTFail("searching for '\(text)' never reported '\(expected)'", file: file, line: line)
+    }
+
+    private func assertTypeNodesDrawn(
+        _ diagram: ClassDiagramScreen, _ names: [String], _ expectation: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let missing = names.filter { !diagram.typeNode(named: $0).exists }
+        XCTAssertTrue(missing.isEmpty, "\(missing.joined(separator: ", ")) should \(expectation)", file: file, line: line)
     }
 
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
         let codebaseDetail = openPreindexedSeededCodebase()
         let diagram = codebaseDetail.createDiagram(type: "class", as: ClassDiagramScreen.self)
 
-        diagram.typeNode(named: "Base").waitOrFail("the Base type node", timeout: .uiWork)
-        for name in ["Derived", "Helper", "Worker"] {
-            XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should be drawn alongside Base")
-        }
-        diagram.describedTypeNode(named: "Base").waitOrFail("the Base type node, described to VoiceOver")
+        // One wait for both "Base is drawn" and "Base reaches VoiceOver".
+        diagram.describedTypeNode(named: "Base")
+            .waitOrFail("the Base type node, described to VoiceOver", timeout: .uiWork)
+        assertTypeNodesDrawn(diagram, ["Derived", "Helper", "Worker"], "be drawn alongside Base")
         diagram.relationship(from: "Derived", to: "Base", describing: "Inheritance")
             .waitOrFail("the Derived → Base relationship, described to VoiceOver as inheritance")
         // See `SeededProjectWalkthroughJourneyTests`: the initial centring races the status bar hiding.
@@ -36,28 +46,20 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
 
         diagram.openSearch()
 
-        // "Base" matches exactly one of the seeded fixture's four types.
+        // "Base" matches exactly one of the seeded fixture's four types; counts and stepping are
+        // `ClassDiagramViewModelTests` and `DiagramSearchSummaryTests`.
         search(diagram, for: "Base", expecting: "1 match")
         validateScreenshot("ClassDiagram", state: "searching")
 
-        // "er" matches Derived, Helper and Worker but not Base.
-        search(diagram, for: "er", expecting: "3 matches")
-
-        // Stepping through matches never crashes or disables itself once there are matches to step
-        // through.
         diagram.searchNextButton.tapWhenReady("the search's Next Match button")
         diagram.searchPreviousButton.tapWhenReady("the search's Previous Match button")
 
-        // A query nothing matches reports that plainly rather than looking identical to "not
-        // searching yet".
-        search(diagram, for: "nonexistentXYZ", expecting: "No matches")
+        // Wherever the tap leaves the cursor, "XYZ" inside "Base" matches nothing, with no burst of deletes first.
+        search(diagram, for: "XYZ", appending: true, expecting: "No matches")
 
         diagram.searchDismissButton.tapWhenReady("the search's Dismiss button")
         diagram.searchField.waitForDisappearanceOrFail("the search field after dismissing search")
-        // Dismissing search touches only the search UI's own state — every node from before is
-        // still exactly where it was.
-        for name in ["Base", "Derived", "Helper", "Worker"] {
-            XCTAssertTrue(diagram.typeNode(named: name).exists, "\(name) should survive dismissing search")
-        }
+        // Dismissing search touches only the search UI's own state.
+        assertTypeNodesDrawn(diagram, ["Base", "Derived", "Helper", "Worker"], "survive dismissing search")
     }
 }
