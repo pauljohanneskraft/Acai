@@ -5,7 +5,6 @@ import AcaiDiff
 struct DiagramRotorPlan {
     struct Element: Identifiable, Equatable {
         let id: String
-        /// Parser content, never translated.
         let label: String
         let delta: DeltaStatus?
         let frame: CGRect
