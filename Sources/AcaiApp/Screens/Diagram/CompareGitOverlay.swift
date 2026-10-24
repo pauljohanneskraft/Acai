@@ -9,17 +9,14 @@ import AcaiRender
 /// popover (macOS) or sheet (iOS/iPadOS). Deliberately not a permanent on-canvas bar: comparing
 /// against git is occasional and shouldn't cost canvas space on every diagram view.
 ///
-/// Both are presented by `DeltaHostedDiagramView`, above the diagram's `.id(...)` boundary, because
-/// this button renders inside the canvas and its identity resets whenever the comparison changes.
-/// On macOS it reports its frame there, as the popover's anchor.
+/// Neither is presented by this button: it renders inside the canvas, whose identity resets whenever
+/// the comparison changes (see `DeltaHostedDiagramView`). On macOS it reports its frame as the
+/// popover's anchor.
 struct CompareOverlayButton: View {
     let diagram: GeneratedDiagram
-    /// Owned by a stable ancestor above the diagram's own `.id(...)` boundary (`DeltaHostedDiagramView`),
-    /// not this view itself: this button renders inside the diagram's canvas, so its view identity
-    /// resets whenever the comparison ref changes.
     @Binding var isPresented: Bool
     #if os(macOS)
-    @Environment(\.compareButtonFrame) private var compareButtonFrame
+    @Environment(\.comparePopover) private var comparePopover
     #endif
 
     private var isOn: Bool { diagram.comparisonGitRef != nil }
@@ -53,7 +50,7 @@ struct CompareOverlayButton: View {
         .accessibilityIdentifier("delta.openButton")
         #if os(macOS)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-            compareButtonFrame?.wrappedValue = frame
+            comparePopover?.update(button: frame)
         }
         #endif
     }
@@ -77,7 +74,8 @@ struct CompareClearButton: View {
 /// Comparison controls: comparing the codebase's current working tree against a git revision
 /// (`HEAD`, a branch, a SHA, …) and colour-coding the added/removed/changed elements. Reads and
 /// writes the diagram's `comparisonGitRef` through the model; the actual snapshot load is driven
-/// by the host view's `.task`. Presented in `DeltaHostedDiagramView`'s popover/sheet.
+/// by the host view's `.task`. Presented in `ComparePopoverPresentation` (macOS) or
+/// `DeltaHostedDiagramView`'s sheet.
 struct CompareGitPanel: View {
     let diagram: GeneratedDiagram
     var onSelectChangedFileTypes: ((Set<String>) -> Void)?

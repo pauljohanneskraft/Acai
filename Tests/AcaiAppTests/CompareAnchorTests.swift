@@ -9,8 +9,8 @@ struct CompareAnchorTests {
 
     private func anchored() -> CompareAnchor {
         var anchor = CompareAnchor()
-        anchor.update(host: host, isPanelPresented: false)
-        anchor.update(button: button, isPanelPresented: false)
+        anchor.update(host: host)
+        anchor.update(button: button)
         return anchor
     }
 
@@ -18,10 +18,10 @@ struct CompareAnchorTests {
         var anchor = CompareAnchor()
         #expect(anchor.placement == nil)
 
-        anchor.update(host: host, isPanelPresented: false)
+        anchor.update(host: host)
         #expect(anchor.placement == nil)
 
-        anchor.update(button: button, isPanelPresented: false)
+        anchor.update(button: button)
         #expect(anchor.placement == CGRect(x: 820, y: 46, width: 44, height: 44))
     }
 
@@ -29,8 +29,8 @@ struct CompareAnchorTests {
         var anchor = anchored()
         let placement = anchor.placement
 
-        anchor.update(button: .zero, isPanelPresented: false)
-        anchor.update(host: .zero, isPanelPresented: false)
+        anchor.update(button: .zero)
+        anchor.update(host: .zero)
 
         #expect(anchor.placement == placement)
     }
@@ -39,17 +39,39 @@ struct CompareAnchorTests {
         var anchor = anchored()
         let placement = anchor.placement
 
-        anchor.update(button: button.offsetBy(dx: 0, dy: 300), isPanelPresented: true)
-        anchor.update(host: host.offsetBy(dx: 0, dy: 300), isPanelPresented: true)
+        anchor.holdStill(true)
+        anchor.update(button: button.offsetBy(dx: 0, dy: 300))
+        anchor.update(host: host.offsetBy(dx: 0, dy: 100))
 
         #expect(anchor.placement == placement)
     }
 
-    @Test func followsTheButtonOnceThePanelCloses() {
+    @Test func followsTheButtonWhileThePanelIsClosed() {
         var anchor = anchored()
 
-        anchor.update(button: button.offsetBy(dx: -120, dy: 0), isPanelPresented: false)
+        anchor.update(button: button.offsetBy(dx: -120, dy: 0))
 
         #expect(anchor.placement == CGRect(x: 700, y: 46, width: 44, height: 44))
+    }
+
+    @Test func takesTheFrameTheButtonMovedToWhileOpenOnceThePanelCloses() {
+        var anchor = anchored()
+
+        anchor.holdStill(true)
+        anchor.update(button: button.offsetBy(dx: -300, dy: 0))
+        anchor.holdStill(false)
+
+        #expect(anchor.placement == CGRect(x: 520, y: 46, width: 44, height: 44))
+    }
+
+    @Test func holdsTheFirstPlacementWhenOpenedBeforeTheFramesWereKnown() {
+        var anchor = CompareAnchor()
+
+        anchor.holdStill(true)
+        anchor.update(host: host)
+        anchor.update(button: button)
+        anchor.update(button: button.offsetBy(dx: 0, dy: 300))
+
+        #expect(anchor.placement == CGRect(x: 820, y: 46, width: 44, height: 44))
     }
 }
