@@ -15,20 +15,25 @@ final class UnreachableCodebaseRecoveryTests: UIJourneyTestCase {
     func testReindexingAnUnreachableFolderOffersToChooseAnother() throws {
         let unreachable = "/private/var/AcaiUITestMissing-\(UUID().uuidString)"
         let projectID = seeded.projectID
-        let browser = launchSeeded(analysis: .parsed) { _, destination in
+        let browser = launchSeeded(analysis: .parsed) { app, destination in
             let projectFile = destination.appendingPathComponent("projects/\(projectID).json")
             let seeded = try String(contentsOf: projectFile, encoding: .utf8)
             try seeded
                 .replacingOccurrences(of: "\(destination.path)/SampleSwiftPackage", with: unreachable)
                 .write(to: projectFile, atomically: true, encoding: .utf8)
+            try stageInterruptedLedger(app: app, destination: destination)
         }
 
         let detail = ProjectDetailScreen(app: app)
         let codebaseRow = detail.codebaseRow(id: seeded.codebaseID)
         browser.projectRow(id: seeded.projectID).tap("the seeded project's sidebar row", until: codebaseRow)
 
+        detail.interruptedCloneRetryButton(id: interruptedCloneID).waitOrFail("the interrupted clone's Retry Clone")
+        detail.dismissInterruptedClone(id: interruptedCloneID)
+
         let codebaseDetail = CodebaseDetailScreen(app: app)
         codebaseRow.tap("the seeded codebase's row", until: codebaseDetail.reindexButton)
+        codebaseDetail.interruptedBannerResumeButton.waitOrFail("the interrupted reindex's Reindex button")
         codebaseDetail.reindexButton.tapWhenReady("Reindex")
 
         #if os(macOS)
@@ -48,5 +53,16 @@ final class UnreachableCodebaseRecoveryTests: UIJourneyTestCase {
             "The alert must say the folder can't be reached, not report it as a codebase with nothing in it.")
 
         alert.buttons["Cancel"].tapWhenReady("the alert's Cancel button")
+        codebaseDetail.interruptedBanner.waitOrFail("the interrupted reindex, still unfinished after a failed retry")
+    }
+
+    private let interruptedCloneID = "44444444-4444-4444-4444-444444444444"
+
+    /// An earlier launch's unfinished clone into the seeded project and reindex of its codebase.
+    private func stageInterruptedLedger(app: XCUIApplication, destination: URL) throws {
+        let ledger = try XCTUnwrap(app.fixtureFile("interrupted-ledger.json"))
+        let activity = destination.appendingPathComponent("activity", isDirectory: true)
+        try FileManager.default.createDirectory(at: activity, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: ledger, to: activity.appendingPathComponent("ledger.json"))
     }
 }

@@ -84,6 +84,21 @@ final class ProjectDetailScreen {
         app.descendants(matching: .any)["codebaseRow.indexingSpinner.\(id)"]
     }
 
+    /// A clone an earlier launch never finished, keyed by its interruption record's id.
+    func interruptedClone(id: String) -> XCUIElement {
+        app.descendants(matching: .any)["projectDetail.interruptedClone.\(id)"]
+    }
+
+    func interruptedCloneRetryButton(id: String) -> XCUIElement {
+        app.buttons["projectDetail.interruptedClone.\(id).retryButton"]
+    }
+
+    func dismissInterruptedClone(id: String, file: StaticString = #filePath, line: UInt = #line) {
+        app.buttons["projectDetail.interruptedClone.\(id).dismissButton"]
+            .tapWhenReady("the interrupted clone's Dismiss button", file: file, line: line)
+        interruptedClone(id: id).waitForDisappearanceOrFail("the dismissed interrupted clone", file: file, line: line)
+    }
+
     func freeformDiagramRow(id: String) -> XCUIElement {
         app.descendants(matching: .any)["projectDetail.freeformDiagramRow.\(id)"]
     }
