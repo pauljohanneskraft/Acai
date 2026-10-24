@@ -216,9 +216,7 @@ struct ClassDiagramView: View {
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
-            CompareOverlayButton(
-                diagram: diagram, isPresented: isComparePresented, onSelectChangedFileTypes: selectChangedFileTypes
-            )
+            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
         .overlay(alignment: .top) {
             if isSearchBarVisible {

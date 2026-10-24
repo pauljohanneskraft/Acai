@@ -13,7 +13,7 @@ extension ClassDiagramView {
         showSidebar = true
     }
 
-    /// Applies a changed-file pick from the iOS compare sheet, which can arrive while this view is
+    /// Applies a changed-file pick from the compare panel, which can arrive while this view is
     /// being recreated for a new comparison — hence also on appear.
     func applyChangedFileSelection() {
         guard let ids = changedFileSelection.wrappedValue else { return }

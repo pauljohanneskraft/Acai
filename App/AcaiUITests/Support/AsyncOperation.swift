@@ -24,12 +24,19 @@ struct AsyncOperation {
     }
 
     /// Fails fast with the app's own error text when the operation fails, rather than timing out.
+    ///
+    /// `detail` is read only on a timeout, and only then: an operation whose markers live inside a
+    /// presentation times out identically whether the presentation went away or stayed and never
+    /// reported, and the queries that tell those apart cost seconds each.
     func waitUntilLoaded(
         _ description: String, timeout: TimeInterval = .uiWork,
+        detail: @MainActor () -> String = { "" },
         file: StaticString = #filePath, line: UInt = #line
     ) {
         guard outcome.waitForExistence(timeout: timeout) else {
-            XCTFail("\(description) never finished (still loading: \(loading.exists))", file: file, line: line)
+            XCTFail(
+                "\(description) never finished (still loading: \(loading.exists))\(detail())",
+                file: file, line: line)
             return
         }
         if error.exists {
