@@ -26,6 +26,7 @@ struct FreeformDiagramView: View {
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
     @State var sidebarTab: SidebarTab = .catalog
+    @Namespace var rotorNamespace
     // Not `private`: `FreeformDiagramView+Placement.swift` reads this via `isCompactWidth`.
     #if os(iOS)
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
@@ -212,7 +213,8 @@ struct FreeformDiagramView: View {
     // MARK: - Canvas
 
     private var canvasArea: some View {
-        PannableCanvas(
+        let rotors = rotorPlan
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -221,9 +223,9 @@ struct FreeformDiagramView: View {
             onBackgroundTap: handleBackgroundTap
         ) {
             ZStack {
-                containerNodeLayer
-                sequenceLayer
-                regularNodeLayer
+                containerNodeLayer(rotors: rotors)
+                sequenceLayer(rotors: rotors)
+                regularNodeLayer(rotors: rotors)
                 edgeLayer
                 resizeHandleLayer
             }
@@ -232,6 +234,7 @@ struct FreeformDiagramView: View {
             // commits the placement there, instead of selecting/dragging whatever's underneath.
             .allowsHitTesting(viewModel.pendingPlacement == nil)
         }
+        .diagramRotors(rotors, in: rotorNamespace)
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
             for (id, size) in sizes {
                 viewModel.measuredNodeSizes[id] = size

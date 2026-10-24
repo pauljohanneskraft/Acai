@@ -29,6 +29,7 @@ struct PackageDiagramView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: PackageDiagramSidebarTab = .settings
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @Namespace private var rotorNamespace
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -136,7 +137,9 @@ struct PackageDiagramView: View {
     // MARK: - Canvas
 
     private var canvasContent: some View {
-        PannableCanvas(
+        let layout = viewModel.layout
+        let rotors = rotorPlan(layout)
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -144,7 +147,6 @@ struct PackageDiagramView: View {
             autoPanController: canvasAutoPanController,
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
-                let layout = viewModel.layout
                 ZStack(alignment: .topLeading) {
                     ForEach(layout.projectBoxes) { box in
                         GroupingBoxView(label: box.label)
@@ -153,11 +155,12 @@ struct PackageDiagramView: View {
                     }
                     packageEdges(layout)
                     ForEach(layout.nodes) { node in
-                        moduleNode(node)
+                        moduleNode(node, rotors: rotors)
                     }
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace)
         .overlay {
             if viewModel.isEmpty {
                 DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
@@ -215,7 +218,17 @@ struct PackageDiagramView: View {
         }
     }
 
-    private func moduleNode(_ node: PackageLayoutModel.NodeFrame) -> some View {
+    /// Reading order and rotor entries for the module boxes, taken from where they actually sit.
+    private func rotorPlan(_ layout: PackageLayoutModel) -> DiagramRotorPlan {
+        DiagramRotorPlan(elements: layout.nodes.map { node in
+            DiagramRotorPlan.Element(
+                id: node.id, label: node.node.name, delta: viewModel.nodeDeltaStatus(id: node.id),
+                center: CGPoint(x: node.rect.midX, y: node.rect.midY)
+            )
+        })
+    }
+
+    private func moduleNode(_ node: PackageLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
         ContainerNodeView(
             name: node.node.moduleName,
             stereotype: "package",
@@ -234,6 +247,7 @@ struct PackageDiagramView: View {
             onSelect: { viewModel.selectNode(node.id, extending: false) },
             onShowDetails: { showDetails(for: node.id) }
         )
+        .diagramRotorMember(id: node.id, in: rotors, namespace: rotorNamespace)
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
             showDetails(for: node.id)

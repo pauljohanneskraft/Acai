@@ -9,7 +9,9 @@ extension StateDiagramView {
     // MARK: - Canvas
 
     var canvasContent: some View {
-        PannableCanvas(
+        let layout = viewModel.layout
+        let rotors = rotorPlan(layout)
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -17,7 +19,6 @@ extension StateDiagramView {
             autoPanController: canvasAutoPanController,
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
-                let layout = viewModel.layout
                 // A plain Sendable dictionary, not a closure capturing `viewModel` directly —
                 // `StateEnsembleView.edgeColor` is `@Sendable`, and `viewModel` (a `@MainActor`
                 // class) isn't, so this mirrors `ClassDiagramViewModel.exportPNGData`'s precomputed-
@@ -28,7 +29,7 @@ extension StateDiagramView {
                 ZStack(alignment: .topLeading) {
                     StateEnsembleView(layout: layout, edgeColor: { edgeColors[$0.id] })
                     ForEach(layout.nodes) { node in
-                        stateNode(node)
+                        stateNode(node, rotors: rotors)
                     }
                     ForEach(layout.edges) { edge in
                         transitionTapTarget(edge, layout: layout)
@@ -36,6 +37,7 @@ extension StateDiagramView {
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace)
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as the other diagram types.
         .overlay(alignment: .topTrailing) {
@@ -43,7 +45,17 @@ extension StateDiagramView {
         }
     }
 
-    func stateNode(_ node: StateLayoutModel.NodeFrame) -> some View {
+    /// Reading order and rotor entries for the state boxes, taken from where they actually sit.
+    func rotorPlan(_ layout: StateLayoutModel) -> DiagramRotorPlan {
+        DiagramRotorPlan(elements: layout.nodes.map { node in
+            DiagramRotorPlan.Element(
+                id: node.id, label: node.state.name, delta: viewModel.stateDeltaStatus(node.id),
+                center: CGPoint(x: node.rect.midX, y: node.rect.midY)
+            )
+        })
+    }
+
+    func stateNode(_ node: StateLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
         StateNodeView(
             state: node.state,
             isSelected: viewModel.selectedNodeIDs.contains(node.id)
@@ -57,6 +69,7 @@ extension StateDiagramView {
             onSelect: { viewModel.selectNode(node.id, extending: false) },
             onShowDetails: { showDetails(forState: node.id) }
         )
+        .diagramRotorMember(id: node.id, in: rotors, namespace: rotorNamespace)
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
             showDetails(forState: node.id)

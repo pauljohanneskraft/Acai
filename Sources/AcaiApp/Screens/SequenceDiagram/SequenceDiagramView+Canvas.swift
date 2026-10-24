@@ -9,7 +9,9 @@ extension SequenceDiagramView {
     // MARK: - Canvas
 
     var canvasContent: some View {
-        PannableCanvas(
+        let layout = viewModel.layout
+        let rotors = rotorPlan(layout)
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -17,7 +19,6 @@ extension SequenceDiagramView {
             autoPanController: canvasAutoPanController,
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
-                let layout = viewModel.layout
                 // A plain Sendable dictionary, not a closure capturing `viewModel` directly —
                 // `SequenceEnsembleView.messageColor` is `@Sendable`, and `viewModel` (a `@MainActor`
                 // class) isn't, so this mirrors `ClassDiagramViewModel.exportPNGData`'s precomputed-
@@ -31,7 +32,7 @@ extension SequenceDiagramView {
                 ZStack(alignment: .topLeading) {
                     SequenceEnsembleView(layout: layout, messageColor: { messageColors[$0.id] })
                     ForEach(layout.participants) { participant in
-                        participantHeader(participant)
+                        participantHeader(participant, rotors: rotors)
                     }
                     ForEach(layout.messages) { message in
                         messageTapTarget(
@@ -41,6 +42,7 @@ extension SequenceDiagramView {
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace)
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as the other diagram types.
         .overlay(alignment: .topTrailing) {
@@ -48,7 +50,20 @@ extension SequenceDiagramView {
         }
     }
 
-    func participantHeader(_ participant: SequenceLayoutModel.ParticipantFrame) -> some View {
+    /// Reading order and rotor entries for the participant headers, taken from where they sit.
+    func rotorPlan(_ layout: SequenceLayoutModel) -> DiagramRotorPlan {
+        DiagramRotorPlan(elements: layout.participants.map { participant in
+            DiagramRotorPlan.Element(
+                id: participant.id, label: participant.name,
+                delta: viewModel.participantDeltaStatus(participant.id),
+                center: CGPoint(x: participant.headerRect.midX, y: participant.headerRect.midY)
+            )
+        })
+    }
+
+    func participantHeader(
+        _ participant: SequenceLayoutModel.ParticipantFrame, rotors: DiagramRotorPlan
+    ) -> some View {
         SequenceParticipantHeader(
             participant: participant,
             isSelected: viewModel.selectedNodeIDs.contains(participant.id)
@@ -64,6 +79,7 @@ extension SequenceDiagramView {
             onSelect: { viewModel.selectNode(participant.id, extending: false) },
             onShowDetails: { showDetails(forParticipant: participant.id) }
         )
+        .diagramRotorMember(id: participant.id, in: rotors, namespace: rotorNamespace)
         .position(x: participant.headerRect.midX, y: participant.headerRect.midY)
         .onTapGesture(count: 2) {
             showDetails(forParticipant: participant.id)
