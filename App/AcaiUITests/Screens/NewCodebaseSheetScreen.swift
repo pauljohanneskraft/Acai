@@ -27,6 +27,68 @@ final class NewCodebaseSheetScreen {
     }
     var cloneFullHistoryButton: XCUIElement { app.buttons["newCodebase.largeClone.fullHistoryButton"].firstMatch }
 
+    // MARK: - A folder holding several projects
+
+    var rootsHeader: XCUIElement { app.descendants(matching: .any)["newCodebase.rootsHeader"].firstMatch }
+    var combineRootsToggle: XCUIElement {
+        app.descendants(matching: .any)["newCodebase.combineRootsToggle"].firstMatch
+    }
+
+    /// One discovered root's checkbox, keyed by its path relative to the picked folder.
+    func rootToggle(_ path: String) -> XCUIElement {
+        app.descendants(matching: .any)["newCodebase.root.\(path)"].firstMatch
+    }
+
+    /// Picks the folder a UI test staged (`UITestFixtureResolver.resolveLocalFolderURL()`) — the
+    /// system file importer the button otherwise presents can't be driven from here — and waits for
+    /// the roots step.
+    ///
+    /// The step's own header is the wait's signal rather than a `rootDiscovery.loaded` marker: the
+    /// plan is cleared before the walk starts and the header is rendered from its result, so the
+    /// header cannot exist until the walk finished. The marker is only rendered while in flight,
+    /// since a settled step showing "Loaded" under its own list would be noise.
+    func chooseStagedFolder(file: StaticString = #filePath, line: UInt = #line) {
+        chooseDirectoryButton.tapWhenReady("Choose…", file: file, line: line)
+        rootsHeader.waitOrFail("the discovered-projects step", file: file, line: line)
+    }
+
+    /// On iOS the identified element is the whole row; a tap at its centre lands on the label and
+    /// doesn't flip it, so tap the nested switch instead — as `ClassDiagramScreen.enableFocus` does.
+    ///
+    /// Waits for the toggle's own value afterwards: the caller's next step reads as success either
+    /// way, so a tap that flipped nothing has to fail here rather than there.
+    func flip(_ toggle: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line) {
+        #if os(macOS)
+        let control = toggle
+        #else
+        let control = toggle.switches.firstMatch
+        #endif
+        control.tapWhenReady(description, file: file, line: line)
+        if control.turnsOn(within: .uiTransition) { return }
+        // Nothing moved in a full transition budget, so that tap missed rather than lagged — a
+        // centre tap lands on the label when the row is wider than the control. The checkbox sits
+        // at the row's leading edge, and a miss cannot have flipped anything to flip back.
+        control.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).tap()
+        control.waitUntilOn(description, file: file, line: line)
+    }
+
+    /// Confirms the sheet. The sheet dismisses as the codebases are created, so its disappearance is
+    /// the completion signal; the caller asserts on the rows that appeared.
+    func add(file: StaticString = #filePath, line: UInt = #line) {
+        addButton.tapWhenReady("Add", file: file, line: line)
+        addButton.waitForDisappearanceOrFail(
+            "the Add Codebase sheet", failingOn: app.alerts.firstMatch, file: file, line: line)
+    }
+
+    /// Dismisses the sheet without adding anything. `.firstMatch` of a descendants query: a toolbar
+    /// button's identifier resolves to more than one accessibility node.
+    func cancel(file: StaticString = #filePath, line: UInt = #line) {
+        let cancelButton = app.descendants(matching: .any)
+            .matching(identifier: "newCodebase.cancelButton").firstMatch
+        cancelButton.tapWhenReady("Cancel", file: file, line: line)
+        cancelButton.waitForDisappearanceOrFail("the Add Codebase sheet", file: file, line: line)
+    }
+
     /// `source` is the segment's `NewCodebaseSheet.Source` raw value. Segments surface as different
     /// element kinds on macOS (`NSSegmentedControl`) and iOS, and not every one carries the segment
     /// label's identifier, so the English label is matched as well.
@@ -73,6 +135,21 @@ final class NewCodebaseSheetScreen {
         cloneButton.waitForDisappearanceOrFail(
             "the Add Codebase sheet (cloning and indexing)", failingOn: app.alerts.firstMatch, file: file, line: line
         )
+    }
+
+    /// The local-folder tab's own name field, which names the one codebase a combined add creates.
+    ///
+    /// Return is sent on iOS only, where it dismisses the keyboard. On macOS it would activate Add,
+    /// the sheet's `.confirmationAction` and so its default button, adding the folder before the
+    /// several-projects question has been answered.
+    func enterLocalName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
+        localNameField.tapWhenReady("the codebase name field", file: file, line: line)
+        #if os(iOS)
+        localNameField.typeText(name + "\n")
+        app.keyboards.firstMatch.waitForDisappearanceOrFail("the keyboard", file: file, line: line)
+        #else
+        localNameField.typeText(name)
+        #endif
     }
 
     /// Submits with Return so the iPad keyboard, which covers the pickers below the field, goes away.
