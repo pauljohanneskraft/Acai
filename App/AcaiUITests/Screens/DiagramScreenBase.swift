@@ -252,18 +252,14 @@ class DiagramScreenBase {
         comparePickerOperation.waitUntilLoaded("Loading the compare panel's revisions", file: file, line: line)
     }
 
-    /// Chooses `name` in the already-open compare panel and waits for the comparison to load.
-    ///
-    /// The panel carries its own status markers, so a timeout here has two very different causes:
-    /// the panel went away with the pick, or it stayed and never showed a status. Both reported as a
-    /// bare timeout through two attempts at fixing #445, so the failure now names which, and whether
-    /// the pick reached the model at all — the button's label says so from outside the panel.
+    /// Chooses `name` in the already-open compare panel and waits for the comparison to load; a
+    /// timeout reports whether the panel is still reachable and whether the button saw the pick.
     func compare(against name: String, timeout: TimeInterval = .uiWork, file: StaticString = #filePath, line: UInt = #line) {
         compareRefRow(name).tapWhenReady("compare ref row \(name)", file: file, line: line)
         compareOperation.waitUntilLoaded(
             "Comparing against \(name)", timeout: timeout,
             detail: {
-                " — panel still open: \(self.compareRefRow(name).exists)"
+                " — panel in accessibility tree: \(self.compareRefRow(name).exists)"
                     + ", compare button: \(self.compareButton.label)"
             },
             file: file, line: line)
