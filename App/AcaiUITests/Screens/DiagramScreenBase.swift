@@ -252,8 +252,7 @@ class DiagramScreenBase {
         comparePickerOperation.waitUntilLoaded("Loading the compare panel's revisions", file: file, line: line)
     }
 
-    /// Chooses `name` in the already-open compare panel and waits for the comparison to load; a
-    /// timeout reports whether the panel is still reachable and whether the button saw the pick.
+    /// Chooses `name` in the already-open compare panel and waits for the comparison to load.
     func compare(against name: String, timeout: TimeInterval = .uiWork, file: StaticString = #filePath, line: UInt = #line) {
         compareRefRow(name).tapWhenReady("compare ref row \(name)", file: file, line: line)
         compareOperation.waitUntilLoaded(

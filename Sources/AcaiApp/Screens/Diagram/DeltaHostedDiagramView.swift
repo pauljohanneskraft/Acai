@@ -30,10 +30,8 @@ private struct DiagramHasBeenFittedKey: EnvironmentKey {
 /// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
 /// diagram's own `.id(...)` boundary, and hands it down as a `Binding` so `CompareOverlayButton`
 /// can be placed inside the diagram's own canvas without losing that state when the ref changes.
-///
-/// Picking a ref resets `content`'s identity twice (the ref, then `loaded`), so the panel is never
-/// presented from inside it: the iOS sheet is presented from here, and the macOS popover from the
-/// window's root (`ComparePopoverPresenter`).
+/// The panel is never presented from inside `content`: the sheet is presented here, the popover by
+/// `ComparePopoverPresenter`.
 struct DeltaHostedDiagramView<Content: View>: View {
     let diagram: GeneratedDiagram
     @ViewBuilder var content: (Binding<Bool>) -> Content

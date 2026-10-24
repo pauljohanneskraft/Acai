@@ -8,10 +8,7 @@ import AcaiRender
 /// A small floating control, overlaid on a diagram's canvas, that opens `CompareGitPanel` in a
 /// popover (macOS) or sheet (iOS/iPadOS). Deliberately not a permanent on-canvas bar: comparing
 /// against git is occasional and shouldn't cost canvas space on every diagram view.
-///
-/// Neither is presented by this button: it renders inside the canvas, whose identity resets whenever
-/// the comparison changes (see `DeltaHostedDiagramView`). On macOS it reports its frame as the
-/// popover's anchor.
+/// Neither is presented by this button, whose identity resets with each comparison change.
 struct CompareOverlayButton: View {
     let diagram: GeneratedDiagram
     @Binding var isPresented: Bool

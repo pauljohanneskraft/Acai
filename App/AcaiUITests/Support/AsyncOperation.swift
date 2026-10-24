@@ -23,8 +23,7 @@ struct AsyncOperation {
         )).firstMatch
     }
 
-    /// Fails fast with the app's own error text when the operation fails, rather than timing out;
-    /// `detail` is queried only on a timeout.
+    /// Fails fast with the app's own error text; `detail` is queried only on a timeout.
     func waitUntilLoaded(
         _ description: String, timeout: TimeInterval = .uiWork,
         detail: @MainActor () -> String = { "" },

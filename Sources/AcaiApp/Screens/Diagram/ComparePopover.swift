@@ -1,9 +1,7 @@
 #if os(macOS)
 import SwiftUI
 
-/// One window's macOS compare popover, presented from the window's root: anywhere inside the detail
-/// column, a comparison change rebuilds the diagram's inspector split view underneath it, which keeps
-/// the popover on screen but drops it from the accessibility tree.
+/// Presented from the window's root: inside the detail column a comparison change drops it from the AX tree.
 @MainActor
 @Observable
 final class ComparePopoverPresenter {
@@ -51,8 +49,6 @@ extension EnvironmentValues {
     }
 }
 
-/// Presents `presenter`'s popover from a clear backdrop behind the view it modifies, anchored to the
-/// compare button's frame relative to that backdrop.
 struct ComparePopoverPresentation: ViewModifier {
     let presenter: ComparePopoverPresenter
     let model: ProjectBrowserViewModel
@@ -82,8 +78,7 @@ struct ComparePopoverPresentation: ViewModifier {
     }
 }
 
-/// Not `NavigationStack { ... .toolbar { clearButton } }`: on macOS, a `.toolbar` inside a
-/// `NavigationStack` presented in a `.popover` renders its items in the presenting window's own toolbar.
+/// No `NavigationStack` toolbar: inside a macOS popover its items land in the window's toolbar.
 private struct ComparePopoverContent: View {
     let diagramID: UUID
     let presenter: ComparePopoverPresenter

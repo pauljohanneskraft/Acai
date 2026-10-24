@@ -1,7 +1,6 @@
 import CoreGraphics
 
-/// The compare button's frame relative to the view presenting the macOS popover, held still while the
-/// popover is up because AppKit closes a popover whose positioning rect leaves the window.
+/// Held still while the popover is up: AppKit closes a popover whose positioning rect leaves the window.
 struct CompareAnchor: Equatable {
     private var buttonFrame = CGRect.zero
     private var hostFrame = CGRect.zero
