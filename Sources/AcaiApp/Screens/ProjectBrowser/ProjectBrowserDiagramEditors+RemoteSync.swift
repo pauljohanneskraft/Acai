@@ -47,7 +47,7 @@ extension ProjectCodebaseEditor {
             }
             store.projects[index].codebases.append(Codebase(
                 id: codebaseID,
-                name: name,
+                name: uniqueCodebaseName(name, inProjectAt: index),
                 directoryPath: destination.worktreeDirectory.path,
                 managedCheckout: ManagedCheckout(
                     refKind: refKind, lastSyncedCommitSHA: headSHA, lastSyncedAt: Date()),

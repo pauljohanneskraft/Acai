@@ -28,7 +28,8 @@ struct FindingsAggregatorTests {
         let computed = CodebaseAnalysis(artifact: artifact, configuration: nil)
         return CodebaseAnalysis(
             metrics: computed.metrics, guidedRoute: computed.guidedRoute, deadCode: computed.deadCode,
-            health: computed.health, quality: QualityReport(violations: violations, checkedRuleCount: 1),
+            health: computed.health, typeCycleCount: computed.typeCycleCount,
+            quality: QualityReport(violations: violations, checkedRuleCount: 1),
             usesConfiguredRules: false, qualityError: nil)
     }
 
