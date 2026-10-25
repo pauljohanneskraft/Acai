@@ -1056,6 +1056,102 @@
           }
         }
       }
+    },
+    "Shortcut.GetCodebaseMetrics.ShortTitle" : {
+      "comment" : "The short name of the Get Metrics shortcut, on its tile in the Shortcuts app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metriken"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metrics"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Métriques"
+          }
+        }
+      }
+    },
+    "Shortcut.GetDependents.ShortTitle" : {
+      "comment" : "The short name of the Get Dependents shortcut, on its tile in the Shortcuts app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abhängige"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dependents"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dépendants"
+          }
+        }
+      }
+    },
+    "Shortcut.ReindexCodebase.ShortTitle" : {
+      "comment" : "The short name of the Reindex Codebase shortcut, on its tile in the Shortcuts app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu indizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindex"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexer"
+          }
+        }
+      }
+    },
+    "Shortcut.RunQualityCheck.ShortTitle" : {
+      "comment" : "The short name of the Run Quality Check shortcut, on its tile in the Shortcuts app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualitätsprüfung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quality Check"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contrôle qualité"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
