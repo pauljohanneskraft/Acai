@@ -8,13 +8,14 @@ import AcaiRender
 /// Render snapshot tests: perceptually diff a real `AcaiApp` view against a committed golden,
 /// light and dark.
 ///
-/// **Scoped to flat, self-contained freeform node views only** — not full interactive screens.
+/// **Scoped to flat, self-contained component views only** — not full interactive screens.
 /// `ImageRenderer`'s single off-screen pass has no real window server, so it can't resolve
 /// AppKit-backed controls, vibrancy/material effects, or a live measurement→layout feedback loop
 /// (`onPreferenceChange`/`GeometryReader`) — it renders blank canvases or diagnostic "unavailable"
-/// glyphs for anything that depends on those. `AcaiApp`'s freeform node views below are flat,
-/// pre-laid-out, materials-free content, so they render cleanly; real interactive screens are
-/// covered by the snapshot tests (XCUITest) instead.
+/// glyphs for anything that depends on those. The views below are flat, pre-laid-out,
+/// materials-free content, so they render cleanly; real interactive screens are covered by the
+/// snapshot tests (XCUITest) instead. Text is passed as literal content rather than a catalog
+/// identifier, since plain SwiftPM leaves `.app(_:)` identifiers unresolved.
 @Suite("App screen snapshots", .timeLimit(.minutes(1)))
 struct AppScreenSnapshotTests {
 
@@ -62,6 +63,19 @@ struct AppScreenSnapshotTests {
     @MainActor func useCaseNode(_ theme: Theme) throws {
         let view = UseCaseNodeView(name: "Place Order", isSelected: false)
         try Self.comparator.validate("freeformUseCaseNode\(theme.suffix)") { try render(view, theme: theme) }
+    }
+
+    @Test("Empty codebase section message", arguments: themes)
+    @MainActor func sectionEmptyMessage(_ theme: Theme) throws {
+        let size = CGSize(width: 320, height: 40)
+        let view = SectionEmptyMessage(
+            text: "No types in this codebase.", identifier: "codebaseDetail.types.emptyState"
+        )
+            .frame(width: size.width, height: size.height)
+            .background(theme.palette.canvasInk.background)
+        try Self.comparator.validate("sectionEmptyMessage\(theme.suffix)") {
+            try render(view, theme: theme, size: size)
+        }
     }
 
     /// A converted-from-Class-Diagram `.type` node carries its manual resize into `node.width`/
