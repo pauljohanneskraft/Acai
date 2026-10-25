@@ -246,19 +246,20 @@ struct ProjectCodebaseEditor {
 
     // MARK: Codebases
 
-    /// `repository` is set when `NewCodebaseSheet`'s local-folder picker detected the picked
-    /// folder is already a git working directory with an `origin` remote (the transparent
-    /// upgrade, via `LocalGitRepositoryDetector`) — `nil` for a plain folder, which behaves exactly
-    /// as before.
+    /// `repository` is the picked folder's `origin` remote, `nil` for a plain folder; a taken `name` is numbered.
     func addCodebase(
         to projectID: UUID, name: String, directoryURL: URL,
         securityScopedBookmark: SecurityScopedBookmark? = nil, repository: CodebaseRepositoryReference? = nil
     ) {
         guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
         store.projects[index].codebases.append(Codebase(
-            name: name, directoryPath: directoryURL.path, securityScopedBookmark: securityScopedBookmark,
-            repository: repository))
+            name: uniqueCodebaseName(name, inProjectAt: index), directoryPath: directoryURL.path,
+            securityScopedBookmark: securityScopedBookmark, repository: repository))
         persist()
+    }
+
+    func uniqueCodebaseName(_ proposed: String, inProjectAt index: Int) -> String {
+        UniqueCodebaseName(proposed: proposed, taken: store.projects[index].codebases.map(\.name)).value
     }
 
     func updateCodebase(id: UUID, name: String) {

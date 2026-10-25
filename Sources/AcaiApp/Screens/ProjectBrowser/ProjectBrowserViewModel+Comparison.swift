@@ -192,9 +192,7 @@ extension ProjectBrowserViewModel {
         guard let semantic = comparisonArtifacts[key] else { return nil }
         comparisonRecency.use(key)
         if let cached = comparisonDisplayCache[key] { return cached }
-        let display = CodebaseAnalyzer()
-            .flattenedForDisplay(semantic)
-            .filteringGeneratedTypes(using: semantic.standardLanguageResolver)
+        let display = semantic.displayReady
         comparisonDisplayCache[key] = display
         return display
     }

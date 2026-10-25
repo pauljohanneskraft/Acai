@@ -43,7 +43,6 @@ struct NewCodebaseSheetContent: View {
         _sheet = StateObject(wrappedValue: sheet())
     }
 
-    @FocusState private var isNameFieldFocused: Bool
     @State var isChoosingDirectory = false
     @State private var repositorySearch = ""
 
@@ -79,7 +78,6 @@ struct NewCodebaseSheetContent: View {
             // collapsed left its pickers absent from the accessibility tree below the fold.
             .presentationDetents([.large])
             #endif
-            .onAppear { isNameFieldFocused = true }
             .onDisappear { sheet.cancelPendingWork() }
             .navigationTitle(.app("View.NewCodebaseSheet.AddCodebase"))
             .toolbar {
@@ -136,31 +134,6 @@ struct NewCodebaseSheetContent: View {
         }
     }
 
-    /// Not a bare `TextField(text:label:)` on macOS: inside a `Form` its title renders as an extra
-    /// leading label rather than a placeholder, misaligning it against `LabeledContent` rows.
-    /// An optional name falls back to the repository's own.
-    @ViewBuilder
-    func nameField(isOptional: Bool, identifier: String) -> some View {
-        #if os(macOS)
-        LabeledContent {
-            TextField("", text: $sheet.name, prompt: Text(localized: isOptional
-                ? .app("View.NewCodebaseSheet.Optional") : .app("View.NewCodebaseSheet.EGMyLibrary")))
-                .multilineTextAlignment(.trailing)
-                .focused($isNameFieldFocused)
-                .accessibilityIdentifier(identifier)
-        } label: {
-            Text(.app("View.NewCodebaseSheet.Name"))
-        }
-        #else
-        TextField(text: $sheet.name) {
-            Text(localized: isOptional
-                ? .app("View.NewCodebaseSheet.NameOptional") : .app("View.NewCodebaseSheet.Name"))
-        }
-        .focused($isNameFieldFocused)
-        .accessibilityIdentifier(identifier)
-        #endif
-    }
-
     @ViewBuilder
     private var gitHubSection: some View {
         Section {
@@ -182,7 +155,6 @@ struct NewCodebaseSheetContent: View {
         }
         if sheet.account != nil {
             Section {
-                nameField(isOptional: true, identifier: "newCodebase.nameField")
                 #if os(macOS)
                 LabeledContent {
                     TextField(
@@ -261,7 +233,7 @@ struct NewCodebaseSheetContent: View {
                 sheet.addLocalFolder()
                 dismiss()
             }
-            .disabled(sheet.name.isEmpty || sheet.directoryURL == nil)
+            .disabled(sheet.directoryURL == nil)
             .accessibilityIdentifier("newCodebase.addButton")
         case .remoteURL, .gitHub:
             let pending = sheet.pendingClone
