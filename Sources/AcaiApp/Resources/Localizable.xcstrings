@@ -17703,6 +17703,50 @@
         }
       }
     },
+    "View.HotspotChartView.Retry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayer"
+          }
+        }
+      }
+    },
+    "View.HotspotChartView.RetryFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der erneute Versuch ist fehlgeschlagen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The retry didn't succeed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La nouvelle tentative a échoué."
+          }
+        }
+      }
+    },
     "View.HotspotChartView.Sidebar" : {
       "localizations" : {
         "de" : {
@@ -18495,24 +18539,134 @@
         }
       }
     },
-    "View.ModuleCouplingChartView.NoModulesPlotYet" : {
+    "View.ModuleCouplingChartView.NoModuleLayout" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Module zum Darstellen — Codebase zuerst neu indizieren."
+            "value" : "Alle Dateien landen hier in einem einzigen, unbenannten Modul – ihre Pfade lassen sich nicht in erkannte Module aufteilen, etwa Sources/<Modul>, packages/<Paket> oder <Modul>/src. Kopplung vergleicht Module miteinander, daher gibt es nichts darzustellen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No modules to plot yet — reindex the codebase first."
+            "value" : "Every file here falls into a single unnamed module — its paths don't split into recognised modules, such as Sources/<Module>, packages/<Package> or <module>/src. Coupling compares modules with each other, so there is nothing to plot."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucun module à tracer pour le moment — réindexez d'abord la codebase."
+            "value" : "Tous les fichiers relèvent ici d'un seul module sans nom : leurs chemins ne se répartissent pas en modules reconnus, comme Sources/<Module>, packages/<Package> ou <module>/src. Le couplage compare les modules entre eux, il n'y a donc rien à tracer."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.NoTypesFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung hat in dieser Codebase keine Typen gefunden, daher gibt es keine Module darzustellen. Wenn sich ihre Quellen seit der letzten Indizierung geändert haben, indiziere sie neu."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing found no types in this codebase, so there are no modules to plot. If its sources have changed since it was last indexed, reindex it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a trouvé aucun type dans cette codebase, il n'y a donc aucun module à tracer. Si ses sources ont changé depuis la dernière indexation, réindexez-la."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.OnlyOneModule %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ ist hier das einzige Modul. Kopplung misst, wie Module voneinander abhängen – bei einem einzigen Modul gibt es also nichts darzustellen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” is the only module here. Coupling measures how modules depend on each other, so a single module has nothing to plot."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » est le seul module ici. Le couplage mesure la façon dont les modules dépendent les uns des autres : un module unique n'a donc rien à tracer."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.Reindex" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu indizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindex"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexer"
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.ReindexFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Indizierung wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'indexation n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.ModuleCouplingChartView.Reindexing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird indiziert…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexing…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indexation…"
           }
         }
       }
