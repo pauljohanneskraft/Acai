@@ -22,8 +22,8 @@ state, file filter and quality configuration. There are three ways to add one, o
 - **A local folder**, chosen through the system document picker. On iOS that reaches any file
   provider — iCloud Drive, Working Copy, and so on. Access is retained with a security-scoped
   bookmark, so it survives relaunches. Dragging one or more folders from Finder or Files onto a
-  project in the sidebar adds them too, each named after its folder; a folder the project already
-  has is skipped.
+  project in the sidebar adds them too, each named the same way a picked folder is; a folder the
+  project already has is skipped.
 - **A remote URL** — any git remote reachable over HTTPS, whoever hosts it: GitLab, Bitbucket,
   Gitea, a self-hosted server. Its branches and tags are read before anything is cloned. Public
   repositories need no account; an address carrying credentials is refused rather than stored.
@@ -31,6 +31,11 @@ state, file filter and quality configuration. There are three ways to add one, o
   plus a verification page — no client secret), then pick a repository. This is a convenience on
   top of the remote URL path, not a separate one: the stored model is just the remote's
   credential-free URL, and the GitHub token is only ever sent to GitHub.
+
+Nothing asks for a name. A codebase is named after what it is — the GitHub repository, the remote a
+picked folder already points at, or the folder itself — and a name the project already uses is
+numbered. **Rename** on its row, in the sidebar's context menu, edits that name in place: Return
+commits, Escape reverts, and a name left empty keeps the previous one.
 
 Cloning is a real git clone over HTTPS via libgit2. Repositories are cloned once into a shared hub
 and each codebase gets its own linked worktree, so several codebases on one monorepo share a single

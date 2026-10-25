@@ -388,9 +388,7 @@ final class ProjectBrowserViewModel: ObservableObject {
         if let cached = displayArtifactCache[codebaseID], cached.stamp == stamp {
             return cached.artifact
         }
-        let display = CodebaseAnalyzer()
-            .flattenedForDisplay(semantic)
-            .filteringGeneratedTypes(using: semantic.standardLanguageResolver)
+        let display = semantic.displayReady
         displayArtifactCache[codebaseID] = (stamp, display)
         return display
     }
