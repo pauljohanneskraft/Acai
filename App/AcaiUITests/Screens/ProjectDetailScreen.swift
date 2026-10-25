@@ -28,16 +28,13 @@ final class ProjectDetailScreen {
         tapAddMenuItem(addCodebaseButton, description: "Add Codebase", file: file, line: line)
     }
 
-    /// Clones the fixture repository's default branch, which the sheet preselects, and waits for its row.
+    /// Clones the fixture repository's preselected default branch and waits for the row it names `expecting`.
     func addFixtureGitHubCodebase(
-        named name: String = "fixture-repo", file: StaticString = #filePath, line: UInt = #line
+        expecting name: String = "fixture-repo", file: StaticString = #filePath, line: UInt = #line
     ) {
         tapAddCodebase(file: file, line: line)
         GitHubAccountScreen(app: app).selectGitHubSource(file: file, line: line)
         let sheet = NewCodebaseSheetScreen(app: app)
-        if name != "fixture-repo" {
-            sheet.enterName(name, file: file, line: line)
-        }
         sheet.choose("octocat/fixture-repo", from: sheet.repositoryPicker, file: file, line: line)
         sheet.cloneButton.waitUntilEnabled("Clone, once the default branch is preselected", file: file, line: line)
         sheet.clone(file: file, line: line)

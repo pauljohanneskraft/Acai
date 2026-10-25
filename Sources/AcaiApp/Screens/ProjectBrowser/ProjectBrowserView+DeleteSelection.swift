@@ -14,7 +14,7 @@ extension ProjectBrowserView {
 
     /// Nil unless the focused sidebar holds a deletable selection that is not being renamed.
     var sidebarDeleteAction: SidebarDeleteAction? {
-        guard sidebarIsFocused, renamingDiagramID == nil, !model.canvasHasDeletableSelection,
+        guard sidebarIsFocused, sidebarRename.row == nil, !model.canvasHasDeletableSelection,
               let deletion = model.selectionDeletion else { return nil }
         return SidebarDeleteAction(deletion: deletion) { requestSidebarDeletion() }
     }

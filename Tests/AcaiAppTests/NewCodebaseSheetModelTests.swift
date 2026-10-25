@@ -183,6 +183,43 @@ struct NewCodebaseSheetModelTests {
         #expect(sheet.pendingClone == nil)
     }
 
+    @Test func aPlainFolderIsNamedAfterTheFolder() throws {
+        let fixture = try makeFixture()
+        defer { fixture.tearDown() }
+        let sheet = fixture.sheet
+        sheet.directoryURL = URL(fileURLWithPath: "/tmp/acai-widgets/Widgets", isDirectory: true)
+
+        #expect(sheet.derivedName == "Widgets")
+
+        sheet.addLocalFolder()
+
+        #expect(fixture.store.projects.first?.codebases.map(\.name) == ["Widgets"])
+    }
+
+    /// A picked folder that is already a working directory is named after the repository it belongs
+    /// to, not after whatever the folder happens to be called on this machine.
+    @Test func aFolderThatIsAWorkingDirectoryIsNamedAfterItsRemote() throws {
+        let fixture = try makeFixture()
+        defer { fixture.tearDown() }
+        let sheet = fixture.sheet
+        sheet.directoryURL = URL(fileURLWithPath: "/tmp/acai-checkouts/some-checkout", isDirectory: true)
+        sheet.repositoryReference = CodebaseRepositoryReference(remoteURL: remoteURL, ref: "main")
+
+        #expect(sheet.derivedName == "widgets")
+    }
+
+    @Test func aNameTheProjectAlreadyUsesIsNumbered() throws {
+        let fixture = try makeFixture()
+        defer { fixture.tearDown() }
+        let sheet = fixture.sheet
+        sheet.directoryURL = URL(fileURLWithPath: "/tmp/acai-one/Widgets", isDirectory: true)
+        sheet.addLocalFolder()
+        sheet.directoryURL = URL(fileURLWithPath: "/tmp/acai-two/Widgets", isDirectory: true)
+        sheet.addLocalFolder()
+
+        #expect(fixture.store.projects.first?.codebases.map(\.name) == ["Widgets", "Widgets 2"])
+    }
+
     private func gitHubPendingClone(in fixture: Fixture) async throws -> PendingClone {
         let sheet = fixture.sheet
         let repository = fixture.hosting.repository

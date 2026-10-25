@@ -52,6 +52,23 @@ final class ProjectBrowserScreen {
     /// Only exists on compact width, where a pushed detail screen covers the sidebar.
     var backButton: XCUIElement { app.buttons["BackButton"] }
 
+    /// The field a row being renamed turns into. Not per-row: only one row renames at a time, and a
+    /// codebase added during the journey has an id the journey can't predict.
+    var codebaseRenameField: XCUIElement { app.textFields["sidebar.codebase.renameField"] }
+
+    /// Renames a codebase through its own sidebar row, committing with Return, then waits for the row
+    /// under its new name.
+    func renameCodebase(
+        from name: String, to newName: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        RowRenameAffordance(app: app).tapRename(
+            on: sidebarCodebaseRow(named: name), "the codebase's sidebar row", file: file, line: line)
+        codebaseRenameField.clearAndTypeText(newName + "\n", file: file, line: line)
+        codebaseRenameField.waitForDisappearanceOrFail("the rename field", file: file, line: line)
+        sidebarCodebaseRow(named: newName).waitOrFail(
+            "the renamed codebase's sidebar row", file: file, line: line)
+    }
+
     /// Deletes through the row's own affordance, then confirms.
     func deleteCodebase(_ row: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
         RowDeleteAffordance(app: app).tapDelete(on: row, "the codebase's sidebar row", file: file, line: line)

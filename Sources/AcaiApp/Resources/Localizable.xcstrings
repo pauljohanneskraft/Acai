@@ -793,6 +793,72 @@
         }
       }
     },
+    "Intent.CodebaseInsights.CodebaseNotFound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Codebase ist nicht mehr in Açaí vorhanden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That codebase is no longer in Açaí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette codebase n’est plus dans Açaí."
+          }
+        }
+      }
+    },
+    "Intent.CodebaseInsights.NotIndexed %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wurde noch nicht indiziert, daher gibt es nichts zu berichten. Indiziere sie zuerst neu."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn’t been indexed yet, so there’s nothing to report. Reindex it first."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ n’a pas encore été indexée, il n’y a donc rien à signaler. Réindexez-la d’abord."
+          }
+        }
+      }
+    },
+    "Intent.CodebaseInsights.TypeNotFound %@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In %2$@ wurde kein Typ namens %1$@ gefunden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No type called %1$@ was found in %2$@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun type nommé %1$@ n’a été trouvé dans %2$@."
+          }
+        }
+      }
+    },
     "Intent.ExportDiagram.CodebaseNotIndexed %@" : {
       "localizations" : {
         "de" : {
@@ -4217,6 +4283,28 @@
         }
       }
     },
+    "KeyboardShortcutReference.CancelRename" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen abbrechen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel Renaming"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler le renommage"
+          }
+        }
+      }
+    },
     "KeyboardShortcutReference.Canvas" : {
       "localizations" : {
         "de" : {
@@ -4631,6 +4719,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rétablir"
+          }
+        }
+      }
+    },
+    "KeyboardShortcutReference.Renaming" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renaming"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renommage"
           }
         }
       }
@@ -7231,28 +7341,6 @@
         }
       }
     },
-    "View.ProjectBrowserView.Name" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nom"
-          }
-        }
-      }
-    },
     "View.ProjectBrowserView.Reindex" : {
       "localizations" : {
         "de" : {
@@ -7821,6 +7909,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À"
+          }
+        }
+      }
+    },
+    "View.SidebarRenameField.Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom"
           }
         }
       }
@@ -12561,6 +12671,28 @@
         }
       }
     },
+    "View.CodebaseFunctionsSection.NoTopLevelFunctions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Top-Level-Funktionen in dieser Codebase."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No top-level functions in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune fonction de premier niveau dans cette codebase."
+          }
+        }
+      }
+    },
     "View.CodebaseFunctionsSection.Ƒ" : {
       "localizations" : {
         "de" : {
@@ -12623,6 +12755,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Variables et constantes globales"
+          }
+        }
+      }
+    },
+    "View.CodebaseGlobalsSection.NoGlobals" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine globalen Variablen oder Konstanten in dieser Codebase."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No global variables or constants in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune variable ou constante globale dans cette codebase."
           }
         }
       }
@@ -12693,6 +12847,28 @@
         }
       }
     },
+    "View.CodebaseRelationshipsSection.NoRelationships" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Beziehungen in dieser Codebase."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No relationships in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune relation dans cette codebase."
+          }
+        }
+      }
+    },
     "View.CodebaseRelationshipsSection.Relationships" : {
       "localizations" : {
         "de" : {
@@ -12733,6 +12909,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld membres"
+          }
+        }
+      }
+    },
+    "View.CodebaseTypesSection.NoTypes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Typen in dieser Codebase."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No types in this codebase."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun type dans cette codebase."
           }
         }
       }
@@ -18935,72 +19133,6 @@
         }
       }
     },
-    "View.NewCodebaseSheet.EGMyLibrary" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "z. B. MyLibrary"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "e.g. MyLibrary"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "par ex. MyLibrary"
-          }
-        }
-      }
-    },
-    "View.NewCodebaseSheet.Name" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nom"
-          }
-        }
-      }
-    },
-    "View.NewCodebaseSheet.NameOptional" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name (optional)"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name (optional)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nom (facultatif)"
-          }
-        }
-      }
-    },
     "View.NewCodebaseSheet.NoDirectoryChosen" : {
       "localizations" : {
         "de" : {
@@ -19063,28 +19195,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ouvrir Réglages"
-          }
-        }
-      }
-    },
-    "View.NewCodebaseSheet.Optional" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Optional"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Optional"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Facultatif"
           }
         }
       }

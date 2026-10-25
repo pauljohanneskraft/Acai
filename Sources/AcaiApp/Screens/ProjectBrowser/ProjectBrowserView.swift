@@ -33,8 +33,7 @@ public struct ProjectBrowserView: View {
     @EnvironmentObject private var keyboardShortcutsPresenter: KeyboardShortcutsPresenter
     @State var windowToken = UUID()
     @State var collapsedProjects = Set<UUID>()
-    @State var renamingDiagramID: UUID?
-    @State var renamingText: String = ""
+    @State var sidebarRename = SidebarRename()
     @State var projectPendingDeletion: Project?
     @State var codebasePendingDeletion: Codebase?
     #if os(macOS)
