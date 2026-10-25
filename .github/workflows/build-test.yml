@@ -330,6 +330,7 @@ jobs:
           ONLY_TESTING=()
           while IFS= read -r TEST; do ONLY_TESTING+=("-only-testing:$TEST"); done < shard-tests.txt
           XCTESTRUN=$(find DerivedData -name 'Acai-iOSUITests_*.xctestrun' | head -1)
+          ../Scripts/ci_resource_sampler.sh mark "$RUNNER_TEMP/resources"
           xcodebuild test-without-building \
             -xctestrun "$XCTESTRUN" \
             -destination "id=$SIM_UDID" \
