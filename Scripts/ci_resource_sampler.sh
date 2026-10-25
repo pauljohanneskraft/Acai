@@ -29,23 +29,22 @@ case "$ACTION" in
                 sysctl vm.loadavg vm.swapusage kern.memorystatus_vm_pressure_level
                 memory_pressure -Q
                 vm_stat | grep -E "free|active|wired|compressor|Compressions|Decompressions|Pageins|Pageouts|Swap"
-                # Footprints rather than RSS, which counts every shared page once per process.
-                { ps -axo pid=,comm= | sed 's/^/P /'; top -l 1 -stats pid,mem | sed 's/^/T /'; } | awk '
-                    $1 == "P" { pid = $2; $1 = $2 = ""; sim[pid] = $0 ~ /CoreSimulator|RuntimeRoot|\.simruntime/; next }
-                    $1 == "T" && $2 ~ /^[0-9]+$/ {
-                        m = $3; sub(/[+-]$/, "", m); u = substr(m, length(m)); v = substr(m, 1, length(m) - 1) + 0
-                        mb = u == "G" ? v * 1024 : u == "M" ? v : u == "K" ? v / 1024 : 0
-                        if (sim[$2]) s += mb; else h += mb
-                    }
-                    END { printf "footprint simulator: %dM host: %dM\n", s, h }'
                 # Both tools' first report averages since boot; the second covers the last second.
                 iostat -d -K -c 2 -w 1
                 top -l 2 -s 1 -n 12 -o cpu -stats pid,command,cpu,mem,state | tail -n 13
-                # MEM includes the process's compressed pages, which a CPU-sorted list never shows for idle processes.
-                echo "--- by memory"
-                top -l 1 -n 20 -o mem -stats pid,command,mem,cmprs | tail -n 21
+                # Footprints include compressed pages, which neither RSS nor a CPU-sorted list shows for idle processes.
+                { ps -axo pid=,comm= | sed 's/^/P /'; top -l 1 -o mem -stats pid,command,mem,cmprs | sed 's/^/T /'; } | awk '
+                    $1 == "P" { pid = $2; $1 = $2 = ""; sim[pid] = $0 ~ /CoreSimulator|RuntimeRoot|\.simruntime/; next }
+                    $1 == "T" && $2 == "PID" { print "--- by memory"; print substr($0, 3); listing = 1; next }
+                    $1 == "T" && listing && $2 ~ /^[0-9]+$/ {
+                        m = $(NF - 1); sub(/[+-]$/, "", m); u = substr(m, length(m)); v = substr(m, 1, length(m) - 1) + 0
+                        mb = u == "G" ? v * 1024 : u == "M" ? v : u == "K" ? v / 1024 : 0
+                        if (sim[$2]) s += mb; else h += mb
+                        if (++n <= 20) print substr($0, 3)
+                    }
+                    END { printf "footprint simulator: %dM host: %dM\n", s, h }'
             } >> "$OUT" 2>&1
-            sleep 3
+            sleep 2
         done
         ;;
     mark)
