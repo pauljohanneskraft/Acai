@@ -12,8 +12,8 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
             try SeededFixture().stageSignedInGitHubAccount(in: destination)
             remoteURL = try Self.stageRemote(for: app, in: destination)
         }
-        // Both on the default branch on purpose: the point is two codebases sharing one clone.
-        addCodebases(named: ["fixture-repo", "fixture-repo-2"], browser: browser)
+        // Both on the default branch and named after the repository, so the second one is numbered.
+        addCodebases(expecting: ["fixture-repo", "fixture-repo 2"], browser: browser)
 
         let repositoryRow = browser.repositoryRow(remoteURL: remoteURL)
         let repository = RepositoryDetailScreen(app: app)
@@ -26,11 +26,11 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         repository.loadedValue(identifier: "repository.lastFetchedValue", excluding: "Never")
             .waitOrFail("the clone's last-fetched time")
         repository.referencingCodebase(named: "fixture-repo").waitOrFail("the first referencing codebase")
-        repository.referencingCodebase(named: "fixture-repo-2").waitOrFail("the second referencing codebase")
+        repository.referencingCodebase(named: "fixture-repo 2").waitOrFail("the second referencing codebase")
 
         // No other journey reaches this confirmation; the list update is a `RepositoryDetailModelTests` case.
         returnToSidebar(browser: browser)
-        browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-repo-2"))
+        browser.deleteCodebase(browser.sidebarCodebaseRow(named: "fixture-repo 2"))
     }
 
     private static func stageRemote(for app: XCUIApplication, in destination: URL) throws -> String {
@@ -40,13 +40,13 @@ final class RepositoryManagementJourneyTests: UIJourneyTestCase {
         return URL(fileURLWithPath: remoteDir.path, isDirectory: true).absoluteString
     }
 
-    private func addCodebases(named names: [String], browser: ProjectBrowserScreen) {
+    private func addCodebases(expecting names: [String], browser: ProjectBrowserScreen) {
         let detail = ProjectDetailScreen(app: app)
         browser.projectRow(id: seeded.projectID).tap(
             "the seeded project's sidebar row", until: detail.codebaseRow(id: seeded.codebaseID)
         )
         for name in names {
-            detail.addFixtureGitHubCodebase(named: name)
+            detail.addFixtureGitHubCodebase(expecting: name)
         }
         returnToSidebar(browser: browser)
     }

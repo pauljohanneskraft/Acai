@@ -35,7 +35,6 @@ final class NewCodebaseSheetModel: ObservableObject {
     @Published var source: Source = .localFolder {
         didSet { refreshCandidateClone() }
     }
-    @Published var name = ""
 
     @Published var directoryURL: URL?
     @Published var securityScopedBookmark: SecurityScopedBookmark?
@@ -88,6 +87,22 @@ final class NewCodebaseSheetModel: ObservableObject {
 
     // MARK: - What would be added
 
+    /// The name a codebase gets from what it is: the repository it came from where there is one,
+    /// otherwise the folder it lives in. The sheet has no name field — a name that isn't wanted is
+    /// changed by renaming the codebase's row afterwards.
+    var derivedName: String {
+        switch source {
+        case .localFolder:
+            guard let directoryURL else { return "" }
+            return LocalFolderCodebaseName(folderURL: directoryURL, repository: repositoryReference).value
+        case .remoteURL:
+            guard case .success(let remoteURL) = RemoteAddress(text: remoteAddress).result else { return "" }
+            return RemoteRepositoryName(remoteURL: remoteURL).value
+        case .gitHub:
+            return selectedRepository?.name ?? ""
+        }
+    }
+
     /// What Clone would add, or `nil` while the chosen source isn't complete.
     var pendingClone: PendingClone? {
         switch source {
@@ -97,16 +112,13 @@ final class NewCodebaseSheetModel: ObservableObject {
             guard case .success(let remoteURL) = RemoteAddress(text: remoteAddress).result,
                   let ref = selectedRemoteRef
             else { return nil }
-            let fallbackName = remoteURL.deletingPathExtension().lastPathComponent
-            return PendingClone(
-                name: name.isEmpty ? fallbackName : name, remoteURL: remoteURL, ref: ref, sizeKilobytes: nil)
+            return PendingClone(name: derivedName, remoteURL: remoteURL, ref: ref, sizeKilobytes: nil)
         case .gitHub:
             guard let repository = selectedRepository, let ref = selectedRef, account != nil,
                   let remoteURL = gitHubRemoteURL(repository)
             else { return nil }
             return PendingClone(
-                name: name.isEmpty ? repository.name : name, remoteURL: remoteURL, ref: ref,
-                sizeKilobytes: repository.sizeKilobytes)
+                name: derivedName, remoteURL: remoteURL, ref: ref, sizeKilobytes: repository.sizeKilobytes)
         }
     }
 
@@ -159,7 +171,7 @@ final class NewCodebaseSheetModel: ObservableObject {
     func addLocalFolder() {
         guard let directoryURL else { return }
         editor.addCodebase(
-            to: projectID, name: name, directoryURL: directoryURL,
+            to: projectID, name: derivedName, directoryURL: directoryURL,
             securityScopedBookmark: securityScopedBookmark, repository: repositoryReference)
     }
 

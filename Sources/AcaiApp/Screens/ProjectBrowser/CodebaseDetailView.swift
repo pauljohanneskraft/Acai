@@ -79,14 +79,10 @@ struct CodebaseDetailView: View {
                             analyzingPlaceholder
                             Divider()
                         }
-                        if !artifact.globalVariables.isEmpty {
-                            CodebaseGlobalsSection(codebase: codebase, artifact: artifact)
-                            Divider()
-                        }
-                        if !artifact.freestandingFunctions.isEmpty {
-                            CodebaseFunctionsSection(codebase: codebase, artifact: artifact)
-                            Divider()
-                        }
+                        CodebaseGlobalsSection(codebase: codebase, artifact: artifact)
+                        Divider()
+                        CodebaseFunctionsSection(codebase: codebase, artifact: artifact)
+                        Divider()
                         CodebaseTypesSection(codebase: codebase, artifact: artifact)
                         Divider()
                         CodebaseRelationshipsSection(codebase: codebase, artifact: artifact)
