@@ -283,10 +283,6 @@ jobs:
           # Materialize LFS-tracked screenshot goldens under App/AcaiUITests/__Snapshots__/.
           lfs: true
 
-      # Diagnostic for #410: remove with its stop and upload steps once the stall is settled.
-      - name: Start resource sampler
-        run: Scripts/ci_resource_sampler.sh start "$RUNNER_TEMP/resources"
-
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.6"
@@ -360,18 +356,6 @@ jobs:
         with:
           name: ${{ matrix.platform }}-shard-${{ matrix.shard }}
           path: App/AcaiUITests/__RecordedSnapshots__/${{ matrix.platform }}/
-          if-no-files-found: warn
-
-      - name: Stop resource sampler
-        if: always()
-        run: Scripts/ci_resource_sampler.sh stop "$RUNNER_TEMP/resources"
-
-      - name: Upload resource samples
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: resources-${{ matrix.platform }}-shard-${{ matrix.shard }}
-          path: ${{ runner.temp }}/resources/
           if-no-files-found: warn
 
       # The runner's "Complete job" waits for orphaned processes, and has hung past the job timeout
