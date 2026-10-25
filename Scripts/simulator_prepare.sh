@@ -37,6 +37,11 @@ echo "▸ Booting $DEVICE on iOS $SDK_VERSION ($UDID) if needed"
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 
+# On a VM apsd gets no device identity and reconnects to APNs several times a second, waking every push client.
+APSD="user/$(id -u)/com.apple.apsd"
+xcrun simctl spawn "$UDID" launchctl disable "$APSD" || true
+xcrun simctl spawn "$UDID" launchctl bootout "$APSD" || true
+
 # The keyboard's one-time "Slide to Type" overlay only renders the first time any keyboard appears,
 # so whichever test happened to type first would capture it. Prediction and autocorrection go with
 # it: the QuickType bar's suggestions are per-run content in any screenshot that has the keyboard up.
@@ -53,6 +58,12 @@ if [ -n "$APP_PATH" ]; then
     xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null
     sleep 10
     xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+fi
+
+if pgrep -f 'RuntimeRoot/.*ApplePushService.framework/apsd' > /dev/null; then
+    echo "▸ apsd is still running in the simulator"
+else
+    echo "▸ apsd is not running in the simulator"
 fi
 
 if [ -n "${GITHUB_ENV:-}" ]; then
