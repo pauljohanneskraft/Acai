@@ -232,6 +232,26 @@ public struct ProjectBrowserView: View {
 
                 repositoriesSection
             }
+            // A repository row is derived from a project's codebases, so no projects means a
+            // blank list on every platform — including compact width, whose New Project action
+            // sits in the toolbar rather than in the footer below.
+            .overlay {
+                if model.store.projects.isEmpty {
+                    ActionableEmptyState(
+                        text: .app("View.ProjectBrowserView.NoProjectsYet"),
+                        systemImage: "folder.badge.plus",
+                        identifier: "sidebar.emptyState"
+                    ) {
+                        Button {
+                            newProjectPresented = true
+                        } label: {
+                            Label(.app("View.ProjectBrowserView.NewProject"), systemImage: "plus")
+                        }
+                        .accessibilityIdentifier("sidebar.emptyState.newProjectButton")
+                    }
+                    .background(.background)
+                }
+            }
             #if os(macOS)
             .focused($sidebarIsFocused)
             .background { deleteSelectionShortcut }

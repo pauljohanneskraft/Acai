@@ -44,6 +44,36 @@ extension ProjectDetailView {
         addDiagramButton(identifier: "projectDetail.emptyState.addDiagramButton")
     }
 
+    /// The partial-empty cases: a project that has diagrams but no codebases yet, or the reverse,
+    /// so `emptyProjectContentState` does not apply. Shared by both size classes, which render in
+    /// mutually exclusive branches — one identifier per concept rather than one per layout.
+    var codebasesEmptyState: some View {
+        ActionableEmptyState(
+            text: .app("View.ProjectDetailView.NoCodebasesYet"),
+            systemImage: "folder.badge.plus",
+            identifier: "projectDetail.codebasesEmptyState",
+            fillsContainer: false
+        ) {
+            Button {
+                addingCodebase = true
+            } label: {
+                Label(.app("View.ProjectDetailView.AddCodebaseMenu"), systemImage: "plus")
+            }
+            .accessibilityIdentifier("projectDetail.codebasesEmptyState.addCodebaseButton")
+        }
+    }
+
+    var diagramsEmptyState: some View {
+        ActionableEmptyState(
+            text: .app("View.ProjectDetailView.NoFreeformDiagramsYet"),
+            systemImage: "rectangle.3.group",
+            identifier: "projectDetail.diagramsEmptyState",
+            fillsContainer: false
+        ) {
+            addDiagramButton(identifier: "projectDetail.diagramsEmptyState.addDiagramButton")
+        }
+    }
+
     func addDiagramButton(identifier: String = "projectDetail.addDiagramButton") -> some View {
         Button {
             createDiagram(name: "New Freeform Diagram")

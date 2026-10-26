@@ -55,10 +55,21 @@ struct GuidedRouteCard: View {
                 .accessibilityIdentifier("guidedRoute.hideButton")
             }
             if stops.isEmpty {
-                Text(.app("View.GuidedRouteCard.EmptyState"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("guidedRoute.emptyState")
+                // A route is derived from the index, so reindexing is the one action that can
+                // change this outcome once the codebase itself has moved on.
+                ActionableEmptyState(
+                    text: .app("View.GuidedRouteCard.EmptyState"),
+                    systemImage: "map",
+                    identifier: "guidedRoute.emptyState",
+                    fillsContainer: false
+                ) {
+                    Button {
+                        Task { await model.editing.reindex(codebaseID: codebaseID) }
+                    } label: {
+                        Label(.app("View.GuidedRouteCard.Reindex"), systemImage: "arrow.clockwise")
+                    }
+                    .accessibilityIdentifier("guidedRoute.emptyState.reindexButton")
+                }
             } else {
                 ForEach(stops) { stop in
                     stopButton(stop)
