@@ -21435,90 +21435,24 @@
         }
       }
     },
-    "View.ProjectDetailView.NoCodebasesYetAdd" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Codebases. Füge oben eine hinzu."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No codebases yet. Add one above."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune codebase pour le moment. Ajoutez-en une ci-dessus."
-          }
-        }
-      }
-    },
-    "View.ProjectDetailView.NoCodebasesYetTap" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Codebases. Tippe auf **+**, um eine hinzuzufügen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No codebases yet. Tap **+** to add one."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune codebase pour le moment. Touchez **+** pour en ajouter une."
-          }
-        }
-      }
-    },
     "View.ProjectDetailView.NoFreeformDiagramsYet" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Freeform-Diagramme. Erstelle oben eines."
+            "value" : "Noch keine Freeform-Diagramme."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No freeform diagrams yet. Create one above."
+            "value" : "No freeform diagrams yet."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucun diagramme Freeform pour le moment. Créez-en un ci-dessus."
-          }
-        }
-      }
-    },
-    "View.ProjectDetailView.NoFreeformDiagramsYetTouch" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Freeform-Diagramme. Tippe auf **+**, um eines hinzuzufügen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No freeform diagrams yet. Tap **+** to add one."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun diagramme Freeform pour le moment. Touchez **+** pour en ajouter un."
+            "value" : "Aucun diagramme Freeform pour le moment."
           }
         }
       }
@@ -25777,28 +25711,6 @@
         }
       }
     },
-    "View.StatisticDetailSheet.NothingShow" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nichts anzuzeigen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing to show."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien à afficher."
-          }
-        }
-      }
-    },
     "View.StoreErrorAlert.ChooseFolder" : {
       "localizations" : {
         "de" : {
@@ -26433,6 +26345,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L’analyse s’est terminée mais n’a trouvé aucun état pour cette variable. Choisissez une autre variable, ou élargissez sa configuration."
+          }
+        }
+      }
+    },
+    "View.ProjectDetailView.NoCodebasesYet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Codebases."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No codebases yet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune codebase pour le moment."
+          }
+        }
+      }
+    },
+    "View.ProjectBrowserView.NoProjectsYet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Projekte. Erstelle eines, um eine Codebase zu indizieren und ihre Diagramme zu zeichnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No projects yet. Create one to index a codebase and draw its diagrams."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun projet pour le moment. Créez-en un pour indexer une codebase et dessiner ses diagrammes."
+          }
+        }
+      }
+    },
+    "View.StatisticDetailSheet.NothingCountedYet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Element in dieser Codebase hat für diese Statistik einen Wert über null."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No element in this codebase has a value above zero for this statistic."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun élément de cette codebase n'a de valeur supérieure à zéro pour cette statistique."
           }
         }
       }

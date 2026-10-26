@@ -55,10 +55,15 @@ struct GuidedRouteCard: View {
                 .accessibilityIdentifier("guidedRoute.hideButton")
             }
             if stops.isEmpty {
-                Text(.app("View.GuidedRouteCard.EmptyState"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("guidedRoute.emptyState")
+                // No button of its own: the one action that could change this outcome is a
+                // reindex, and this card's own screen already offers it with a status signal
+                // attached — a second, signal-less Reindex here would be the worse path.
+                ActionableEmptyState(
+                    text: .app("View.GuidedRouteCard.EmptyState"),
+                    systemImage: "map",
+                    identifier: "guidedRoute.emptyState",
+                    fillsContainer: false
+                )
             } else {
                 ForEach(stops) { stop in
                     stopButton(stop)

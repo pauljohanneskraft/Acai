@@ -51,9 +51,13 @@ struct StatisticDetailSheet: View {
     @ViewBuilder
     private var content: some View {
         if detail.rows.isEmpty {
-            Text(.app("View.StatisticDetailSheet.NothingShow"))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // The statistic's own name stays in the navigation title and what it counts in
+            // `detail.description` above, so this says only why the count came out zero.
+            ActionableEmptyState(
+                text: .app("View.StatisticDetailSheet.NothingCountedYet"),
+                systemImage: "number",
+                identifier: "statisticDetail.emptyState"
+            )
         } else {
             List(detail.rows) { row in
                 VStack(alignment: .leading, spacing: .spacingXXS) {
