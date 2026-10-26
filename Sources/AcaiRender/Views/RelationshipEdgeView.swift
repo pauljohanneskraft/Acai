@@ -152,6 +152,8 @@ public struct RelationshipEdgeView: View, Equatable {
             .accessibilityElement()
             .accessibilityLabel(Text(verbatim: description.label))
             .if(description.identifier != nil) { $0.accessibilityIdentifier(description.identifier ?? "") }
+            .accessibilitySortPriority(description.sortPriority)
+            .accessibilityRotorEntry(description.rotorEntry)
     }
 
     /// Nudged to one side so it doesn't sit under the node or the arrow head.
@@ -221,5 +223,16 @@ public struct RelationshipEdgeView: View, Equatable {
         guard t > 0 else { return .greatestFiniteMagnitude }
         let crossValue = cross.origin + t * cross.delta
         return cross.range.contains(crossValue) ? t : .greatestFiniteMagnitude
+    }
+}
+
+extension View {
+    @ViewBuilder
+    fileprivate func accessibilityRotorEntry(_ entry: EdgeAccessibility.RotorEntry?) -> some View {
+        if let entry {
+            accessibilityRotorEntry(id: entry.id, in: entry.namespace)
+        } else {
+            self
+        }
     }
 }

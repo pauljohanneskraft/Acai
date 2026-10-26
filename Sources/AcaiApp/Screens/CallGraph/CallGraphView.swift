@@ -67,6 +67,7 @@ private struct CallGraphCanvasView: View {
     @State private var showSidebar = false
     @State private var sidebarTab: CallGraphSidebarTab = .settings
     @State private var canvasViewportSize = CGSize(width: 900, height: 600)
+    @Namespace private var rotorNamespace
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -197,7 +198,9 @@ private struct CallGraphCanvasView: View {
     // MARK: - Canvas
 
     private var canvasContent: some View {
-        PannableCanvas(
+        let layout = viewModel.layout
+        let rotors = rotorPlan(layout)
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -205,15 +208,15 @@ private struct CallGraphCanvasView: View {
             autoPanController: canvasAutoPanController,
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
-                let layout = viewModel.layout
                 ZStack(alignment: .topLeading) {
-                    callEdges(layout)
+                    callEdges(layout, rotors: rotors)
                     ForEach(layout.nodes) { node in
-                        methodNode(node)
+                        methodNode(node, rotors: rotors)
                     }
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace)
         .overlay {
             if viewModel.isEmpty {
                 DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
@@ -338,8 +341,8 @@ private struct CallGraphCanvasView: View {
 // MARK: - Canvas Elements
 
 extension CallGraphCanvasView {
-    private func callEdges(_ layout: CallGraphLayoutModel) -> some View {
-        let labels = Dictionary(layout.nodes.map { ($0.id, $0.node.label) }, uniquingKeysWith: { first, _ in first })
+    private func callEdges(_ layout: CallGraphLayoutModel, rotors: DiagramRotorPlan) -> some View {
+        let labels = layout.nodeLabels
         return ZStack(alignment: .topLeading) {
             ForEach(layout.edges) { edge in
                 if let sourceRect = layout.frame(for: edge.from),
@@ -350,12 +353,9 @@ extension CallGraphCanvasView {
                         targetRect: targetRect,
                         lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
                         strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
-                        accessibilityDescription: DiagramElementDescription(
-                            dependencyFrom: labels[edge.from] ?? edge.from,
-                            to: labels[edge.to] ?? edge.to,
-                            callSites: edge.weight,
-                            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
-                        ).edgeAccessibility(identifier: "diagram.callEdge.\(edge.from)->\(edge.to)")
+                        accessibilityDescription: edgeDescription(edge, labels: labels)
+                            .edgeAccessibility(identifier: edge.accessibilityID)
+                            .rotorMember(id: edge.accessibilityID, in: rotors, namespace: rotorNamespace)
                     )
                 }
             }
@@ -375,7 +375,38 @@ extension CallGraphCanvasView {
         }
     }
 
-    private func methodNode(_ node: CallGraphLayoutModel.NodeFrame) -> some View {
+    private func rotorPlan(_ layout: CallGraphLayoutModel) -> DiagramRotorPlan {
+        let labels = layout.nodeLabels
+        return DiagramRotorPlan(
+            elements: layout.nodes.map { node in
+                DiagramRotorPlan.Element(
+                    id: node.id, label: node.node.label, delta: viewModel.nodeDeltaStatus(id: node.id), frame: node.rect
+                )
+            },
+            connections: layout.edges.compactMap { edge in
+                guard let source = layout.frame(for: edge.from), let target = layout.frame(for: edge.to) else {
+                    return nil
+                }
+                return DiagramRotorPlan.Element(
+                    connection: edge.accessibilityID, label: edgeDescription(edge, labels: labels).summary,
+                    delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to), from: source, to: target
+                )
+            }
+        )
+    }
+
+    private func edgeDescription(
+        _ edge: CallGraphLayoutModel.EdgeLayout, labels: [String: String]
+    ) -> DiagramElementDescription {
+        DiagramElementDescription(
+            dependencyFrom: labels[edge.from] ?? edge.from,
+            to: labels[edge.to] ?? edge.to,
+            callSites: edge.weight,
+            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
+        )
+    }
+
+    private func methodNode(_ node: CallGraphLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
         CallGraphNodeView(
             node: node.node,
             isSelected: viewModel.selectedNodeIDs.contains(node.id)
@@ -391,6 +422,7 @@ extension CallGraphCanvasView {
             onSelect: { viewModel.selectNode(node.id, extending: false) },
             onShowDetails: { showDetails(for: node.id) }
         )
+        .diagramRotorMember(id: node.id, in: rotors, namespace: rotorNamespace)
         .position(x: node.rect.midX, y: node.rect.midY)
         .onTapGesture(count: 2) {
             showDetails(for: node.id)
@@ -434,5 +466,17 @@ private struct CallGraphNodeView: View {
                     )
             )
             .accessibilityIdentifier("diagram.callGraphNode.\(node.id)")
+    }
+}
+
+extension CallGraphLayoutModel {
+    fileprivate var nodeLabels: [String: String] {
+        Dictionary(nodes.map { ($0.id, $0.node.label) }, uniquingKeysWith: { first, _ in first })
+    }
+}
+
+extension CallGraphLayoutModel.EdgeLayout {
+    fileprivate var accessibilityID: String {
+        "diagram.callEdge.\(from)->\(to)"
     }
 }
