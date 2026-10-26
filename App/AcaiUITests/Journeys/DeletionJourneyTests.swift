@@ -40,6 +40,21 @@ final class DeletionJourneyTests: UIJourneyTestCase {
 
         browser.projectRow(id: seeded.projectID)
             .waitForDisappearanceOrFail("the deleted project's row")
+
+        // The fixture holds exactly one project, so deleting it is also the only way to reach the
+        // zero-projects sidebar. Deletion leaves `model.selection` pointing at the project that is
+        // gone, so compact width keeps its detail screen pushed over the sidebar — that is what
+        // `emptyProjectPlaceholder` renders — and the sidebar is reached by going back.
+        if SnapshotPlatform().usesCompactLayout {
+            browser.backButton.tap("Back to the sidebar", until: browser.emptyState)
+        }
+        browser.emptyState.waitOrFail("the sidebar's no-projects state")
+        validateScreenshot("ProjectBrowser", state: "noProjects")
+
+        // Compact width has no footer New Project button, so this state's own button is the only
+        // way out of an empty sidebar there.
+        browser.emptyStateNewProjectButton.tap(
+            "the empty sidebar's New Project button", until: NewProjectSheetScreen(app: app).titleField)
     }
 
     private func openSeededCodebaseDetail(from projectDetail: ProjectDetailScreen) -> CodebaseDetailScreen {

@@ -14,6 +14,13 @@ final class ProjectBrowserScreen {
     /// Not a `.buttons` query — the button's `.buttonStyle(.plain)` strips native AppKit button
     /// chrome on macOS, so it no longer exposes as `AXButton`/`XCUIElementType.button` there.
     var newProjectButton: XCUIElement { app.descendants(matching: .any)["sidebar.newProjectButton"] }
+
+    /// Shown over the sidebar's list when there is no project to list at all — the footer's New
+    /// Project button is absent on compact width, so this state carries its own.
+    var emptyState: XCUIElement { app.descendants(matching: .any)["sidebar.emptyState"] }
+    var emptyStateNewProjectButton: XCUIElement {
+        app.descendants(matching: .any)["sidebar.emptyState.newProjectButton"]
+    }
     var deleteProjectConfirmButton: XCUIElement { app.buttons["sidebar.project.delete.confirmButton"] }
     var deleteCodebaseConfirmButton: XCUIElement {
         app.buttons.matching(identifier: "sidebar.codebase.delete.confirmButton").firstMatch
