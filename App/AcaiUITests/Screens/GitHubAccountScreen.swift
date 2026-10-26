@@ -36,18 +36,29 @@ final class GitHubAccountScreen {
         // Inside the Settings sheet but off the dialog: a tap outside the sheet dismisses it too on iPad.
         let scopeChecklist = app.descendants(matching: .any)["github.scopeChecklist"].firstMatch
         scopeChecklist.waitOrFail("the scope checklist beside the sign-out confirmation", file: file, line: line)
-        // Repeated only while the dialog stays: a tap beside it can only dismiss it, and the checklist is inert.
-        for _ in 0..<3 {
-            SystemBanners().dismiss(file: file, line: line)
-            scopeChecklist.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-            if signOutConfirmButton.waitForNonExistence(timeout: .uiTransition / 3) { break }
-        }
+        SystemBanners().dismiss(file: file, line: line)
+        scopeChecklist.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         #else
         signOutCancelButton.tapWhenReady("Cancel, in the sign-out confirmation", file: file, line: line)
         #endif
         signOutConfirmButton.waitForDisappearanceOrFail("the sign-out confirmation", file: file, line: line)
         signedInRow.waitOrFail("the signed-in account row after cancelling", file: file, line: line)
     }
+
+    #if os(iOS)
+    /// An iOS `Form` turns a row into a tap target for its default-style button; this row must not ask to sign out.
+    func tapAccountRowBesideSignOut(file: StaticString = #filePath, line: UInt = #line) {
+        // A wrongly triggered dialog appeared well within this locally; a slow runner can only miss it, never fail.
+        let presentationWindow: TimeInterval = 3
+        let checklist = scopeChecklist.firstMatch
+        checklist.waitOrFail("the scope checklist in the account row", file: file, line: line)
+        SystemBanners().dismiss(file: file, line: line)
+        checklist.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        if signOutConfirmButton.waitForExistence(timeout: presentationWindow) {
+            XCTFail("Tapping the account row beside Sign Out asked to sign out", file: file, line: line)
+        }
+    }
+    #endif
 
     func confirmSignOut(file: StaticString = #filePath, line: UInt = #line) {
         signOutConfirmButton.tapWhenReady("Sign Out, in the confirmation", file: file, line: line)
