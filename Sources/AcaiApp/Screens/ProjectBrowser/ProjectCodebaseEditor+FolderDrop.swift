@@ -20,7 +20,7 @@ struct CodebaseInsertion: Equatable {
 }
 
 extension ProjectCodebaseEditor {
-    /// Adds each folder as a codebase named after it, skipping any the project already has.
+    /// Adds each folder as a codebase named the way the sheet names it, skipping any the project already has.
     @discardableResult
     func addCodebases(from folders: [DroppedFolder], to projectID: UUID) -> FolderDropOutcome {
         let insertion = insertCodebases(from: folders, to: projectID)
@@ -38,7 +38,10 @@ extension ProjectCodebaseEditor {
                 continue
             }
             let codebase = Codebase(
-                name: folder.url.lastPathComponent, directoryPath: folder.url.path,
+                name: uniqueCodebaseName(
+                    LocalFolderCodebaseName(folderURL: folder.url, repository: folder.repository).value,
+                    inProjectAt: index),
+                directoryPath: folder.url.path,
                 securityScopedBookmark: folder.securityScopedBookmark, repository: folder.repository)
             store.projects[index].codebases.append(codebase)
             insertion.addedIDs.append(codebase.id)

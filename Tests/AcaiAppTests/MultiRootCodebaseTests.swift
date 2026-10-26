@@ -131,7 +131,6 @@ struct MultiRootCodebaseTests {
         defer { fixture.tearDown() }
         let sheet = fixture.sheet
 
-        sheet.name = "Workspace"
         sheet.directoryURL = fixture.folder
         sheet.discoverRoots()
         sheet.cancelPendingWork()
@@ -149,8 +148,6 @@ struct MultiRootCodebaseTests {
         defer { fixture.tearDown() }
         let sheet = fixture.sheet
 
-        // Set, and deliberately not used: a split codebase is named after its own folder.
-        sheet.name = "Workspace"
         sheet.directoryURL = fixture.folder
         sheet.discoverRoots()
         await sheet.pendingDiscovery?.value
@@ -166,12 +163,11 @@ struct MultiRootCodebaseTests {
             == ["App", "Core"])
     }
 
-    @Test func combiningAddsOneCodebaseForTheWholeFolderUnderTheTypedName() async throws {
+    @Test func combiningAddsOneCodebaseForTheWholeFolderNamedAfterIt() async throws {
         let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
         defer { fixture.tearDown() }
         let sheet = fixture.sheet
 
-        sheet.name = "Everything"
         sheet.directoryURL = fixture.folder
         sheet.discoverRoots()
         await sheet.pendingDiscovery?.value
@@ -180,7 +176,7 @@ struct MultiRootCodebaseTests {
         let created = sheet.addLocalFolder()
 
         #expect(created.count == 1)
-        #expect(fixture.codebases.map(\.name) == ["Everything"])
+        #expect(fixture.codebases.map(\.name) == ["Workspace"])
         #expect(fixture.codebases.first?.directoryPath == fixture.folder.path)
     }
 
@@ -189,7 +185,6 @@ struct MultiRootCodebaseTests {
         defer { fixture.tearDown() }
         let sheet = fixture.sheet
 
-        sheet.name = "Workspace"
         sheet.directoryURL = fixture.folder
         sheet.discoverRoots()
         await sheet.pendingDiscovery?.value
@@ -207,7 +202,6 @@ struct MultiRootCodebaseTests {
         defer { fixture.tearDown() }
         let sheet = fixture.sheet
 
-        sheet.name = "Widgets"
         sheet.directoryURL = fixture.folder
         sheet.discoverRoots()
         await sheet.pendingDiscovery?.value
@@ -215,13 +209,13 @@ struct MultiRootCodebaseTests {
         #expect(!sheet.plan.isOffered)
         #expect(sheet.canAddLocalFolder)
         #expect(sheet.addLocalFolder().count == 1)
-        #expect(fixture.codebases.map(\.name) == ["Widgets"])
+        #expect(fixture.codebases.map(\.name) == ["Workspace"])
         #expect(fixture.codebases.first?.directoryPath == fixture.folder.path)
     }
 
-    /// Splitting names each codebase after its own folder, so the name field has nothing to name;
-    /// combining makes one codebase and does need it.
-    @Test func onlyCombiningRequiresAName() async throws {
+    /// Splitting needs a root to make a codebase from; combining makes one from the folder itself,
+    /// so it stays addable with every root unchecked.
+    @Test func combiningStaysAddableWithEveryRootUnchecked() async throws {
         let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
         defer { fixture.tearDown() }
         let sheet = fixture.sheet
@@ -229,20 +223,28 @@ struct MultiRootCodebaseTests {
         sheet.directoryURL = fixture.folder
         sheet.discoverRoots()
         await sheet.pendingDiscovery?.value
-        #expect(sheet.canAddLocalFolder)
+        for root in sheet.plan.roots {
+            sheet.setRootChecked(false, for: root)
+        }
+        #expect(!sheet.canAddLocalFolder)
 
         sheet.plan.combinesIntoOne = true
-        #expect(!sheet.canAddLocalFolder)
-        sheet.name = "Everything"
         #expect(sheet.canAddLocalFolder)
     }
 
-    @Test func aSingleRootStillNeedsAName() async throws {
-        let fixture = try makeFixture(discovering: [root(".")])
+    /// Add waits for the walk, so a folder of several projects cannot be added before it has asked.
+    @Test func addingWaitsForTheWalk() async throws {
+        let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
         defer { fixture.tearDown() }
-        fixture.sheet.directoryURL = fixture.folder
+        let sheet = fixture.sheet
 
-        #expect(!fixture.sheet.canAddLocalFolder)
+        sheet.directoryURL = fixture.folder
+        sheet.discoverRoots()
+        #expect(sheet.discoveryPhase.isInFlight)
+        #expect(!sheet.canAddLocalFolder)
+
+        await sheet.pendingDiscovery?.value
+        #expect(sheet.canAddLocalFolder)
     }
 
     // MARK: - The real walk

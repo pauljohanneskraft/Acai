@@ -1,0 +1,294 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "${applicationName} quality check" : {
+      "comment" : "A phrase for the Run Quality Check shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${applicationName} Qualitätsprüfung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${applicationName} quality check"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contrôle qualité ${applicationName}"
+          }
+        }
+      }
+    },
+    "Analyze a codebase in ${applicationName}" : {
+      "comment" : "A phrase for the Reindex Codebase shortcut, for users who call indexing analysis.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase in ${applicationName} analysieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyze a codebase in ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyser une codebase dans ${applicationName}"
+          }
+        }
+      }
+    },
+    "Check the quality of my ${applicationName} codebase" : {
+      "comment" : "A phrase for the Run Quality Check shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualität meiner ${applicationName} Codebase prüfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the quality of my ${applicationName} codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifier la qualité de ma codebase ${applicationName}"
+          }
+        }
+      }
+    },
+    "Get ${applicationName} dependents of a type" : {
+      "comment" : "A phrase for the Get Dependents shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${applicationName} Abhängige eines Typs abrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get ${applicationName} dependents of a type"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenir les dépendants d’un type dans ${applicationName}"
+          }
+        }
+      }
+    },
+    "Get ${applicationName} metrics" : {
+      "comment" : "A phrase for the Get Metrics shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${applicationName} Metriken abrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get ${applicationName} metrics"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenir les métriques ${applicationName}"
+          }
+        }
+      }
+    },
+    "Get codebase metrics in ${applicationName}" : {
+      "comment" : "A phrase for the Get Metrics shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase-Metriken in ${applicationName} abrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get codebase metrics in ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenir les métriques d’une codebase dans ${applicationName}"
+          }
+        }
+      }
+    },
+    "Get dependents in ${applicationName}" : {
+      "comment" : "A phrase for the Get Dependents shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abhängige in ${applicationName} abrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get dependents in ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenir les dépendants dans ${applicationName}"
+          }
+        }
+      }
+    },
+    "How big is my ${applicationName} codebase" : {
+      "comment" : "A spoken question that runs the Get Metrics shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie groß ist meine ${applicationName} Codebase"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How big is my ${applicationName} codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quelle est la taille de ma codebase ${applicationName}"
+          }
+        }
+      }
+    },
+    "Is my ${applicationName} codebase healthy" : {
+      "comment" : "A spoken question that runs the Run Quality Check shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ist meine ${applicationName} Codebase gesund"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is my ${applicationName} codebase healthy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ma codebase ${applicationName} est-elle saine"
+          }
+        }
+      }
+    },
+    "Reindex a codebase in ${applicationName}" : {
+      "comment" : "A phrase for the Reindex Codebase shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codebase in ${applicationName} neu indizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindex a codebase in ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexer une codebase dans ${applicationName}"
+          }
+        }
+      }
+    },
+    "Reindex my ${applicationName} codebase" : {
+      "comment" : "A phrase for the Reindex Codebase shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meine ${applicationName} Codebase neu indizieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindex my ${applicationName} codebase"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réindexer ma codebase ${applicationName}"
+          }
+        }
+      }
+    },
+    "What depends on a type in ${applicationName}" : {
+      "comment" : "A spoken question that runs the Get Dependents shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was hängt in ${applicationName} von einem Typ ab"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What depends on a type in ${applicationName}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qu’est-ce qui dépend d’un type dans ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

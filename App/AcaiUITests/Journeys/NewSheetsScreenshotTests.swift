@@ -46,7 +46,8 @@ final class NewSheetsScreenshotTests: UIJourneyTestCase {
         validateScreenshot("ProjectDetail", state: "empty")
 
         let sheet = NewCodebaseSheetScreen(app: app)
-        detail.addCodebaseButton.tap("the empty project's Add Codebase prompt", until: sheet.localNameField)
+        detail.addCodebaseButton.tap(
+            "the empty project's Add Codebase prompt", until: sheet.chooseDirectoryButton)
         validateScreenshot("NewCodebaseSheet", state: "localTabEmpty")
         sheet.cancel()
 
@@ -65,17 +66,16 @@ final class NewSheetsScreenshotTests: UIJourneyTestCase {
         detail.codebaseRow(named: "Alpha").waitOrFail("the Alpha codebase's row")
         detail.codebaseRow(named: "Beta").waitOrFail("the Beta codebase's row")
 
-        // The same folder again, combined this time: one codebase under the typed name.
+        // The same folder again, combined this time: one codebase, named after the picked folder.
         detail.tapAddCodebase()
         sheet.chooseStagedFolder()
-        sheet.enterLocalName("Everything")
         sheet.flip(sheet.combineRootsToggle, "the Combine into one codebase toggle")
         sheet.add()
 
         // Adding selects the codebase it created, whose own screen renames it through a text field
         // rather than showing it as a row, so the project is reopened here too.
         reopenSeededProject(browser, detail)
-        detail.codebaseRow(named: "Everything").waitOrFail("the combined codebase's row")
+        detail.codebaseRow(named: "MultiRootWorkspace").waitOrFail("the combined codebase's row")
     }
 
     /// Compact width swaps `ProjectDetailView` and `CodebaseDetailView` into one detail slot, so the

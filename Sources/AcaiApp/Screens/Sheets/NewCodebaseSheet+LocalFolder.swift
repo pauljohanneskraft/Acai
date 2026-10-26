@@ -43,7 +43,6 @@ extension NewCodebaseSheetContent {
 
     var localFolderSection: some View {
         Section {
-            nameField(isOptional: false, identifier: "newCodebase.localNameField")
             #if os(macOS)
             LabeledContent {
                 HStack {

@@ -2,10 +2,8 @@ import AcaiGit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The sheet's focusable controls, in Tab order: the name, then the combine toggle, then one per
-/// discovered root.
+/// The sheet's focusable controls, in Tab order: the combine toggle, then one per discovered root.
 enum NewCodebaseField: Hashable {
-    case name
     case root(String)
     case combineRoots
 }
@@ -89,7 +87,6 @@ struct NewCodebaseSheetContent: View {
             // collapsed left its pickers absent from the accessibility tree below the fold.
             .presentationDetents([.large])
             #endif
-            .onAppear { focusedField = .name }
             .onDisappear { sheet.cancelPendingWork() }
             .navigationTitle(.app("View.NewCodebaseSheet.AddCodebase"))
             .toolbar {
@@ -147,31 +144,6 @@ struct NewCodebaseSheetContent: View {
         }
     }
 
-    /// Not a bare `TextField(text:label:)` on macOS: inside a `Form` its title renders as an extra
-    /// leading label rather than a placeholder, misaligning it against `LabeledContent` rows.
-    /// An optional name falls back to the repository's own.
-    @ViewBuilder
-    func nameField(isOptional: Bool, identifier: String) -> some View {
-        #if os(macOS)
-        LabeledContent {
-            TextField("", text: $sheet.name, prompt: Text(localized: isOptional
-                ? .app("View.NewCodebaseSheet.Optional") : .app("View.NewCodebaseSheet.EGMyLibrary")))
-                .multilineTextAlignment(.trailing)
-                .focused($focusedField, equals: .name)
-                .accessibilityIdentifier(identifier)
-        } label: {
-            Text(.app("View.NewCodebaseSheet.Name"))
-        }
-        #else
-        TextField(text: $sheet.name) {
-            Text(localized: isOptional
-                ? .app("View.NewCodebaseSheet.NameOptional") : .app("View.NewCodebaseSheet.Name"))
-        }
-        .focused($focusedField, equals: .name)
-        .accessibilityIdentifier(identifier)
-        #endif
-    }
-
     @ViewBuilder
     private var gitHubSection: some View {
         Section {
@@ -193,7 +165,6 @@ struct NewCodebaseSheetContent: View {
         }
         if sheet.account != nil {
             Section {
-                nameField(isOptional: true, identifier: "newCodebase.nameField")
                 #if os(macOS)
                 LabeledContent {
                     TextField(

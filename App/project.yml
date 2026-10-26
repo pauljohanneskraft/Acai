@@ -32,6 +32,8 @@ targets:
       - path: Shared/InfoPlist.xcstrings
       # App Intents resolves an intent's static strings from the main bundle only.
       - path: Shared/AppIntents.xcstrings
+      # An App Shortcut's phrases are localized by their English text, in their own catalog.
+      - path: Shared/AppShortcuts.xcstrings
     dependencies:
       - package: Acai
         product: AcaiApp
@@ -189,6 +191,7 @@ targets:
       - path: macOS
       - path: Shared/InfoPlist.xcstrings
       - path: Shared/AppIntents.xcstrings
+      - path: Shared/AppShortcuts.xcstrings
     dependencies:
       - package: Acai
         product: AcaiApp
