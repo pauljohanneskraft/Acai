@@ -26393,28 +26393,6 @@
         }
       }
     },
-    "View.GuidedRouteCard.Reindex" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neu indizieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reindex"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Réindexer"
-          }
-        }
-      }
-    },
     "View.StatisticDetailSheet.NothingCountedYet" : {
       "localizations" : {
         "de" : {

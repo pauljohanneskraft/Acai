@@ -249,7 +249,6 @@ public struct ProjectBrowserView: View {
                         }
                         .accessibilityIdentifier("sidebar.emptyState.newProjectButton")
                     }
-                    .background(.background)
                 }
             }
             #if os(macOS)
