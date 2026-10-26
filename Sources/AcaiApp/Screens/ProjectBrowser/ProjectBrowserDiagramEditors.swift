@@ -247,15 +247,18 @@ struct ProjectCodebaseEditor {
     // MARK: Codebases
 
     /// `repository` is the picked folder's `origin` remote, `nil` for a plain folder; a taken `name` is numbered.
+    @discardableResult
     func addCodebase(
         to projectID: UUID, name: String, directoryURL: URL,
         securityScopedBookmark: SecurityScopedBookmark? = nil, repository: CodebaseRepositoryReference? = nil
-    ) {
-        guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return }
-        store.projects[index].codebases.append(Codebase(
+    ) -> UUID? {
+        guard let index = store.projects.firstIndex(where: { $0.id == projectID }) else { return nil }
+        let codebase = Codebase(
             name: uniqueCodebaseName(name, inProjectAt: index), directoryPath: directoryURL.path,
-            securityScopedBookmark: securityScopedBookmark, repository: repository))
+            securityScopedBookmark: securityScopedBookmark, repository: repository)
+        store.projects[index].codebases.append(codebase)
         persist()
+        return codebase.id
     }
 
     func uniqueCodebaseName(_ proposed: String, inProjectAt index: Int) -> String {

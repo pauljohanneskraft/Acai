@@ -2,6 +2,12 @@ import AcaiGit
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The sheet's focusable controls, in Tab order: the combine toggle, then one per discovered root.
+enum NewCodebaseField: Hashable {
+    case root(String)
+    case combineRoots
+}
+
 struct NewCodebaseSheet: View {
     let projectID: UUID
     let remoteService: GitRemoteService
@@ -43,6 +49,8 @@ struct NewCodebaseSheetContent: View {
         _sheet = StateObject(wrappedValue: sheet())
     }
 
+    /// Not `private`: the roots step binds it from `NewCodebaseSheet+ProjectRoots`.
+    @FocusState var focusedField: NewCodebaseField?
     @State var isChoosingDirectory = false
     @State private var repositorySearch = ""
 
@@ -62,6 +70,7 @@ struct NewCodebaseSheetContent: View {
                 switch sheet.source {
                 case .localFolder:
                     localFolderSection
+                    projectRootsSection
                 case .remoteURL:
                     remoteURLSection
                 case .gitHub:
@@ -83,6 +92,7 @@ struct NewCodebaseSheetContent: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(.app("View.NewCodebaseSheet.Cancel")) { dismiss() }
+                        .accessibilityIdentifier("newCodebase.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     confirmButton
@@ -230,10 +240,15 @@ struct NewCodebaseSheetContent: View {
         switch sheet.source {
         case .localFolder:
             Button(.app("View.NewCodebaseSheet.Add")) {
-                sheet.addLocalFolder()
+                // The first of several, so the sidebar lands on a split codebase rather than staying
+                // on the project — `open(_:)` is what makes that deterministic for a row created in
+                // this same turn.
+                if let first = sheet.addLocalFolder().first {
+                    model.open(.codebase(first))
+                }
                 dismiss()
             }
-            .disabled(sheet.directoryURL == nil)
+            .disabled(!sheet.canAddLocalFolder)
             .accessibilityIdentifier("newCodebase.addButton")
         case .remoteURL, .gitHub:
             let pending = sheet.pendingClone
