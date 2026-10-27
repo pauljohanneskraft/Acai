@@ -21,17 +21,31 @@ extension EnvironmentValues {
         get { self[DiagramHasBeenFittedKey.self] }
         set { self[DiagramHasBeenFittedKey.self] = newValue }
     }
+
+    /// Changes when a diagram's comparison revision or its loaded snapshots do, for the diagram to
+    /// re-derive itself in place. Resetting its identity instead would close the compare panel
+    /// presented over it: on macOS that panel is an `NSPopover`, which AppKit dismisses when the
+    /// hierarchy it was opened over is torn down, from whichever ancestor it is anchored.
+    var comparisonIdentity: String {
+        get { self[ComparisonIdentityKey.self] }
+        set { self[ComparisonIdentityKey.self] = newValue }
+    }
 }
 
 private struct DiagramHasBeenFittedKey: EnvironmentKey {
     static let defaultValue: Binding<Bool>? = nil
 }
 
-/// Owns the delta-comparison "is the panel open" state for one diagram, one level above that
-/// diagram's own `.id(...)` boundary, and hands it down as a `Binding` so `CompareOverlayButton`
-/// can be placed inside the diagram's own canvas without losing that state when the ref changes.
-/// The panel is never presented from inside `content`: the sheet is presented here, the popover by
-/// `ComparePopoverPresenter`.
+private struct ComparisonIdentityKey: EnvironmentKey {
+    static let defaultValue = ""
+}
+
+/// Owns the delta-comparison "is the panel open" state for one diagram and hands it down as a
+/// `Binding`, so `CompareOverlayButton` can sit inside the diagram's own canvas without losing that
+/// state when the ref changes. A comparison change reaches the diagram as `comparisonIdentity`, for
+/// it to re-derive itself in place, rather than as a new identity for `content` — which would tear
+/// down the panel presented over it. The panel is never presented from inside `content` either: the
+/// sheet is presented here, the popover by `ComparePopoverPresenter`.
 struct DeltaHostedDiagramView<Content: View>: View {
     let diagram: GeneratedDiagram
     @ViewBuilder var content: (Binding<Bool>) -> Content
@@ -88,14 +102,14 @@ struct DeltaHostedDiagramView<Content: View>: View {
     #endif
 
     var body: some View {
-        // `.task(id:)` sits on this `ZStack`, not on `content`, so it's governed only by
-        // `comparisonTaskID` — `content`'s own `.id()` below additionally includes `loaded`, and a
-        // `.task` chained onto that identity would restart every time `loaded` flips, redundantly
-        // re-invoking `ensureComparisonLoaded` right as loading finishes. A single-child `ZStack` is
-        // layout-neutral — nothing to size/align against — so this changes only the task's lifecycle.
+        // `.task(id:)` sits on this `ZStack` so it's governed only by `comparisonTaskID`:
+        // `contentIdentity` additionally includes `loaded`, and a task keyed on that would restart
+        // every time `loaded` flips, redundantly re-invoking `ensureComparisonLoaded` right as
+        // loading finishes. A single-child `ZStack` is layout-neutral — nothing to size/align
+        // against — so this changes only the task's lifecycle.
         ZStack {
             content(isComparePresented)
-                .id(contentIdentity)
+                .environment(\.comparisonIdentity, contentIdentity)
                 .environment(\.compareChangedFileSelection, changedFileSelection)
                 .environment(\.diagramHasBeenFitted, $hasBeenFitted)
         }

@@ -17,6 +17,7 @@ struct SequenceDiagramView: View {
     let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @Environment(\.comparisonIdentity) private var comparisonIdentity
     // Not `private`: `SequenceDiagramView+Canvas.swift`'s extension (kept in its own file only to
     // stay under this file's own type-body-length limit) needs to read/write these too.
     @StateObject var viewModel: SequenceDiagramViewModel
@@ -68,6 +69,9 @@ struct SequenceDiagramView: View {
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+            .onChange(of: comparisonIdentity) { _, _ in
+                viewModel.updateComparison(artifact: artifact, comparison: comparisonArtifact)
+            }
     }
 
     /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)

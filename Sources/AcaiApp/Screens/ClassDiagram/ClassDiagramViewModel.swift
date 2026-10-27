@@ -8,9 +8,9 @@ import AcaiRender
 @MainActor
 final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, CanvasInteraction {
     let codebase: Codebase
-    let artifact: CodeArtifact
-    let typeDisplayNames: TypeDisplayNames
-    private let comparisonArtifact: CodeArtifact?
+    private(set) var artifact: CodeArtifact
+    private(set) var typeDisplayNames: TypeDisplayNames
+    private var comparisonArtifact: CodeArtifact?
     private var diff: ArtifactDiff?
     /// O(1) status lookups derived from `diff` once per build, so per-element tinting stays cheap on
     /// every SwiftUI render pass (vs. `ArtifactDiff.status(of:)`'s per-call linear scan).
@@ -165,6 +165,21 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         self.restoredPositions = groupingChanged ? nil : nodePositions
         hasPerformedMeasuredLayout = false
         // The rebuilt node set differs, so a stale snapshot must not be restorable.
+        history.clear()
+        buildDiagram()
+    }
+
+    // MARK: - Apply Comparison
+
+    /// Re-derives the diagram for a new comparison revision without the view being rebuilt. The
+    /// rendered element set differs, so saved positions and the undo history can't carry over.
+    func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
+        self.artifact = artifact
+        self.typeDisplayNames = artifact.typeDisplayNames
+        self.comparisonArtifact = comparison
+        restoredPositions = nil
+        hasPerformedMeasuredLayout = false
+        selectedNodeIDs = []
         history.clear()
         buildDiagram()
     }
