@@ -30,9 +30,12 @@ final class HotspotViewModel: ObservableObject {
         defer { isLoading = false }
         let resolver = HotspotChurnResolver(codebase: codebase, gitRepositoriesDir: gitRepositoriesDir)
         do {
-            let churn = try await Task.detached(priority: .userInitiated) {
-                try resolver.churnByFile()
-            }.value
+            let walk = Task.detached(priority: .userInitiated) { try resolver.churnByFile() }
+            let churn = try await withTaskCancellationHandler {
+                try await walk.value
+            } onCancel: {
+                walk.cancel()
+            }
             guard let churn else {
                 hasGitHistory = false
                 hotspots = nil
@@ -43,6 +46,8 @@ final class HotspotViewModel: ObservableObject {
         } catch is HistoryNotFetched {
             hotspots = nil
             isHistoryNotFetched = true
+        } catch is CancellationError {
+            return
         } catch {
             loadError = error.localizedDescription
         }

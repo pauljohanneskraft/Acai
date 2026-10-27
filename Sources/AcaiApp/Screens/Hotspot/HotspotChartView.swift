@@ -19,6 +19,8 @@ struct HotspotChartView: View {
     @StateObject private var viewModel: HotspotViewModel
     @State private var showSidebar = false
     @State private var fullHistoryPhase: AsyncOperationPhase = .idle
+    @State private var reloadPhase: AsyncOperationPhase = .idle
+    @State private var reloadTask: Task<Void, Never>?
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -47,6 +49,7 @@ struct HotspotChartView: View {
             .task {
                 await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
             }
+            .onDisappear { reloadTask?.cancel() }
     }
 
     @ViewBuilder
@@ -83,15 +86,27 @@ struct HotspotChartView: View {
 
     // MARK: - Chart
 
-    @ViewBuilder
+    /// Outside the error state, which a retry replaces; `loadingState` stands in for its spinner.
     private var chartContent: some View {
+        VStack(spacing: .zero) {
+            AsyncOperationStatusView(
+                identifierPrefix: "hotspot.reload", phase: reloadPhase.isInFlight ? .idle : reloadPhase)
+            stateContent
+        }
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
         if viewModel.isLoading {
             loadingState
         } else if let message = viewModel.loadError {
             statusState(
                 identifier: "hotspot.error",
                 systemImage: "exclamationmark.triangle",
-                text: .app("View.HotspotChartView.CouldNotLoadGitHistory \(message)"))
+                text: .app("View.HotspotChartView.CouldNotLoadGitHistory \(message)")
+            ) {
+                retryButton
+            }
         } else if viewModel.isHistoryNotFetched {
             historyNotFetchedState
         } else if !viewModel.hasGitHistory {
@@ -125,7 +140,8 @@ struct HotspotChartView: View {
                 FetchFullHistoryButton(
                     remoteURL: remoteURL, phase: $fullHistoryPhase, identifierPrefix: "hotspot.fullHistory"
                 ) {
-                    Task {
+                    reloadTask?.cancel()
+                    reloadTask = Task {
                         await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
                     }
                 }
@@ -148,16 +164,28 @@ struct HotspotChartView: View {
             Text(.app("View.HotspotChartView.WalkingCommitHistory")).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("hotspot.loading")
+        .accessibilityIdentifier(reloadPhase.isInFlight ? "hotspot.reload.loading" : "hotspot.loading")
     }
 
     private func statusState(identifier: String, systemImage: String, text: LocalizedStringResource) -> some View {
+        statusState(identifier: identifier, systemImage: systemImage, text: text) { EmptyView() }
+    }
+
+    /// `children: .contain` keeps `action`'s own button queryable beside the container's identifier.
+    private func statusState<Action: View>(
+        identifier: String, systemImage: String, text: LocalizedStringResource,
+        @ViewBuilder action: () -> Action
+    ) -> some View {
         VStack(spacing: .spacingM) {
             Image(systemName: systemImage).font(.system(size: 28)).foregroundStyle(.secondary)
             Text(localized: text).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            action()
+                .buttonStyle(.bordered)
+                .controlSize(.large)
         }
         .padding(.spacingXL)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(identifier)
     }
 
@@ -241,6 +269,38 @@ struct HotspotChartView: View {
             }
             .help(.app("View.HotspotChartView.ToggleRankedHotspotList"))
             .accessibilityIdentifier("diagram.sidebarToggleButton")
+        }
+    }
+}
+
+// MARK: - Retry
+
+extension HotspotChartView {
+    private var retryButton: some View {
+        Button(action: reload) {
+            Label(.app("View.HotspotChartView.Retry"), systemImage: "arrow.clockwise")
+        }
+        .disabled(reloadPhase.isInFlight)
+        .accessibilityIdentifier("hotspot.retryButton")
+        .contextMenu {
+            Button(action: reload) {
+                Label(.app("View.HotspotChartView.Retry"), systemImage: "arrow.clockwise")
+            }
+        }
+    }
+
+    private func reload() {
+        guard !reloadPhase.isInFlight else { return }
+        reloadPhase = .loading(.app("View.HotspotChartView.WalkingCommitHistory"))
+        reloadTask = Task {
+            await viewModel.load(codebase: codebase, gitRepositoriesDir: model.store.gitRepositoriesDir)
+            guard !Task.isCancelled else {
+                reloadPhase = .idle
+                return
+            }
+            reloadPhase = viewModel.loadError == nil
+                ? .loaded
+                : .failed(String(localized: .app("View.HotspotChartView.RetryFailed")))
         }
     }
 }
