@@ -9,6 +9,7 @@ struct ClassDiagramView: View {
     let artifact: CodeArtifact
     let codebase: Codebase
     let isComparePresented: Binding<Bool>
+    let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -33,6 +34,7 @@ struct ClassDiagramView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
     @Environment(\.compareChangedFileSelection) var changedFileSelection
+    @Environment(\.comparisonIdentity) private var comparisonIdentity
 
     private var isCompactWidth: Bool {
         #if os(iOS)
@@ -50,6 +52,7 @@ struct ClassDiagramView: View {
         self.artifact = artifact
         self.codebase = codebase
         self.isComparePresented = isComparePresented
+        self.comparisonArtifact = comparisonArtifact
         let restoredSizes = diagram.nodeSizes.mapValues { $0.cgSize }
         self._viewModel = StateObject(wrappedValue: ClassDiagramViewModel(
             codebase: codebase,
@@ -67,6 +70,9 @@ struct ClassDiagramView: View {
         sidebarPresentedCanvas
             .onChange(of: changedFileSelection.wrappedValue) { _, _ in applyChangedFileSelection() }
             .onAppear { applyChangedFileSelection() }
+            .onChange(of: comparisonIdentity) { _, _ in
+                viewModel.updateComparison(artifact: artifact, comparison: comparisonArtifact)
+            }
             .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
                 viewModel.updateMeasuredSizes(sizes)
                 centerOnceMeasured()
@@ -216,9 +222,7 @@ struct ClassDiagramView: View {
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
-            CompareOverlayButton(
-                diagram: diagram, isPresented: isComparePresented, onSelectChangedFileTypes: selectChangedFileTypes
-            )
+            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
         .overlay(alignment: .top) {
             if isSearchBarVisible {

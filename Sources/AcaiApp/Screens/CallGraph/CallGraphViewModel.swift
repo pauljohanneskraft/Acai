@@ -9,9 +9,9 @@ import AcaiRender
 
 @MainActor
 final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
-    private let artifact: CodeArtifact
+    private var artifact: CodeArtifact
     private let scope: CallGraphScope
-    private let comparisonArtifact: CodeArtifact?
+    private var comparisonArtifact: CodeArtifact?
 
     @Published private(set) var graph: CallGraph {
         didSet { callCounts = CallGraphCallCounts(graph: graph) }
@@ -46,6 +46,17 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     func applyFilter(_ newFilter: AcaiQuality.Selector?) {
         filter = newFilter
         rebuild()
+    }
+
+    /// Re-derives the graph for a new comparison revision without the view being rebuilt. The
+    /// rendered node set differs, so dragged positions and the undo history can't carry over.
+    func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
+        self.artifact = artifact
+        self.comparisonArtifact = comparison
+        rebuild()
+        positionOverrides = [:]
+        selectedNodeIDs = []
+        history.clear()
     }
 
     var isEmpty: Bool { graph.nodes.isEmpty }

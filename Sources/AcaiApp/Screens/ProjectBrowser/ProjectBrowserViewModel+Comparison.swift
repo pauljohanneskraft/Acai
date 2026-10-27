@@ -20,14 +20,9 @@ extension ProjectBrowserViewModel {
         let head: String
     }
 
-    /// Rebuilding the diagram in the tap's own turn freezes the iOS compare sheet at its pressed scale;
-    /// macOS applies at once, since its popover's re-present after the rebuild must not be reordered.
+    /// Rebuilding the diagram in the tap's own turn freezes the iOS compare sheet at its pressed scale.
     func changeComparisonAfterTouchRelease(_ change: @escaping @MainActor (ProjectBrowserViewModel) -> Void) {
-        #if os(macOS)
-        change(self)
-        #else
         DispatchQueue.main.async { change(self) }
-        #endif
     }
 
     /// Drops saved positions since the rendered element set changes, and exits pull-request mode.

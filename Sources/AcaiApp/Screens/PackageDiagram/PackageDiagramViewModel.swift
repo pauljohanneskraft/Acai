@@ -15,8 +15,8 @@ import AcaiQuality
 /// reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
 @MainActor
 final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
-    private let artifact: CodeArtifact
-    private let comparisonArtifact: CodeArtifact?
+    private var artifact: CodeArtifact
+    private var comparisonArtifact: CodeArtifact?
 
     @Published private(set) var diagram: PackageDiagram
     @Published private(set) var filter: AcaiQuality.Selector?
@@ -50,6 +50,17 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     func applyFilter(_ newFilter: AcaiQuality.Selector?) {
         filter = newFilter
         rebuild()
+    }
+
+    /// Re-derives the diagram for a new comparison revision without the view being rebuilt. The
+    /// rendered module set differs, so dragged positions and the undo history can't carry over.
+    func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
+        self.artifact = artifact
+        self.comparisonArtifact = comparison
+        rebuild()
+        positionOverrides = [:]
+        selectedNodeIDs = []
+        history.clear()
     }
 
     var isEmpty: Bool { diagram.nodes.isEmpty }
