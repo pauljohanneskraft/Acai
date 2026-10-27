@@ -181,7 +181,15 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         hasPerformedMeasuredLayout = false
         selectedNodeIDs = []
         history.clear()
+        let measured = nodeSizes
         buildDiagram()
+        // `buildDiagram` seeds every node with an estimate, whose minimum width is far wider than a
+        // small type measures at. The nodes this revision keeps are already measured, and the
+        // measurement can arrive before this runs, so laying out from the estimate spreads them.
+        for node in nodes {
+            if let size = measured[node.id] { nodeSizes[node.id] = size }
+        }
+        performLayout()
     }
 
     // MARK: - Layout

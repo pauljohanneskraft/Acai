@@ -73,6 +73,25 @@ struct DiagramComparisonUpdateTests {
         #expect(viewModel.typeDisplayNames.name(forID: "B") == "B")
     }
 
+    /// `buildDiagram` seeds an estimate for every node, and the estimate's minimum width is far
+    /// wider than a small type measures at. Laying a comparison change out from those estimates
+    /// spaced the diagram as though every node were that wide.
+    @Test func aClassDiagramLaysOutAComparisonFromMeasuredSizes() {
+        let new = artifact(["A", "Added"])
+        let viewModel = ClassDiagramViewModel(codebase: codebase, artifact: new)
+        let measured = CGSize(width: 64, height: 40)
+        viewModel.updateMeasuredSizes(
+            Dictionary(uniqueKeysWithValues: viewModel.nodes.map { ($0.id, measured) }))
+        #expect(viewModel.effectiveSize(for: "A") == measured)
+
+        viewModel.updateComparison(artifact: new, comparison: artifact(["A", "Gone"]))
+
+        #expect(viewModel.effectiveSize(for: "A") == measured)
+        #expect(viewModel.effectiveSize(for: "Added") == measured)
+        // Only the type this revision does not render yet falls back to the estimate.
+        #expect(viewModel.effectiveSize(for: "Gone") != measured)
+    }
+
     // MARK: - Movement-only diagrams
 
     @Test func aCallGraphEntersDeltaModeInPlaceAndDropsDraggedPositions() {
