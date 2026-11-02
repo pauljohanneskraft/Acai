@@ -176,7 +176,10 @@ extension KotlinExtractor {
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
 
-        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let generics = typeReferences.extractTypeParameters(
+            node.firstChild(withType: "type_parameters"),
+            constrainedBy: node.firstChild(withType: "type_constraints")
+        )
         let ctorNode = node.firstChild(withType: "primary_constructor")
         let ctorAccess = ctorNode
             .flatMap { $0.firstChild(withType: "modifiers") }
@@ -233,7 +236,10 @@ extension KotlinExtractor {
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
 
-        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let generics = typeReferences.extractTypeParameters(
+            node.firstChild(withType: "type_parameters"),
+            constrainedBy: node.firstChild(withType: "type_constraints")
+        )
         let supertypes = typeReferences.classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
@@ -315,7 +321,10 @@ extension KotlinExtractor {
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
 
-        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let generics = typeReferences.extractTypeParameters(
+            node.firstChild(withType: "type_parameters"),
+            constrainedBy: node.firstChild(withType: "type_constraints")
+        )
         let supertypes = typeReferences.classifySupertypes(node.allChildren(withType: "delegation_specifier"))
 
         var typeDecl = TypeDeclaration(
@@ -350,7 +359,10 @@ extension KotlinExtractor {
         let name = nameNode.text(in: context)
         let qualifiedTypeName = declarations.qualifiedName(name)
         let modifierInfo = modifiers.info(fromParentOf: node)
-        let generics = typeReferences.extractTypeParameters(node.firstChild(withType: "type_parameters"))
+        let generics = typeReferences.extractTypeParameters(
+            node.firstChild(withType: "type_parameters"),
+            constrainedBy: node.firstChild(withType: "type_constraints")
+        )
 
         var targetType: [TypeReference] = []
         if let userTypeNode = node.firstChild(withType: "user_type") {
