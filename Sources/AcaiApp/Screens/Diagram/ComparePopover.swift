@@ -20,12 +20,10 @@ final class ComparePopoverPresenter {
         } else if self.diagramID == diagramID {
             self.diagramID = nil
         }
-        anchor.holdStill(self.diagramID != nil)
     }
 
     func close() {
         diagramID = nil
-        anchor.holdStill(false)
     }
 
     func update(button frame: CGRect) {

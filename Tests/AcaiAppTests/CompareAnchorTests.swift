@@ -35,42 +35,19 @@ struct CompareAnchorTests {
         #expect(anchor.placement == placement)
     }
 
-    @Test func holdsStillWhileThePanelIsOpen() {
-        var anchor = anchored()
-        let placement = anchor.placement
-
-        anchor.holdStill(true)
-        anchor.update(button: button.offsetBy(dx: 0, dy: 300))
-        anchor.update(host: host.offsetBy(dx: 0, dy: 100))
-
-        #expect(anchor.placement == placement)
-    }
-
-    @Test func followsTheButtonWhileThePanelIsClosed() {
+    @Test func followsTheButtonWhenTheInspectorNarrowsTheCanvas() {
         var anchor = anchored()
 
-        anchor.update(button: button.offsetBy(dx: -120, dy: 0))
-
-        #expect(anchor.placement == CGRect(x: 700, y: 46, width: 44, height: 44))
-    }
-
-    @Test func takesTheFrameTheButtonMovedToWhileOpenOnceThePanelCloses() {
-        var anchor = anchored()
-
-        anchor.holdStill(true)
         anchor.update(button: button.offsetBy(dx: -300, dy: 0))
-        anchor.holdStill(false)
 
         #expect(anchor.placement == CGRect(x: 520, y: 46, width: 44, height: 44))
     }
 
-    @Test func holdsTheFirstPlacementWhenOpenedBeforeTheFramesWereKnown() {
-        var anchor = CompareAnchor()
+    @Test func followsTheHostWhenTheWindowMoves() {
+        var anchor = anchored()
 
-        anchor.holdStill(true)
-        anchor.update(host: host)
-        anchor.update(button: button)
-        anchor.update(button: button.offsetBy(dx: 0, dy: 300))
+        anchor.update(host: host.offsetBy(dx: 0, dy: 100))
+        anchor.update(button: button.offsetBy(dx: 0, dy: 100))
 
         #expect(anchor.placement == CGRect(x: 820, y: 46, width: 44, height: 44))
     }
