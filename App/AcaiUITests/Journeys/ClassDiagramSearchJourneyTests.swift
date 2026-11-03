@@ -53,6 +53,7 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         search(diagram, for: "Base", expecting: "1 match")
         validateScreenshot("ClassDiagram", state: "searching")
 
+        diagram.searchNextButton.waitUntilEnabled("the search's Next Match button, once a query matches")
         diagram.searchNextButton.tapWhenReady("the search's Next Match button")
         diagram.searchPreviousButton.tapWhenReady("the search's Previous Match button")
 
