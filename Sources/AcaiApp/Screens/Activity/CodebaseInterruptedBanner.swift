@@ -37,7 +37,6 @@ struct CodebaseInterruptedBanner<StaleBanner: View>: View {
             }
             .disabled(phase.isInFlight)
             .accessibilityIdentifier("codebaseDetail.interruptedBanner.resumeButton")
-            AsyncOperationStatusView(identifierPrefix: "codebaseDetail.interruptedBanner.resume", phase: phase)
         }
         .accessibilityIdentifier("codebaseDetail.interruptedBanner")
     }
