@@ -347,9 +347,6 @@ public struct ProjectBrowserView: View {
 // MARK: - Empty Sidebar
 
 extension ProjectBrowserView {
-    /// A repository row is derived from a project's codebases, so no projects means a blank list on
-    /// every platform — including compact width, whose New Project action sits in the toolbar rather
-    /// than in the sidebar footer.
     @ViewBuilder
     private var noProjectsState: some View {
         if model.store.projects.isEmpty {

@@ -44,9 +44,6 @@ extension ProjectDetailView {
         addDiagramButton(identifier: "projectDetail.emptyState.addDiagramButton")
     }
 
-    /// The partial-empty cases: a project that has diagrams but no codebases yet, or the reverse,
-    /// so `emptyProjectContentState` does not apply. Shared by both size classes, which render in
-    /// mutually exclusive branches — one identifier per concept rather than one per layout.
     var codebasesEmptyState: some View {
         ActionableEmptyState(
             text: .app("View.ProjectDetailView.NoCodebasesYet"),

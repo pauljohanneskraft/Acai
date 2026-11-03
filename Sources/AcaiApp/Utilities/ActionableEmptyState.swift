@@ -1,9 +1,5 @@
 import SwiftUI
 
-/// An empty state that names what is missing and offers the next action as a button, for the lists
-/// and panes that would otherwise read as a bare "nothing here".
-///
-/// `children: .contain` keeps `actions`' own buttons queryable beside the container's identifier.
 struct ActionableEmptyState<Actions: View>: View {
     let text: LocalizedStringResource
     let systemImage: String
@@ -37,8 +33,7 @@ struct ActionableEmptyState<Actions: View>: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, .spacingXXL)
             actions()
-                // Bordered and large gives the 44pt touch target; inside iPhone's `List` row a
-                // default-styled button would make the whole row its hit area instead.
+                // Bordered: a default-styled button in an iOS List row makes the whole row its hit area.
                 .buttonStyle(.bordered)
                 .controlSize(.large)
         }

@@ -134,8 +134,6 @@ struct InspectView: View {
         }
     }
 
-    /// Only the filtered case has a next action — when the codebase itself has no types, clearing
-    /// the filters would leave the list just as empty.
     @ViewBuilder
     private func emptyState(reason: InspectFilterState.EmptyStateReason) -> some View {
         if reason == .codebaseHasNoTypes {

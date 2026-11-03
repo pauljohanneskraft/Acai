@@ -41,15 +41,10 @@ final class DeletionJourneyTests: UIJourneyTestCase {
         browser.projectRow(id: seeded.projectID)
             .waitForDisappearanceOrFail("the deleted project's row")
 
-        // The fixture holds exactly one project, so deleting it is also the only way to reach the
-        // zero-projects sidebar. `pruneDanglingSelection` clears the selection the deleted project
-        // held, so compact width pops its own detail screen and every platform lands on the sidebar
-        // with no back tap to make.
+        // Deleting the fixture's only project is the one way to reach the zero-projects sidebar.
         browser.emptyState.waitOrFail("the sidebar's no-projects state")
         validateScreenshot("ProjectBrowser", state: "noProjects")
 
-        // Compact width has no footer New Project button, so this state's own button is the only
-        // way out of an empty sidebar there.
         browser.emptyStateNewProjectButton.tap(
             "the empty sidebar's New Project button", until: NewProjectSheetScreen(app: app).titleField)
     }
