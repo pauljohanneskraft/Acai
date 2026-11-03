@@ -127,18 +127,19 @@ extension ProjectBrowserViewModel {
 
     /// Routed through `store.activityCenter.run` (same as `reindex`) so it shows up as the
     /// codebase row's spinner.
-    func exportAtlas(for codebaseID: UUID) async {
-        guard let codebase = codebase(for: codebaseID) else { return }
+    @discardableResult
+    func exportAtlas(for codebaseID: UUID) async -> OperationOutcome {
+        guard let codebase = codebase(for: codebaseID) else { return .cancelled }
         guard let artifact = artifact(for: codebaseID) else {
             store.report(.app("Error.ProjectBrowserViewModel.AtlasNotIndexed \(codebase.name)"))
-            return
+            return .failed
         }
         await ensureAnalysisLoaded(codebaseID: codebaseID)
         guard let analysis = analysis(for: codebaseID) else {
             store.report(.app("Error.ProjectBrowserViewModel.AtlasAnalysisNotReady \(codebase.name)"))
-            return
+            return .failed
         }
-        guard let projectID = projectID(for: codebaseID) else { return }
+        guard let projectID = projectID(for: codebaseID) else { return .cancelled }
 
         let diagrams = generatedDiagramsForProject(projectID).filter { $0.codebaseID == codebaseID }
         let export = CodebaseAtlasExport(
@@ -154,10 +155,12 @@ extension ProjectBrowserViewModel {
                 try await export.build()
             }
             // Cancelled before finishing: don't queue a result we discarded.
-            guard let data else { return }
+            guard let data else { return .cancelled }
             pendingExport = PendingExport(filename: "\(codebase.name).pdf", contentType: .pdf, data: data)
+            return .completed
         } catch {
             store.report(.app("Error.ProjectBrowserViewModel.AtlasExportFailed \(error.localizedDescription)"))
+            return .failed
         }
     }
 

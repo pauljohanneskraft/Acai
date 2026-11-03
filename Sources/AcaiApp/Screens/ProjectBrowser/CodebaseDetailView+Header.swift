@@ -78,12 +78,11 @@ extension CodebaseDetailView {
         }
     }
 
-    /// `exportAtlas` reports its own failures and hands the PDF to the share sheet, so there is no outcome to show.
     private func startAtlasExport(codebaseID: UUID) {
         atlasExportPhase = .loading(.app("View.CodebaseDetailView.ExportingAtlas"))
         Task {
-            await model.exportAtlas(for: codebaseID)
-            atlasExportPhase = .idle
+            let outcome = await model.exportAtlas(for: codebaseID)
+            atlasExportPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.AtlasExportFailed"))
         }
     }
 
@@ -188,6 +187,7 @@ extension CodebaseDetailView {
                 .accessibilityIdentifier("codebaseDetail.reindexButton")
                 AsyncOperationStatusView(identifierPrefix: "codebaseDetail.reindex", phase: reindexPhase)
             }
+            AsyncOperationStatusView(identifierPrefix: "codebaseDetail.atlasExport", phase: atlasExportPhase)
         }
         // On the row itself, not on the picker: until the refs load the picker renders nothing, and a
         // task attached to nothing never runs.

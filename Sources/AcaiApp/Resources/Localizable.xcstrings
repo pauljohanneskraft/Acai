@@ -23,6 +23,28 @@
         }
       }
     },
+    "View.CodebaseDetailView.AtlasExportFailed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Atlas-Export wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporting the atlas didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'export de l'atlas n'a pas abouti."
+          }
+        }
+      }
+    },
     "View.CodebaseDetailView.ExportingAtlas" : {
       "localizations" : {
         "de" : {
