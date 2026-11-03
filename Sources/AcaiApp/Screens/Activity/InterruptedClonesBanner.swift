@@ -33,49 +33,46 @@ struct InterruptedClonesBanner: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } actions: {
-            Button {
-                activityCenter.discardInterruptedOperation(record.id)
-            } label: {
-                Label(.app("View.InterruptedClonesBanner.Dismiss"), systemImage: "xmark")
-            }
-            .disabled(isRetrying)
-            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).dismissButton")
-            Button {
-                startRetry(record, request: request)
-            } label: {
-                Label(.app("View.InterruptedClonesBanner.RetryClone"), systemImage: "arrow.clockwise")
-            }
-            .disabled(isRetrying)
-            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).retryButton")
+            dismissButton(record, identifier: "dismissButton", isRetrying: isRetrying)
+            retryButton(record, request: request, identifier: "retryButton", isRetrying: isRetrying)
         }
         // In a compact `List` row, a default-styled button takes taps meant for its neighbour.
         .buttonStyle(.borderless)
         .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id)")
         .contextMenu {
-            Button {
-                startRetry(record, request: request)
-            } label: {
-                Label(.app("View.InterruptedClonesBanner.RetryClone"), systemImage: "arrow.clockwise")
-            }
-            .disabled(isRetrying)
-            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).menuRetryButton")
-            Button {
-                activityCenter.discardInterruptedOperation(record.id)
-            } label: {
-                Label(.app("View.InterruptedClonesBanner.Dismiss"), systemImage: "xmark")
-            }
-            .disabled(isRetrying)
-            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).menuDismissButton")
+            retryButton(record, request: request, identifier: "menuRetryButton", isRetrying: isRetrying)
+            dismissButton(record, identifier: "menuDismissButton", isRetrying: isRetrying)
         }
         .swipeActions(edge: .trailing) {
-            Button {
-                activityCenter.discardInterruptedOperation(record.id)
-            } label: {
-                Label(.app("View.InterruptedClonesBanner.Dismiss"), systemImage: "xmark")
-            }
-            .disabled(isRetrying)
-            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).swipeDismissButton")
+            dismissButton(record, identifier: "swipeDismissButton", isRetrying: isRetrying)
         }
+    }
+
+    private func dismissButton(
+        _ record: InterruptedOperationRecord, identifier: String, isRetrying: Bool
+    ) -> some View {
+        Button {
+            activityCenter.discardInterruptedOperation(record.id)
+        } label: {
+            Label(.app("View.InterruptedClonesBanner.Dismiss"), systemImage: "xmark")
+        }
+        .disabled(isRetrying)
+        .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).\(identifier)")
+    }
+
+    private func retryButton(
+        _ record: InterruptedOperationRecord,
+        request: InterruptedOperationRecord.RemoteCloneRequest,
+        identifier: String,
+        isRetrying: Bool
+    ) -> some View {
+        Button {
+            startRetry(record, request: request)
+        } label: {
+            Label(.app("View.InterruptedClonesBanner.RetryClone"), systemImage: "arrow.clockwise")
+        }
+        .disabled(isRetrying)
+        .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).\(identifier)")
     }
 
     private var retryStatus: some View {
