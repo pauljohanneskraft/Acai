@@ -28,7 +28,9 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
         file: StaticString = #filePath, line: UInt = #line
     ) {
         let missing = names.filter { !diagram.typeNode(named: $0).exists }
-        XCTAssertTrue(missing.isEmpty, "\(missing.joined(separator: ", ")) should \(expectation)", file: file, line: line)
+        XCTAssertTrue(
+            missing.isEmpty, "\(missing.joined(separator: ", ")) should \(expectation)", file: file, line: line
+        )
     }
 
     func testFindNodeByNameNarrowsAndDismissRestoresTheDiagram() throws {
