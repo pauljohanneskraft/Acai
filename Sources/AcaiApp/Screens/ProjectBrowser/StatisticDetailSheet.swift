@@ -51,8 +51,7 @@ struct StatisticDetailSheet: View {
     @ViewBuilder
     private var content: some View {
         if detail.rows.isEmpty {
-            // The statistic's own name stays in the navigation title and what it counts in
-            // `detail.description` above, so this says only why the count came out zero.
+            // Unreachable from the stat cards, which open this sheet only when the maximum is above zero.
             ActionableEmptyState(
                 text: .app("View.StatisticDetailSheet.NothingCountedYet"),
                 systemImage: "number",
