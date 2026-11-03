@@ -195,13 +195,41 @@ struct ActivityCenterInterruptionTests {
         #expect(center.interruptedOperation(forCodebase: codebaseID)?.id == newestPull.id)
     }
 
-    @Test("Work with nothing to resume, like an export, is never recorded")
-    func operationsWithoutAResumptionAreNotRecorded() async throws {
+    @Test("A relaunch over an interrupted atlas export offers to export it again")
+    func anInterruptedAtlasExportIsReportedAfterRelaunch() async throws {
         let store = makeStore()
+        let codebaseID = UUID()
         let gate = AsyncGate()
         let center = ActivityCenter(store: store)
         let running = Task {
-            try await center.run(title: "Exporting…", kind: .other(systemImage: "doc"), subject: .codebase(UUID())) {
+            try await center.run(
+                title: "Exporting…", kind: .other(systemImage: "doc.richtext"), subject: .codebase(codebaseID),
+                resumption: .exportAtlas(codebaseID: codebaseID)
+            ) {
+                await gate.wait()
+                return 1
+            }
+        }
+        try await Eventually().waitUntil("the operation is registered") { center.isBusy(.codebase(codebaseID)) }
+        await center.flushPersistence()
+
+        let relaunched = ActivityCenter(store: store)
+        #expect(
+            relaunched.interruptedOperation(forCodebase: codebaseID)?.resumption
+                == .exportAtlas(codebaseID: codebaseID))
+
+        await gate.open()
+        _ = try await running.value
+    }
+
+    @Test("Work with nothing to resume, like a repository fetch, is never recorded")
+    func operationsWithoutAResumptionAreNotRecorded() async throws {
+        let store = makeStore()
+        let remote = URL(fileURLWithPath: "/tmp/widgets.git")
+        let gate = AsyncGate()
+        let center = ActivityCenter(store: store)
+        let running = Task {
+            try await center.run(title: "Fetching…", kind: .gitFetch, subject: .repository(remote)) {
                 await gate.wait()
                 return 1
             }

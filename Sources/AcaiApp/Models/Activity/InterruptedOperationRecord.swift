@@ -8,12 +8,14 @@ struct InterruptedOperationRecord: Codable, Equatable, Identifiable, Sendable {
         case reindex(codebaseID: UUID)
         case pull(codebaseID: UUID)
         case switchRef(codebaseID: UUID, ref: String, refKind: GitCheckout.Ref.Kind)
+        case exportAtlas(codebaseID: UUID)
         case clone(RemoteCloneRequest)
 
         /// The codebase the work was for; a clone's is the one it would have added.
         var codebaseID: UUID {
             switch self {
-            case .reindex(let codebaseID), .pull(let codebaseID), .switchRef(let codebaseID, _, _):
+            case .reindex(let codebaseID), .pull(let codebaseID), .switchRef(let codebaseID, _, _),
+                 .exportAtlas(let codebaseID):
                 codebaseID
             case .clone(let request):
                 request.codebaseID
@@ -29,6 +31,8 @@ struct InterruptedOperationRecord: Codable, Equatable, Identifiable, Sendable {
                 .pull
             case .switchRef(_, let ref, let refKind):
                 .switchRef(ref: ref, refKind: refKind)
+            case .exportAtlas:
+                .exportAtlas
             case .clone:
                 nil
             }
@@ -39,7 +43,8 @@ struct InterruptedOperationRecord: Codable, Equatable, Identifiable, Sendable {
             switch (self, other) {
             case (.clone(let mine), .clone(let theirs)):
                 return mine.asksForTheSameClone(as: theirs)
-            case (.reindex, .reindex), (.pull, .pull), (.switchRef, .pull), (.switchRef, .switchRef):
+            case (.reindex, .reindex), (.pull, .pull), (.switchRef, .pull), (.switchRef, .switchRef),
+                 (.exportAtlas, .exportAtlas):
                 return codebaseID == other.codebaseID
             default:
                 return false
@@ -52,6 +57,7 @@ struct InterruptedOperationRecord: Codable, Equatable, Identifiable, Sendable {
         case reindex
         case pull
         case switchRef(ref: String, refKind: GitCheckout.Ref.Kind)
+        case exportAtlas
     }
 
     /// A clone, as the add-codebase sheet asked for it.

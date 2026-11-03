@@ -26,7 +26,7 @@ struct CodebaseInterruptedBanner<StaleBanner: View>: View {
             Text(localized: title(for: work))
                 .font(.subheadline)
                 .foregroundStyle(.orange)
-            Text(.app("View.CodebaseInterruptedBanner.MayBeOutOfDate"))
+            Text(localized: caption(for: work))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } actions: {
@@ -50,6 +50,18 @@ struct CodebaseInterruptedBanner<StaleBanner: View>: View {
             .app("View.CodebaseInterruptedBanner.PullDidNotFinish")
         case .switchRef(let ref, _):
             .app("View.CodebaseInterruptedBanner.SwitchDidNotFinish \(ref)")
+        case .exportAtlas:
+            .app("View.CodebaseInterruptedBanner.ExportDidNotFinish")
+        }
+    }
+
+    /// An export wrote nothing, so the codebase itself is not what may be out of date.
+    private func caption(for work: InterruptedOperationRecord.CodebaseWork) -> LocalizedStringResource {
+        switch work {
+        case .reindex, .pull, .switchRef:
+            .app("View.CodebaseInterruptedBanner.MayBeOutOfDate")
+        case .exportAtlas:
+            .app("View.CodebaseInterruptedBanner.ExportNotSaved")
         }
     }
 
@@ -61,6 +73,8 @@ struct CodebaseInterruptedBanner<StaleBanner: View>: View {
             .app("View.CodebaseInterruptedBanner.Pull")
         case .switchRef(let ref, _):
             .app("View.CodebaseInterruptedBanner.SwitchTo \(ref)")
+        case .exportAtlas:
+            .app("View.CodebaseInterruptedBanner.ExportAtlas")
         }
     }
 }

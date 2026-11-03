@@ -23,6 +23,94 @@
         }
       }
     },
+    "View.CodebaseDetailView.ExportingAtlas" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atlas wird exportiert…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporting the atlas…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export de l'atlas…"
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.ExportAtlas" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atlas exportieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Atlas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporter l'atlas"
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.ExportDidNotFinish" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Atlas-Export wurde nicht abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporting the atlas didn't finish."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'export de l'atlas n'a pas abouti."
+          }
+        }
+      }
+    },
+    "View.CodebaseInterruptedBanner.ExportNotSaved" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí wurde beendet, bevor das PDF fertig war – es wurde nichts gespeichert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí stopped before the PDF was ready, so nothing was saved."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açaí s'est arrêté avant que le PDF soit prêt ; rien n'a été enregistré."
+          }
+        }
+      }
+    },
     "View.CodebaseInterruptedBanner.IndexingDidNotFinish" : {
       "localizations" : {
         "de" : {

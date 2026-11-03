@@ -60,6 +60,8 @@ extension CodebaseDetailView {
             pullPhase
         case .switchRef:
             refSwitchPhase
+        case .exportAtlas:
+            atlasExportPhase
         }
     }
 
@@ -71,6 +73,17 @@ extension CodebaseDetailView {
             startPull(codebaseID: codebaseID)
         case .switchRef(let ref, let refKind):
             startRefSwitch(codebaseID: codebaseID, to: GitCheckout.Ref(name: ref, kind: refKind))
+        case .exportAtlas:
+            startAtlasExport(codebaseID: codebaseID)
+        }
+    }
+
+    /// `exportAtlas` reports its own failures and hands the PDF to the share sheet, so there is no outcome to show.
+    private func startAtlasExport(codebaseID: UUID) {
+        atlasExportPhase = .loading(.app("View.CodebaseDetailView.ExportingAtlas"))
+        Task {
+            await model.exportAtlas(for: codebaseID)
+            atlasExportPhase = .idle
         }
     }
 
