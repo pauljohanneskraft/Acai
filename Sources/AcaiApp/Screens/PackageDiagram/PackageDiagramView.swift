@@ -138,7 +138,7 @@ struct PackageDiagramView: View {
 
     private var canvasContent: some View {
         let layout = viewModel.layout
-        let rotors = rotorPlan(layout)
+        let rotors = viewModel.rotorPlan
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
@@ -193,7 +193,7 @@ struct PackageDiagramView: View {
                         targetRect: targetRect,
                         lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
                         strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
-                        accessibilityDescription: edgeDescription(edge, names: names)
+                        accessibilityDescription: viewModel.edgeDescription(edge, names: names)
                             .edgeAccessibility(identifier: edge.accessibilityID)
                             .rotorMember(id: edge.accessibilityID, in: rotors, namespace: rotorNamespace)
                     )
@@ -321,50 +321,5 @@ struct PackageDiagramView: View {
         canvasScale = fit.scale
         canvasOffset = fit.offset
         savePositions()
-    }
-}
-
-extension PackageDiagramView {
-    private func rotorPlan(_ layout: PackageLayoutModel) -> DiagramRotorPlan {
-        let names = layout.nodeNames
-        return DiagramRotorPlan(
-            elements: layout.nodes.map { node in
-                DiagramRotorPlan.Element(
-                    id: node.id, label: node.node.name, delta: viewModel.nodeDeltaStatus(id: node.id), frame: node.rect
-                )
-            },
-            connections: layout.edges.compactMap { edge in
-                guard let source = layout.frame(for: edge.from), let target = layout.frame(for: edge.to) else {
-                    return nil
-                }
-                return DiagramRotorPlan.Element(
-                    connection: edge.accessibilityID, label: edgeDescription(edge, names: names).summary,
-                    delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to), from: source, to: target
-                )
-            }
-        )
-    }
-
-    private func edgeDescription(
-        _ edge: PackageLayoutModel.EdgeLayout, names: [String: String]
-    ) -> DiagramElementDescription {
-        DiagramElementDescription(
-            dependencyFrom: names[edge.from] ?? edge.from,
-            to: names[edge.to] ?? edge.to,
-            references: edge.weight,
-            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
-        )
-    }
-}
-
-extension PackageLayoutModel {
-    fileprivate var nodeNames: [String: String] {
-        Dictionary(nodes.map { ($0.id, $0.node.name) }, uniquingKeysWith: { first, _ in first })
-    }
-}
-
-extension PackageLayoutModel.EdgeLayout {
-    fileprivate var accessibilityID: String {
-        "diagram.packageEdge.\(from)->\(to)"
     }
 }

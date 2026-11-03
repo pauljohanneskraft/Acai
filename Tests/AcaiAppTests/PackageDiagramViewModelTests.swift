@@ -177,3 +177,28 @@ struct PackageDiagramViewModelTests {
         #expect(vm.nodeDeltaColor(id: moduleC.id) == nil)
     }
 }
+
+// MARK: - Rotor plan
+
+extension PackageDiagramViewModelTests {
+    @Test("The rotor plan names every drawn module and dependency, and a comparison's additions are changed")
+    func rotorPlanMatchesTheCanvas() throws {
+        let vm = PackageDiagramViewModel(
+            artifact: artifact(dependingOnModuleC: true),
+            comparisonArtifact: artifact(dependingOnModuleC: false))
+        let layout = vm.layout
+        let moduleA = try #require(vm.diagram.nodes.first { $0.name == "ModuleA" })
+        let moduleB = try #require(vm.diagram.nodes.first { $0.name == "ModuleB" })
+        let moduleC = try #require(vm.diagram.nodes.first { $0.name == "ModuleC" })
+
+        let plan = vm.rotorPlan
+
+        #expect(Set(plan.elements.map(\.id)) == Set(layout.nodes.map(\.id)))
+        #expect(Set(plan.connections.map(\.id)) == Set(layout.edges.map(\.accessibilityID)))
+        let addedEdge = try #require(layout.edges.first { $0.from == moduleA.id && $0.to == moduleC.id })
+        let changed = Set(plan.changed.map(\.id))
+        #expect(changed.contains(moduleC.id))
+        #expect(changed.contains(addedEdge.accessibilityID))
+        #expect(!changed.contains(moduleB.id))
+    }
+}

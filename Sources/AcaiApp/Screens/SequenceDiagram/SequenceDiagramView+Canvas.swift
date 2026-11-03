@@ -12,7 +12,7 @@ extension SequenceDiagramView {
         let layout = viewModel.layout
         let messages = viewModel.orderedMessages
         let names = Dictionary(layout.participants.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
-        let rotors = rotorPlan(layout, messages: messages, names: names)
+        let rotors = viewModel.rotorPlan
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
@@ -36,7 +36,7 @@ extension SequenceDiagramView {
                     ForEach(layout.messages) { message in
                         messageTapTarget(
                             message,
-                            description: messageDescription(message, messages: messages, names: names),
+                            description: viewModel.messageDescription(message, messages: messages, names: names),
                             rotors: rotors)
                     }
                 }
@@ -48,28 +48,6 @@ extension SequenceDiagramView {
         .overlay(alignment: .topTrailing) {
             CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
-    }
-
-    func rotorPlan(
-        _ layout: SequenceLayoutModel, messages: [SequenceDiagram.Message], names: [String: String]
-    ) -> DiagramRotorPlan {
-        DiagramRotorPlan(
-            elements: layout.participants.map { participant in
-                DiagramRotorPlan.Element(
-                    id: participant.id, label: participant.name,
-                    delta: viewModel.participantDeltaStatus(participant.id), frame: participant.headerRect
-                )
-            },
-            connections: layout.messages.map { message in
-                DiagramRotorPlan.Element(
-                    connection: message.accessibilityID,
-                    label: messageDescription(message, messages: messages, names: names).summary,
-                    delta: messages.indices.contains(message.id)
-                        ? viewModel.messageDeltaStatus(messages[message.id]) : nil,
-                    midpoint: CGPoint(x: (message.fromX + message.toX) / 2, y: message.y)
-                )
-            }
-        )
     }
 
     func participantHeader(
@@ -142,21 +120,6 @@ extension SequenceDiagramView {
             }
     }
 
-    /// `messages` and `names` are resolved once per render by the caller, not once per message.
-    private func messageDescription(
-        _ layout: SequenceLayoutModel.MessageLayout, messages: [SequenceDiagram.Message], names: [String: String]
-    ) -> DiagramElementDescription {
-        guard messages.indices.contains(layout.id) else {
-            return DiagramElementDescription(label: "", details: [])
-        }
-        let message = messages[layout.id]
-        return DiagramElementDescription(
-            edgeFrom: names[message.from] ?? message.from,
-            to: names[message.to] ?? message.to,
-            details: layout.label.map { [.app("DiagramElementDescription.EdgeLabel \($0)")] } ?? [],
-            delta: viewModel.messageDeltaStatus(message))
-    }
-
     private func toggleMessageSelection(_ id: Int) {
         let newSelection = (viewModel.selectedMessageID == id) ? nil : id
         viewModel.clearSelection()
@@ -174,11 +137,5 @@ extension SequenceDiagramView {
         viewModel.selectNode(id, extending: false)
         sidebarTab = .inspector
         showSidebar = true
-    }
-}
-
-extension SequenceLayoutModel.MessageLayout {
-    fileprivate var accessibilityID: String {
-        "diagram.sequenceMessage.\(id)"
     }
 }

@@ -199,7 +199,7 @@ private struct CallGraphCanvasView: View {
 
     private var canvasContent: some View {
         let layout = viewModel.layout
-        let rotors = rotorPlan(layout)
+        let rotors = viewModel.rotorPlan
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
@@ -353,7 +353,7 @@ extension CallGraphCanvasView {
                         targetRect: targetRect,
                         lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
                         strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
-                        accessibilityDescription: edgeDescription(edge, labels: labels)
+                        accessibilityDescription: viewModel.edgeDescription(edge, labels: labels)
                             .edgeAccessibility(identifier: edge.accessibilityID)
                             .rotorMember(id: edge.accessibilityID, in: rotors, namespace: rotorNamespace)
                     )
@@ -373,37 +373,6 @@ extension CallGraphCanvasView {
         if let color {
             RoundedRectangle(cornerRadius: 8).stroke(color, lineWidth: 3)
         }
-    }
-
-    private func rotorPlan(_ layout: CallGraphLayoutModel) -> DiagramRotorPlan {
-        let labels = layout.nodeLabels
-        return DiagramRotorPlan(
-            elements: layout.nodes.map { node in
-                DiagramRotorPlan.Element(
-                    id: node.id, label: node.node.label, delta: viewModel.nodeDeltaStatus(id: node.id), frame: node.rect
-                )
-            },
-            connections: layout.edges.compactMap { edge in
-                guard let source = layout.frame(for: edge.from), let target = layout.frame(for: edge.to) else {
-                    return nil
-                }
-                return DiagramRotorPlan.Element(
-                    connection: edge.accessibilityID, label: edgeDescription(edge, labels: labels).summary,
-                    delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to), from: source, to: target
-                )
-            }
-        )
-    }
-
-    private func edgeDescription(
-        _ edge: CallGraphLayoutModel.EdgeLayout, labels: [String: String]
-    ) -> DiagramElementDescription {
-        DiagramElementDescription(
-            dependencyFrom: labels[edge.from] ?? edge.from,
-            to: labels[edge.to] ?? edge.to,
-            callSites: edge.weight,
-            delta: viewModel.edgeDeltaStatus(from: edge.from, to: edge.to)
-        )
     }
 
     private func methodNode(_ node: CallGraphLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
@@ -466,17 +435,5 @@ private struct CallGraphNodeView: View {
                     )
             )
             .accessibilityIdentifier("diagram.callGraphNode.\(node.id)")
-    }
-}
-
-extension CallGraphLayoutModel {
-    fileprivate var nodeLabels: [String: String] {
-        Dictionary(nodes.map { ($0.id, $0.node.label) }, uniquingKeysWith: { first, _ in first })
-    }
-}
-
-extension CallGraphLayoutModel.EdgeLayout {
-    fileprivate var accessibilityID: String {
-        "diagram.callEdge.\(from)->\(to)"
     }
 }

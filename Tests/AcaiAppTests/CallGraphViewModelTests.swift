@@ -157,3 +157,25 @@ struct CallGraphViewModelTests {
         #expect(vm.edgeDeltaColor(from: "A.run", to: "B.work") == nil)
     }
 }
+
+// MARK: - Rotor plan
+
+extension CallGraphViewModelTests {
+    @Test("The rotor plan names every drawn method and call, and a comparison's additions are changed")
+    func rotorPlanMatchesTheCanvas() throws {
+        let vm = CallGraphViewModel(
+            artifact: artifact(callingBWork: true), scope: .wholeCodebase,
+            comparisonArtifact: artifact(callingBWork: false))
+        let layout = vm.layout
+
+        let plan = vm.rotorPlan
+
+        #expect(Set(plan.elements.map(\.id)) == Set(layout.nodes.map(\.id)))
+        #expect(Set(plan.connections.map(\.id)) == Set(layout.edges.map(\.accessibilityID)))
+        let addedEdge = try #require(layout.edges.first { $0.from == "A.run" && $0.to == "B.work" })
+        let changed = Set(plan.changed.map(\.id))
+        #expect(changed.contains("B.work"))
+        #expect(changed.contains(addedEdge.accessibilityID))
+        #expect(!changed.contains("C.help"))
+    }
+}

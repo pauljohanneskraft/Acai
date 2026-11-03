@@ -10,7 +10,7 @@ extension StateDiagramView {
 
     var canvasContent: some View {
         let layout = viewModel.layout
-        let rotors = rotorPlan(layout)
+        let rotors = viewModel.rotorPlan
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
@@ -43,25 +43,6 @@ extension StateDiagramView {
         .overlay(alignment: .topTrailing) {
             CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
-    }
-
-    func rotorPlan(_ layout: StateLayoutModel) -> DiagramRotorPlan {
-        DiagramRotorPlan(
-            elements: layout.nodes.map { node in
-                DiagramRotorPlan.Element(
-                    id: node.id, label: node.state.name, delta: viewModel.stateDeltaStatus(node.id), frame: node.rect
-                )
-            },
-            connections: layout.edges.compactMap { edge in
-                guard let source = layout.frame(for: edge.from), let target = layout.frame(for: edge.to) else {
-                    return nil
-                }
-                return DiagramRotorPlan.Element(
-                    connection: edge.accessibilityID, label: transitionDescription(edge).summary,
-                    delta: transitionDelta(edge), from: source, to: target
-                )
-            }
-        )
     }
 
     func stateNode(_ node: StateLayoutModel.NodeFrame, rotors: DiagramRotorPlan) -> some View {
@@ -121,7 +102,7 @@ extension StateDiagramView {
                 edge.label.map { Text(.app("View.StateDiagramView.TransitionLabel \($0)")) }
                     ?? Text(.app("View.StateDiagramView.Transition"))
             )
-            .accessibilityValue(Text(verbatim: transitionDescription(edge).summary))
+            .accessibilityValue(Text(verbatim: viewModel.transitionDescription(edge).summary))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleTransitionSelection(edge.id) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
@@ -134,19 +115,6 @@ extension StateDiagramView {
             .onTapGesture(count: 1) {
                 toggleTransitionSelection(edge.id)
             }
-    }
-
-    private func transitionDescription(_ edge: StateLayoutModel.EdgeLayout) -> DiagramElementDescription {
-        DiagramElementDescription(
-            edgeFrom: viewModel.stateName(edge.from) ?? edge.from,
-            to: viewModel.stateName(edge.to) ?? edge.to,
-            details: [],
-            delta: transitionDelta(edge))
-    }
-
-    private func transitionDelta(_ edge: StateLayoutModel.EdgeLayout) -> DeltaStatus? {
-        let transitions = viewModel.diagram?.transitions ?? []
-        return transitions.indices.contains(edge.id) ? viewModel.transitionDeltaStatus(transitions[edge.id]) : nil
     }
 
     private func toggleTransitionSelection(_ id: Int) {
@@ -166,11 +134,5 @@ extension StateDiagramView {
         viewModel.selectNode(id, extending: false)
         sidebarTab = .inspector
         showSidebar = true
-    }
-}
-
-extension StateLayoutModel.EdgeLayout {
-    fileprivate var accessibilityID: String {
-        "diagram.stateTransition.\(id)"
     }
 }
