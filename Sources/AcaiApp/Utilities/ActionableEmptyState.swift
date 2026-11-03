@@ -9,14 +9,28 @@ struct ActionableEmptyState<Actions: View>: View {
     let systemImage: String
     let identifier: String
     /// Fills its container on a pane; sized to its content inside a list row or a card.
-    var fillsContainer = true
-    @ViewBuilder let actions: () -> Actions
+    let fillsContainer: Bool
+    let actions: () -> Actions
+    @ScaledMetric(relativeTo: .largeTitle) private var paneIconSize: CGFloat = 40
+    @ScaledMetric(relativeTo: .title) private var rowIconSize: CGFloat = 28
+
+    init(
+        text: LocalizedStringResource, systemImage: String, identifier: String, fillsContainer: Bool = true,
+        @ViewBuilder actions: @escaping () -> Actions
+    ) {
+        self.text = text
+        self.systemImage = systemImage
+        self.identifier = identifier
+        self.fillsContainer = fillsContainer
+        self.actions = actions
+    }
 
     var body: some View {
         VStack(spacing: .spacingM) {
             Image(systemName: systemImage)
-                .font(.system(size: fillsContainer ? 40 : 28))
+                .font(.system(size: fillsContainer ? paneIconSize : rowIconSize))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text(localized: text)
                 .font(.callout)
                 .foregroundStyle(.secondary)
