@@ -122,11 +122,13 @@ final class ActivityCenter: ObservableObject {
 
     // MARK: - Interruption Ledger
 
-    /// The newest unfinished work on an existing codebase, for its screen to offer to resume.
+    /// The newest unfinished work on an existing codebase, for its screen to offer to resume. An export
+    /// left the codebase as it was, so any other interrupted work is reported ahead of it.
     func interruptedOperation(forCodebase codebaseID: UUID) -> InterruptedOperationRecord? {
-        interruptedOperations.last {
+        let records = interruptedOperations.filter {
             $0.resumption.codebaseWork != nil && $0.resumption.codebaseID == codebaseID
         }
+        return records.last { $0.resumption.codebaseWork != .exportAtlas } ?? records.last
     }
 
     /// Whether work running now would resolve `record` once it finishes.

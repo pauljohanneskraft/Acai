@@ -13,16 +13,18 @@ struct CodebaseInterruptedBanner<StaleBanner: View>: View {
         let record = activityCenter.interruptedOperation(forCodebase: codebaseID)
         let work = record?.resumption.codebaseWork
         if let record, let work {
-            banner(work: work, systemImage: record.kind.systemImage)
+            banner(record: record, work: work)
         }
         if work != .reindex {
             staleBanner
         }
     }
 
-    private func banner(work: InterruptedOperationRecord.CodebaseWork, systemImage: String) -> some View {
-        let phase = phase(work)
-        return InterruptionBannerLayout(systemImage: systemImage) {
+    private func banner(
+        record: InterruptedOperationRecord, work: InterruptedOperationRecord.CodebaseWork
+    ) -> some View {
+        let isResuming = phase(work).isInFlight
+        return InterruptionBannerLayout(systemImage: record.kind.systemImage) {
             Text(localized: title(for: work))
                 .font(.subheadline)
                 .foregroundStyle(.orange)
@@ -30,15 +32,38 @@ struct CodebaseInterruptedBanner<StaleBanner: View>: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } actions: {
-            Button {
-                resume(work)
-            } label: {
-                Label(actionTitle(for: work), systemImage: "arrow.clockwise")
-            }
-            .disabled(phase.isInFlight)
-            .accessibilityIdentifier("codebaseDetail.interruptedBanner.resumeButton")
+            dismissButton(record, identifier: "dismissButton", isResuming: isResuming)
+            resumeButton(work, identifier: "resumeButton", isResuming: isResuming)
         }
         .accessibilityIdentifier("codebaseDetail.interruptedBanner")
+        .contextMenu {
+            resumeButton(work, identifier: "menuResumeButton", isResuming: isResuming)
+            dismissButton(record, identifier: "menuDismissButton", isResuming: isResuming)
+        }
+    }
+
+    private func resumeButton(
+        _ work: InterruptedOperationRecord.CodebaseWork, identifier: String, isResuming: Bool
+    ) -> some View {
+        Button {
+            resume(work)
+        } label: {
+            Label(actionTitle(for: work), systemImage: "arrow.clockwise")
+        }
+        .disabled(isResuming)
+        .accessibilityIdentifier("codebaseDetail.interruptedBanner.\(identifier)")
+    }
+
+    private func dismissButton(
+        _ record: InterruptedOperationRecord, identifier: String, isResuming: Bool
+    ) -> some View {
+        Button {
+            activityCenter.discardInterruptedOperation(record.id)
+        } label: {
+            Label(.app("View.CodebaseInterruptedBanner.Dismiss"), systemImage: "xmark")
+        }
+        .disabled(isResuming)
+        .accessibilityIdentifier("codebaseDetail.interruptedBanner.\(identifier)")
     }
 
     private func title(for work: InterruptedOperationRecord.CodebaseWork) -> LocalizedStringResource {

@@ -67,6 +67,28 @@
         }
       }
     },
+    "View.CodebaseInterruptedBanner.Dismiss" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verwerfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorer"
+          }
+        }
+      }
+    },
     "View.CodebaseInterruptedBanner.ExportAtlas" : {
       "localizations" : {
         "de" : {
