@@ -89,7 +89,9 @@ struct SwiftOtherTests {
         let artifact = parser.parse(source: source, fileName: "Where.swift")
         #expect(artifact.freestandingFunctions.count == 1)
         let function = artifact.freestandingFunctions[0]
-        #expect(function.genericParameters.count == 1)
+        #expect(function.genericParameters.map(\.name) == ["S", "S.Element"])
+        #expect(function.genericParameters[0].constraints.map(\.type.name) == ["Sequence"])
+        #expect(function.genericParameters[1].constraints.map(\.type.name) == ["Comparable"])
     }
 
     @Test func attributesAndAnnotations() {

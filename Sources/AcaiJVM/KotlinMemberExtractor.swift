@@ -47,10 +47,7 @@ struct KotlinMemberExtractor {
     func functionDeclaration(_ node: Node, scope: CallSiteScope) -> Member {
         let modifierInfo = modifiers.info(fromParentOf: node)
         let name = node.firstChild(withType: "simple_identifier").map { $0.text(in: context) } ?? "_anonymous"
-        let generics = typeReferences.extractTypeParameters(
-            node.firstChild(withType: "type_parameters"),
-            constrainedBy: node.firstChild(withType: "type_constraints")
-        )
+        let generics = typeReferences.typeParameters(of: node)
         let params = parameterExtractor.functionValueParameters(
             node.firstChild(withType: "function_value_parameters")
         )

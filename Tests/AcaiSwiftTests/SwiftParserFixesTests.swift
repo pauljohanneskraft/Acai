@@ -152,17 +152,46 @@ struct SwiftParserFixesTests {
         #expect(proto.associatedTypes.map(\.name) == ["Iterator"])
     }
 
-    // MARK: GAP-5 — where-clause constraints populate .sameType
+    // MARK: GAP-5 — where-clause constraints attach to the parameter they name
 
-    @Test func whereClauseSameTypeConstraintCaptured() {
+    @Test func whereClauseConformanceOnParameterAttachesToIt() {
         let source = """
-        struct Wrapper<T> where T == Int {
+        struct Wrapper<T> where T: Equatable, T: Hashable {
             var value: T
         }
         """
         let artifact = parser.parse(source: source, fileName: "W.swift")
-        let constraints = artifact.types[0].genericParameters.flatMap(\.constraints)
-        #expect(constraints.contains { $0.kind == .sameType && $0.type.name == "Int" })
+        let params = artifact.types[0].genericParameters
+        #expect(params.map(\.name) == ["T"])
+        #expect(params[0].constraints.map(\.type.name) == ["Equatable", "Hashable"])
+        #expect(params[0].constraints.allSatisfy { $0.kind == .conformance })
+    }
+
+    @Test func whereClauseOnAssociatedTypePathBecomesItsOwnParameter() {
+        let source = """
+        func f<T: Sequence>(_ items: T) where T.Element: Equatable {}
+        """
+        let artifact = parser.parse(source: source, fileName: "F.swift")
+        let params = artifact.freestandingFunctions[0].genericParameters
+        #expect(params.map(\.name) == ["T", "T.Element"])
+        #expect(params[0].constraints.map(\.type.name) == ["Sequence"])
+        #expect(params[1].constraints.map(\.type.name) == ["Equatable"])
+    }
+
+    @Test func whereClauseSameTypeRequirementIsNotRecorded() {
+        let source = """
+        struct Wrapper<T> where T == Int {
+            var value: T
+        }
+        func g<S: Sequence>(_ items: S) where S.Element == Int {}
+        """
+        let artifact = parser.parse(source: source, fileName: "W.swift")
+        let wrapper = artifact.types[0].genericParameters
+        #expect(wrapper.map(\.name) == ["T"])
+        #expect(wrapper[0].constraints.isEmpty)
+        let function = artifact.freestandingFunctions[0].genericParameters
+        #expect(function.map(\.name) == ["S"])
+        #expect(function[0].constraints.map(\.type.name) == ["Sequence"])
     }
 
     // MARK: GAP-6 — attribute arguments preserved

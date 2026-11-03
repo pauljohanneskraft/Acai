@@ -1,0 +1,1 @@
+C++ has no where clause; a template constrains its parameter with a requires clause over concepts, not a bound on a declared type.

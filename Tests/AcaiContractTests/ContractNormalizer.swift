@@ -74,7 +74,7 @@ struct ContractNormalizer {
             kind: type.kind.stereotypeString ?? type.kind.rawValue,
             access: type.accessLevel.umlSymbol,
             modifiers: type.modifiers.filter { !implied.contains($0) }.map(\.rawValue).sorted(),
-            generics: type.genericParameters.map { simpleName($0.name) },
+            generics: type.genericParameters.map(generic(of:)),
             annotations: annotationNames(type.annotations, restating: type.modifiers),
             supertypes: type.inheritedTypes.map { typeName(of: $0) }.sorted(),
             members: type.members.map(signature(of:)).sorted(by: signatureOrder),
@@ -108,6 +108,12 @@ struct ContractNormalizer {
             }.sorted(),
             documentation: member.documentation
         )
+    }
+
+    private func generic(of parameter: GenericParameter) -> String {
+        let name = simpleName(parameter.name)
+        guard !parameter.constraints.isEmpty else { return name }
+        return name + ": " + parameter.constraints.map { typeName(of: $0.type) }.joined(separator: " & ")
     }
 
     private func signatureOrder(_ lhs: ContractShape.Signature, _ rhs: ContractShape.Signature) -> Bool {

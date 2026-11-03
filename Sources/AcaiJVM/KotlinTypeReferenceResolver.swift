@@ -118,12 +118,11 @@ struct KotlinTypeReferenceResolver {
 
     // MARK: - Generic Parameters
 
-    /// `constraintsNode` is the declaration's `type_constraints` clause, which Kotlin writes after the
-    /// signature rather than inside `type_parameters`, so a `where` bound reaches its parameter only
-    /// when both clauses are read together.
-    func extractTypeParameters(_ node: Node?, constrainedBy constraintsNode: Node? = nil) -> [GenericParameter] {
+    /// Kotlin writes a `where` clause as a `type_constraints` sibling of `type_parameters`.
+    func typeParameters(of declaration: Node) -> [GenericParameter] {
         var params: [GenericParameter] = []
-        for child in node?.allChildren(withType: "type_parameter") ?? [] {
+        let parameterList = declaration.firstChild(withType: "type_parameters")
+        for child in parameterList?.allChildren(withType: "type_parameter") ?? [] {
             let name = child.firstChild(withType: "type_identifier").map { $0.text(in: context) }
                 ?? child.firstChild(withType: "simple_identifier").map { $0.text(in: context) }
                 ?? ""
@@ -137,7 +136,7 @@ struct KotlinTypeReferenceResolver {
             params.append(GenericParameter(name: name, constraints: constraints, variance: variance(of: child)))
         }
 
-        guard let constraintsNode else { return params }
+        guard let constraintsNode = declaration.firstChild(withType: "type_constraints") else { return params }
         for (name, constraint) in typeConstraints(constraintsNode) {
             if let index = params.firstIndex(where: { $0.name == name }) {
                 params[index].constraints.append(constraint)
@@ -148,7 +147,6 @@ struct KotlinTypeReferenceResolver {
         return params
     }
 
-    /// Each `type_constraint` is one bound, so `where T : A, T : B` arrives as two entries naming `T`.
     private func typeConstraints(_ node: Node) -> [(name: String, constraint: GenericConstraint)] {
         node.allChildren(withType: "type_constraint").compactMap { child in
             let name = child.firstChild(withType: "simple_identifier").map { $0.text(in: context) }

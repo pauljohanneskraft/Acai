@@ -91,8 +91,7 @@ struct DeclarationSignatureExtractor {
         }) ?? []
 
         guard let whereClause else { return params }
-        // A constraint names the parameter it bounds in full: `T` bounds `T`, while `T.Element`
-        // bounds an associated type and becomes a parameter of its own rather than bounding `T`.
+        // `T.Element: P` bounds the associated type, not `T`, so it becomes a parameter of its own.
         for (name, constraint) in extractWhereConstraints(whereClause) {
             if let idx = params.firstIndex(where: { $0.name == name }) {
                 params[idx].constraints.append(constraint)
@@ -103,8 +102,7 @@ struct DeclarationSignatureExtractor {
         return params
     }
 
-    /// Only conformance requirements. A same-type requirement (`T == Int`, `T.Element == Int`) states an
-    /// equality rather than a bound, so recording it would invent a parameter for the left-hand path.
+    /// Same-type requirements (`T == Int`) state an equality rather than a bound, so they are skipped.
     func extractWhereConstraints(
         _ whereClause: GenericWhereClauseSyntax
     ) -> [(name: String, constraint: GenericConstraint)] {
