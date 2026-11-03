@@ -33,8 +33,7 @@ final class UnreachableCodebaseRecoveryTests: UIJourneyTestCase {
 
         let codebaseDetail = CodebaseDetailScreen(app: app)
         codebaseRow.tap("the seeded codebase's row", until: codebaseDetail.reindexButton)
-        codebaseDetail.interruptedBannerResumeButton.waitOrFail("the interrupted reindex's Reindex button")
-        codebaseDetail.reindexButton.tapWhenReady("Reindex")
+        codebaseDetail.interruptedBannerResumeButton.tapWhenReady("the interrupted reindex's Reindex button")
 
         #if os(macOS)
         let alert = app.sheets
