@@ -180,6 +180,36 @@ struct ClassDiagramRotorPlanTests {
         #expect(rotorID("A", "D").map(changed.contains) == true)
         #expect(rotorID("A", "B").map(changed.contains) == false)
     }
+
+    @Test("Selection, search and a drag tick reuse the plan; a committed drag, undo or resize rebuilds it")
+    func planIsCachedUntilTheLayoutChanges() {
+        let viewModel = ClassDiagramViewModel(
+            codebase: Codebase(name: "App", directoryPath: "/tmp/app"),
+            artifact: artifact([type("A"), type("B"), type("C")], [
+                Relationship(kind: .dependency, source: "A", target: "B")
+            ])
+        )
+        viewModel.moveNode("A", to: CGPoint(x: 100, y: 100))
+        viewModel.moveNode("B", to: CGPoint(x: 400, y: 100))
+        viewModel.moveNode("C", to: CGPoint(x: 100, y: 600))
+        let snapshot = viewModel.historySnapshot
+
+        RotorPlanCachingCheck(model: viewModel) { $0.rotorPlan }
+            .verify(moving: "A", to: CGPoint(x: 5000, y: 5000))
+
+        let builds = viewModel.rotorPlanCache.buildCount
+        viewModel.searchQuery = "B"
+        viewModel.stepSearchForward()
+        _ = viewModel.rotorPlan
+        #expect(viewModel.rotorPlanCache.buildCount == builds)
+
+        viewModel.historySnapshot = snapshot
+        #expect(viewModel.rotorPlan.elements.first?.id == "A")
+        viewModel.resizeNode("C", width: 300, height: 300)
+        _ = viewModel.rotorPlan
+        #expect(viewModel.rotorPlanCache.buildCount == builds + 2)
+        #expect(viewModel.rotorPlan.changed.isEmpty)
+    }
 }
 
 @Suite("Diagram rotor plan of a freeform diagram")
@@ -197,12 +227,26 @@ struct FreeformDiagramRotorPlanTests {
         viewModel.addEdge(from: ids[0], to: ids[1], kind: .dependency)
         let layout = try #require(viewModel.sequence.sequenceLayout)
 
-        let plan = viewModel.rotorPlan(sequenceLayout: layout)
+        let plan = viewModel.rotorPlan
 
         #expect(plan.elements.map(\.label) == ["A", "B", "C"])
         let relationship = try #require(viewModel.edges.first { !viewModel.sequence.isMessageEdge($0) })
         let expected = Set(layout.messages.map(\.freeformRotorID) + [relationship.rotorID])
         #expect(Set(plan.connections.map(\.id)) == expected)
         #expect(layout.messages.count == 1)
+    }
+
+    @Test("Selection and a drag tick reuse the plan; a committed drag or a new edge rebuilds it")
+    func planIsCachedUntilTheDiagramChanges() {
+        let viewModel = FreeformDiagramViewModel()
+        viewModel.addNode(kind: .type(.class), name: "A", at: CGPoint(x: 10, y: 10))
+        viewModel.addNode(kind: .type(.class), name: "B", at: CGPoint(x: 500, y: 10))
+        let ids = viewModel.nodes.map(\.id)
+
+        RotorPlanCachingCheck(model: viewModel) { $0.rotorPlan }
+            .verify(moving: ids[0], to: CGPoint(x: 5000, y: 5000))
+
+        viewModel.addEdge(from: ids[0], to: ids[1], kind: .dependency)
+        #expect(viewModel.rotorPlan.connections.count == 1)
     }
 }

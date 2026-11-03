@@ -4,6 +4,10 @@ import AcaiRender
 
 extension SequenceDiagramViewModel {
     var rotorPlan: DiagramRotorPlan {
+        rotorPlanCache.plan { freshRotorPlan }
+    }
+
+    private var freshRotorPlan: DiagramRotorPlan {
         let layout = layout
         let messages = orderedMessages
         let names = Dictionary(layout.participants.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
@@ -25,8 +29,7 @@ extension SequenceDiagramViewModel {
         )
     }
 
-    /// `messages` and `names` are resolved once by the caller, not once per message.
-    func messageDescription(
+    private func messageDescription(
         _ layout: SequenceLayoutModel.MessageLayout, messages: [SequenceDiagram.Message], names: [String: String]
     ) -> DiagramElementDescription {
         guard messages.indices.contains(layout.id) else {

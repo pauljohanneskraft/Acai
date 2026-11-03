@@ -17,11 +17,12 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     private var edgeStatus: (@Sendable (Relationship) -> DeltaStatus)?
     private var typeStatus: (@Sendable (String) -> DeltaStatus)?
 
-    @Published var nodes: [GeneratedDiagramNode] = []
-    @Published var edges: [GeneratedDiagramEdge] = []
-    @Published var nodePositions: [String: CGPoint] = [:]
-    @Published var nodeSizes: [String: CGSize] = [:]
-    @Published var userNodeSizes: [String: CGSize] = [:]
+    @Published var nodes: [GeneratedDiagramNode] = [] { didSet { rotorPlanCache.invalidate() } }
+    @Published var edges: [GeneratedDiagramEdge] = [] { didSet { rotorPlanCache.invalidate() } }
+    @Published var nodePositions: [String: CGPoint] = [:] { didSet { rotorPlanCache.invalidate() } }
+    @Published var nodeSizes: [String: CGSize] = [:] { didSet { rotorPlanCache.invalidate() } }
+    @Published var userNodeSizes: [String: CGSize] = [:] { didSet { rotorPlanCache.invalidate() } }
+    let rotorPlanCache = DiagramRotorPlanCache()
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
     @Published private(set) var hasPerformedMeasuredLayout = false
@@ -238,7 +239,9 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
     /// The environment's current Dynamic Type size, so `groupingBoxes` can reserve the same amount of
     /// space `GroupingBoxView`'s tab actually needs at this size — defaults to `.large` (no scaling)
     /// until the view reports the real value on appear.
-    private(set) var currentDynamicTypeSize: DynamicTypeSize = .large
+    private(set) var currentDynamicTypeSize: DynamicTypeSize = .large {
+        didSet { rotorPlanCache.invalidate() }
+    }
 
     /// The system text size changed while this diagram was open (or the view is reporting it for the
     /// first time). Node boxes will re-measure at their new (larger or smaller) rendered size, but
@@ -276,7 +279,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
             sourceName: nodeNames[edge.sourceID] ?? edge.sourceID,
             targetName: nodeNames[edge.targetID] ?? edge.targetID,
             delta: deltaStatus(for: edge)
-        ).edgeAccessibility(identifier: "diagram.edge.\(edge.sourceID)->\(edge.targetID)")
+        ).edgeAccessibility(identifier: edge.accessibilityIdentifier)
     }
 
     /// The delta fill for a type node (added green / removed red / changed amber), or `nil` when

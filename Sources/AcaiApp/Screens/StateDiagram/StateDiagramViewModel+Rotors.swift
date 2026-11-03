@@ -4,6 +4,10 @@ import AcaiRender
 
 extension StateDiagramViewModel {
     var rotorPlan: DiagramRotorPlan {
+        rotorPlanCache.plan { freshRotorPlan }
+    }
+
+    private var freshRotorPlan: DiagramRotorPlan {
         let layout = layout
         return DiagramRotorPlan(
             elements: layout.nodes.map { node in

@@ -32,6 +32,18 @@ extension View {
     }
 }
 
+extension DiagramRotorPlan {
+    /// Labelled from the plan, so an edge layer doesn't describe the connection a second time.
+    func edgeAccessibility(of id: String, identifier: String, namespace: Namespace.ID) -> EdgeAccessibility? {
+        label(ofConnection: id).map { label in
+            EdgeAccessibility(
+                label: label, identifier: identifier, sortPriority: sortPriority(of: id),
+                rotorEntry: EdgeAccessibility.RotorEntry(id: id, namespace: namespace)
+            )
+        }
+    }
+}
+
 extension EdgeAccessibility {
     func rotorMember(id: String, in plan: DiagramRotorPlan, namespace: Namespace.ID) -> EdgeAccessibility {
         EdgeAccessibility(

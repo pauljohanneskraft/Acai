@@ -178,4 +178,15 @@ extension CallGraphViewModelTests {
         #expect(changed.contains(addedEdge.accessibilityID))
         #expect(!changed.contains("C.help"))
     }
+
+    @Test("Selection and a drag tick reuse the rotor plan; a committed drag or a filter rebuilds it")
+    func rotorPlanIsCachedUntilTheLayoutChanges() throws {
+        let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
+        let first = try #require(vm.rotorPlan.elements.first?.id)
+
+        RotorPlanCachingCheck(model: vm) { $0.rotorPlan }.verify(moving: first, to: CGPoint(x: 5000, y: 5000))
+
+        vm.applyFilter(Selector(typeGlob: "A"))
+        #expect(vm.rotorPlan.elements.map(\.id) == ["A.run"])
+    }
 }

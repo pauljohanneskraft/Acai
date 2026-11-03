@@ -3,6 +3,10 @@ import AcaiRender
 
 extension CallGraphViewModel {
     var rotorPlan: DiagramRotorPlan {
+        rotorPlanCache.plan { freshRotorPlan }
+    }
+
+    private var freshRotorPlan: DiagramRotorPlan {
         let layout = layout
         let labels = layout.nodeLabels
         return DiagramRotorPlan(

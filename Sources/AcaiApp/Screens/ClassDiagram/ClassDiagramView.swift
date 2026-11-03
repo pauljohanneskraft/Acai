@@ -270,7 +270,6 @@ extension ClassDiagramView {
 
     private func edgeLayer(rotors: DiagramRotorPlan) -> some View {
         let edges = viewModel.edges.removingDuplicates(by: \.id)
-        let names = viewModel.nodeNamesByID
         return ForEach(edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
                let targetRect = viewModel.nodeRect(for: edge.targetID) {
@@ -281,7 +280,9 @@ extension ClassDiagramView {
                     sourceLabel: edge.sourceLabel,
                     targetLabel: edge.targetLabel,
                     strokeColor: viewModel.deltaColor(for: edge),
-                    accessibilityDescription: viewModel.edgeAccessibility(for: edge, nodeNames: names)
+                    accessibilityDescription: rotors.edgeAccessibility(
+                        of: edge.rotorID, identifier: edge.accessibilityIdentifier, namespace: rotorNamespace
+                    ) ?? viewModel.edgeAccessibility(for: edge, nodeNames: viewModel.nodeNamesByID)
                         .rotorMember(id: edge.rotorID, in: rotors, namespace: rotorNamespace)
                 )
             }

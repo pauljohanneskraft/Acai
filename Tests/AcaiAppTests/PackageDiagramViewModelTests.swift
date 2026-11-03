@@ -201,4 +201,15 @@ extension PackageDiagramViewModelTests {
         #expect(changed.contains(addedEdge.accessibilityID))
         #expect(!changed.contains(moduleB.id))
     }
+
+    @Test("Selection and a drag tick reuse the rotor plan; a committed drag or an undo rebuilds it")
+    func rotorPlanIsCachedUntilTheLayoutChanges() throws {
+        let vm = PackageDiagramViewModel(artifact: artifact())
+        let first = try #require(vm.rotorPlan.elements.first?.id)
+
+        RotorPlanCachingCheck(model: vm) { $0.rotorPlan }.verify(moving: first, to: CGPoint(x: 5000, y: 5000))
+
+        vm.historySnapshot = [:]
+        #expect(vm.rotorPlan.elements.first?.id == first)
+    }
 }

@@ -4,6 +4,10 @@ import AcaiRender
 
 extension ClassDiagramViewModel {
     var rotorPlan: DiagramRotorPlan {
+        rotorPlanCache.plan { freshRotorPlan }
+    }
+
+    private var freshRotorPlan: DiagramRotorPlan {
         let names = nodeNamesByID
         return DiagramRotorPlan(
             elements: nodes.removingDuplicates(by: \.id).compactMap { node in
@@ -27,5 +31,9 @@ extension ClassDiagramViewModel {
 extension GeneratedDiagramEdge {
     var rotorID: String {
         "diagram.edge.\(id)"
+    }
+
+    var accessibilityIdentifier: String {
+        "diagram.edge.\(sourceID)->\(targetID)"
     }
 }

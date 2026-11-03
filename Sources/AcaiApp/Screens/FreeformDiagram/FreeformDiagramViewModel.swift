@@ -21,8 +21,9 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     lazy var members = TypeMemberEditor(context: self)
     lazy var clipboard = SelectionClipboard(context: self)
 
-    @Published var nodes: [FreeformDiagram.Node] = []
-    @Published var edges: [FreeformDiagram.Edge] = []
+    @Published var nodes: [FreeformDiagram.Node] = [] { didSet { rotorPlanCache.invalidate() } }
+    @Published var edges: [FreeformDiagram.Edge] = [] { didSet { rotorPlanCache.invalidate() } }
+    let rotorPlanCache = DiagramRotorPlanCache()
     @Published var isMultiSelectActive = false
     @Published var selectedNodeIDs: Set<String> = [] {
         didSet {
@@ -45,7 +46,7 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
     @Published var relationshipDragEndpoint: CGPoint?
 
     /// Updated by `GeometryReader`.
-    var measuredNodeSizes: [String: CGSize] = [:]
+    var measuredNodeSizes: [String: CGSize] = [:] { didSet { rotorPlanCache.invalidate() } }
 
     // MARK: - Undo / Redo
 
@@ -414,11 +415,12 @@ final class FreeformDiagramViewModel: ObservableObject, DiagramHistoryHosting, C
             return CGSize(width: width, height: 60)
         }
     }
+}
 
+extension FreeformDiagramViewModel {
     func nodeRect(_ nodeID: String) -> CGRect {
         let pos = nodePosition(nodeID) ?? .zero
         let size = nodeSize(nodeID)
         return CGRect(x: pos.x - size.width / 2, y: pos.y - size.height / 2, width: size.width, height: size.height)
     }
-
 }

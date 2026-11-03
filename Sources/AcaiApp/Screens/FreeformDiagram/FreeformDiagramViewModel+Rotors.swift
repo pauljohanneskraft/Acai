@@ -3,8 +3,13 @@ import AcaiCore
 import AcaiRender
 
 extension FreeformDiagramViewModel {
-    /// `sequenceLayout` is the layout the canvas draws, so lifelines read on the header row they sit on.
-    func rotorPlan(sequenceLayout: SequenceLayoutModel?) -> DiagramRotorPlan {
+    var rotorPlan: DiagramRotorPlan {
+        rotorPlanCache.plan { freshRotorPlan }
+    }
+
+    /// Lifelines read on the header row the sequence layout draws them on.
+    private var freshRotorPlan: DiagramRotorPlan {
+        let sequenceLayout = sequence.sequenceLayout
         let names = Dictionary(nodes.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let messageEdges = sequence.messageEdges
         let messageEdgeIDs = Set(messageEdges.map(\.id))

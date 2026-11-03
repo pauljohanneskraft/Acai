@@ -228,4 +228,15 @@ extension StateDiagramViewModelTests {
         #expect(changed.contains(addedEdge.accessibilityID))
         #expect(!changed.contains("state_loading"))
     }
+
+    @Test("Selection and a drag tick reuse the rotor plan; a committed drag or a new configuration rebuilds it")
+    func rotorPlanIsCachedUntilTheLayoutChanges() throws {
+        let vm = StateDiagramViewModel(artifact: artifact(), configuration: config())
+        let first = try #require(vm.rotorPlan.elements.first?.id)
+
+        RotorPlanCachingCheck(model: vm) { $0.rotorPlan }.verify(moving: first, to: CGPoint(x: 5000, y: 5000))
+
+        vm.applyConfiguration(config(variable: "missing"))
+        #expect(vm.rotorPlan.elements.isEmpty)
+    }
 }

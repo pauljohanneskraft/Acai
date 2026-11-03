@@ -214,7 +214,7 @@ struct FreeformDiagramView: View {
 
     private var canvasArea: some View {
         let sequenceLayout = viewModel.sequence.sequenceLayout
-        let rotors = viewModel.rotorPlan(sequenceLayout: sequenceLayout)
+        let rotors = viewModel.rotorPlan
         return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,

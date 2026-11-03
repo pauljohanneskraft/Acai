@@ -64,7 +64,6 @@ extension FreeformDiagramView {
     func edgeLayer(rotors: DiagramRotorPlan) -> some View {
         // Sequence messages are drawn by `sequenceLayer` through the shared layout.
         let messageEdgeIDs = Set(viewModel.sequence.messageEdges.map(\.id))
-        let names = nodeNames
         return ForEach(viewModel.edges.filter { !messageEdgeIDs.contains($0.id) }) { edge in
             RelationshipEdgeView(
                 kind: edge.kind,
@@ -73,10 +72,12 @@ extension FreeformDiagramView {
                 // Transitions draw their UML `event [guard] / action` label; ordinary
                 // relationship edges show their free-form label, when set.
                 label: edge.transition?.label ?? edge.label,
-                accessibilityDescription: DiagramElementDescription(
+                accessibilityDescription: rotors.edgeAccessibility(
+                    of: edge.rotorID, identifier: edge.rotorID, namespace: rotorNamespace
+                ) ?? DiagramElementDescription(
                     freeformEdge: edge,
-                    sourceName: names[edge.sourceNodeID] ?? "",
-                    targetName: names[edge.targetNodeID] ?? ""
+                    sourceName: nodeNames[edge.sourceNodeID] ?? "",
+                    targetName: nodeNames[edge.targetNodeID] ?? ""
                 ).edgeAccessibility(identifier: edge.rotorID)
                     .rotorMember(id: edge.rotorID, in: rotors, namespace: rotorNamespace)
             )
@@ -160,7 +161,6 @@ extension FreeformDiagramView {
             // Resolve the backing edges once: layout message ids index this array (see
             // `messageEdges`), so the tap targets don't each re-filter and re-sort the edges.
             let messageEdges = viewModel.sequence.messageEdges
-            let names = nodeNames
 
             SequenceEnsembleView(layout: layout)
                 .offset(y: anchorY)
@@ -170,7 +170,6 @@ extension FreeformDiagramView {
                 messageTapTarget(
                     message,
                     edge: messageEdges.indices.contains(message.id) ? messageEdges[message.id] : nil,
-                    names: names,
                     anchorY: anchorY,
                     rotors: rotors
                 )
@@ -232,7 +231,6 @@ extension FreeformDiagramView {
     private func messageTapTarget(
         _ message: SequenceLayoutModel.MessageLayout,
         edge: FreeformDiagram.Edge?,
-        names: [String: String],
         anchorY: CGFloat,
         rotors: DiagramRotorPlan
     ) -> some View {
@@ -254,9 +252,7 @@ extension FreeformDiagramView {
             .position(x: midX, y: anchorY + message.y - 4)
             .accessibilityElement()
             .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
-            .accessibilityValue(Text(verbatim: edge.map {
-                DiagramElementDescription(freeformMessage: $0, names: names).summary
-            } ?? ""))
+            .accessibilityValue(Text(verbatim: rotors.label(ofConnection: message.freeformRotorID) ?? ""))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleEdgeSelection(edge) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {

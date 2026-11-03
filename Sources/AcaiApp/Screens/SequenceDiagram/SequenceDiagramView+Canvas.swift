@@ -10,8 +10,6 @@ extension SequenceDiagramView {
 
     var canvasContent: some View {
         let layout = viewModel.layout
-        let messages = viewModel.orderedMessages
-        let names = Dictionary(layout.participants.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let rotors = viewModel.rotorPlan
         return PannableCanvas(
             model: viewModel,
@@ -34,10 +32,7 @@ extension SequenceDiagramView {
                         participantHeader(participant, rotors: rotors)
                     }
                     ForEach(layout.messages) { message in
-                        messageTapTarget(
-                            message,
-                            description: viewModel.messageDescription(message, messages: messages, names: names),
-                            rotors: rotors)
+                        messageTapTarget(message, rotors: rotors)
                     }
                 }
             }
@@ -86,7 +81,7 @@ extension SequenceDiagramView {
     /// `FreeformDiagramView+Canvas.swift`'s `messageTapTarget`, but sized to a full 44pt tall hit area
     /// (Freeform's 30pt strip is a tap-target shortfall this doesn't repeat).
     func messageTapTarget(
-        _ message: SequenceLayoutModel.MessageLayout, description: DiagramElementDescription, rotors: DiagramRotorPlan
+        _ message: SequenceLayoutModel.MessageLayout, rotors: DiagramRotorPlan
     ) -> some View {
         let width = max(abs(message.toX - message.fromX), 44)
         let midX = (message.fromX + message.toX) / 2
@@ -105,7 +100,7 @@ extension SequenceDiagramView {
             .position(x: midX, y: message.y)
             .accessibilityElement()
             .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
-            .accessibilityValue(Text(verbatim: description.summary))
+            .accessibilityValue(Text(verbatim: rotors.label(ofConnection: message.accessibilityID) ?? ""))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleMessageSelection(message.id) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {

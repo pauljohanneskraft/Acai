@@ -14,17 +14,21 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     private let comparisonArtifact: CodeArtifact?
 
     @Published private(set) var graph: CallGraph {
-        didSet { callCounts = CallGraphCallCounts(graph: graph) }
+        didSet {
+            callCounts = CallGraphCallCounts(graph: graph)
+            rotorPlanCache.invalidate()
+        }
     }
     private(set) var callCounts = CallGraphCallCounts(graph: CallGraph())
     @Published private(set) var filter: AcaiQuality.Selector?
     @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
-    @Published var positionOverrides: [String: CGPoint] = [:]
+    @Published var positionOverrides: [String: CGPoint] = [:] { didSet { rotorPlanCache.invalidate() } }
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
+    let rotorPlanCache = DiagramRotorPlanCache()
 
     private var diff: CallGraphDiff?
 

@@ -17,6 +17,8 @@ protocol CanvasInteraction: ObservableObject, DiagramHistoryHosting {
 
     var allNodeIDs: [String] { get }
 
+    var rotorPlanCache: DiagramRotorPlanCache { get }
+
     /// Center position in canvas coordinates, or `nil` if unknown.
     func nodePosition(_ id: String) -> CGPoint?
 

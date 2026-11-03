@@ -3,6 +3,10 @@ import AcaiRender
 
 extension PackageDiagramViewModel {
     var rotorPlan: DiagramRotorPlan {
+        rotorPlanCache.plan { freshRotorPlan }
+    }
+
+    private var freshRotorPlan: DiagramRotorPlan {
         let layout = layout
         let names = layout.nodeNames
         return DiagramRotorPlan(

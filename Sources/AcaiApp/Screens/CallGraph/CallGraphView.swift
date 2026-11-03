@@ -342,8 +342,7 @@ private struct CallGraphCanvasView: View {
 
 extension CallGraphCanvasView {
     private func callEdges(_ layout: CallGraphLayoutModel, rotors: DiagramRotorPlan) -> some View {
-        let labels = layout.nodeLabels
-        return ZStack(alignment: .topLeading) {
+        ZStack(alignment: .topLeading) {
             ForEach(layout.edges) { edge in
                 if let sourceRect = layout.frame(for: edge.from),
                    let targetRect = layout.frame(for: edge.to) {
@@ -353,7 +352,9 @@ extension CallGraphCanvasView {
                         targetRect: targetRect,
                         lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
                         strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
-                        accessibilityDescription: viewModel.edgeDescription(edge, labels: labels)
+                        accessibilityDescription: rotors.edgeAccessibility(
+                            of: edge.accessibilityID, identifier: edge.accessibilityID, namespace: rotorNamespace
+                        ) ?? viewModel.edgeDescription(edge, labels: layout.nodeLabels)
                             .edgeAccessibility(identifier: edge.accessibilityID)
                             .rotorMember(id: edge.accessibilityID, in: rotors, namespace: rotorNamespace)
                     )

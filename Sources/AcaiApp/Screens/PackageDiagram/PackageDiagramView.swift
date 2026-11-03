@@ -182,8 +182,7 @@ struct PackageDiagramView: View {
     }
 
     private func packageEdges(_ layout: PackageLayoutModel, rotors: DiagramRotorPlan) -> some View {
-        let names = layout.nodeNames
-        return ZStack(alignment: .topLeading) {
+        ZStack(alignment: .topLeading) {
             ForEach(layout.edges) { edge in
                 if let sourceRect = layout.frame(for: edge.from),
                    let targetRect = layout.frame(for: edge.to) {
@@ -193,7 +192,9 @@ struct PackageDiagramView: View {
                         targetRect: targetRect,
                         lineWidthScale: Self.lineWidthScale(forWeight: edge.weight),
                         strokeColor: viewModel.edgeDeltaColor(from: edge.from, to: edge.to),
-                        accessibilityDescription: viewModel.edgeDescription(edge, names: names)
+                        accessibilityDescription: rotors.edgeAccessibility(
+                            of: edge.accessibilityID, identifier: edge.accessibilityID, namespace: rotorNamespace
+                        ) ?? viewModel.edgeDescription(edge, names: layout.nodeNames)
                             .edgeAccessibility(identifier: edge.accessibilityID)
                             .rotorMember(id: edge.accessibilityID, in: rotors, namespace: rotorNamespace)
                     )

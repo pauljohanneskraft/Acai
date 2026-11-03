@@ -13,6 +13,7 @@ struct DiagramRotorPlan {
     let elements: [Element]
     let connections: [Element]
     private let priorities: [String: Double]
+    private let connectionLabels: [String: String]
 
     init(elements: [Element], connections: [Element] = []) {
         self.elements = elements.inReadingOrder
@@ -20,6 +21,9 @@ struct DiagramRotorPlan {
         self.priorities = Dictionary(
             (self.elements + self.connections).enumerated().map { ($0.element.id, -Double($0.offset + 1)) },
             uniquingKeysWith: { first, _ in first }
+        )
+        self.connectionLabels = Dictionary(
+            self.connections.map { ($0.id, $0.label) }, uniquingKeysWith: { first, _ in first }
         )
     }
 
@@ -30,6 +34,10 @@ struct DiagramRotorPlan {
     /// Below the default 0, so any other canvas element stays ahead of it in order and in hit testing.
     func sortPriority(of id: String) -> Double {
         priorities[id] ?? 0
+    }
+
+    func label(ofConnection id: String) -> String? {
+        connectionLabels[id]
     }
 }
 

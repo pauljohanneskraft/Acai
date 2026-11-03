@@ -102,7 +102,8 @@ extension StateDiagramView {
                 edge.label.map { Text(.app("View.StateDiagramView.TransitionLabel \($0)")) }
                     ?? Text(.app("View.StateDiagramView.Transition"))
             )
-            .accessibilityValue(Text(verbatim: viewModel.transitionDescription(edge).summary))
+            .accessibilityValue(Text(verbatim: rotors.label(ofConnection: edge.accessibilityID)
+                ?? viewModel.transitionDescription(edge).summary))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleTransitionSelection(edge.id) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {

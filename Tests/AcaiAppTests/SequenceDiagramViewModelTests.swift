@@ -221,4 +221,14 @@ extension SequenceDiagramViewModelTests {
         #expect(changed.contains(addedMessage.accessibilityID))
         #expect(!changed.contains("Service"))
     }
+
+    @Test("Selection and a drag tick reuse the rotor plan; a committed drag or a new configuration rebuilds it")
+    func rotorPlanIsCachedUntilTheLayoutChanges() {
+        let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
+
+        RotorPlanCachingCheck(model: vm) { $0.rotorPlan }.verify(moving: "Service", to: CGPoint(x: 5000, y: 0))
+
+        vm.applyConfiguration(config(type: "Repository", method: "save"))
+        #expect(vm.rotorPlan.elements.map(\.id) == ["Repository"])
+    }
 }
