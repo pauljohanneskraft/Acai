@@ -51,6 +51,31 @@ struct InterruptedClonesBanner: View {
         // In a compact `List` row, a default-styled button takes taps meant for its neighbour.
         .buttonStyle(.borderless)
         .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id)")
+        .contextMenu {
+            Button {
+                startRetry(record, request: request)
+            } label: {
+                Label(.app("View.InterruptedClonesBanner.RetryClone"), systemImage: "arrow.clockwise")
+            }
+            .disabled(isRetrying)
+            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).menuRetryButton")
+            Button {
+                activityCenter.discardInterruptedOperation(record.id)
+            } label: {
+                Label(.app("View.InterruptedClonesBanner.Dismiss"), systemImage: "xmark")
+            }
+            .disabled(isRetrying)
+            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).menuDismissButton")
+        }
+        .swipeActions(edge: .trailing) {
+            Button {
+                activityCenter.discardInterruptedOperation(record.id)
+            } label: {
+                Label(.app("View.InterruptedClonesBanner.Dismiss"), systemImage: "xmark")
+            }
+            .disabled(isRetrying)
+            .accessibilityIdentifier("projectDetail.interruptedClone.\(record.id).swipeDismissButton")
+        }
     }
 
     private var retryStatus: some View {
