@@ -65,4 +65,50 @@ struct ActivityCenterExportInterruptionTests {
         #expect(
             center.interruptedOperation(forCodebase: codebaseID)?.resumption == .exportAtlas(codebaseID: codebaseID))
     }
+
+    @Test("A finished export clears an interrupted export and leaves an interrupted reindex reported")
+    func aFinishedExportClearsOnlyTheInterruptedExport() async throws {
+        let store = makeStore()
+        let codebaseID = UUID()
+        let reindex = record(.reindex(codebaseID: codebaseID))
+        let export = record(.exportAtlas(codebaseID: codebaseID), kind: exportKind)
+        try store.save(ActivityLedger(interrupted: [reindex, export]))
+
+        let center = ActivityCenter(store: store)
+        _ = try await center.run(
+            title: "Exporting…", kind: exportKind, subject: .codebase(codebaseID),
+            resumption: .exportAtlas(codebaseID: codebaseID)
+        ) { 1 }
+
+        #expect(center.interruptedOperations.map(\.id) == [reindex.id])
+        await center.flushPersistence()
+        #expect(ActivityCenter(store: store).interruptedOperations.map(\.id) == [reindex.id])
+    }
+
+    @Test("An export running now redoes an interrupted export, so the banner holds off a second one")
+    func aRunningExportRedoesTheInterruptedExport() async throws {
+        let store = makeStore()
+        let codebaseID = UUID()
+        let reindex = record(.reindex(codebaseID: codebaseID))
+        let export = record(.exportAtlas(codebaseID: codebaseID), kind: exportKind)
+        try store.save(ActivityLedger(interrupted: [reindex, export]))
+        let gate = AsyncGate()
+        let center = ActivityCenter(store: store)
+        let running = Task {
+            try await center.run(
+                title: "Exporting…", kind: exportKind, subject: .codebase(codebaseID),
+                resumption: .exportAtlas(codebaseID: codebaseID)
+            ) {
+                await gate.wait()
+                return 1
+            }
+        }
+        try await Eventually().waitUntil("the export is registered") { center.isBusy(.codebase(codebaseID)) }
+
+        #expect(center.isRedoing(export))
+        #expect(!center.isRedoing(reindex))
+
+        await gate.open()
+        _ = try await running.value
+    }
 }

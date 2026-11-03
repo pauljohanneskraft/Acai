@@ -23,7 +23,7 @@ struct CodebaseInterruptedBanner<StaleBanner: View>: View {
     private func banner(
         record: InterruptedOperationRecord, work: InterruptedOperationRecord.CodebaseWork
     ) -> some View {
-        let isResuming = phase(work).isInFlight
+        let isResuming = phase(work).isInFlight || activityCenter.isRedoing(record)
         return InterruptionBannerLayout(systemImage: record.kind.systemImage) {
             Text(localized: title(for: work))
                 .font(.subheadline)
