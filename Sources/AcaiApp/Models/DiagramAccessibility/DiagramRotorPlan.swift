@@ -63,7 +63,7 @@ extension [DiagramRotorPlan.Element] {
             }
         }
         return rows.flatMap { row in
-            row.sorted { ($0.frame.minX, $0.id) < ($1.frame.minX, $1.id) }
+            row.sorted { ($0.frame.minX, $0.frame.minY, $0.id) < ($1.frame.minX, $1.frame.minY, $1.id) }
         }
     }
 }

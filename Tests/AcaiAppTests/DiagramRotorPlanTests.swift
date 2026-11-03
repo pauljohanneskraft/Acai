@@ -53,6 +53,17 @@ struct DiagramRotorPlanTests {
         #expect(plan.elements.map(\.id) == ["short", "tall", "nextRow"])
     }
 
+    @Test("Boxes stacked in one column of a deep row read top to bottom, not by id")
+    func stackedBoxesInARowReadTopDown() {
+        let plan = DiagramRotorPlan(elements: [
+            element("a", x: 300, y: 160),
+            element("z", x: 300, y: 110),
+            element("tall", x: 10, y: 100, height: 300)
+        ])
+
+        #expect(plan.elements.map(\.id) == ["tall", "z", "a"])
+    }
+
     @Test("A box starting below the centre of the row's topmost box starts a new row")
     func aLowerBoxStartsItsOwnRow() {
         let plan = DiagramRotorPlan(elements: [element("below", x: 10, y: 130), element("above", x: 500, y: 100)])
