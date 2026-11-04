@@ -12,6 +12,28 @@ struct MultiRootCodebaseTests {
         func discoverRoots(in directory: URL) -> [CodeArtifact.DiscoveredRoot] { roots }
     }
 
+    private final class WalkUntilCancelled: ProjectRootDiscovering, @unchecked Sendable {
+        private let lock = NSLock()
+        private var observed = false
+
+        var observedCancellation: Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return observed
+        }
+
+        func discoverRoots(in directory: URL) -> [CodeArtifact.DiscoveredRoot] {
+            let deadline = Date().addingTimeInterval(10)
+            while !Task.isCancelled, Date() < deadline {
+                Thread.sleep(forTimeInterval: 0.01)
+            }
+            lock.lock()
+            observed = Task.isCancelled
+            lock.unlock()
+            return []
+        }
+    }
+
     @MainActor
     private struct Fixture {
         let base: URL
@@ -41,7 +63,8 @@ struct MultiRootCodebaseTests {
     /// `subfolders` are created for real: splitting mints a bookmark per child inside an access scope
     /// on the parent, which probes that each one is a listable directory.
     private func makeFixture(
-        discovering roots: [CodeArtifact.DiscoveredRoot], subfolders: [String] = []
+        discovering roots: [CodeArtifact.DiscoveredRoot], subfolders: [String] = [],
+        discoverer: (any ProjectRootDiscovering)? = nil
     ) throws -> Fixture {
         let base = FileManager.default.temporaryDirectory
             .appendingPathComponent("acai-multi-root-\(UUID().uuidString)", isDirectory: true)
@@ -60,7 +83,7 @@ struct MultiRootCodebaseTests {
         let sheet = NewCodebaseSheetModel(
             projectID: projectID, editor: editor, hubStoreDirectory: store.gitRepositoriesDir,
             remoteService: FakeGitRemoteService(), hostingService: FixtureGitHubHostingService(),
-            listingDebounce: .zero, rootDiscovery: StubRootDiscovery(roots: roots))
+            listingDebounce: .zero, rootDiscovery: discoverer ?? StubRootDiscovery(roots: roots))
         return Fixture(base: base, store: store, projectID: projectID, sheet: sheet, folder: folder)
     }
 
@@ -138,6 +161,20 @@ struct MultiRootCodebaseTests {
 
         #expect(sheet.plan.roots.isEmpty)
         #expect(fixture.codebases.isEmpty)
+    }
+
+    @Test func dismissingCancelsTheWalkItself() async throws {
+        let walk = WalkUntilCancelled()
+        let fixture = try makeFixture(discovering: [], discoverer: walk)
+        defer { fixture.tearDown() }
+        let sheet = fixture.sheet
+
+        sheet.directoryURL = fixture.folder
+        sheet.discoverRoots()
+        sheet.cancelPendingWork()
+        await sheet.pendingDiscovery?.value
+
+        #expect(walk.observedCancellation)
     }
 
     // MARK: - Adding

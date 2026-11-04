@@ -329,9 +329,10 @@ extension NewCodebaseSheetModel {
         let discoverer = rootDiscovery
         discoveryPhase = .loading(.app("View.NewCodebaseSheet.FindingProjects"))
         pendingDiscovery = Task { [weak self] in
-            let roots = await Task.detached(priority: .userInitiated) {
+            let walk = Task.detached(priority: .userInitiated) {
                 await access.whileAccessible { discoverer.discoverRoots(in: folder) }
-            }.value
+            }
+            let roots = await withTaskCancellationHandler { await walk.value } onCancel: { walk.cancel() }
             guard let self, !Task.isCancelled, directoryURL == folder else { return }
             plan = MultiRootPlan(roots: roots, checkedPaths: Set(roots.map(\.path)))
             discoveryPhase = .loaded
