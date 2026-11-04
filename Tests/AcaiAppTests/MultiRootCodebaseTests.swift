@@ -200,6 +200,22 @@ struct MultiRootCodebaseTests {
             == ["App", "Core"])
     }
 
+    @Test func splittingTheSameFolderTwiceReportsEveryRootAsAlreadyAdded() async throws {
+        let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
+        defer { fixture.tearDown() }
+        let sheet = fixture.sheet
+
+        sheet.directoryURL = fixture.folder
+        sheet.discoverRoots()
+        await sheet.pendingDiscovery?.value
+        _ = try sheet.addLocalFolder()
+        let second = try sheet.addLocalFolder()
+
+        #expect(second.insertion.addedIDs.isEmpty)
+        #expect(second.insertion.alreadyPresent == 2)
+        #expect(fixture.codebases.count == 2)
+    }
+
     @Test func aFolderThatCanNoLongerBeReachedSplitsIntoNothing() async throws {
         let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
         defer { fixture.tearDown() }

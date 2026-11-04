@@ -3337,6 +3337,64 @@
         }
       }
     },
+    "Error.NewCodebaseSheet.AlreadyAdded %lld" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Ordner ist bereits eine Codebase dieses Projekts und wurde übersprungen."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Ordner sind bereits Codebases dieses Projekts und wurden übersprungen."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folder is already a codebase of this project and was skipped."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folders are already codebases of this project and were skipped."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dossier est déjà une codebase de ce projet et a été ignoré."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dossiers sont déjà des codebases de ce projet et ont été ignorés."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Error.ProjectBrowserView.ExportFailed %@" : {
       "localizations" : {
         "de" : {

@@ -269,8 +269,11 @@ struct NewCodebaseSheetContent: View {
             model.store.report(error.localizedDescription)
             return
         }
+        // The store holds one error, so the lost-access one wins over the skipped-folders one.
         if let failure = addition.bookmarkFailures.first {
             model.store.report(.app("Error.ScopedResourceAccess.BookmarkFailed \(failure.path) \(failure.reason)"))
+        } else if addition.insertion.alreadyPresent > 0 {
+            model.store.report(.app("Error.NewCodebaseSheet.AlreadyAdded \(addition.insertion.alreadyPresent)"))
         }
         if let first = addition.insertion.addedIDs.first {
             model.open(.codebase(first))
