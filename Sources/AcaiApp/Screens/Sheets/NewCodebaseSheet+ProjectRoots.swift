@@ -2,8 +2,6 @@ import AcaiCore
 import SwiftUI
 
 extension NewCodebaseSheetContent {
-    /// The step that only exists when the picked folder holds more than one project: one codebase per
-    /// root is the default, and combining them is the opt-in.
     @ViewBuilder
     var projectRootsSection: some View {
         if sheet.discoveryPhase != .idle {
@@ -13,9 +11,7 @@ extension NewCodebaseSheetContent {
         }
         if sheet.plan.isOffered {
             Section {
-                // Above the rows it governs: the form outgrows a short window, and the control that
-                // answers the question has to stay reachable without scrolling past the list that
-                // only describes it.
+                // Above the rows, so it stays reachable without scrolling in a short window.
                 Toggle(isOn: $sheet.plan.combinesIntoOne) {
                     Text(.app("View.NewCodebaseSheet.CombineIntoOneCodebase"))
                 }
@@ -32,17 +28,13 @@ extension NewCodebaseSheetContent {
                     ? .app("View.NewCodebaseSheet.CombinedFooter")
                     : .app("View.NewCodebaseSheet.SplitFooter"))
             }
-            // The step is what the user has to answer once it appears, so focus moves to its first
-            // row. `initial` covers the appearance itself: the section only exists once the walk
-            // produced roots, so there is no earlier render to focus.
             .onChange(of: sheet.plan.roots.count, initial: true) { _, _ in
                 focusedField = .combineRoots
             }
         }
     }
 
-    /// Disabled rather than hidden while combining, so the roots stay readable as what *would* be
-    /// split and the row count doesn't jump as the toggle flips.
+    /// Disabled rather than hidden while combining, so the list doesn't jump as the toggle flips.
     private func rootRow(_ root: CodeArtifact.DiscoveredRoot) -> some View {
         Toggle(isOn: Binding(
             get: { sheet.plan.isChecked(root) },
@@ -64,9 +56,6 @@ extension NewCodebaseSheetContent {
         .focused($focusedField, equals: .root(root.path))
     }
 
-    /// The detector's type name and the languages it claimed — parser output, so never translated.
-    /// A fallback root was matched by file extension because no build system claimed it, which is
-    /// worth saying rather than naming `FallbackDetector`.
     private func rootSubtitle(_ root: CodeArtifact.DiscoveredRoot) -> String {
         let languages = root.languages.map(\.rawValue).joined(separator: ", ")
         let detector = root.isFallback

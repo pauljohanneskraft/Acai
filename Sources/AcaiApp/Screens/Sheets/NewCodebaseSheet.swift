@@ -49,7 +49,6 @@ struct NewCodebaseSheetContent: View {
         _sheet = StateObject(wrappedValue: sheet())
     }
 
-    /// Not `private`: the roots step binds it from `NewCodebaseSheet+ProjectRoots`.
     @FocusState var focusedField: NewCodebaseField?
     @State var isChoosingDirectory = false
     @State private var repositorySearch = ""

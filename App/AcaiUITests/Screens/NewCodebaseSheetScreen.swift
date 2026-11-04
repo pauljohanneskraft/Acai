@@ -30,7 +30,6 @@ final class NewCodebaseSheetScreen {
         app.descendants(matching: .any)["newCodebase.combineRootsToggle"].firstMatch
     }
 
-    /// One discovered root's checkbox, keyed by its path relative to the picked folder.
     func rootToggle(_ path: String) -> XCUIElement {
         app.descendants(matching: .any)["newCodebase.root.\(path)"].firstMatch
     }
@@ -63,8 +62,7 @@ final class NewCodebaseSheetScreen {
             "the Add Codebase sheet", failingOn: app.alerts.firstMatch, file: file, line: line)
     }
 
-    /// Dismisses the sheet without adding anything. `.firstMatch` of a descendants query: a toolbar
-    /// button's identifier resolves to more than one accessibility node.
+    /// A toolbar button's identifier resolves to more than one accessibility node.
     func cancel(file: StaticString = #filePath, line: UInt = #line) {
         let cancelButton = app.descendants(matching: .any)
             .matching(identifier: "newCodebase.cancelButton").firstMatch

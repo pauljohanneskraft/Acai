@@ -40,8 +40,6 @@ final class NewCodebaseSheetModel: ObservableObject {
 
     @Published var directoryURL: URL?
     @Published var securityScopedBookmark: SecurityScopedBookmark?
-    /// The project roots found below `directoryURL`, and what the user chose to do with them. Only
-    /// consulted when more than one was found — see `MultiRootPlan.isOffered`.
     @Published var plan = MultiRootPlan()
     @Published private(set) var discoveryPhase: AsyncOperationPhase = .idle
     /// Set when the picked folder turns out to already be a git working directory with an
@@ -303,10 +301,7 @@ extension NewCodebaseSheetModel {
             bookmarkFailures: split.bookmarkFailures)
     }
 
-    /// Whether Add would create anything. A folder is enough, as it is for one project and for
-    /// combining several, since every codebase takes its name from what it is. Splitting needs a
-    /// checked root as well — unchecking them all would create nothing. Adding waits for the walk
-    /// either way, so a folder of several projects cannot be added before it has asked.
+    /// Waits for the walk, so a folder of several projects can't be added before it has asked.
     var canAddLocalFolder: Bool {
         guard directoryURL != nil, !discoveryPhase.isInFlight else { return false }
         guard plan.isOffered, !plan.combinesIntoOne else { return true }
@@ -317,9 +312,7 @@ extension NewCodebaseSheetModel {
         plan.setChecked(isChecked, for: root)
     }
 
-    /// Walks the picked folder for project roots. Starts over each time: the previous folder's roots
-    /// and checkmarks are dropped before the walk, so the step can never offer one folder's roots
-    /// while a different one is picked.
+    /// Drops the previous folder's roots first, so they're never offered for a different folder.
     func discoverRoots() {
         pendingDiscovery?.cancel()
         plan = MultiRootPlan()

@@ -2,10 +2,7 @@ import AcaiCore
 import AcaiLibrary
 import Foundation
 
-/// Finds the project roots inside a folder, so adding a codebase can offer one per root instead of
-/// indexing a parent folder as a single undifferentiated codebase. Synchronous by design: the caller
-/// owns getting it off the main actor and holding the folder's security scope open around it, the
-/// same way every other filesystem read here does.
+/// Synchronous: the caller moves it off the main actor and holds the folder's scope open around it.
 protocol ProjectRootDiscovering: Sendable {
     func discoverRoots(in directory: URL) -> [CodeArtifact.DiscoveredRoot]
 }

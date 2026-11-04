@@ -63,9 +63,7 @@ struct UITestFixtureResolver: Sendable {
 
     static let localFolderVariable = "ACAI_UITEST_LOCAL_FOLDER"
 
-    /// A folder the local-folder tab's "Choose…" picks directly. XCUITest cannot drive the system
-    /// file importer that button otherwise presents, which would leave everything behind a picked
-    /// folder — the multi-root step among it — unreachable by any journey.
+    /// Picked directly by "Choose…", since XCUITest cannot drive the system file importer.
     func resolveLocalFolderURL() -> URL? {
         url(Self.localFolderVariable)
     }

@@ -1,16 +1,13 @@
 import SwiftUI
 
 extension NewCodebaseSheetContent {
-    /// Presents the system file importer, unless a UI test staged a folder for it to pick instead —
-    /// see `UITestFixtureResolver.resolveLocalFolderURL()`. Inert outside a UI test.
     func chooseDirectory() {
         let fixtures = UITestFixtureResolver()
         guard fixtures.resolveBaseDir() != nil, let staged = fixtures.resolveLocalFolderURL() else {
             isChoosingDirectory = true
             return
         }
-        // A staged folder is readable by plain path and carries no picker grant, so it neither needs
-        // nor can mint a scoped bookmark.
+        // A staged folder is read by plain path, with no picker grant to bookmark.
         sheet.securityScopedBookmark = nil
         adoptDirectory(staged)
     }
@@ -33,8 +30,7 @@ extension NewCodebaseSheetContent {
         adoptDirectory(url)
     }
 
-    /// Reading the repository's config/HEAD must happen inside the caller's access window. The root
-    /// walk re-opens its own scope from the bookmark, so it is started rather than awaited here.
+    /// Call inside the folder's access window; the root walk reopens its own scope.
     private func adoptDirectory(_ url: URL) {
         sheet.directoryURL = url
         sheet.repositoryReference = LocalGitRepositoryDetector(directory: url).detect()

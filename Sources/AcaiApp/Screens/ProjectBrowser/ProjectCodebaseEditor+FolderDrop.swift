@@ -12,8 +12,6 @@ struct FolderDropOutcome: Equatable {
     var alreadyPresent = 0
 }
 
-/// An insertion's result for a caller that has to select one of the new rows rather than only count
-/// them — a sidebar selection needs the id, which `FolderDropOutcome` deliberately doesn't carry.
 struct CodebaseInsertion: Equatable {
     var addedIDs: [UUID] = []
     var alreadyPresent = 0

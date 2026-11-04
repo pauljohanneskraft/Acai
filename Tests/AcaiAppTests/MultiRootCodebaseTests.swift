@@ -60,8 +60,6 @@ struct MultiRootCodebaseTests {
             languages: languages.map { CodeArtifact.SourceLanguage(rawValue: $0) }, isFallback: isFallback)
     }
 
-    /// `subfolders` are created for real: splitting mints a bookmark per child inside an access scope
-    /// on the parent, which probes that each one is a listable directory.
     private func makeFixture(
         discovering roots: [CodeArtifact.DiscoveredRoot], subfolders: [String] = [],
         discoverer: (any ProjectRootDiscovering)? = nil
@@ -302,8 +300,6 @@ struct MultiRootCodebaseTests {
         #expect(fixture.codebases.first?.directoryPath == fixture.folder.path)
     }
 
-    /// Splitting needs a root to make a codebase from; combining makes one from the folder itself,
-    /// so it stays addable with every root unchecked.
     @Test func combiningStaysAddableWithEveryRootUnchecked() async throws {
         let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
         defer { fixture.tearDown() }
@@ -321,7 +317,6 @@ struct MultiRootCodebaseTests {
         #expect(sheet.canAddLocalFolder)
     }
 
-    /// Add waits for the walk, so a folder of several projects cannot be added before it has asked.
     @Test func addingWaitsForTheWalk() async throws {
         let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
         defer { fixture.tearDown() }

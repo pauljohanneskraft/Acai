@@ -1,8 +1,6 @@
 import AcaiCore
 import Foundation
 
-/// The choice the Add Codebase sheet offers once a picked folder turns out to hold several projects:
-/// which roots to take, and whether to take them as one codebase or one each.
 struct MultiRootPlan: Equatable {
     var roots: [CodeArtifact.DiscoveredRoot] = []
     var checkedPaths: Set<String> = []
@@ -30,8 +28,7 @@ struct MultiRootPlan: Equatable {
         }
     }
 
-    /// Each checked root's folder beneath `parent`. A root path of `"."` is the picked folder itself,
-    /// which `appendingPathComponent` would otherwise turn into a `foo/.` sibling of it.
+    /// A `"."` root is `parent` itself, not a `parent/.` sibling.
     func folders(under parent: URL) -> [URL] {
         checkedRoots.map { $0.path == "." ? parent : parent.appendingPathComponent($0.path) }
     }
