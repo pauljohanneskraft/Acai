@@ -37,7 +37,10 @@ extension SequenceDiagramView {
                 }
             }
         )
-        .diagramRotors(rotors, in: rotorNamespace)
+        .diagramRotors(rotors, in: rotorNamespace) { target in
+            canvasOffset = CanvasCentering(viewport: canvasViewportSize, scale: canvasScale)
+                .offset(revealing: target.frame, from: canvasOffset)
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as the other diagram types.
         .overlay(alignment: .topTrailing) {

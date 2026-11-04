@@ -235,7 +235,10 @@ struct FreeformDiagramView: View {
             // commits the placement there, instead of selecting/dragging whatever's underneath.
             .allowsHitTesting(viewModel.pendingPlacement == nil)
         }
-        .diagramRotors(rotors, in: rotorNamespace)
+        .diagramRotors(rotors, in: rotorNamespace) { target in
+            canvasOffset = CanvasCentering(viewport: canvasViewportSize, scale: canvasScale)
+                .offset(revealing: target.frame, from: canvasOffset)
+        }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
             for (id, size) in sizes {
                 viewModel.measuredNodeSizes[id] = size

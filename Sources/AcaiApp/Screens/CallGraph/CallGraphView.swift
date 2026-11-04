@@ -216,7 +216,10 @@ private struct CallGraphCanvasView: View {
                 }
             }
         )
-        .diagramRotors(rotors, in: rotorNamespace)
+        .diagramRotors(rotors, in: rotorNamespace) { target in
+            canvasOffset = CanvasCentering(viewport: canvasViewportSize, scale: canvasScale)
+                .offset(revealing: target.frame, from: canvasOffset)
+        }
         .overlay {
             if viewModel.isEmpty {
                 DiagramEmptyScopeOverlay(reason: viewModel.emptyReason) {
