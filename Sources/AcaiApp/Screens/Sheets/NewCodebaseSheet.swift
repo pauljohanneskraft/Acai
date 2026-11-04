@@ -240,12 +240,7 @@ struct NewCodebaseSheetContent: View {
         switch sheet.source {
         case .localFolder:
             Button(.app("View.NewCodebaseSheet.Add")) {
-                // The first of several, so the sidebar lands on a split codebase rather than staying
-                // on the project — `open(_:)` is what makes that deterministic for a row created in
-                // this same turn.
-                if let first = sheet.addLocalFolder().first {
-                    model.open(.codebase(first))
-                }
+                addLocalFolder()
                 dismiss()
             }
             .disabled(!sheet.canAddLocalFolder)
@@ -263,6 +258,22 @@ struct NewCodebaseSheetContent: View {
             .disabled(pending == nil || sheet.clonePhase.isInFlight)
             .accessibilityIdentifier("newCodebase.cloneButton")
             AsyncOperationStatusView(identifierPrefix: "newCodebase.clone", phase: sheet.clonePhase)
+        }
+    }
+
+    private func addLocalFolder() {
+        let addition: LocalFolderAddition
+        do {
+            addition = try sheet.addLocalFolder()
+        } catch {
+            model.store.report(error.localizedDescription)
+            return
+        }
+        if let failure = addition.bookmarkFailures.first {
+            model.store.report(.app("Error.ScopedResourceAccess.BookmarkFailed \(failure.path) \(failure.reason)"))
+        }
+        if let first = addition.insertion.addedIDs.first {
+            model.open(.codebase(first))
         }
     }
 

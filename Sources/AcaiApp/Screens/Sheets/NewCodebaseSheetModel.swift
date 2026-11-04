@@ -288,17 +288,19 @@ final class NewCodebaseSheetModel: ObservableObject {
 // MARK: - Project roots
 
 extension NewCodebaseSheetModel {
-    /// The codebases created, in discovery order, so the caller can select the first one
-    /// deterministically through `ProjectBrowserViewModel.open(_:)`.
-    func addLocalFolder() -> [UUID] {
-        guard let directoryURL else { return [] }
+    /// Creates nothing when the picked folder's scope can't be reopened to split it.
+    func addLocalFolder() throws -> LocalFolderAddition {
+        guard let directoryURL else { return LocalFolderAddition() }
         guard plan.isOffered, !plan.combinesIntoOne else {
             let id = editor.addCodebase(
                 to: projectID, name: derivedName, directoryURL: directoryURL,
                 securityScopedBookmark: securityScopedBookmark, repository: repositoryReference)
-            return [id].compactMap { $0 }
+            return LocalFolderAddition(insertion: CodebaseInsertion(addedIDs: [id].compactMap { $0 }))
         }
-        return editor.insertCodebases(from: splitCodebaseFolders(directoryURL), to: projectID).addedIDs
+        let split = try splitCodebaseFolders(directoryURL)
+        return LocalFolderAddition(
+            insertion: editor.insertCodebases(from: split.folders, to: projectID),
+            bookmarkFailures: split.bookmarkFailures)
     }
 
     /// Whether Add would create anything. A folder is enough, as it is for one project and for
@@ -339,23 +341,37 @@ extension NewCodebaseSheetModel {
         }
     }
 
-    /// A child root gets its **own** bookmark rather than the picked folder's: a bookmark resolves to
-    /// the location it was minted for, so reusing the parent's would point every split codebase back
-    /// at the parent tree. Minting one for a child is only possible inside an open scope on the
-    /// parent, which is what `withResolvedURL` holds here.
-    private func splitCodebaseFolders(_ folder: URL) -> [DroppedFolder] {
+    /// A child gets its own bookmark, since one resolves only to the location it was minted for.
+    private func splitCodebaseFolders(_ folder: URL) throws -> FolderDropLoader.Loaded {
         let access = ScopedResourceAccess(path: folder.path, bookmark: securityScopedBookmark)
         let plan = plan
         let bookmark = securityScopedBookmark
         let repository = repositoryReference
-        return (try? access.withResolvedURL { resolved in
-            plan.folders(under: resolved).map { child in
-                child == resolved
-                    ? DroppedFolder(url: child, securityScopedBookmark: bookmark, repository: repository)
-                    : DroppedFolder(
-                        url: child, securityScopedBookmark: try? SecurityScopedBookmark(resolving: child),
-                        repository: LocalGitRepositoryDetector(directory: child).detect())
+        return try access.withResolvedURL { resolved in
+            var loaded = FolderDropLoader.Loaded()
+            for child in plan.folders(under: resolved) {
+                guard child != resolved else {
+                    loaded.folders.append(
+                        DroppedFolder(url: child, securityScopedBookmark: bookmark, repository: repository))
+                    continue
+                }
+                var split = DroppedFolder(url: child, repository: LocalGitRepositoryDetector(directory: child).detect())
+                // Without a parent bookmark there is no open scope to mint from, nor one to outlive.
+                if bookmark != nil {
+                    do {
+                        split.securityScopedBookmark = try SecurityScopedBookmark(resolving: child)
+                    } catch {
+                        loaded.bookmarkFailures.append((child.path, error.localizedDescription))
+                    }
+                }
+                loaded.folders.append(split)
             }
-        }) ?? plan.folders(under: folder).map { DroppedFolder(url: $0) }
+            return loaded
+        }
     }
+}
+
+struct LocalFolderAddition {
+    var insertion = CodebaseInsertion()
+    var bookmarkFailures: [(path: String, reason: String)] = []
 }

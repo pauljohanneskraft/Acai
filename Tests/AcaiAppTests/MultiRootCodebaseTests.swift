@@ -191,13 +191,49 @@ struct MultiRootCodebaseTests {
         sheet.setRootChecked(false, for: sheet.plan.roots[2])
 
         #expect(sheet.canAddLocalFolder)
-        let created = sheet.addLocalFolder()
+        let created = try sheet.addLocalFolder().insertion.addedIDs
 
         #expect(created.count == 2)
         #expect(fixture.codebases.map(\.name) == ["App", "Core"])
         #expect(fixture.codebases.map(\.id) == created)
         #expect(fixture.codebases.map { URL(fileURLWithPath: $0.directoryPath).lastPathComponent }
             == ["App", "Core"])
+    }
+
+    @Test func aFolderThatCanNoLongerBeReachedSplitsIntoNothing() async throws {
+        let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
+        defer { fixture.tearDown() }
+        let sheet = fixture.sheet
+
+        sheet.directoryURL = fixture.folder
+        sheet.discoverRoots()
+        await sheet.pendingDiscovery?.value
+        #expect(sheet.plan.isOffered)
+        let missing = fixture.base.appendingPathComponent("Missing", isDirectory: true)
+        sheet.directoryURL = missing
+
+        #expect(throws: ScopedResourceAccess.Failure.directoryUnavailable(missing.path)) {
+            try sheet.addLocalFolder()
+        }
+        #expect(fixture.codebases.isEmpty)
+    }
+
+    @Test func eachSplitCodebaseOfABookmarkedFolderGetsItsOwnBookmark() async throws {
+        let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
+        defer { fixture.tearDown() }
+        let sheet = fixture.sheet
+        let parentBookmark = try SecurityScopedBookmark(resolving: fixture.folder)
+
+        sheet.directoryURL = fixture.folder
+        sheet.securityScopedBookmark = parentBookmark
+        sheet.discoverRoots()
+        await sheet.pendingDiscovery?.value
+        let addition = try sheet.addLocalFolder()
+
+        #expect(addition.bookmarkFailures.isEmpty)
+        #expect(fixture.codebases.count == 2)
+        #expect(fixture.codebases.allSatisfy { $0.securityScopedBookmark != nil })
+        #expect(fixture.codebases.allSatisfy { $0.securityScopedBookmark != parentBookmark })
     }
 
     @Test func combiningAddsOneCodebaseForTheWholeFolderNamedAfterIt() async throws {
@@ -210,7 +246,7 @@ struct MultiRootCodebaseTests {
         await sheet.pendingDiscovery?.value
         sheet.plan.combinesIntoOne = true
 
-        let created = sheet.addLocalFolder()
+        let created = try sheet.addLocalFolder().insertion.addedIDs
 
         #expect(created.count == 1)
         #expect(fixture.codebases.map(\.name) == ["Workspace"])
@@ -230,7 +266,7 @@ struct MultiRootCodebaseTests {
         }
 
         #expect(!sheet.canAddLocalFolder)
-        #expect(sheet.addLocalFolder().isEmpty)
+        #expect(try sheet.addLocalFolder().insertion.addedIDs.isEmpty)
         #expect(fixture.codebases.isEmpty)
     }
 
@@ -245,7 +281,7 @@ struct MultiRootCodebaseTests {
 
         #expect(!sheet.plan.isOffered)
         #expect(sheet.canAddLocalFolder)
-        #expect(sheet.addLocalFolder().count == 1)
+        #expect(try sheet.addLocalFolder().insertion.addedIDs.count == 1)
         #expect(fixture.codebases.map(\.name) == ["Workspace"])
         #expect(fixture.codebases.first?.directoryPath == fixture.folder.path)
     }
@@ -298,7 +334,7 @@ struct MultiRootCodebaseTests {
         sheet.directoryURL = fixture.folder
         sheet.discoverRoots()
         await sheet.pendingDiscovery?.value
-        _ = sheet.addLocalFolder()
+        _ = try sheet.addLocalFolder()
 
         #expect(fixture.codebases.map { $0.repository?.subpath } == ["App", "Core"])
         #expect(fixture.codebases.map { $0.repository?.remoteURL }
