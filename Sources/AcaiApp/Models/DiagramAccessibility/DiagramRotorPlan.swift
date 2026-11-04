@@ -12,6 +12,8 @@ struct DiagramRotorPlan {
 
     let elements: [Element]
     let connections: [Element]
+    /// A node's entry names its change; a connection's label already does.
+    let changed: [Element]
     private let priorities: [String: Double]
     private let connectionLabels: [String: String]
 
@@ -19,6 +21,13 @@ struct DiagramRotorPlan {
     init(elements: [Element], connections: [Element] = [], groupingBoxes: [Element] = []) {
         self.elements = elements.inReadingOrder
         self.connections = connections.inReadingOrder
+        self.changed = self.elements.filter { $0.delta.isChange }.map { element in
+            Element(
+                id: element.id,
+                label: DiagramElementDescription(label: element.label, details: element.delta.changeDetails).summary,
+                delta: element.delta, frame: element.frame
+            )
+        } + self.connections.filter { $0.delta.isChange }
         self.priorities = Dictionary(
             (self.elements.interleaving(groupingBoxes) + self.connections).enumerated().map {
                 ($0.element.id, -Double($0.offset + 1))
@@ -28,10 +37,6 @@ struct DiagramRotorPlan {
         self.connectionLabels = Dictionary(
             self.connections.map { ($0.id, $0.label) }, uniquingKeysWith: { first, _ in first }
         )
-    }
-
-    var changed: [Element] {
-        (elements + connections).filter { $0.delta.isChange }
     }
 
     /// Below the default 0, so any other canvas element stays ahead of it in order and in hit testing.

@@ -153,6 +153,20 @@ struct DiagramRotorPlanTests {
         #expect(plan.changed.map(\.id) == ["added", "removed", "edited", "addedLink"])
     }
 
+    @Test("A changed node's entry in the changed rotor names its change; its elements entry doesn't")
+    func changedNodeEntriesNameTheirChange() throws {
+        let plan = DiagramRotorPlan(
+            elements: [element("Added", x: 10, y: 10, delta: .added)],
+            connections: [connection("link", x: 50, y: 50, delta: .added)]
+        )
+        let addedPhrase = String(localized: .app("DiagramElementDescription.Added"))
+
+        let entry = try #require(plan.changed.first { $0.id == "Added" })
+        #expect(entry.label != plan.elements[0].label)
+        #expect(entry.label.contains(addedPhrase))
+        #expect(plan.changed.first { $0.id == "link" }?.label == "link")
+    }
+
     @Test("Two elements at the same point order by id rather than by how they were handed over")
     func coincidentElementsOrderDeterministically() {
         let forward = DiagramRotorPlan(elements: [element("a", x: 10, y: 10), element("b", x: 10, y: 10)])

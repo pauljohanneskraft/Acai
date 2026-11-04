@@ -170,7 +170,7 @@ private struct TypeMemberCounts {
 }
 
 extension DeltaStatus? {
-    fileprivate var changeDetails: [LocalizedStringResource] {
+    var changeDetails: [LocalizedStringResource] {
         switch self {
         case .added:
             [.app("DiagramElementDescription.Added")]
