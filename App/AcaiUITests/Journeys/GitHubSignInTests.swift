@@ -23,6 +23,9 @@ final class GitHubSignInTests: UIJourneyTestCase {
 
         github.signedInRow.waitOrFail("the signed-in account row")
         XCTAssertTrue(app.staticTexts[fixtureLogin].firstMatch.exists)
+        #if os(iOS)
+        github.tapAccountRowBesideSignOut()
+        #endif
 
         // Cancelling must keep the account; only the dialog's own Sign Out removes it.
         github.openSignOutConfirmation()
