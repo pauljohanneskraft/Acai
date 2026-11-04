@@ -104,6 +104,10 @@ struct GitHubAccountSection: View {
             Button(.app("View.GitHubAccountSection.SignOut"), role: .destructive) {
                 accountPendingSignOut = account.login
             }
+            #if os(iOS)
+            // Borderless, or the Form makes the whole row a tap target for Sign Out.
+            .buttonStyle(.borderless)
+            #endif
             .accessibilityIdentifier("github.signOutButton")
         }
 
