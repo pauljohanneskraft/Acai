@@ -25,6 +25,12 @@ extension View {
             }
     }
 
+    /// A container, so the box's label text takes the box's place in the reading order.
+    func groupingBoxReadingOrder(id: String, in plan: DiagramRotorPlan) -> some View {
+        accessibilityElement(children: .contain)
+            .accessibilitySortPriority(plan.sortPriority(of: id))
+    }
+
     /// Applied after `diagramNodeAccessibility`, so it lands on the element that modifier made.
     func diagramRotorMember(id: String, in plan: DiagramRotorPlan, namespace: Namespace.ID) -> some View {
         accessibilityRotorEntry(id: id, in: namespace)

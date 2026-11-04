@@ -192,7 +192,7 @@ struct ClassDiagramView: View {
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
                 ZStack {
-                    GroupingBoxLayer(viewModel: viewModel)
+                    GroupingBoxLayer(viewModel: viewModel, rotors: rotors)
                     nodeLayer(rotors: rotors)
                     edgeLayer(rotors: rotors)
                     resizeHandleLayer

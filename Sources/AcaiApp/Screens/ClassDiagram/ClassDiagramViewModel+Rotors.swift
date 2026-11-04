@@ -23,8 +23,17 @@ extension ClassDiagramViewModel {
                     connection: edge.rotorID, label: edgeAccessibility(for: edge, nodeNames: names).label,
                     delta: deltaStatus(for: edge), from: source, to: target
                 )
+            },
+            groupingBoxes: groupingBoxes.map { box in
+                DiagramRotorPlan.Element(id: box.rotorID, label: box.label, delta: nil, frame: box.rect)
             }
         )
+    }
+}
+
+extension DiagramLayoutModel.GroupingBox {
+    var rotorID: String {
+        "diagram.groupingBox.\(id)"
     }
 }
 

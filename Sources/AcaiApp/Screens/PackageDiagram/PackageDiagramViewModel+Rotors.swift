@@ -23,6 +23,9 @@ extension PackageDiagramViewModel {
                     connection: edge.accessibilityID, label: edgeDescription(edge, names: names).summary,
                     delta: edgeDeltaStatus(from: edge.from, to: edge.to), from: source, to: target
                 )
+            },
+            groupingBoxes: layout.projectBoxes.map { box in
+                DiagramRotorPlan.Element(id: box.rotorID, label: box.label, delta: nil, frame: box.rect)
             }
         )
     }
@@ -42,6 +45,12 @@ extension PackageDiagramViewModel {
 extension PackageLayoutModel {
     var nodeNames: [String: String] {
         Dictionary(nodes.map { ($0.id, $0.node.name) }, uniquingKeysWith: { first, _ in first })
+    }
+}
+
+extension PackageLayoutModel.ProjectBox {
+    var rotorID: String {
+        "diagram.projectBox.\(id)"
     }
 }
 

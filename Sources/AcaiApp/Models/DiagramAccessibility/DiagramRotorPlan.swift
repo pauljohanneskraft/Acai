@@ -15,11 +15,14 @@ struct DiagramRotorPlan {
     private let priorities: [String: Double]
     private let connectionLabels: [String: String]
 
-    init(elements: [Element], connections: [Element] = []) {
+    /// `groupingBoxes` take their place in the reading order but join no rotor.
+    init(elements: [Element], connections: [Element] = [], groupingBoxes: [Element] = []) {
         self.elements = elements.inReadingOrder
         self.connections = connections.inReadingOrder
         self.priorities = Dictionary(
-            (self.elements + self.connections).enumerated().map { ($0.element.id, -Double($0.offset + 1)) },
+            (self.elements.interleaving(groupingBoxes) + self.connections).enumerated().map {
+                ($0.element.id, -Double($0.offset + 1))
+            },
             uniquingKeysWith: { first, _ in first }
         )
         self.connectionLabels = Dictionary(
@@ -73,6 +76,27 @@ extension [DiagramRotorPlan.Element] {
         return rows.flatMap { row in
             row.sorted { ($0.frame.minX, $0.frame.minY, $0.id) < ($1.frame.minX, $1.frame.minY, $1.id) }
         }
+    }
+
+    /// Each box reads just before the first element inside it; in the rows, a tall box would merge those it spans.
+    fileprivate func interleaving(_ boxes: [DiagramRotorPlan.Element]) -> [DiagramRotorPlan.Element] {
+        let outermostFirst = boxes.sorted { lhs, rhs in
+            lhs.frame.area == rhs.frame.area ? lhs.id < rhs.id : lhs.frame.area > rhs.frame.area
+        }
+        var boxesBefore: [Int: [DiagramRotorPlan.Element]] = [:]
+        for box in outermostFirst {
+            let index = firstIndex { box.frame.contains(CGPoint(x: $0.frame.midX, y: $0.frame.midY)) }
+                ?? firstIndex { ($0.frame.minY, $0.frame.minX) > (box.frame.minY, box.frame.minX) }
+                ?? count
+            boxesBefore[index, default: []].append(box)
+        }
+        return indices.flatMap { (boxesBefore[$0] ?? []) + [self[$0]] } + (boxesBefore[count] ?? [])
+    }
+}
+
+extension CGRect {
+    fileprivate var area: CGFloat {
+        width * height
     }
 }
 

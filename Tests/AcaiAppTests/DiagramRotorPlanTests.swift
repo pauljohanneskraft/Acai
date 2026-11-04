@@ -64,6 +64,46 @@ struct DiagramRotorPlanTests {
         #expect(plan.elements.map(\.id) == ["tall", "z", "a"])
     }
 
+    @Test("A grouping box reads after the row above it and just before its first child, in no rotor")
+    func groupingBoxReadsBeforeItsContents() {
+        let box = DiagramRotorPlan.Element(
+            id: "box", label: "Group", delta: nil, frame: CGRect(x: 0, y: 100, width: 400, height: 300)
+        )
+        let plan = DiagramRotorPlan(
+            elements: [
+                element("above", x: 10, y: 10), element("child2", x: 200, y: 140), element("child1", x: 20, y: 140)
+            ],
+            groupingBoxes: [box]
+        )
+
+        let order = ["above", "box", "child1", "child2"].map { plan.sortPriority(of: $0) }
+        #expect(order == order.sorted(by: >))
+        #expect(Set(order).count == 4)
+        #expect(plan.elements.map(\.id) == ["above", "child1", "child2"])
+        #expect(plan.changed.isEmpty)
+    }
+
+    @Test("A box spanning two rows keeps them as two rows, and an enclosing box reads before a nested one")
+    func groupingBoxesDoNotMergeRows() {
+        let outer = DiagramRotorPlan.Element(
+            id: "outer", label: "Outer", delta: nil, frame: CGRect(x: 0, y: 100, width: 400, height: 500)
+        )
+        let inner = DiagramRotorPlan.Element(
+            id: "inner", label: "Inner", delta: nil, frame: CGRect(x: 10, y: 120, width: 300, height: 100)
+        )
+        let plan = DiagramRotorPlan(
+            elements: [
+                element("lower", x: 20, y: 400), element("beside", x: 600, y: 140),
+                element("right", x: 200, y: 140), element("left", x: 20, y: 140)
+            ],
+            groupingBoxes: [inner, outer]
+        )
+
+        #expect(plan.elements.map(\.id) == ["left", "right", "beside", "lower"])
+        let order = ["outer", "inner", "left", "right", "beside", "lower"].map { plan.sortPriority(of: $0) }
+        #expect(order == order.sorted(by: >))
+    }
+
     @Test("A box starting below the centre of the row's topmost box starts a new row")
     func aLowerBoxStartsItsOwnRow() {
         let plan = DiagramRotorPlan(elements: [element("below", x: 10, y: 130), element("above", x: 500, y: 100)])

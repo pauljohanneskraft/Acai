@@ -151,6 +151,7 @@ struct PackageDiagramView: View {
                     ForEach(layout.projectBoxes) { box in
                         GroupingBoxView(label: box.label)
                             .frame(width: box.rect.width, height: box.rect.height)
+                            .groupingBoxReadingOrder(id: box.rotorID, in: rotors)
                             .position(x: box.rect.midX, y: box.rect.midY)
                     }
                     packageEdges(layout, rotors: rotors)
