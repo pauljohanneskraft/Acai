@@ -139,6 +139,7 @@ extension CodebaseDetailView {
                 }
                 .font(.title2.bold())
                 .textFieldStyle(.plain)
+                .accessibilityIdentifier("codebaseDetail.nameField")
 
                 if codebase.managedCheckout != nil, let repository = codebase.repository {
                     Text(verbatim: "\(repository.remoteDisplayName) @ \(repository.ref)")

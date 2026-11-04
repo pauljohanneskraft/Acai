@@ -164,6 +164,16 @@ final class CodebaseDetailScreen {
         guidedRouteCard.waitOrFail("the guided route card brought back", file: file, line: line)
     }
 
+    var nameField: XCUIElement { app.textFields["codebaseDetail.nameField"] }
+
+    /// Renames through the header's name field, which writes on every edit, then waits for the new value.
+    func rename(to newName: String, file: StaticString = #filePath, line: UInt = #line) {
+        nameField.clearAndTypeText(newName + "\n", file: file, line: line)
+        app.textFields.matching(
+            NSPredicate(format: "identifier == %@ AND value == %@", "codebaseDetail.nameField", newName)
+        ).firstMatch.waitOrFail("the name field holding \"\(newName)\"", file: file, line: line)
+    }
+
     /// Shown instead of `reindexButton` for a GitHub-backed codebase.
     var refPicker: XCUIElement { app.descendants(matching: .any)["codebaseDetail.refPicker"] }
     var pullButton: XCUIElement { app.buttons["codebaseDetail.pullButton"] }

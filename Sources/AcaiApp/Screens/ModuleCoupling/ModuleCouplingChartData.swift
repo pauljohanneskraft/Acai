@@ -50,10 +50,14 @@ struct ModuleCouplingChartData {
     }
 
     let points: [Point]
+    private let fallbackGroup: String
 
     /// The line itself is fixed geometry (`A + I = 1`, from `(0, 1)` to `(1, 0)`) rather than data —
     /// callers draw it directly rather than reading it off this type.
-    init(modules: [CodeMetrics.ModuleCoupling]) {
+    ///
+    /// - Parameter fallbackGroup: the module every file with no recognisable module layout falls into.
+    init(modules: [CodeMetrics.ModuleCoupling], fallbackGroup: String) {
+        self.fallbackGroup = fallbackGroup
         points = modules.map { module in
             Point(
                 id: module.name,
@@ -69,6 +73,20 @@ struct ModuleCouplingChartData {
 
     var rankedByDistance: [Point] {
         points.sorted { $0.distance > $1.distance }
+    }
+
+    /// `nil` once there are at least two modules to compare.
+    var emptyReason: EmptyReason? {
+        guard let only = points.first else { return .noTypes }
+        guard points.count == 1 else { return nil }
+        return only.name == fallbackGroup ? .noModuleLayout : .singleModule(name: only.name)
+    }
+
+    /// A lone module's instability is 0 by construction, so plotting it would read as a finding.
+    enum EmptyReason: Equatable {
+        case noTypes
+        case noModuleLayout
+        case singleModule(name: String)
     }
 }
 

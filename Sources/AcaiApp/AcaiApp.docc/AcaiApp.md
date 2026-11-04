@@ -160,11 +160,31 @@ second window offers **Show Window** instead of a copy that could overwrite the 
 
 ## Automation
 
-**Reindex Codebase** is a Shortcuts action, so a reindex can be scheduled or chained into your own
-automation, such as reindexing after a nightly merge. The run shows in the activity list like one you
-started by hand. The action returns the codebase when the reindex finishes. It fails with the reason
-when the codebase no longer exists, the analysis fails, or the run is cancelled, so a shortcut can
-branch on the result.
+Four actions are available to Shortcuts, so the app can be scheduled or chained into automation of
+your own, such as reindexing after a nightly merge and posting what it found.
+
+**Reindex Codebase** runs in the app, so the run shows in the activity list like one you started by
+hand. It returns the codebase when the reindex finishes, and fails with the reason when the codebase
+no longer exists, the analysis fails, or the run is cancelled, so a shortcut can branch on the result.
+
+**Get Metrics**, **Run Quality Check** and **Get Dependents** answer without opening the app. Metrics
+returns the type, module, cycle and dead-code counts along with the health score and the worst
+complexity; the quality check returns its verdict with the counts per severity and whether your own
+rules were used; dependents returns every type that transitively depends on the one you name,
+resolved the way `acai dependents` resolves its argument. Each returns a value a later step can read
+a single property off, rather than text to parse.
+
+### Shortcuts and Siri
+
+All four are offered as App Shortcuts, so they need no shortcut built by hand: they appear in the
+Shortcuts app under Açaí, Spotlight suggests them, and Siri takes a spoken phrase for each — "Reindex
+my Açaí codebase", "How big is my Açaí codebase", "Check the quality of my Açaí codebase", "Get
+dependents in Açaí". Each action carries three phrases, and all of them are translated, so the German
+and French builds are spoken to in German and French rather than in English.
+
+A phrase names the action, not its subject, so Siri asks which codebase — and which type, for
+dependents — offering the codebases the app knows. Answering a reindex brings the app forward,
+because that run belongs in the activity list; the other three answer where you asked.
 
 ## The widget
 

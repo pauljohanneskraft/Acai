@@ -34,6 +34,7 @@ public struct GitChurn: Sendable {
         var churn: [String: Int] = [:]
         var visited = 0
         while visited < limit {
+            try Task.checkCancellation()
             let diff = try repository.diff(commit: commit)
             for delta in diff.changes {
                 let path = delta.newFile.path.isEmpty ? delta.oldFile.path : delta.newFile.path
