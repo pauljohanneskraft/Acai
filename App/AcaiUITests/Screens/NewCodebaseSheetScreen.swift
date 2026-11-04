@@ -35,16 +35,14 @@ final class NewCodebaseSheetScreen {
         app.descendants(matching: .any)["newCodebase.root.\(path)"].firstMatch
     }
 
-    /// Picks the folder a UI test staged (`UITestFixtureResolver.resolveLocalFolderURL()`) — the
-    /// system file importer the button otherwise presents can't be driven from here — and waits for
-    /// the roots step.
-    ///
-    /// The step's own header is the wait's signal rather than a `rootDiscovery.loaded` marker: the
-    /// plan is cleared before the walk starts and the header is rendered from its result, so the
-    /// header cannot exist until the walk finished. The marker is only rendered while in flight,
-    /// since a settled step showing "Loaded" under its own list would be noise.
+    var rootDiscoveryOperation: AsyncOperation {
+        AsyncOperation(app: app, identifierPrefix: "newCodebase.rootDiscovery")
+    }
+
+    /// Picks the folder staged by `UITestFixtureResolver.resolveLocalFolderURL()`.
     func chooseStagedFolder(file: StaticString = #filePath, line: UInt = #line) {
         chooseDirectoryButton.tapWhenReady("Choose…", file: file, line: line)
+        rootDiscoveryOperation.waitUntilLoaded("Finding projects", file: file, line: line)
         rootsHeader.waitOrFail("the discovered-projects step", file: file, line: line)
     }
 

@@ -6,11 +6,12 @@ extension NewCodebaseSheetContent {
     /// root is the default, and combining them is the opt-in.
     @ViewBuilder
     var projectRootsSection: some View {
-        if sheet.discoveryPhase.isInFlight {
+        if sheet.discoveryPhase != .idle {
             Section {
                 AsyncOperationStatusView(identifierPrefix: "newCodebase.rootDiscovery", phase: sheet.discoveryPhase)
             }
-        } else if sheet.plan.isOffered {
+        }
+        if sheet.plan.isOffered {
             Section {
                 // Above the rows it governs: the form outgrows a short window, and the control that
                 // answers the question has to stay reachable without scrolling past the list that
