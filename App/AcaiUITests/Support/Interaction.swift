@@ -116,29 +116,18 @@ extension XCUIElement {
         XCTFail("\(description) never became enabled", file: file, line: line)
     }
 
-    /// A `Toggle` reports its new value a render pass after the tap, so an instant `value` read
-    /// races it. Checked rather than assumed: a tap that reached the element but flipped nothing —
-    /// `waitUntilReady` passes a row lying outside the window, since on iOS the tap would scroll to
-    /// it and on macOS it is synthesized where the row is — otherwise surfaces much later as a
-    /// confirmation that silently did something else.
+    /// A `Toggle` reports its new value a render pass after the tap.
     func waitUntilOn(
         _ description: String, timeout: TimeInterval = .uiTransition,
         file: StaticString = #filePath, line: UInt = #line
     ) {
-        if turnsOn(within: timeout) { return }
-        XCTFail("\(description) never turned on", file: file, line: line)
-    }
-
-    /// A non-failing wait, only for a retry loop that recovers from a miss itself and reports the
-    /// final miss through `waitUntilOn`. A full transition budget without the value moving is what
-    /// makes a second tap safe: a flip that merely hadn't rendered yet would have landed long since.
-    func turnsOn(within timeout: TimeInterval) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         repeat {
-            if isOn { return true }
+            if isOn { return }
             Thread.sleep(forTimeInterval: 0.25)
         } while Date() < deadline
-        return isOn
+        if isOn { return }
+        XCTFail("\(description) never turned on", file: file, line: line)
     }
 
     /// `1`/`0` on macOS, `"1"`/`"0"` on iOS.

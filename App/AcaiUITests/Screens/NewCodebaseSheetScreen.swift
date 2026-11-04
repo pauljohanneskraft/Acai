@@ -46,11 +46,7 @@ final class NewCodebaseSheetScreen {
         rootsHeader.waitOrFail("the discovered-projects step", file: file, line: line)
     }
 
-    /// On iOS the identified element is the whole row; a tap at its centre lands on the label and
-    /// doesn't flip it, so tap the nested switch instead — as `ClassDiagramScreen.enableFocus` does.
-    ///
-    /// Waits for the toggle's own value afterwards: the caller's next step reads as success either
-    /// way, so a tap that flipped nothing has to fail here rather than there.
+    /// On iOS the identified element is the whole row, whose centre is its label, not its switch.
     func flip(_ toggle: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line) {
         #if os(macOS)
         let control = toggle
@@ -58,16 +54,9 @@ final class NewCodebaseSheetScreen {
         let control = toggle.switches.firstMatch
         #endif
         control.tapWhenReady(description, file: file, line: line)
-        if control.turnsOn(within: .uiTransition) { return }
-        // Nothing moved in a full transition budget, so that tap missed rather than lagged — a
-        // centre tap lands on the label when the row is wider than the control. The checkbox sits
-        // at the row's leading edge, and a miss cannot have flipped anything to flip back.
-        control.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).tap()
         control.waitUntilOn(description, file: file, line: line)
     }
 
-    /// Confirms the sheet. The sheet dismisses as the codebases are created, so its disappearance is
-    /// the completion signal; the caller asserts on the rows that appeared.
     func add(file: StaticString = #filePath, line: UInt = #line) {
         addButton.tapWhenReady("Add", file: file, line: line)
         addButton.waitForDisappearanceOrFail(
