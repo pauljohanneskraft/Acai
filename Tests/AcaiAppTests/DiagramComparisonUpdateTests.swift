@@ -6,9 +6,6 @@ import AcaiQuality
 import AcaiRender
 @testable import AcaiApp
 
-/// A comparison change re-derives a diagram in place instead of rebuilding its view, so the compare
-/// panel presented over it survives. These cover what that path has to match about a view model
-/// constructed fresh for the same comparison.
 @Suite("Diagram comparison update", .timeLimit(.minutes(1)))
 @MainActor
 struct DiagramComparisonUpdateTests {
@@ -73,9 +70,6 @@ struct DiagramComparisonUpdateTests {
         #expect(viewModel.typeDisplayNames.name(forID: "B") == "B")
     }
 
-    /// `buildDiagram` seeds an estimate for every node, and the estimate's minimum width is far
-    /// wider than a small type measures at. Laying a comparison change out from those estimates
-    /// spaced the diagram as though every node were that wide.
     @Test func aClassDiagramLaysOutAComparisonFromMeasuredSizes() {
         let new = artifact(["A", "Added"])
         let viewModel = ClassDiagramViewModel(codebase: codebase, artifact: new)

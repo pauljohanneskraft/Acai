@@ -52,8 +52,7 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuild()
     }
 
-    /// Re-derives the diagram for a new comparison revision without the view being rebuilt. The
-    /// rendered module set differs, so dragged positions and the undo history can't carry over.
+    /// Re-derives in place for a new comparison; dragged positions and undo history no longer apply.
     func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
         self.artifact = artifact
         self.comparisonArtifact = comparison

@@ -116,8 +116,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         rebuildDiagram()
     }
 
-    /// Re-derives the trace for a new comparison revision without the view being rebuilt. The
-    /// rendered participant set differs, so lifeline offsets and the undo history can't carry over.
+    /// Re-derives in place for a new comparison; lifeline offsets and undo history no longer apply.
     func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
         self.artifact = artifact
         self.comparisonArtifact = comparison

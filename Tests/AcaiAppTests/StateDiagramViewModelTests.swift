@@ -204,4 +204,22 @@ struct StateDiagramViewModelTests {
         let transition = try #require(vm.diagram?.transitions.first)
         #expect(vm.transitionDeltaStatus(transition) == nil)
     }
+
+    @Test func aComparisonChangeDropsPositionsSelectionAndHistoryInPlace() {
+        let vm = StateDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.positionOverrides["state_idle"] = CGPoint(x: 40, y: 0)
+        vm.selectedTransitionID = 0
+        vm.recordUndo()
+        #expect(vm.canUndo)
+
+        vm.updateComparison(artifact: artifact(), comparison: artifact())
+
+        #expect(vm.isDeltaMode)
+        #expect(vm.positionOverrides.isEmpty)
+        #expect(vm.selectedTransitionID == nil)
+        #expect(!vm.canUndo)
+
+        vm.updateComparison(artifact: artifact(), comparison: nil)
+        #expect(!vm.isDeltaMode)
+    }
 }

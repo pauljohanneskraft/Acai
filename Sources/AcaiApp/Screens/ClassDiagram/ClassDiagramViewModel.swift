@@ -171,8 +171,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
 
     // MARK: - Apply Comparison
 
-    /// Re-derives the diagram for a new comparison revision without the view being rebuilt. The
-    /// rendered element set differs, so saved positions and the undo history can't carry over.
+    /// Re-derives in place for a new comparison; saved positions and undo history no longer apply.
     func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
         self.artifact = artifact
         self.typeDisplayNames = artifact.typeDisplayNames
@@ -183,9 +182,7 @@ final class ClassDiagramViewModel: ObservableObject, DiagramHistoryHosting, Canv
         history.clear()
         let measured = nodeSizes
         buildDiagram()
-        // `buildDiagram` seeds every node with an estimate, whose minimum width is far wider than a
-        // small type measures at. The nodes this revision keeps are already measured, and the
-        // measurement can arrive before this runs, so laying out from the estimate spreads them.
+        // Keep measured sizes: buildDiagram's estimates are wider and would spread the layout.
         for node in nodes {
             if let size = measured[node.id] { nodeSizes[node.id] = size }
         }

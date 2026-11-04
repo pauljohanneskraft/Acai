@@ -13,8 +13,7 @@ extension ClassDiagramView {
         showSidebar = true
     }
 
-    /// Applies a changed-file pick from the compare panel, which lives outside this view and can
-    /// already hold one before it first appears — hence also on appear.
+    /// Also runs on appear: the compare panel can hold a pick before this view first appears.
     func applyChangedFileSelection() {
         guard let ids = changedFileSelection.wrappedValue else { return }
         changedFileSelection.wrappedValue = nil

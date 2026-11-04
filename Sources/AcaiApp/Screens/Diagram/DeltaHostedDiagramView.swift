@@ -22,10 +22,7 @@ extension EnvironmentValues {
         set { self[DiagramHasBeenFittedKey.self] = newValue }
     }
 
-    /// Changes when a diagram's comparison revision or its loaded snapshots do, for the diagram to
-    /// re-derive itself in place. Resetting its identity instead would close the compare panel
-    /// presented over it: on macOS that panel is an `NSPopover`, which AppKit dismisses when the
-    /// hierarchy it was opened over is torn down, from whichever ancestor it is anchored.
+    /// Changes with the comparison, so the diagram re-derives itself in place instead of resetting identity.
     var comparisonIdentity: String {
         get { self[ComparisonIdentityKey.self] }
         set { self[ComparisonIdentityKey.self] = newValue }
@@ -40,12 +37,7 @@ private struct ComparisonIdentityKey: EnvironmentKey {
     static let defaultValue = ""
 }
 
-/// Owns the delta-comparison "is the panel open" state for one diagram and hands it down as a
-/// `Binding`, so `CompareOverlayButton` can sit inside the diagram's own canvas without losing that
-/// state when the ref changes. A comparison change reaches the diagram as `comparisonIdentity`, for
-/// it to re-derive itself in place, rather than as a new identity for `content` — which would tear
-/// down the panel presented over it. The panel is never presented from inside `content` either: the
-/// sheet is presented here, the popover by `ComparePopoverPresenter`.
+/// Owns the compare panel's state above the diagram, which re-derives itself in place on a comparison change.
 struct DeltaHostedDiagramView<Content: View>: View {
     let diagram: GeneratedDiagram
     @ViewBuilder var content: (Binding<Bool>) -> Content
@@ -102,11 +94,7 @@ struct DeltaHostedDiagramView<Content: View>: View {
     #endif
 
     var body: some View {
-        // `.task(id:)` sits on this `ZStack` so it's governed only by `comparisonTaskID`:
-        // `contentIdentity` additionally includes `loaded`, and a task keyed on that would restart
-        // every time `loaded` flips, redundantly re-invoking `ensureComparisonLoaded` right as
-        // loading finishes. A single-child `ZStack` is layout-neutral — nothing to size/align
-        // against — so this changes only the task's lifecycle.
+        // On this layout-neutral ZStack so the task restarts on `comparisonTaskID` only, not on `loaded`.
         ZStack {
             content(isComparePresented)
                 .environment(\.comparisonIdentity, contentIdentity)
