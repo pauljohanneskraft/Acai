@@ -39,9 +39,15 @@ final class RemoteCodebaseJourneyTests: UIJourneyTestCase {
         // so this no longer builds a diagram to read `Extra` off the canvas.
         codebaseDetail.switchRef(to: "feature")
 
-        // The sheet asks for no name; the codebase took the remote's and is renamed in place.
-        returnToSidebar(browser: browser)
-        browser.renameCodebase(from: "TeamRemote", to: "Team Checkout")
+        // The sheet asks for no name; the codebase took the remote's and is renamed in place. On
+        // compact width a long press on a selectable row can register as a tap, so it renames here.
+        if SnapshotPlatform().usesCompactLayout {
+            codebaseDetail.rename(to: "Team Checkout")
+            returnToSidebar(browser: browser)
+            browser.sidebarCodebaseRow(named: "Team Checkout").waitOrFail("the renamed codebase's sidebar row")
+        } else {
+            browser.renameCodebase(from: "TeamRemote", to: "Team Checkout")
+        }
     }
 
     /// `ProjectDetailView` and `CodebaseDetailView` share one `NavigationSplitView` detail slot, so
