@@ -352,7 +352,9 @@ extension NewCodebaseSheetModel {
             plan.folders(under: resolved).map { child in
                 child == resolved
                     ? DroppedFolder(url: child, securityScopedBookmark: bookmark, repository: repository)
-                    : DroppedFolder(url: child, securityScopedBookmark: try? SecurityScopedBookmark(resolving: child))
+                    : DroppedFolder(
+                        url: child, securityScopedBookmark: try? SecurityScopedBookmark(resolving: child),
+                        repository: LocalGitRepositoryDetector(directory: child).detect())
             }
         }) ?? plan.folders(under: folder).map { DroppedFolder(url: $0) }
     }

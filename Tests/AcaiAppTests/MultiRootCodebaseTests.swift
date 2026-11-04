@@ -284,6 +284,29 @@ struct MultiRootCodebaseTests {
         #expect(sheet.canAddLocalFolder)
     }
 
+    #if os(macOS)
+    @Test func splittingAMonorepoKeepsEachCodebasesRepositoryAndSubpath() async throws {
+        let fixture = try makeFixture(discovering: [root("App"), root("Core")], subfolders: ["App", "Core"])
+        defer { fixture.tearDown() }
+        let repository = GitTestRepository(directory: fixture.folder)
+        try repository.git("init", "-q", "--initial-branch=main")
+        try repository.git("remote", "add", "origin", "https://example.com/mono.git")
+        try repository.commit("App/README.md", "app", message: "app")
+        try repository.commit("Core/README.md", "core", message: "core")
+        let sheet = fixture.sheet
+
+        sheet.directoryURL = fixture.folder
+        sheet.discoverRoots()
+        await sheet.pendingDiscovery?.value
+        _ = sheet.addLocalFolder()
+
+        #expect(fixture.codebases.map { $0.repository?.subpath } == ["App", "Core"])
+        #expect(fixture.codebases.map { $0.repository?.remoteURL }
+            == Array(repeating: URL(string: "https://example.com/mono.git"), count: 2))
+        #expect(fixture.codebases.map(\.name) == ["mono", "mono 2"])
+    }
+    #endif
+
     // MARK: - The real walk
 
     @Test func theRealDiscovererFindsEachPackageBelowTheFolder() throws {
