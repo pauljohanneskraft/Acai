@@ -60,8 +60,8 @@ struct SequenceDiagramGenerator {
 /// the `x` of each override matters (the layout pins lifelines to the header row).
 @MainActor
 final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
-    let artifact: CodeArtifact
-    private let comparisonArtifact: CodeArtifact?
+    private(set) var artifact: CodeArtifact
+    private var comparisonArtifact: CodeArtifact?
 
     @Published private(set) var diagram: SequenceDiagram
     @Published private(set) var isEmpty = false
@@ -114,6 +114,17 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     func applyFilter(_ filter: AcaiQuality.Selector?) {
         configuration.filter = filter
         rebuildDiagram()
+    }
+
+    /// Re-derives in place for a new comparison; lifeline offsets and undo history no longer apply.
+    func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
+        self.artifact = artifact
+        self.comparisonArtifact = comparison
+        rebuildDiagram()
+        positionOverrides = [:]
+        selectedNodeIDs = []
+        selectedMessageID = nil
+        history.clear()
     }
 
     private func rebuildDiagram() {

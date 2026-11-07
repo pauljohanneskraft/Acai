@@ -198,4 +198,22 @@ struct SequenceDiagramViewModelTests {
         let message = try #require(vm.orderedMessages.first)
         #expect(vm.messageDeltaStatus(message) == nil)
     }
+
+    @Test func aComparisonChangeDropsOffsetsSelectionAndHistoryInPlace() {
+        let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.positionOverrides["Service"] = CGPoint(x: 40, y: 0)
+        vm.selectedMessageID = 0
+        vm.recordUndo()
+        #expect(vm.canUndo)
+
+        vm.updateComparison(artifact: artifact(), comparison: artifact(loggingFromSave: false))
+
+        #expect(vm.isDeltaMode)
+        #expect(vm.positionOverrides.isEmpty)
+        #expect(vm.selectedMessageID == nil)
+        #expect(!vm.canUndo)
+
+        vm.updateComparison(artifact: artifact(), comparison: nil)
+        #expect(!vm.isDeltaMode)
+    }
 }

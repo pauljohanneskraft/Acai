@@ -54,9 +54,11 @@ private struct CallGraphCanvasView: View {
     let codebase: Codebase
     let scope: CallGraphScope
     let isComparePresented: Binding<Bool>
+    let comparisonArtifact: CodeArtifact?
     let onApplyScope: (CallGraphScope) -> Void
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @Environment(\.comparisonIdentity) private var comparisonIdentity
     @StateObject private var viewModel: CallGraphViewModel
 
     @State private var canvasScale: CGFloat
@@ -90,6 +92,7 @@ private struct CallGraphCanvasView: View {
         self.codebase = codebase
         self.scope = scope
         self.isComparePresented = isComparePresented
+        self.comparisonArtifact = comparisonArtifact
         self.onApplyScope = onApplyScope
         self._viewModel = StateObject(wrappedValue: CallGraphViewModel(
             artifact: artifact,
@@ -108,6 +111,9 @@ private struct CallGraphCanvasView: View {
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+            .onChange(of: comparisonIdentity) { _, _ in
+                viewModel.updateComparison(artifact: artifact, comparison: comparisonArtifact)
+            }
     }
 
     @ViewBuilder

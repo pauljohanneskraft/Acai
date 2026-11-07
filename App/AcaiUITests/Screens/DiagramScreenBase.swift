@@ -255,7 +255,13 @@ class DiagramScreenBase {
     /// Chooses `name` in the already-open compare panel and waits for the comparison to load.
     func compare(against name: String, timeout: TimeInterval = .uiWork, file: StaticString = #filePath, line: UInt = #line) {
         compareRefRow(name).tapWhenReady("compare ref row \(name)", file: file, line: line)
-        compareOperation.waitUntilLoaded("Comparing against \(name)", timeout: timeout, file: file, line: line)
+        compareOperation.waitUntilLoaded(
+            "Comparing against \(name)", timeout: timeout,
+            detail: {
+                " — panel in accessibility tree: \(self.compareRefRow(name).exists)"
+                    + ", compare button: \(self.compareButton.label)"
+            },
+            file: file, line: line)
     }
 
     /// Closes the compare panel, which otherwise covers the canvas it was opened over: the sheet's

@@ -17,8 +17,10 @@ struct PackageDiagramView: View {
     let artifact: CodeArtifact
     let codebase: Codebase
     let isComparePresented: Binding<Bool>
+    let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @Environment(\.comparisonIdentity) private var comparisonIdentity
     @StateObject private var viewModel: PackageDiagramViewModel
 
     @State private var canvasScale: CGFloat
@@ -49,6 +51,7 @@ struct PackageDiagramView: View {
         self.artifact = artifact
         self.codebase = codebase
         self.isComparePresented = isComparePresented
+        self.comparisonArtifact = comparisonArtifact
         self._viewModel = StateObject(wrappedValue: PackageDiagramViewModel(
             artifact: artifact,
             filter: diagram.packageDiagramFilter,
@@ -65,6 +68,9 @@ struct PackageDiagramView: View {
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+            .onChange(of: comparisonIdentity) { _, _ in
+                viewModel.updateComparison(artifact: artifact, comparison: comparisonArtifact)
+            }
     }
 
     /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)
