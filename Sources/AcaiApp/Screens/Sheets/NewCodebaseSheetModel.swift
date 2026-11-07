@@ -1,3 +1,4 @@
+import AcaiCore
 import AcaiGit
 import Foundation
 
@@ -31,6 +32,7 @@ final class NewCodebaseSheetModel: ObservableObject {
     private let hostingService: GitHubHostingService
     private let sizePolicy: CloneSizePolicy
     private let listingDebounce: Duration
+    private let rootDiscovery: any ProjectRootDiscovering
 
     @Published var source: Source = .localFolder {
         didSet { refreshCandidateClone() }
@@ -38,6 +40,8 @@ final class NewCodebaseSheetModel: ObservableObject {
 
     @Published var directoryURL: URL?
     @Published var securityScopedBookmark: SecurityScopedBookmark?
+    @Published var plan = MultiRootPlan()
+    @Published private(set) var discoveryPhase: AsyncOperationPhase = .idle
     /// Set when the picked folder turns out to already be a git working directory with an
     /// `origin` remote. `nil` for a plain folder.
     @Published var repositoryReference: CodebaseRepositoryReference?
@@ -69,12 +73,14 @@ final class NewCodebaseSheetModel: ObservableObject {
     private(set) var pendingListing: Task<Void, Never>?
     private(set) var pendingCloneCheck: Task<Void, Never>?
     private(set) var pendingRefs: Task<Void, Never>?
+    private(set) var pendingDiscovery: Task<Void, Never>?
     private var checkedCandidate: URL?
 
     init(
         projectID: UUID, editor: ProjectCodebaseEditor, hubStoreDirectory: URL, remoteService: GitRemoteService,
         hostingService: GitHubHostingService, sizePolicy: CloneSizePolicy = .standard,
-        listingDebounce: Duration = .milliseconds(500)
+        listingDebounce: Duration = .milliseconds(500),
+        rootDiscovery: any ProjectRootDiscovering = ProjectRootDiscoverer()
     ) {
         self.projectID = projectID
         self.editor = editor
@@ -83,6 +89,7 @@ final class NewCodebaseSheetModel: ObservableObject {
         self.hostingService = hostingService
         self.sizePolicy = sizePolicy
         self.listingDebounce = listingDebounce
+        self.rootDiscovery = rootDiscovery
     }
 
     // MARK: - What would be added
@@ -166,13 +173,6 @@ final class NewCodebaseSheetModel: ObservableObject {
             to: projectID, name: pending.name, remoteURL: pending.remoteURL, ref: pending.ref.name,
             refKind: pending.ref.kind, depth: depth)
         clonePhase = .loaded
-    }
-
-    func addLocalFolder() {
-        guard let directoryURL else { return }
-        editor.addCodebase(
-            to: projectID, name: derivedName, directoryURL: directoryURL,
-            securityScopedBookmark: securityScopedBookmark, repository: repositoryReference)
     }
 
     private func refreshCandidateClone() {
@@ -279,5 +279,92 @@ final class NewCodebaseSheetModel: ObservableObject {
         pendingListing?.cancel()
         pendingCloneCheck?.cancel()
         pendingRefs?.cancel()
+        pendingDiscovery?.cancel()
     }
+}
+
+// MARK: - Project roots
+
+extension NewCodebaseSheetModel {
+    /// Creates nothing when the picked folder's scope can't be reopened to split it.
+    func addLocalFolder() throws -> LocalFolderAddition {
+        guard let directoryURL else { return LocalFolderAddition() }
+        guard plan.isOffered, !plan.combinesIntoOne else {
+            let id = editor.addCodebase(
+                to: projectID, name: derivedName, directoryURL: directoryURL,
+                securityScopedBookmark: securityScopedBookmark, repository: repositoryReference)
+            return LocalFolderAddition(insertion: CodebaseInsertion(addedIDs: [id].compactMap { $0 }))
+        }
+        let split = try splitCodebaseFolders(directoryURL)
+        return LocalFolderAddition(
+            insertion: editor.insertCodebases(from: split.folders, to: projectID),
+            bookmarkFailures: split.bookmarkFailures)
+    }
+
+    /// Waits for the walk, so a folder of several projects can't be added before it has asked.
+    var canAddLocalFolder: Bool {
+        guard directoryURL != nil, !discoveryPhase.isInFlight else { return false }
+        guard plan.isOffered, !plan.combinesIntoOne else { return true }
+        return plan.isSatisfiable
+    }
+
+    func setRootChecked(_ isChecked: Bool, for root: CodeArtifact.DiscoveredRoot) {
+        plan.setChecked(isChecked, for: root)
+    }
+
+    /// Drops the previous folder's roots first, so they're never offered for a different folder.
+    func discoverRoots() {
+        pendingDiscovery?.cancel()
+        plan = MultiRootPlan()
+        guard let folder = directoryURL else {
+            discoveryPhase = .idle
+            return
+        }
+        let access = ScopedResourceAccess(path: folder.path, bookmark: securityScopedBookmark)
+        let discoverer = rootDiscovery
+        discoveryPhase = .loading(.app("View.NewCodebaseSheet.FindingProjects"))
+        pendingDiscovery = Task { [weak self] in
+            let walk = Task.detached(priority: .userInitiated) {
+                await access.whileAccessible { discoverer.discoverRoots(in: folder) }
+            }
+            let roots = await withTaskCancellationHandler { await walk.value } onCancel: { walk.cancel() }
+            guard let self, !Task.isCancelled, directoryURL == folder else { return }
+            plan = MultiRootPlan(roots: roots, checkedPaths: Set(roots.map(\.path)))
+            discoveryPhase = .loaded
+        }
+    }
+
+    /// A child gets its own bookmark, since one resolves only to the location it was minted for.
+    private func splitCodebaseFolders(_ folder: URL) throws -> FolderDropLoader.Loaded {
+        let access = ScopedResourceAccess(path: folder.path, bookmark: securityScopedBookmark)
+        let plan = plan
+        let bookmark = securityScopedBookmark
+        let repository = repositoryReference
+        return try access.withResolvedURL { resolved in
+            var loaded = FolderDropLoader.Loaded()
+            for child in plan.folders(under: resolved) {
+                guard child != resolved else {
+                    loaded.folders.append(
+                        DroppedFolder(url: child, securityScopedBookmark: bookmark, repository: repository))
+                    continue
+                }
+                var split = DroppedFolder(url: child, repository: LocalGitRepositoryDetector(directory: child).detect())
+                // Without a parent bookmark there is no open scope to mint from, nor one to outlive.
+                if bookmark != nil {
+                    do {
+                        split.securityScopedBookmark = try SecurityScopedBookmark(resolving: child)
+                    } catch {
+                        loaded.bookmarkFailures.append((child.path, error.localizedDescription))
+                    }
+                }
+                loaded.folders.append(split)
+            }
+            return loaded
+        }
+    }
+}
+
+struct LocalFolderAddition {
+    var insertion = CodebaseInsertion()
+    var bookmarkFailures: [(path: String, reason: String)] = []
 }

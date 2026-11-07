@@ -23,6 +23,53 @@ final class NewCodebaseSheetScreen {
     }
     var cloneFullHistoryButton: XCUIElement { app.buttons["newCodebase.largeClone.fullHistoryButton"].firstMatch }
 
+    // MARK: - A folder holding several projects
+
+    var rootsHeader: XCUIElement { app.descendants(matching: .any)["newCodebase.rootsHeader"].firstMatch }
+    var combineRootsToggle: XCUIElement {
+        app.descendants(matching: .any)["newCodebase.combineRootsToggle"].firstMatch
+    }
+
+    func rootToggle(_ path: String) -> XCUIElement {
+        app.descendants(matching: .any)["newCodebase.root.\(path)"].firstMatch
+    }
+
+    var rootDiscoveryOperation: AsyncOperation {
+        AsyncOperation(app: app, identifierPrefix: "newCodebase.rootDiscovery")
+    }
+
+    /// Picks the folder staged by `UITestFixtureResolver.resolveLocalFolderURL()`.
+    func chooseStagedFolder(file: StaticString = #filePath, line: UInt = #line) {
+        chooseDirectoryButton.tapWhenReady("Choose…", file: file, line: line)
+        rootDiscoveryOperation.waitUntilLoaded("Finding projects", file: file, line: line)
+        rootsHeader.waitOrFail("the discovered-projects step", file: file, line: line)
+    }
+
+    /// On iOS the identified element is the whole row, whose centre is its label, not its switch.
+    func flip(_ toggle: XCUIElement, _ description: String, file: StaticString = #filePath, line: UInt = #line) {
+        #if os(macOS)
+        let control = toggle
+        #else
+        let control = toggle.switches.firstMatch
+        #endif
+        control.tapWhenReady(description, file: file, line: line)
+        control.waitUntilOn(description, file: file, line: line)
+    }
+
+    func add(file: StaticString = #filePath, line: UInt = #line) {
+        addButton.tapWhenReady("Add", file: file, line: line)
+        addButton.waitForDisappearanceOrFail(
+            "the Add Codebase sheet", failingOn: app.alerts.firstMatch, file: file, line: line)
+    }
+
+    /// A toolbar button's identifier resolves to more than one accessibility node.
+    func cancel(file: StaticString = #filePath, line: UInt = #line) {
+        let cancelButton = app.descendants(matching: .any)
+            .matching(identifier: "newCodebase.cancelButton").firstMatch
+        cancelButton.tapWhenReady("Cancel", file: file, line: line)
+        cancelButton.waitForDisappearanceOrFail("the Add Codebase sheet", file: file, line: line)
+    }
+
     /// `source` is the segment's `NewCodebaseSheet.Source` raw value. Segments surface as different
     /// element kinds on macOS (`NSSegmentedControl`) and iOS, and not every one carries the segment
     /// label's identifier, so the English label is matched as well.

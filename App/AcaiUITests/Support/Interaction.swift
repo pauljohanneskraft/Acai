@@ -116,6 +116,27 @@ extension XCUIElement {
         XCTFail("\(description) never became enabled", file: file, line: line)
     }
 
+    /// A `Toggle` reports its new value a render pass after the tap.
+    func waitUntilOn(
+        _ description: String, timeout: TimeInterval = .uiTransition,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if isOn { return }
+            Thread.sleep(forTimeInterval: 0.25)
+        } while Date() < deadline
+        if isOn { return }
+        XCTFail("\(description) never turned on", file: file, line: line)
+    }
+
+    /// `1`/`0` on macOS, `"1"`/`"0"` on iOS.
+    private var isOn: Bool {
+        if let flag = value as? Bool { return flag }
+        if let text = value as? String { return text == "1" }
+        return false
+    }
+
     /// Taps exactly once. Use this for anything with a side effect (creating, deleting, toggling).
     func tapWhenReady(
         _ description: String, timeout: TimeInterval = .uiTransition,
