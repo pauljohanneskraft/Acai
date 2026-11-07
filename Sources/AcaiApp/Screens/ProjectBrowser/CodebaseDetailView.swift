@@ -16,6 +16,7 @@ struct CodebaseDetailView: View {
     @State var reindexPhase: AsyncOperationPhase = .idle
     @State var pullPhase: AsyncOperationPhase = .idle
     @State var refSwitchPhase: AsyncOperationPhase = .idle
+    @State var atlasExportPhase: AsyncOperationPhase = .idle
     @State var fullHistoryPhase: AsyncOperationPhase = .idle
     @State var availableRefs: [GitCheckout.Ref] = []
     @State var isShallowClone = false

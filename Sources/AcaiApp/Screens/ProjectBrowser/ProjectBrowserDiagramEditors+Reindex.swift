@@ -58,7 +58,7 @@ extension ProjectCodebaseEditor {
         // The artifact is saved inside the closure so the row's spinner outlasts the write.
         let reindexResult = try await store.activityCenter.run(
             title: .app("Activity.Indexing \(codebase.name)"),
-            kind: .reindex, subject: .codebase(codebaseID)
+            kind: .reindex, subject: .codebase(codebaseID), resumption: .reindex(codebaseID: codebaseID)
         ) {
             let detached = Task.detached(priority: .userInitiated) {
                 var refreshed: ScopedResourceAccess.Refreshed?

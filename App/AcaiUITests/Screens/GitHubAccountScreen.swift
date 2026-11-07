@@ -48,8 +48,8 @@ final class GitHubAccountScreen {
     #if os(iOS)
     /// An iOS `Form` turns a row into a tap target for its default-style button; this row must not ask to sign out.
     func tapAccountRowBesideSignOut(file: StaticString = #filePath, line: UInt = #line) {
-        // Only a miss is possible on a slow runner, never a false failure.
-        let presentationWindow: TimeInterval = .uiTransition / 10
+        // A wrongly triggered dialog appeared well within this locally; a slow runner can only miss it, never fail.
+        let presentationWindow: TimeInterval = 3
         let checklist = scopeChecklist.firstMatch
         checklist.waitOrFail("the scope checklist in the account row", file: file, line: line)
         SystemBanners().dismiss(file: file, line: line)
