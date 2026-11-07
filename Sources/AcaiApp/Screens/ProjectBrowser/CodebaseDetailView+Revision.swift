@@ -18,12 +18,7 @@ extension CodebaseDetailView {
                 guard let selected = (availableRefs + [current]).first(where: { $0.id == newID }),
                       selected != current
                 else { return }
-                refSwitchPhase = .loading(.app("View.CodebaseDetailView.SwitchingTo \(selected.name)"))
-                Task {
-                    let outcome = await model.editing.switchRef(
-                        codebaseID: codebase.id, ref: selected.name, kind: selected.kind)
-                    refSwitchPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.SwitchFailed"))
-                }
+                startRefSwitch(codebaseID: codebase.id, to: selected)
             }
         )) {
             if !availableRefs.contains(current) {
@@ -45,17 +40,29 @@ extension CodebaseDetailView {
         AsyncOperationStatusView(identifierPrefix: "codebaseDetail.refSwitch", phase: refSwitchPhase)
 
         Button {
-            pullPhase = .loading(.app("View.CodebaseDetailView.Pulling"))
-            Task {
-                let outcome = await model.editing.pull(codebaseID: codebase.id)
-                pullPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.PullFailed"))
-            }
+            startPull(codebaseID: codebase.id)
         } label: {
             Label(.app("View.CodebaseDetailView.Pull"), systemImage: "arrow.triangle.2.circlepath")
         }
         .disabled(pullPhase.isInFlight)
         .accessibilityIdentifier("codebaseDetail.pullButton")
         AsyncOperationStatusView(identifierPrefix: "codebaseDetail.pull", phase: pullPhase)
+    }
+
+    func startPull(codebaseID: UUID) {
+        pullPhase = .loading(.app("View.CodebaseDetailView.Pulling"))
+        Task {
+            let outcome = await model.editing.pull(codebaseID: codebaseID)
+            pullPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.PullFailed"))
+        }
+    }
+
+    func startRefSwitch(codebaseID: UUID, to ref: GitCheckout.Ref) {
+        refSwitchPhase = .loading(.app("View.CodebaseDetailView.SwitchingTo \(ref.name)"))
+        Task {
+            let outcome = await model.editing.switchRef(codebaseID: codebaseID, ref: ref.name, kind: ref.kind)
+            refSwitchPhase = AsyncOperationPhase(outcome, failure: .app("View.CodebaseDetailView.SwitchFailed"))
+        }
     }
 
     private struct ManagedCheckoutToken: Equatable {

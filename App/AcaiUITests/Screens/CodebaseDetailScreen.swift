@@ -19,6 +19,10 @@ final class CodebaseDetailScreen {
         AsyncOperation(app: app, identifierPrefix: "codebaseDetail.staleBanner.reindex")
     }
 
+    var interruptedBanner: XCUIElement { app.descendants(matching: .any)["codebaseDetail.interruptedBanner"] }
+    var interruptedBannerResumeButton: XCUIElement { app.buttons["codebaseDetail.interruptedBanner.resumeButton"] }
+    var interruptedBannerDismissButton: XCUIElement { app.buttons["codebaseDetail.interruptedBanner.dismissButton"] }
+
     func reindex(file: StaticString = #filePath, line: UInt = #line) {
         reindexButton.tapWhenReady("Reindex", file: file, line: line)
         reindexOperation.waitUntilLoaded("Reindexing the codebase", file: file, line: line)

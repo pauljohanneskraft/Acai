@@ -118,20 +118,50 @@ struct KotlinTypeReferenceResolver {
 
     // MARK: - Generic Parameters
 
-    func extractTypeParameters(_ node: Node?) -> [GenericParameter] {
-        guard let node else { return [] }
-        return node.allChildren(withType: "type_parameter").compactMap { child in
+    /// Kotlin writes a `where` clause as a `type_constraints` sibling of `type_parameters`.
+    func typeParameters(of declaration: Node) -> [GenericParameter] {
+        var params: [GenericParameter] = []
+        let parameterList = declaration.firstChild(withType: "type_parameters")
+        for child in parameterList?.allChildren(withType: "type_parameter") ?? [] {
             let name = child.firstChild(withType: "type_identifier").map { $0.text(in: context) }
                 ?? child.firstChild(withType: "simple_identifier").map { $0.text(in: context) }
                 ?? ""
-            guard !name.isEmpty else { return nil }
+            guard !name.isEmpty else { continue }
             var constraints: [GenericConstraint] = []
             if let userTypeNode = child.firstChild(withType: "user_type") {
                 constraints.append(GenericConstraint(kind: .conformance, type: extractTypeReference(userTypeNode)))
             } else if let nullableTypeNode = child.firstChild(withType: "nullable_type") {
                 constraints.append(GenericConstraint(kind: .conformance, type: extractNullableType(nullableTypeNode)))
             }
-            return GenericParameter(name: name, constraints: constraints, variance: variance(of: child))
+            params.append(GenericParameter(name: name, constraints: constraints, variance: variance(of: child)))
+        }
+
+        guard let constraintsNode = declaration.firstChild(withType: "type_constraints") else { return params }
+        for (name, constraint) in typeConstraints(constraintsNode) {
+            if let index = params.firstIndex(where: { $0.name == name }) {
+                params[index].constraints.append(constraint)
+            } else {
+                params.append(GenericParameter(name: name, constraints: [constraint]))
+            }
+        }
+        return params
+    }
+
+    private func typeConstraints(_ node: Node) -> [(name: String, constraint: GenericConstraint)] {
+        node.allChildren(withType: "type_constraint").compactMap { child in
+            let name = child.firstChild(withType: "simple_identifier").map { $0.text(in: context) }
+                ?? child.firstChild(withType: "type_identifier").map { $0.text(in: context) }
+                ?? ""
+            guard !name.isEmpty else { return nil }
+            let bound: TypeReference
+            if let userTypeNode = child.firstChild(withType: "user_type") {
+                bound = extractTypeReference(userTypeNode)
+            } else if let nullableTypeNode = child.firstChild(withType: "nullable_type") {
+                bound = extractNullableType(nullableTypeNode)
+            } else {
+                return nil
+            }
+            return (name, GenericConstraint(kind: .conformance, type: bound))
         }
     }
 

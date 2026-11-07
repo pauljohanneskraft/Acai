@@ -18,6 +18,7 @@ struct StateDiagramView: View {
     let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @Environment(\.comparisonIdentity) private var comparisonIdentity
     // Not `private`: `StateDiagramView+Canvas.swift`'s extension (kept in its own file only to
     // stay under this file's own type-body-length limit) needs to read/write these too.
     @StateObject var viewModel: StateDiagramViewModel
@@ -30,6 +31,7 @@ struct StateDiagramView: View {
     @State var canvasViewportSize = CGSize(width: 900, height: 600)
     @State var showSidebar = false
     @State var sidebarTab: StateDiagramSidebarTab = .settings
+    @Namespace var rotorNamespace
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -67,6 +69,9 @@ struct StateDiagramView: View {
             .diagramCanvasLifecycle(
                 title: diagram.name, model: viewModel, onSave: savePositions, onCenter: centerDiagram
             )
+            .onChange(of: comparisonIdentity) { _, _ in
+                viewModel.updateComparison(artifact: artifact, comparison: comparisonArtifact)
+            }
     }
 
     /// See `ClassDiagramView.sidebarPresentedCanvas`'s doc comment for why compact width (iPhone)

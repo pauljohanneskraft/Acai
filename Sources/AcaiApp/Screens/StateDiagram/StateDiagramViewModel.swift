@@ -54,14 +54,16 @@ private struct StateDiagramGenerator {
 /// rather than an empty canvas. Dragged node positions are the only editable, undoable state.
 @MainActor
 final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
-    let artifact: CodeArtifact
-    private let comparisonArtifact: CodeArtifact?
+    private(set) var artifact: CodeArtifact
+    private var comparisonArtifact: CodeArtifact?
 
     /// `nil` while the diagram has no state-variable spec chosen yet.
-    @Published private(set) var result: Result<StateDiagram, StateDiagramAnalysisError>?
+    @Published private(set) var result: Result<StateDiagram, StateDiagramAnalysisError>? {
+        didSet { rotorPlanCache.invalidate() }
+    }
     @Published private(set) var isEmpty = false
     @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
-    @Published var positionOverrides: [String: CGPoint] = [:]
+    @Published var positionOverrides: [String: CGPoint] = [:] { didSet { rotorPlanCache.invalidate() } }
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
     /// The selected transition, keyed by its position in `diagram.transitions` (also
@@ -73,6 +75,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     private var diff: StateDiagramDiff?
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
+    let rotorPlanCache = DiagramRotorPlanCache()
 
     // MARK: - Init
 
@@ -88,6 +91,17 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         self.positionOverrides = restoredPositions
         self.result = nil
         rebuild(configuration: configuration)
+    }
+
+    /// Re-derives in place for a new comparison; dragged positions and undo history no longer apply.
+    func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
+        self.artifact = artifact
+        self.comparisonArtifact = comparison
+        rebuild(configuration: configuration)
+        positionOverrides = [:]
+        selectedNodeIDs = []
+        selectedTransitionID = nil
+        history.clear()
     }
 
     private func rebuild(configuration: StateDiagramConfiguration?) {

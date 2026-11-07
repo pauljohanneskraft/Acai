@@ -4,7 +4,7 @@ import SwiftUI
 /// Purely a display+bookkeeping value; the actual work lives wherever `ActivityCenter.run` was
 /// called from.
 struct ActivityOperation: Identifiable, Sendable {
-    enum Kind: Sendable {
+    enum Kind: Codable, Equatable, Sendable {
         case reindex
         case gitFetch
         case gitClone

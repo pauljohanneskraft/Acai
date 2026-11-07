@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 extension CanvasInteraction {
@@ -13,6 +14,7 @@ extension CanvasInteraction {
         DragGesture(minimumDistance: 3)
             .onChanged { value in
                 if dragStartPositions.wrappedValue.isEmpty {
+                    self.beginLayoutGesture()
                     self.recordUndo()
                     if !self.selectedNodeIDs.contains(id) {
                         self.selectedNodeIDs = [id]
@@ -34,8 +36,18 @@ extension CanvasInteraction {
             .onEnded { _ in
                 dragStartPositions.wrappedValue = [:]
                 activeDragCanvasLocation.wrappedValue = nil
+                self.endLayoutGesture()
                 onCommit()
             }
+    }
+
+    func beginLayoutGesture() {
+        rotorPlanCache.hold()
+    }
+
+    func endLayoutGesture() {
+        guard rotorPlanCache.release() else { return }
+        (objectWillChange as? ObservableObjectPublisher)?.send()
     }
 }
 
@@ -103,6 +115,7 @@ struct CanvasResizeHandle<Model: CanvasInteraction>: View {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
                 if activeResizeState == nil {
+                    model.beginLayoutGesture()
                     model.recordUndo()
                     activeResizeState = DiagramResizeState(
                         startSize: model.effectiveSize(for: id),
@@ -122,6 +135,7 @@ struct CanvasResizeHandle<Model: CanvasInteraction>: View {
             }
             .onEnded { _ in
                 activeResizeState = nil
+                model.endLayoutGesture()
                 onCommit()
             }
     }

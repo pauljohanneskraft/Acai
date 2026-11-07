@@ -91,10 +91,9 @@ struct DeclarationSignatureExtractor {
         }) ?? []
 
         guard let whereClause else { return params }
-        // Merge `where` constraints onto the matching parameter, matched by leading name.
+        // `T.Element: P` bounds the associated type, not `T`, so it becomes a parameter of its own.
         for (name, constraint) in extractWhereConstraints(whereClause) {
-            let base = name.components(separatedBy: ".").first ?? name
-            if let idx = params.firstIndex(where: { $0.name == base }) {
+            if let idx = params.firstIndex(where: { $0.name == name }) {
                 params[idx].constraints.append(constraint)
             } else {
                 params.append(GenericParameter(name: name, constraints: [constraint]))
@@ -103,29 +102,19 @@ struct DeclarationSignatureExtractor {
         return params
     }
 
+    /// Same-type requirements (`T == Int`) state an equality rather than a bound, so they are skipped.
     func extractWhereConstraints(
         _ whereClause: GenericWhereClauseSyntax
     ) -> [(name: String, constraint: GenericConstraint)] {
-        var result: [(name: String, constraint: GenericConstraint)] = []
-        for requirement in whereClause.requirements {
-            switch requirement.requirement {
-            case .conformanceRequirement(let conf):
-                result.append((
-                    conf.leftType.trimmedDescription,
-                    GenericConstraint(
-                        kind: .conformance, type: typeReferences.extractTypeReference(from: conf.rightType))
-                ))
-            case .sameTypeRequirement(let same):
-                result.append((
-                    same.leftType.trimmedDescription,
-                    GenericConstraint(
-                        kind: .sameType, type: typeReferences.extractTypeReference(from: same.rightType))
-                ))
-            default:
-                continue
-            }
+        whereClause.requirements.compactMap { requirement in
+            guard case .conformanceRequirement(let conformance) = requirement.requirement else { return nil }
+            return (
+                conformance.leftType.trimmedDescription,
+                GenericConstraint(
+                    kind: .conformance,
+                    type: typeReferences.extractTypeReference(from: conformance.rightType))
+            )
         }
-        return result
     }
 
     func extractAssociatedType(from node: AssociatedTypeDeclSyntax) -> GenericParameter {

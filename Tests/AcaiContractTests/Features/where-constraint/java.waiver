@@ -1,0 +1,1 @@
+Java has no where clause; every bound is written inline as <Item extends Named & Ranked>, which the generics feature covers.

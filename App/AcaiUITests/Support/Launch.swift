@@ -116,6 +116,11 @@ extension XCUIApplication {
         )
     }
 
+    /// A file under the bundle's `Fixtures/` that no fixture copies by itself, for a journey to stage.
+    func fixtureFile(_ name: String) -> URL? {
+        Bundle(for: FixtureBundleAnchor.self).url(forResource: name, withExtension: nil, subdirectory: "Fixtures")
+    }
+
     /// Encodes a repeatable multi-field value into one environment variable. Mirrors the decoding in
     /// `UITestFixtureResolver` (`Sources/AcaiApp/UITestSupport.swift`).
     func environmentRecords(_ records: [[String]]) -> String {

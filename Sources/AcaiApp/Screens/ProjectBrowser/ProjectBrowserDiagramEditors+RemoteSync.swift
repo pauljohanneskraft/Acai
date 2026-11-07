@@ -10,21 +10,26 @@ extension ProjectCodebaseEditor {
     /// Clones `remoteURL` into a shared, app-managed "hub" clone (reused by every codebase that
     /// references the same remote), attaches a fresh linked worktree for this codebase at `ref`,
     /// then indexes it. Works for any git remote; a GitHub token is used only for GitHub.
+    /// `.completed` once the codebase is added, whether or not its first index then succeeds.
+    @discardableResult
     func addRemoteCodebase(
         to projectID: UUID, name: String, remoteURL: URL, ref: String, refKind: GitCheckout.Ref.Kind,
         depth: GitHistoryDepth = .full
-    ) async {
-        guard store.projects.contains(where: { $0.id == projectID }) else { return }
+    ) async -> OperationOutcome {
+        guard store.projects.contains(where: { $0.id == projectID }) else { return .cancelled }
         let codebaseID = UUID()
         let destination = worktreeDestination(codebaseID: codebaseID)
         let endpoint = RemoteEndpoint(remoteURL: remoteURL)
         let target = RemoteCheckoutTarget(endpoint: endpoint, ref: ref, depth: depth)
         // Locals, not `self`/`store`, so the `@Sendable` closure below closes over Sendable values only.
         let remoteService = self.remoteService
+        let request = InterruptedOperationRecord.RemoteCloneRequest(
+            projectID: projectID, codebaseID: codebaseID, name: name, remoteURL: remoteURL, ref: ref,
+            refKind: refKind, latestSnapshotOnly: depth == .latestSnapshot)
         do {
             let cloneResult = try await store.activityCenter.run(
                 title: .app("Activity.CloningRemote \(remoteDisplayName(remoteURL))"),
-                kind: .gitClone, subject: .codebase(codebaseID)
+                kind: .gitClone, subject: .codebase(codebaseID), resumption: .clone(request)
             ) { onProgress in
                 try await remoteService.attachWorktree(target, destination: destination, onProgress: onProgress)
             }
@@ -33,7 +38,7 @@ extension ProjectCodebaseEditor {
                 await removeWorktree(
                     codebaseID: codebaseID,
                     repository: CodebaseRepositoryReference(remoteURL: remoteURL, ref: ref))
-                return
+                return .cancelled
             }
             // The clone outlived its project. Nothing references the worktree that was just
             // attached, so take it down the same way deleting the codebase would rather than
@@ -43,7 +48,7 @@ extension ProjectCodebaseEditor {
                     codebaseID: codebaseID,
                     repository: CodebaseRepositoryReference(remoteURL: persistedRemoteURL, ref: ref))
                 store.report(.app("Error.ProjectBrowserViewModel.ProjectDeletedWhileCloning \(name)"))
-                return
+                return .failed
             }
             store.projects[index].codebases.append(Codebase(
                 id: codebaseID,
@@ -56,9 +61,19 @@ extension ProjectCodebaseEditor {
             persist()
             store.repositoryChanges.send(persistedRemoteURL)
             await reindex(codebaseID: codebaseID)
+            return .completed
         } catch {
             report(error, for: endpoint, generic: { .app("Error.ProjectBrowserViewModel.CloneFailed \($0)") })
+            return .failed
         }
+    }
+
+    /// Clones again what an earlier launch never finished; `record` stays until the new clone lands.
+    func retryClone(_ record: InterruptedOperationRecord) async -> OperationOutcome {
+        guard case .clone(let request) = record.resumption else { return .cancelled }
+        return await addRemoteCodebase(
+            to: request.projectID, name: request.name, remoteURL: request.remoteURL, ref: request.ref,
+            refKind: request.refKind, depth: request.depth)
     }
 
     /// Fetches a managed codebase's remote and moves it to the latest commit of its ref, then
@@ -73,7 +88,7 @@ extension ProjectCodebaseEditor {
         do {
             let fetchResult = try await store.activityCenter.run(
                 title: .app("Activity.FetchingRemote \(repository.remoteDisplayName)"),
-                kind: .gitFetch, subject: .codebase(codebaseID),
+                kind: .gitFetch, subject: .codebase(codebaseID), resumption: .pull(codebaseID: codebaseID),
                 resyncOperation(codebase: codebase, target: target)
             )
             guard let latestSHA = fetchResult else { return .cancelled }
@@ -102,6 +117,7 @@ extension ProjectCodebaseEditor {
             let switchResult = try await store.activityCenter.run(
                 title: .app("Activity.SwitchingRemote \(repository.remoteDisplayName) \(ref)"),
                 kind: .gitFetch, subject: .codebase(codebaseID),
+                resumption: .switchRef(codebaseID: codebaseID, ref: ref, refKind: kind),
                 resyncOperation(codebase: codebase, target: target)
             )
             guard let headSHA = switchResult else { return .cancelled }
