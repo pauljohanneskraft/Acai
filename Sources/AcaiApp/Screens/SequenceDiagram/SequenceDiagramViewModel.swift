@@ -63,11 +63,11 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     private(set) var artifact: CodeArtifact
     private var comparisonArtifact: CodeArtifact?
 
-    @Published private(set) var diagram: SequenceDiagram
+    @Published private(set) var diagram: SequenceDiagram { didSet { rotorPlanCache.invalidate() } }
     @Published private(set) var isEmpty = false
     @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
     /// Per-participant centre overrides, keyed by `Participant.id`. Only `x` is honoured.
-    @Published var positionOverrides: [String: CGPoint] = [:]
+    @Published var positionOverrides: [String: CGPoint] = [:] { didSet { rotorPlanCache.invalidate() } }
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
     /// The selected message, keyed by its `SequenceLayoutModel.MessageLayout.id` (a positional index
@@ -80,6 +80,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     private var diff: SequenceDiagramDiff?
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
+    let rotorPlanCache = DiagramRotorPlanCache()
 
     // MARK: - Init
 

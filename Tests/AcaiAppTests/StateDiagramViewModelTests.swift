@@ -223,3 +223,38 @@ struct StateDiagramViewModelTests {
         #expect(!vm.isDeltaMode)
     }
 }
+
+// MARK: - Rotor plan
+
+extension StateDiagramViewModelTests {
+    @Test("The rotor plan names every drawn state and transition, and a comparison's additions are changed")
+    func rotorPlanMatchesTheCanvas() throws {
+        let vm = StateDiagramViewModel(
+            artifact: artifact(withFailState: true), configuration: config(),
+            comparisonArtifact: artifact(withFailState: false))
+        let layout = vm.layout
+
+        let plan = vm.rotorPlan
+
+        #expect(Set(plan.elements.map(\.id)) == Set(layout.nodes.map(\.id)))
+        #expect(Set(plan.connections.map(\.id)) == Set(layout.edges.map(\.accessibilityID)))
+        let transitions = try #require(vm.diagram?.transitions)
+        let addedIndex = try #require(transitions.firstIndex { $0.to == "state_failed" })
+        let addedEdge = try #require(layout.edges.first { $0.id == addedIndex })
+        let changed = Set(plan.changed.map(\.id))
+        #expect(changed.contains("state_failed"))
+        #expect(changed.contains(addedEdge.accessibilityID))
+        #expect(!changed.contains("state_loading"))
+    }
+
+    @Test("Selection and a drag tick reuse the rotor plan; a committed drag or a new configuration rebuilds it")
+    func rotorPlanIsCachedUntilTheLayoutChanges() throws {
+        let vm = StateDiagramViewModel(artifact: artifact(), configuration: config())
+        let first = try #require(vm.rotorPlan.elements.first?.id)
+
+        RotorPlanCachingCheck(model: vm) { $0.rotorPlan }.verify(moving: first, to: CGPoint(x: 5000, y: 5000))
+
+        vm.applyConfiguration(config(variable: "missing"))
+        #expect(vm.rotorPlan.elements.isEmpty)
+    }
+}
