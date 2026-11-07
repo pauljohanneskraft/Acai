@@ -55,10 +55,12 @@ struct GuidedRouteCard: View {
                 .accessibilityIdentifier("guidedRoute.hideButton")
             }
             if stops.isEmpty {
-                Text(.app("View.GuidedRouteCard.EmptyState"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("guidedRoute.emptyState")
+                ActionableEmptyState(
+                    text: .app("View.GuidedRouteCard.EmptyState"),
+                    systemImage: "map",
+                    identifier: "guidedRoute.emptyState",
+                    fillsContainer: false
+                )
             } else {
                 ForEach(stops) { stop in
                     stopButton(stop)
