@@ -1,0 +1,1 @@
+TypeScript has no where clause; a bound is written inline as <Item extends Named>, and a second one only as an intersection type.

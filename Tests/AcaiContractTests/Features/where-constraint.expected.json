@@ -1,0 +1,18 @@
+{
+  "types": [
+    { "name": "Named", "kind": "interface", "access": "+" },
+    { "name": "Ranked", "kind": "interface", "access": "+" },
+    {
+      "name": "Shelf",
+      "kind": "class",
+      "access": "+",
+      "generics": ["Item: Named & Ranked"],
+      "members": [
+        { "name": "put", "role": "method", "access": "+", "type": "#primitive", "parameters": ["item: Item"] }
+      ]
+    }
+  ],
+  "relationships": [
+    { "kind": "dependency", "source": "Shelf", "target": "Item" }
+  ]
+}
