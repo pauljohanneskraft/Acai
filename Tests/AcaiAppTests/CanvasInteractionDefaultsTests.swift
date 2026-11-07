@@ -18,6 +18,7 @@ struct CanvasInteractionDefaultsTests {
         @Published var selectedNodeIDs: Set<String> = []
         @Published var isMultiSelectActive = false
         let history = DiagramHistoryManager<[String: CGPoint]>()
+        let rotorPlanCache = DiagramRotorPlanCache()
         private let frames: [String: CGRect]
 
         init(frames: [String: CGRect]) { self.frames = frames }

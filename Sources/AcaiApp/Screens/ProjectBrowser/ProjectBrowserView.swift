@@ -21,6 +21,7 @@ public struct ProjectBrowserView: View {
     // object, so ⇧⌘O reaches the key window's own — and iOS's comes from the scene.
     #if os(macOS)
     @StateObject private var quickOpenPresenter = QuickOpenPresenter()
+    @State private var comparePopover = ComparePopoverPresenter()
     #else
     @EnvironmentObject private var quickOpenPresenter: QuickOpenPresenter
     #endif
@@ -111,6 +112,7 @@ public struct ProjectBrowserView: View {
                 ActivityIndicatorView(activityCenter: model.store.activityCenter)
             }
         }
+        .modifier(ComparePopoverPresentation(presenter: comparePopover, model: model))
         #endif
         .sheet(isPresented: $newProjectPresented) {
             NewProjectSheet { title, subtitle in

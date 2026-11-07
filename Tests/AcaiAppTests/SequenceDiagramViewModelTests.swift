@@ -198,4 +198,55 @@ struct SequenceDiagramViewModelTests {
         let message = try #require(vm.orderedMessages.first)
         #expect(vm.messageDeltaStatus(message) == nil)
     }
+
+    @Test func aComparisonChangeDropsOffsetsSelectionAndHistoryInPlace() {
+        let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
+        vm.positionOverrides["Service"] = CGPoint(x: 40, y: 0)
+        vm.selectedMessageID = 0
+        vm.recordUndo()
+        #expect(vm.canUndo)
+
+        vm.updateComparison(artifact: artifact(), comparison: artifact(loggingFromSave: false))
+
+        #expect(vm.isDeltaMode)
+        #expect(vm.positionOverrides.isEmpty)
+        #expect(vm.selectedMessageID == nil)
+        #expect(!vm.canUndo)
+
+        vm.updateComparison(artifact: artifact(), comparison: nil)
+        #expect(!vm.isDeltaMode)
+    }
+}
+
+// MARK: - Rotor plan
+
+extension SequenceDiagramViewModelTests {
+    @Test("The rotor plan names every drawn participant and message, and a comparison's additions are changed")
+    func rotorPlanMatchesTheCanvas() throws {
+        let vm = SequenceDiagramViewModel(
+            artifact: artifact(loggingFromSave: true), configuration: config(),
+            comparisonArtifact: artifact(loggingFromSave: false))
+        let layout = vm.layout
+
+        let plan = vm.rotorPlan
+
+        #expect(Set(plan.elements.map(\.id)) == Set(layout.participants.map(\.id)))
+        #expect(Set(plan.connections.map(\.id)) == Set(layout.messages.map(\.accessibilityID)))
+        let addedIndex = try #require(vm.orderedMessages.firstIndex { $0.to == "Logger" })
+        let addedMessage = try #require(layout.messages.first { $0.id == addedIndex })
+        let changed = Set(plan.changed.map(\.id))
+        #expect(changed.contains("Logger"))
+        #expect(changed.contains(addedMessage.accessibilityID))
+        #expect(!changed.contains("Service"))
+    }
+
+    @Test("Selection and a drag tick reuse the rotor plan; a committed drag or a new configuration rebuilds it")
+    func rotorPlanIsCachedUntilTheLayoutChanges() {
+        let vm = SequenceDiagramViewModel(artifact: artifact(), configuration: config())
+
+        RotorPlanCachingCheck(model: vm) { $0.rotorPlan }.verify(moving: "Service", to: CGPoint(x: 5000, y: 0))
+
+        vm.applyConfiguration(config(type: "Repository", method: "save"))
+        #expect(vm.rotorPlan.elements.map(\.id) == ["Repository"])
+    }
 }

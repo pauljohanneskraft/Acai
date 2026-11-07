@@ -1,0 +1,1 @@
+Dart has no where clause; a bound is written inline as <Item extends Named>, and a parameter takes only one.

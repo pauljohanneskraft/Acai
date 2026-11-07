@@ -9,22 +9,26 @@ import AcaiRender
 
 @MainActor
 final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
-    private let artifact: CodeArtifact
+    private var artifact: CodeArtifact
     private let scope: CallGraphScope
-    private let comparisonArtifact: CodeArtifact?
+    private var comparisonArtifact: CodeArtifact?
 
     @Published private(set) var graph: CallGraph {
-        didSet { callCounts = CallGraphCallCounts(graph: graph) }
+        didSet {
+            callCounts = CallGraphCallCounts(graph: graph)
+            rotorPlanCache.invalidate()
+        }
     }
     private(set) var callCounts = CallGraphCallCounts(graph: CallGraph())
     @Published private(set) var filter: AcaiQuality.Selector?
     @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
-    @Published var positionOverrides: [String: CGPoint] = [:]
+    @Published var positionOverrides: [String: CGPoint] = [:] { didSet { rotorPlanCache.invalidate() } }
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
+    let rotorPlanCache = DiagramRotorPlanCache()
 
     private var diff: CallGraphDiff?
 
@@ -46,6 +50,16 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     func applyFilter(_ newFilter: AcaiQuality.Selector?) {
         filter = newFilter
         rebuild()
+    }
+
+    /// Re-derives in place for a new comparison; dragged positions and undo history no longer apply.
+    func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
+        self.artifact = artifact
+        self.comparisonArtifact = comparison
+        rebuild()
+        positionOverrides = [:]
+        selectedNodeIDs = []
+        history.clear()
     }
 
     var isEmpty: Bool { graph.nodes.isEmpty }
