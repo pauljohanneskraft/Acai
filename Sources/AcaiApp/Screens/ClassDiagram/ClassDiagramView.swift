@@ -9,6 +9,7 @@ struct ClassDiagramView: View {
     let artifact: CodeArtifact
     let codebase: Codebase
     let isComparePresented: Binding<Bool>
+    let comparisonArtifact: CodeArtifact?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -28,11 +29,13 @@ struct ClassDiagramView: View {
     /// `.zero` until the canvas reports its real size, so `FitToView` declines to fit against a placeholder.
     @State var canvasViewportSize = CGSize.zero
     @State var isSearchBarVisible = false
+    @Namespace private var rotorNamespace
     @FocusState var isSearchFieldFocused: Bool
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
     @Environment(\.compareChangedFileSelection) var changedFileSelection
+    @Environment(\.comparisonIdentity) private var comparisonIdentity
 
     private var isCompactWidth: Bool {
         #if os(iOS)
@@ -50,6 +53,7 @@ struct ClassDiagramView: View {
         self.artifact = artifact
         self.codebase = codebase
         self.isComparePresented = isComparePresented
+        self.comparisonArtifact = comparisonArtifact
         let restoredSizes = diagram.nodeSizes.mapValues { $0.cgSize }
         self._viewModel = StateObject(wrappedValue: ClassDiagramViewModel(
             codebase: codebase,
@@ -67,6 +71,9 @@ struct ClassDiagramView: View {
         sidebarPresentedCanvas
             .onChange(of: changedFileSelection.wrappedValue) { _, _ in applyChangedFileSelection() }
             .onAppear { applyChangedFileSelection() }
+            .onChange(of: comparisonIdentity) { _, _ in
+                viewModel.updateComparison(artifact: artifact, comparison: comparisonArtifact)
+            }
             .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
                 viewModel.updateMeasuredSizes(sizes)
                 centerOnceMeasured()
@@ -181,7 +188,8 @@ struct ClassDiagramView: View {
     // MARK: - Canvas Content
 
     private var canvasContent: some View {
-        PannableCanvas(
+        let rotors = viewModel.rotorPlan
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -190,14 +198,18 @@ struct ClassDiagramView: View {
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
                 ZStack {
-                    GroupingBoxLayer(viewModel: viewModel)
-                    nodeLayer
-                    edgeLayer
+                    GroupingBoxLayer(viewModel: viewModel, rotors: rotors)
+                    nodeLayer(rotors: rotors)
+                    edgeLayer(rotors: rotors)
                     resizeHandleLayer
                     selectionRectangleLayer
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace) { target in
+            canvasOffset = CanvasCentering(viewport: canvasViewportSize, scale: canvasScale)
+                .offset(revealing: target.frame, from: canvasOffset)
+        }
         .overlay {
             if let nodeLimitError = viewModel.nodeLimitError {
                 nodeLimitErrorState(message: nodeLimitError.message)
@@ -216,9 +228,7 @@ struct ClassDiagramView: View {
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as PannableCanvas's zoom indicator.
         .overlay(alignment: .topTrailing) {
-            CompareOverlayButton(
-                diagram: diagram, isPresented: isComparePresented, onSelectChangedFileTypes: selectChangedFileTypes
-            )
+            CompareOverlayButton(diagram: diagram, isPresented: isComparePresented)
         }
         .overlay(alignment: .top) {
             if isSearchBarVisible {
@@ -265,10 +275,9 @@ struct ClassDiagramView: View {
 extension ClassDiagramView {
     // MARK: - Edge Layer
 
-    @ViewBuilder private var edgeLayer: some View {
+    private func edgeLayer(rotors: DiagramRotorPlan) -> some View {
         let edges = viewModel.edges.removingDuplicates(by: \.id)
-        let names = viewModel.nodeNamesByID
-        ForEach(edges) { edge in
+        return ForEach(edges) { edge in
             if let sourceRect = viewModel.nodeRect(for: edge.sourceID),
                let targetRect = viewModel.nodeRect(for: edge.targetID) {
                 RelationshipEdgeView(
@@ -278,7 +287,10 @@ extension ClassDiagramView {
                     sourceLabel: edge.sourceLabel,
                     targetLabel: edge.targetLabel,
                     strokeColor: viewModel.deltaColor(for: edge),
-                    accessibilityDescription: viewModel.edgeAccessibility(for: edge, nodeNames: names)
+                    accessibilityDescription: rotors.edgeAccessibility(
+                        of: edge.rotorID, identifier: edge.accessibilityIdentifier, namespace: rotorNamespace
+                    ) ?? viewModel.edgeAccessibility(for: edge, nodeNames: viewModel.nodeNamesByID)
+                        .rotorMember(id: edge.rotorID, in: rotors, namespace: rotorNamespace)
                 )
             }
         }
@@ -296,78 +308,83 @@ extension ClassDiagramView {
         ClassDiagramConfigEditor(model: model, viewModel: viewModel, diagramID: diagram.id, artifact: artifact)
     }
 
-    @ViewBuilder private var nodeLayer: some View {
-        let nodes = viewModel.nodes.removingDuplicates { $0.id }
+    private func nodeLayer(rotors: DiagramRotorPlan) -> some View {
         let isSearching = !viewModel.searchQuery.isEmpty
         let searchMatches = Set(viewModel.searchMatchIDs)
         let currentSearchMatch = viewModel.currentSearchNodeID
-        ForEach(nodes) { node in
+        return ForEach(viewModel.nodes.removingDuplicates { $0.id }) { node in
             if let position = viewModel.nodePositions[node.id] {
-                let hasUserSize = viewModel.userNodeSizes[node.id] != nil
-                let size = viewModel.effectiveSize(for: node.id)
                 let selected = viewModel.selectedNodeIDs.contains(node.id)
-                let deltaBorder = viewModel.deltaColor(for: node)
-                let deltaBadge = viewModel.deltaBadge(for: node)
-                let isDimmedBySearch = isSearching && !searchMatches.contains(node.id)
-                let isCurrentSearchMatch = isSearching && node.id == currentSearchMatch
-                Group {
-                    if hasUserSize {
-                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder, badge: deltaBadge)
-                            .frame(width: size.width, height: size.height)
-                            .contentShape(Rectangle().inset(by: 6))
-                    } else {
-                        TypeNodeView(node: node, isSelected: selected, borderOverride: deltaBorder, badge: deltaBadge)
-                            .measuredNode(id: node.id)
+                typeNodeBody(node, isSelected: selected)
+                    .opacity(isSearching && !searchMatches.contains(node.id) ? 0.25 : 1)
+                    .overlay {
+                        if isSearching && node.id == currentSearchMatch {
+                            RoundedRectangle(cornerRadius: 5).stroke(Color.yellow, lineWidth: 3)
+                        }
                     }
-                }
-                .opacity(isDimmedBySearch ? 0.25 : 1)
-                .overlay {
-                    if isCurrentSearchMatch {
-                        RoundedRectangle(cornerRadius: 5).stroke(Color.yellow, lineWidth: 3)
-                    }
-                }
-                .diagramNodeAccessibility(
-                    DiagramElementDescription(typeNode: node, delta: deltaBadge),
-                    identifier: "diagram.typeNode.\(node.name)",
-                    isSelected: selected,
-                    onSelect: { viewModel.selectNode(node.id, extending: false) },
-                    onShowDetails: { showDetails(for: node.id) }
-                )
-                .position(position)
-                .onTapGesture(count: 2) {
-                    showDetails(for: node.id)
-                }
-                .onTapGesture(count: 1) {
-                    #if os(macOS)
-                    let extending = NSEvent.modifierFlags.contains(.command)
-                    #else
-                    let extending = viewModel.isMultiSelectActive
-                    #endif
-                    viewModel.selectNode(node.id, extending: extending)
-                }
-                .highPriorityGesture(viewModel.nodeDragGesture(
-                    id: node.id,
-                    dragStartPositions: $dragStartPositions,
-                    activeDragCanvasLocation: $activeDragCanvasLocation,
-                    onCommit: savePositions
-                ))
-                .contextMenu {
-                    Button {
+                    .diagramNodeAccessibility(
+                        DiagramElementDescription(typeNode: node, delta: viewModel.deltaBadge(for: node)),
+                        identifier: "diagram.typeNode.\(node.name)",
+                        isSelected: selected,
+                        onSelect: { viewModel.selectNode(node.id, extending: false) },
+                        onShowDetails: { showDetails(for: node.id) }
+                    )
+                    .diagramRotorMember(id: node.id, in: rotors, namespace: rotorNamespace)
+                    .position(position)
+                    .onTapGesture(count: 2) {
                         showDetails(for: node.id)
-                    } label: {
-                        Label(.app("View.ClassDiagramView.Details"), systemImage: "info")
                     }
-                    Divider()
-                    Toggle(.app("View.ClassDiagramView.ShowMembers"), isOn: editor.typeVisibility(
-                        node.id, override: \.propertyVisibility, default: \.showProperties))
-                    Toggle(.app("View.ClassDiagramView.ShowFunctions"), isOn: editor.typeVisibility(
-                        node.id, override: \.methodVisibility, default: \.showMethods))
-                    if node.kind == .enum {
-                        Toggle(.app("View.ClassDiagramView.ShowEnumCases"), isOn: editor.typeVisibility(
-                            node.id, override: \.enumCaseVisibility, default: \.showEnumCases))
+                    .onTapGesture(count: 1) {
+                        #if os(macOS)
+                        let extending = NSEvent.modifierFlags.contains(.command)
+                        #else
+                        let extending = viewModel.isMultiSelectActive
+                        #endif
+                        viewModel.selectNode(node.id, extending: extending)
                     }
-                }
+                    .highPriorityGesture(viewModel.nodeDragGesture(
+                        id: node.id,
+                        dragStartPositions: $dragStartPositions,
+                        activeDragCanvasLocation: $activeDragCanvasLocation,
+                        onCommit: savePositions
+                    ))
+                    .contextMenu {
+                        typeNodeContextMenu(node)
+                    }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func typeNodeBody(_ node: GeneratedDiagramNode, isSelected: Bool) -> some View {
+        let deltaBorder = viewModel.deltaColor(for: node)
+        let deltaBadge = viewModel.deltaBadge(for: node)
+        if viewModel.userNodeSizes[node.id] != nil {
+            let size = viewModel.effectiveSize(for: node.id)
+            TypeNodeView(node: node, isSelected: isSelected, borderOverride: deltaBorder, badge: deltaBadge)
+                .frame(width: size.width, height: size.height)
+                .contentShape(Rectangle().inset(by: 6))
+        } else {
+            TypeNodeView(node: node, isSelected: isSelected, borderOverride: deltaBorder, badge: deltaBadge)
+                .measuredNode(id: node.id)
+        }
+    }
+
+    @ViewBuilder
+    private func typeNodeContextMenu(_ node: GeneratedDiagramNode) -> some View {
+        Button {
+            showDetails(for: node.id)
+        } label: {
+            Label(.app("View.ClassDiagramView.Details"), systemImage: "info")
+        }
+        Divider()
+        Toggle(.app("View.ClassDiagramView.ShowMembers"), isOn: editor.typeVisibility(
+            node.id, override: \.propertyVisibility, default: \.showProperties))
+        Toggle(.app("View.ClassDiagramView.ShowFunctions"), isOn: editor.typeVisibility(
+            node.id, override: \.methodVisibility, default: \.showMethods))
+        if node.kind == .enum {
+            Toggle(.app("View.ClassDiagramView.ShowEnumCases"), isOn: editor.typeVisibility(
+                node.id, override: \.enumCaseVisibility, default: \.showEnumCases))
         }
     }
 

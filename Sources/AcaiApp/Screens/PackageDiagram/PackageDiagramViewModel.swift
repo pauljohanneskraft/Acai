@@ -15,19 +15,20 @@ import AcaiQuality
 /// reuses the shared canvas (pan/zoom, drag, marquee, undo/redo).
 @MainActor
 final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
-    private let artifact: CodeArtifact
-    private let comparisonArtifact: CodeArtifact?
+    private var artifact: CodeArtifact
+    private var comparisonArtifact: CodeArtifact?
 
-    @Published private(set) var diagram: PackageDiagram
+    @Published private(set) var diagram: PackageDiagram { didSet { rotorPlanCache.invalidate() } }
     @Published private(set) var filter: AcaiQuality.Selector?
     @Published private(set) var emptyReason: DiagramEmptyReason = .codebase
 
     /// Per-module centre overrides, keyed by module id.
-    @Published var positionOverrides: [String: CGPoint] = [:]
+    @Published var positionOverrides: [String: CGPoint] = [:] { didSet { rotorPlanCache.invalidate() } }
     @Published var selectedNodeIDs: Set<String> = []
     @Published var isMultiSelectActive = false
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
+    let rotorPlanCache = DiagramRotorPlanCache()
 
     private var diff: PackageDiagramDiff?
 
@@ -50,6 +51,16 @@ final class PackageDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     func applyFilter(_ newFilter: AcaiQuality.Selector?) {
         filter = newFilter
         rebuild()
+    }
+
+    /// Re-derives in place for a new comparison; dragged positions and undo history no longer apply.
+    func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
+        self.artifact = artifact
+        self.comparisonArtifact = comparison
+        rebuild()
+        positionOverrides = [:]
+        selectedNodeIDs = []
+        history.clear()
     }
 
     var isEmpty: Bool { diagram.nodes.isEmpty }

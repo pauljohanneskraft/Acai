@@ -9,7 +9,9 @@ extension SequenceDiagramView {
     // MARK: - Canvas
 
     var canvasContent: some View {
-        PannableCanvas(
+        let layout = viewModel.layout
+        let rotors = viewModel.rotorPlan
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -17,7 +19,6 @@ extension SequenceDiagramView {
             autoPanController: canvasAutoPanController,
             onViewportSizeChange: { canvasViewportSize = $0 },
             content: {
-                let layout = viewModel.layout
                 // A plain Sendable dictionary, not a closure capturing `viewModel` directly —
                 // `SequenceEnsembleView.messageColor` is `@Sendable`, and `viewModel` (a `@MainActor`
                 // class) isn't, so this mirrors `ClassDiagramViewModel.exportPNGData`'s precomputed-
@@ -25,22 +26,21 @@ extension SequenceDiagramView {
                 let messageColors = Dictionary(uniqueKeysWithValues: layout.messages.compactMap { message in
                     viewModel.messageDeltaColor(message).map { (message.id, $0) }
                 })
-                let messages = viewModel.orderedMessages
-                let names = Dictionary(
-                    layout.participants.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
                 ZStack(alignment: .topLeading) {
                     SequenceEnsembleView(layout: layout, messageColor: { messageColors[$0.id] })
                     ForEach(layout.participants) { participant in
-                        participantHeader(participant)
+                        participantHeader(participant, rotors: rotors)
                     }
                     ForEach(layout.messages) { message in
-                        messageTapTarget(
-                            message,
-                            description: messageDescription(message, messages: messages, names: names))
+                        messageTapTarget(message, rotors: rotors)
                     }
                 }
             }
         )
+        .diagramRotors(rotors, in: rotorNamespace) { target in
+            canvasOffset = CanvasCentering(viewport: canvasViewportSize, scale: canvasScale)
+                .offset(revealing: target.frame, from: canvasOffset)
+        }
         // Overlay inside the canvas (not a sibling spanning the inspector column too), so it doesn't
         // render on top of the inspector when open — same as the other diagram types.
         .overlay(alignment: .topTrailing) {
@@ -48,7 +48,9 @@ extension SequenceDiagramView {
         }
     }
 
-    func participantHeader(_ participant: SequenceLayoutModel.ParticipantFrame) -> some View {
+    func participantHeader(
+        _ participant: SequenceLayoutModel.ParticipantFrame, rotors: DiagramRotorPlan
+    ) -> some View {
         SequenceParticipantHeader(
             participant: participant,
             isSelected: viewModel.selectedNodeIDs.contains(participant.id)
@@ -64,6 +66,7 @@ extension SequenceDiagramView {
             onSelect: { viewModel.selectNode(participant.id, extending: false) },
             onShowDetails: { showDetails(forParticipant: participant.id) }
         )
+        .diagramRotorMember(id: participant.id, in: rotors, namespace: rotorNamespace)
         .position(x: participant.headerRect.midX, y: participant.headerRect.midY)
         .onTapGesture(count: 2) {
             showDetails(forParticipant: participant.id)
@@ -81,7 +84,7 @@ extension SequenceDiagramView {
     /// `FreeformDiagramView+Canvas.swift`'s `messageTapTarget`, but sized to a full 44pt tall hit area
     /// (Freeform's 30pt strip is a tap-target shortfall this doesn't repeat).
     func messageTapTarget(
-        _ message: SequenceLayoutModel.MessageLayout, description: DiagramElementDescription
+        _ message: SequenceLayoutModel.MessageLayout, rotors: DiagramRotorPlan
     ) -> some View {
         let width = max(abs(message.toX - message.fromX), 44)
         let midX = (message.fromX + message.toX) / 2
@@ -100,33 +103,19 @@ extension SequenceDiagramView {
             .position(x: midX, y: message.y)
             .accessibilityElement()
             .accessibilityLabel(Text(.app("DiagramElementDescription.Message")))
-            .accessibilityValue(Text(verbatim: description.summary))
+            .accessibilityValue(Text(verbatim: rotors.label(ofConnection: message.accessibilityID) ?? ""))
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { toggleMessageSelection(message.id) }
             .accessibilityAction(named: Text(.app("View.DiagramNodeAccessibility.ShowDetails"))) {
                 showDetails(forMessage: message.id)
             }
+            .diagramRotorMember(id: message.accessibilityID, in: rotors, namespace: rotorNamespace)
             .onTapGesture(count: 2) {
                 showDetails(forMessage: message.id)
             }
             .onTapGesture(count: 1) {
                 toggleMessageSelection(message.id)
             }
-    }
-
-    /// `messages` and `names` are resolved once per render by the caller, not once per message.
-    private func messageDescription(
-        _ layout: SequenceLayoutModel.MessageLayout, messages: [SequenceDiagram.Message], names: [String: String]
-    ) -> DiagramElementDescription {
-        guard messages.indices.contains(layout.id) else {
-            return DiagramElementDescription(label: "", details: [])
-        }
-        let message = messages[layout.id]
-        return DiagramElementDescription(
-            edgeFrom: names[message.from] ?? message.from,
-            to: names[message.to] ?? message.to,
-            details: layout.label.map { [.app("DiagramElementDescription.EdgeLabel \($0)")] } ?? [],
-            delta: viewModel.messageDeltaStatus(message))
     }
 
     private func toggleMessageSelection(_ id: Int) {

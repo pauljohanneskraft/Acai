@@ -19,6 +19,7 @@ struct ContractShape: Codable, Equatable {
         /// form in which Swift `internal` and Java package-private are the same thing.
         var access: String
         var modifiers: [String] = []
+        /// `T`, or `T: A & B` with its bounds in declaration order.
         var generics: [String] = []
         var annotations: [String] = []
         var supertypes: [String] = []

@@ -26,6 +26,7 @@ struct FreeformDiagramView: View {
     enum SidebarTab { case catalog, inspector }
     @State var showSidebar = false
     @State var sidebarTab: SidebarTab = .catalog
+    @Namespace var rotorNamespace
     // Not `private`: `FreeformDiagramView+Placement.swift` reads this via `isCompactWidth`.
     #if os(iOS)
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
@@ -212,7 +213,9 @@ struct FreeformDiagramView: View {
     // MARK: - Canvas
 
     private var canvasArea: some View {
-        PannableCanvas(
+        let sequenceLayout = viewModel.sequence.sequenceLayout
+        let rotors = viewModel.rotorPlan
+        return PannableCanvas(
             model: viewModel,
             scale: $canvasScale,
             offset: $canvasOffset,
@@ -221,16 +224,20 @@ struct FreeformDiagramView: View {
             onBackgroundTap: handleBackgroundTap
         ) {
             ZStack {
-                containerNodeLayer
-                sequenceLayer
-                regularNodeLayer
-                edgeLayer
+                containerNodeLayer(rotors: rotors)
+                sequenceLayer(sequenceLayout, rotors: rotors)
+                regularNodeLayer(rotors: rotors)
+                edgeLayer(rotors: rotors)
                 resizeHandleLayer
             }
             // While a catalog placement is pending, nodes stop intercepting taps so *any* tap on the
             // canvas — background or over an existing node — reaches `handleBackgroundTap` and
             // commits the placement there, instead of selecting/dragging whatever's underneath.
             .allowsHitTesting(viewModel.pendingPlacement == nil)
+        }
+        .diagramRotors(rotors, in: rotorNamespace) { target in
+            canvasOffset = CanvasCentering(viewport: canvasViewportSize, scale: canvasScale)
+                .offset(revealing: target.frame, from: canvasOffset)
         }
         .onPreferenceChange(NodeSizePreferenceKey.self) { sizes in
             for (id, size) in sizes {
