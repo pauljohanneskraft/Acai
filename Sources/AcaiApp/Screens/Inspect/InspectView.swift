@@ -134,22 +134,30 @@ struct InspectView: View {
         }
     }
 
+    @ViewBuilder
     private func emptyState(reason: InspectFilterState.EmptyStateReason) -> some View {
-        let text: LocalizedStringResource = reason == .codebaseHasNoTypes
-            ? .app("View.InspectView.NoTypesInCodebase")
-            : .app("View.InspectView.NoTypesMatchFilters")
-        return VStack(spacing: .spacingM) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 40))
-                .foregroundStyle(.secondary)
-            Text(localized: text)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, .spacingXXL)
+        if reason == .codebaseHasNoTypes {
+            ActionableEmptyState(
+                text: .app("View.InspectView.NoTypesInCodebase"),
+                systemImage: "magnifyingglass",
+                identifier: "inspect.emptyState"
+            )
+        } else {
+            ActionableEmptyState(
+                text: .app("View.InspectView.NoTypesMatchFilters"),
+                systemImage: "line.3.horizontal.decrease.circle",
+                identifier: "inspect.emptyState"
+            ) {
+                Button {
+                    filter.clear()
+                } label: {
+                    Label(
+                        .app("View.InspectView.ClearFilters"),
+                        systemImage: "line.3.horizontal.decrease.circle")
+                }
+                .accessibilityIdentifier("inspect.emptyState.clearFiltersButton")
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("inspect.emptyState")
     }
 
     // MARK: - Rows

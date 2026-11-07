@@ -234,6 +234,7 @@ public struct ProjectBrowserView: View {
 
                 repositoriesSection
             }
+            .overlay { noProjectsState }
             #if os(macOS)
             .focused($sidebarIsFocused)
             .background { deleteSelectionShortcut }
@@ -342,6 +343,28 @@ public struct ProjectBrowserView: View {
         DeltaHostedDiagramView(diagram: diagram, content: content)
             .id(diagram.id)
             .environmentObject(model)
+    }
+}
+
+// MARK: - Empty Sidebar
+
+extension ProjectBrowserView {
+    @ViewBuilder
+    private var noProjectsState: some View {
+        if model.store.projects.isEmpty {
+            ActionableEmptyState(
+                text: .app("View.ProjectBrowserView.NoProjectsYet"),
+                systemImage: "folder.badge.plus",
+                identifier: "sidebar.emptyState"
+            ) {
+                Button {
+                    newProjectPresented = true
+                } label: {
+                    Label(.app("View.ProjectBrowserView.NewProject"), systemImage: "plus")
+                }
+                .accessibilityIdentifier("sidebar.emptyState.newProjectButton")
+            }
+        }
     }
 }
 

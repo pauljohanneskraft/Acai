@@ -138,10 +138,7 @@ struct ProjectDetailView: View {
         } else {
             sectionHeader(title: .app("View.ProjectDetailView.Codebases"))
             if sortedCodebases.isEmpty {
-                Text(.app("View.ProjectDetailView.NoCodebasesYetAdd"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
+                codebasesEmptyState
                     .padding(.bottom, .spacingM)
             } else {
                 LazyVStack(spacing: .spacingXXS) {
@@ -156,10 +153,7 @@ struct ProjectDetailView: View {
 
             sectionHeader(title: .app("View.ProjectDetailView.Diagrams"))
             if freeformDiagrams.isEmpty {
-                Text(.app("View.ProjectDetailView.NoFreeformDiagramsYet"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
+                diagramsEmptyState
                     .padding(.bottom, .spacingM)
             } else {
                 LazyVStack(spacing: .spacingXXS) {
@@ -202,9 +196,8 @@ struct ProjectDetailView: View {
         let sortedCodebases = project.codebases.sorted(byLocalizedName: \.name)
         Section(.app("View.ProjectDetailView.Codebases")) {
             if sortedCodebases.isEmpty {
-                Text(.app("View.ProjectDetailView.NoCodebasesYetTap"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                codebasesEmptyState
+                    .listRowBackground(Color.clear)
             } else {
                 ForEach(sortedCodebases) { codebase in
                     Button {
@@ -243,9 +236,8 @@ struct ProjectDetailView: View {
             .sorted(byLocalizedName: \.name)
         Section(.app("View.ProjectDetailView.Diagrams")) {
             if freeformDiagrams.isEmpty {
-                Text(.app("View.ProjectDetailView.NoFreeformDiagramsYetTouch"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                diagramsEmptyState
+                    .listRowBackground(Color.clear)
             } else {
                 ForEach(freeformDiagrams) { diagram in
                     if renamingDiagramID == diagram.id {

@@ -51,9 +51,12 @@ struct StatisticDetailSheet: View {
     @ViewBuilder
     private var content: some View {
         if detail.rows.isEmpty {
-            Text(.app("View.StatisticDetailSheet.NothingShow"))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Unreachable from the stat cards, which open this sheet only when the maximum is above zero.
+            ActionableEmptyState(
+                text: .app("View.StatisticDetailSheet.NothingCountedYet"),
+                systemImage: "number",
+                identifier: "statisticDetail.emptyState"
+            )
         } else {
             List(detail.rows) { row in
                 VStack(alignment: .leading, spacing: .spacingXXS) {
