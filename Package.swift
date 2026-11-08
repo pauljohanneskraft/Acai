@@ -378,6 +378,19 @@ let package = Package(
         // with no `AcaiCore` dependency. Used only by test targets.
         .target(name: "AcaiArtifactGenerator", dependencies: ["AcaiCore"]),
         .testTarget(name: "AcaiCoreTests", dependencies: ["AcaiCore", "AcaiTestSupport"]),
+        // The shared tree-sitter seams, driven against a real grammar instead of through a plugin.
+        // Java is the grammar the seams were factored out of: it is the only one in the package whose
+        // nodes exercise all of them (a `modifiers` node with annotations, an `object`-field member
+        // access, block documentation comments), and depending on one grammar product keeps this
+        // target independent of every plugin that layers language rules on top.
+        .testTarget(
+            name: "AcaiTreeSitterTests",
+            dependencies: [
+                "AcaiTreeSitter",
+                "AcaiCore",
+                .product(name: "TreeSitterJava", package: "tree-sitter-java"),
+            ]
+        ),
         .testTarget(name: "AcaiSwiftTests", dependencies: ["AcaiSwift", "AcaiCore"]),
         .testTarget(name: "AcaiJSTests", dependencies: ["AcaiJS", "AcaiCore"]),
         .testTarget(name: "AcaiJVMTests", dependencies: ["AcaiJVM", "AcaiCore"]),
