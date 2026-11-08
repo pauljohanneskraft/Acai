@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AcaiGit
 
-@Suite("GitRepositoryLocks")
+@Suite("GitRepositoryLocks", .timeLimit(.minutes(1)))
 struct GitRepositoryLocksTests {
     private actor EventLog {
         private(set) var events: [String] = []
@@ -31,7 +31,8 @@ struct GitRepositoryLocksTests {
         }
         // Launched before the first demonstrably holds the lock, the second could win the race, and
         // both assertions below would be about the scheduler's choice rather than about the lock.
-        await firstHoldsLock.wait()
+        // Bounded so a lock that never grants the first operation fails here rather than hanging.
+        try await firstHoldsLock.wait(timeout: .seconds(10))
 
         let second = Task {
             await secondEnteredRun.open()
@@ -43,9 +44,9 @@ struct GitRepositoryLocksTests {
         }
         await secondEnteredRun.wait()
 
-        // `secondEnteredRun` has already established the second task is inside `locks.run`, so the
-        // only thing left to wait out is `acquire()`'s own suspension — which is why a short bound
-        // is sound here rather than a guess at how slow the runner is. The timeout is the pass.
+        // `secondEnteredRun` has already established the second task is running and about to call
+        // `locks.run`, so the only thing left to wait out is `acquire()`'s own suspension — which is
+        // why a short bound is sound rather than a guess at how slow the runner is. The timeout is the pass.
         await #expect(throws: AsyncGate.TimedOut.self) {
             try await secondStarted.wait(timeout: .milliseconds(200))
         }
