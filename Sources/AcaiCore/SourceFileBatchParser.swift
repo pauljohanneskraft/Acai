@@ -66,6 +66,7 @@ struct SourceFileBatchParser {
 
     /// A read failure becomes a `.unreadable` diagnostic rather than failing the whole batch. The size
     /// check resolves the symlink first, since `attributesOfItem(atPath:)` reports a link's own size.
+    /// Strict UTF-8 decoding rejects Latin-1 and CP1252 sources, which `decodedLossily` then rescues.
     private func parseFile(_ file: URL) -> FileOutcome {
         let relativePath = file.relativePath(from: rootURL)
         let resolvedPath = file.resolvingSymlinksInPath().path
@@ -81,12 +82,34 @@ struct SourceFileBatchParser {
             let source = try String(contentsOf: file, encoding: .utf8)
             return .parsed(codeParser.parse(source: source, fileName: relativePath))
         } catch {
+            return decodedLossily(file, relativePath: relativePath, strictFailure: error)
+        }
+    }
+
+    /// Re-reads a file strict UTF-8 decoding rejected, replacing every invalid byte with U+FFFD so
+    /// its types are extracted instead of dropped, and records that substitution on the artifact.
+    /// Only a file that cannot be read at all is still `.unreadable`.
+    private func decodedLossily(
+        _ file: URL, relativePath: String, strictFailure: any Error
+    ) -> FileOutcome {
+        guard let data = try? Data(contentsOf: file) else {
             return .diagnostic(ParseDiagnostic(
                 location: SourceLocation(filePath: relativePath, line: 0, column: 0),
                 kind: .unreadable,
-                message: error.localizedDescription
+                message: strictFailure.localizedDescription
             ))
         }
+        let isValidUTF8 = String(data: data, encoding: .utf8) != nil
+        var artifact = codeParser.parse(
+            source: String(decoding: data, as: UTF8.self), fileName: relativePath)
+        guard !isValidUTF8 else { return .parsed(artifact) }
+        artifact.metadata.parseDiagnostics.append(ParseDiagnostic(
+            location: SourceLocation(filePath: relativePath, line: 0, column: 0),
+            kind: .lossyDecoding,
+            message: "\(relativePath) is not valid UTF-8. Every invalid byte was replaced with "
+                + "U+FFFD, so an identifier spelled with one is not the one in the source."
+        ))
+        return .parsed(artifact)
     }
 
     // MARK: - Merging

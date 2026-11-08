@@ -25,6 +25,20 @@ public struct ParseDiagnostic: Codable, Equatable, Hashable, Sendable {
         /// filesystem. Not a parse failure: the files that were found parsed fine, but the set of
         /// files may not be the set the build system actually compiles.
         case incompleteDiscovery
+        /// The file was not valid UTF-8, so it was decoded with every invalid byte replaced by
+        /// U+FFFD rather than dropped. Not a parse failure: the file was analysed, but an
+        /// identifier spelled with a replaced byte is not the one in the source.
+        case lossyDecoding
+
+        /// Whether the kind says the parse itself went wrong, and so lowers ``HealthCheck``'s score.
+        public var lowersTrust: Bool {
+            switch self {
+            case .error, .missing, .unresolvedReference, .unreadable, .skipped, .invalidPattern:
+                true
+            case .incompleteDiscovery, .lossyDecoding:
+                false
+            }
+        }
     }
 
     public var location: SourceLocation
