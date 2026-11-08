@@ -3,18 +3,27 @@ import SwiftUI
 /// A small filter field placed above a `Picker` whose option list can grow into the hundreds (e.g.
 /// every type or method in a large codebase) — narrows the menu's contents before it's even opened,
 /// instead of leaving the user to scroll a long alphabetized list.
+///
+/// Typing is debounced: every keystroke otherwise re-filters the list and rebuilds the whole menu.
+/// Clearing publishes at once, since a tap is not repeated input.
 struct PickerFilterField: View {
     @Binding var text: String
     var placeholder: String = "Filter…"
+
+    /// What the field shows. Follows each keystroke; `text` follows it once typing pauses.
+    @State private var draft = ""
+
+    private let debounce = Duration.milliseconds(200)
 
     var body: some View {
         HStack(spacing: .spacingXS) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField(placeholder, text: $text)
+            TextField(placeholder, text: $draft)
                 .textFieldStyle(.plain)
-            if !text.isEmpty {
+            if !draft.isEmpty {
                 Button {
+                    draft = ""
                     text = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -27,6 +36,13 @@ struct PickerFilterField: View {
         .padding(.horizontal, .spacingXS)
         .padding(.vertical, .spacingXS)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+        .onAppear { draft = text }
+        .task(id: draft) {
+            guard draft != text else { return }
+            try? await Task.sleep(for: debounce)
+            guard !Task.isCancelled else { return }
+            text = draft
+        }
     }
 }
 
