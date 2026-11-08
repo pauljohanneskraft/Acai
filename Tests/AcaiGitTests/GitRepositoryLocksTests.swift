@@ -18,27 +18,44 @@ struct GitRepositoryLocksTests {
         let locks = GitRepositoryLocks()
         let log = EventLog()
 
+        let firstHoldsLock = AsyncGate()
+        let releaseFirst = AsyncGate()
+        let secondEnteredRun = AsyncGate()
+        let secondStarted = AsyncGate()
+
         async let first: Void = locks.run(for: repository) {
             await log.record("first-start")
-            try await Task.sleep(nanoseconds: 20_000_000)
+            await firstHoldsLock.open()
+            await releaseFirst.wait()
             await log.record("first-end")
         }
-        async let second: Void = locks.run(for: repository) {
-            await log.record("second-start")
-            try await Task.sleep(nanoseconds: 20_000_000)
-            await log.record("second-end")
+        // Launched before the first demonstrably holds the lock, the second could win the race, and
+        // both assertions below would be about the scheduler's choice rather than about the lock.
+        await firstHoldsLock.wait()
+
+        let second = Task {
+            await secondEnteredRun.open()
+            try await locks.run(for: repository) {
+                await secondStarted.open()
+                await log.record("second-start")
+                await log.record("second-end")
+            }
         }
-        _ = try await (first, second)
+        await secondEnteredRun.wait()
+
+        // `secondEnteredRun` has already established the second task is inside `locks.run`, so the
+        // only thing left to wait out is `acquire()`'s own suspension — which is why a short bound
+        // is sound here rather than a guess at how slow the runner is. The timeout is the pass.
+        await #expect(throws: AsyncGate.TimedOut.self) {
+            try await secondStarted.wait(timeout: .milliseconds(200))
+        }
+
+        await releaseFirst.open()
+        try await second.value
+        try await first
 
         let events = await log.events
-        // Whichever ran first, its "-end" must precede the other's "-start" — no interleaving.
-        let firstIndex = events.firstIndex(of: "first-start")!
-        let secondIndex = events.firstIndex(of: "second-start")!
-        if firstIndex < secondIndex {
-            #expect(events.firstIndex(of: "first-end")! < secondIndex)
-        } else {
-            #expect(events.firstIndex(of: "second-end")! < firstIndex)
-        }
+        #expect(events == ["first-start", "first-end", "second-start", "second-end"])
     }
 
     @Test("Operations against different repositories run independently")
