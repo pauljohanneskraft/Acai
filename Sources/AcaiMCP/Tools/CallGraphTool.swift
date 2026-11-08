@@ -35,11 +35,11 @@ struct CallGraphTool: AnalysisTool {
         let health = HealthCheck(artifact: artifact).summary
         switch mode {
         case .metrics:
-            let scope = try resolvedCallGraphScope(arguments.string("scope"))
+            let scope = try resolvedCallGraphScope(try arguments.string("scope"))
             let report = CallGraphMetrics(artifact: artifact, scope: scope).report
             return .json(try Value(MetricsPayload(callGraph: report, health: health)))
         case .cycles:
-            let scope = try resolvedCallGraphScope(arguments.string("scope"))
+            let scope = try resolvedCallGraphScope(try arguments.string("scope"))
             let clusters = MethodCycles(artifact: artifact, scope: scope).clusters
             return .json(try Value(CyclesPayload(cycles: clusters, health: health)))
         case .deadcode:

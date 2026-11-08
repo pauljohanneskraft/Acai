@@ -9,8 +9,11 @@ struct ToolArguments: Sendable {
         self.values = values ?? [:]
     }
 
-    func string(_ key: String) -> String? {
-        values[key]?.stringValue
+    /// A present non-string (e.g. `module: 3`) throws `invalidParams` rather than reading as `nil` —
+    /// a mistyped selector facet must be rejected, not dropped so the selector silently widens to
+    /// everything.
+    func string(_ key: String) throws -> String? {
+        try typed(key, as: "a string", \.stringValue)
     }
 
     /// A present value that isn't a JSON integer throws `invalidParams` rather than reading as `nil`.
@@ -48,9 +51,14 @@ struct ToolArguments: Sendable {
         return strings.compactMap { $0 }
     }
 
+    /// A present key of the wrong type reports *that*, so a caller is not sent looking for an
+    /// argument it did pass.
     func requiredString(_ key: String) throws -> String {
-        guard let value = string(key), !value.isEmpty else {
+        guard let value = try string(key) else {
             throw MCPError.invalidParams("Missing required argument '\(key)'.")
+        }
+        guard !value.isEmpty else {
+            throw MCPError.invalidParams("Argument '\(key)' must not be empty.")
         }
         return value
     }

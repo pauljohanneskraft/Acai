@@ -26,7 +26,7 @@ struct EnumArgument<Option: ArgumentOption>: Sendable {
     }
 
     func value(in arguments: ToolArguments) throws -> Option? {
-        guard let raw = arguments.string(name) else { return nil }
+        guard let raw = try arguments.string(name) else { return nil }
         guard let option = Option(rawValue: raw) else {
             throw MCPError.invalidParams(
                 "Argument '\(name)' must be one of: \(accepted.joined(separator: ", ")) (got '\(raw)').")
