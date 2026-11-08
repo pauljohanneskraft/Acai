@@ -99,10 +99,11 @@ struct SourceFileBatchParser {
                 message: strictFailure.localizedDescription
             ))
         }
-        let isValidUTF8 = String(data: data, encoding: .utf8) != nil
-        var artifact = codeParser.parse(
-            source: String(decoding: data, as: UTF8.self), fileName: relativePath)
-        guard !isValidUTF8 else { return .parsed(artifact) }
+        // Repairing decoding is byte-identical to its input exactly when that input was valid UTF-8,
+        // so the round trip answers whether anything was actually replaced.
+        let decoded = String(decoding: data, as: UTF8.self)
+        var artifact = codeParser.parse(source: decoded, fileName: relativePath)
+        guard !decoded.utf8.elementsEqual(data) else { return .parsed(artifact) }
         artifact.metadata.parseDiagnostics.append(ParseDiagnostic(
             location: SourceLocation(filePath: relativePath, line: 0, column: 0),
             kind: .lossyDecoding,
