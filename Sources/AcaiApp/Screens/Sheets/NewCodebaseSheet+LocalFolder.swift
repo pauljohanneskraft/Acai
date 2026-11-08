@@ -1,13 +1,23 @@
 import SwiftUI
 
 extension NewCodebaseSheetContent {
+    func chooseDirectory() {
+        let fixtures = UITestFixtureResolver()
+        guard fixtures.resolveBaseDir() != nil, let staged = fixtures.resolveLocalFolderURL() else {
+            isChoosingDirectory = true
+            return
+        }
+        // A staged folder is read by plain path, with no picker grant to bookmark.
+        sheet.securityScopedBookmark = nil
+        adoptDirectory(staged)
+    }
+
     func pickDirectory(_ url: URL) {
         guard url.startAccessingSecurityScopedResource() else {
             model.store.report(.app("Error.ScopedResourceAccess.Denied \(url.path)"))
             return
         }
         defer { url.stopAccessingSecurityScopedResource() }
-        sheet.directoryURL = url
         // A bookmark that silently failed to mint is what breaks access after relaunch, so report
         // it rather than storing `nil`.
         do {
@@ -17,8 +27,14 @@ extension NewCodebaseSheetContent {
             model.store.report(
                 .app("Error.ScopedResourceAccess.BookmarkFailed \(url.path) \(error.localizedDescription)"))
         }
-        // Reading the repository's config/HEAD must happen inside this same access window.
+        adoptDirectory(url)
+    }
+
+    /// Call inside the folder's access window; the root walk reopens its own scope.
+    private func adoptDirectory(_ url: URL) {
+        sheet.directoryURL = url
         sheet.repositoryReference = LocalGitRepositoryDetector(directory: url).detect()
+        sheet.discoverRoots()
     }
 
     var localFolderSection: some View {
@@ -27,7 +43,7 @@ extension NewCodebaseSheetContent {
             LabeledContent {
                 HStack {
                     directoryPathText
-                    Button(.app("View.NewCodebaseSheet.Choose")) { isChoosingDirectory = true }
+                    Button(.app("View.NewCodebaseSheet.Choose")) { chooseDirectory() }
                         .accessibilityIdentifier("newCodebase.chooseDirectoryButton")
                 }
             } label: {
@@ -37,7 +53,7 @@ extension NewCodebaseSheetContent {
             HStack {
                 directoryPathText
                 Spacer()
-                Button(.app("View.NewCodebaseSheet.Choose")) { isChoosingDirectory = true }
+                Button(.app("View.NewCodebaseSheet.Choose")) { chooseDirectory() }
                     .accessibilityIdentifier("newCodebase.chooseDirectoryButton")
             }
             #endif

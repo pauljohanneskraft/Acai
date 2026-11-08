@@ -22,7 +22,9 @@ struct RowDeleteAffordance {
             SystemBanners().dismiss(file: file, line: line)
             row.swipeLeft()
         } else {
-            row.reveal(description, until: delete, file: file, line: line) { $0.press(forDuration: 1.5) }
+            row.reveal(
+                description, until: delete, recoveringThrough: app.buttons["BackButton"], file: file, line: line
+            ) { $0.press(forDuration: 1.5) }
         }
         #endif
         delete.tapWhenReady(
