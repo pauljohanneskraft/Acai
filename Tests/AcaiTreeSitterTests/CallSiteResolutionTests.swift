@@ -144,10 +144,14 @@ struct CallSiteResolutionTests {
     /// `MemberReceiver` carries a `Node`, so it is not `Equatable`; this is what a test compares.
     private func label(of receiver: MemberReceiver?) -> String {
         switch receiver {
-        case .selfExpression: "self"
-        case .name(let name): "name(\(name))"
-        case .memberAccess(_, let hop): "memberAccess(\(hop))"
-        case nil: "none"
+        case .selfExpression:
+            "self"
+        case .name(let name):
+            "name(\(name))"
+        case .memberAccess(_, let hop):
+            "memberAccess(\(hop))"
+        case nil:
+            "none"
         }
     }
 

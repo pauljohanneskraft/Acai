@@ -12,13 +12,20 @@ struct ModifierClassifierTests {
         annotationNodeTypes: ["annotation", "marker_annotation"],
         classify: { nodeType, _ in
             switch nodeType {
-            case "public": .accessLevel(.public)
-            case "protected": .accessLevel(.protected)
-            case "private": .accessLevel(.private)
-            case "static": .modifier(.static)
-            case "final": .modifier(.final)
-            case "abstract": .modifier(.abstract)
-            default: nil
+            case "public":
+                .accessLevel(.public)
+            case "protected":
+                .accessLevel(.protected)
+            case "private":
+                .accessLevel(.private)
+            case "static":
+                .modifier(.static)
+            case "final":
+                .modifier(.final)
+            case "abstract":
+                .modifier(.abstract)
+            default:
+                nil
             }
         },
         postProcess: { info in

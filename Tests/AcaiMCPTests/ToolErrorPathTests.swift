@@ -15,10 +15,14 @@ struct ToolErrorPathTests {
     /// A value satisfying `key` for any tool that requires it.
     private func fixtureValue(for key: String, in directory: URL) -> Value? {
         switch key {
-        case "path", "pathOld", "pathNew": .string(directory.path)
-        case "output": .string(directory.appendingPathComponent("atlas.pdf").path)
-        case "type": .string("Repository")
-        default: nil
+        case "path", "pathOld", "pathNew":
+            .string(directory.path)
+        case "output":
+            .string(directory.appendingPathComponent("atlas.pdf").path)
+        case "type":
+            .string("Repository")
+        default:
+            nil
         }
     }
 
