@@ -36,10 +36,9 @@ public struct JSCodeParser: CodeParser {
         grammar(for: fileName).parse(source: source, fileName: fileName)
     }
 
-    /// Chosen by extension, never by sniffing the source: the two grammars read `<T>` differently and
-    /// only the extension says which reading the author meant. `.tsx` and every JavaScript extension
-    /// take TSX — JavaScript has no `<T>x` cast for JSX to clash with, so it loses nothing by it,
-    /// whereas the TypeScript grammar has no JSX at all and turns every element into an `ERROR` node.
+    /// By extension, never by sniffing the source: the two grammars read `<T>` differently and only
+    /// the extension says which reading the author meant. Every JavaScript extension takes TSX
+    /// because JavaScript has no `<T>x` cast for JSX to clash with.
     private func grammar(for fileName: String) -> JSGrammar {
         ["ts", "mts", "cts"].contains { fileName.hasSuffix(".\($0)") } ? typeScript : tsx
     }
