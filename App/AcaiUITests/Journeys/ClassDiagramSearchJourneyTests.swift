@@ -13,8 +13,7 @@ final class ClassDiagramSearchJourneyTests: UIJourneyTestCase {
     ) {
         for _ in 0..<attempts {
             if appending {
-                diagram.searchField.tapWhenReady("the search field", file: file, line: line)
-                diagram.searchField.typeText(text)
+                diagram.searchField.typeWhenFocused(text, into: "the search field", file: file, line: line)
             } else {
                 diagram.searchField.clearAndTypeText(text, file: file, line: line)
             }

@@ -86,8 +86,7 @@ final class NewCodebaseSheetScreen {
 
     /// Types the address and waits for the remote's branches, which are read without cloning.
     func enterRemoteAddress(_ address: String, file: StaticString = #filePath, line: UInt = #line) {
-        remoteAddressField.tapWhenReady("the remote address field", file: file, line: line)
-        remoteAddressField.typeText(address + "\n")
+        remoteAddressField.typeWhenFocused(address + "\n", into: "the remote address field", file: file, line: line)
         #if os(iOS)
         app.keyboards.firstMatch.waitForDisappearanceOrFail("the keyboard", file: file, line: line)
         #endif
