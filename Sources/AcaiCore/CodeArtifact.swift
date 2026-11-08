@@ -180,16 +180,17 @@ extension CodeArtifact {
         )
     }
 
-    public func resolvingExtensions() -> CodeArtifact {
-        var resolvedTypes = types.filter { $0.kind != .extension }
+    public func resolvingExtensions(counting counter: TypeFlattenCounter? = nil) -> CodeArtifact {
         let extensions = types.filter { $0.kind == .extension }
+        var resolved = ExtensionTargetIndex(
+            types: types.filter { $0.kind != .extension }, counting: counter)
         // Drop any standalone extension edges; conformances are re-derived below so
         // their source is the real target id (never a dangling `extension.*` node).
         var resolvedRelationships = relationships.filter { $0.kind != .extension }
 
         for ext in extensions {
             guard let targetName = ext.extensionOf,
-                  let targetId = Self.mergeExtension(ext, targetName: targetName, into: &resolvedTypes)
+                  let targetId = resolved.merge(ext, targetName: targetName)
             else {
                 // Extension of an external type (e.g. `extension Array`): dropped entirely.
                 continue
@@ -207,7 +208,7 @@ extension CodeArtifact {
 
         return CodeArtifact(
             metadata: metadata,
-            types: resolvedTypes,
+            types: resolved.types,
             relationships: resolvedRelationships,
             freestandingFunctions: freestandingFunctions,
             globalVariables: globalVariables

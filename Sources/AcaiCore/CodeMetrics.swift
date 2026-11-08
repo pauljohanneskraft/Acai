@@ -118,7 +118,7 @@ extension CodeArtifact {
     }
 
     public func computeMetrics(modules: ModuleMap) -> CodeMetrics {
-        let flat = Self.allTypes(types)
+        let flat = types.flattenedTree()
         let identity = TypeIdentityResolver(types: types)
         let spans = declarationSpans
         return CodeMetrics(
@@ -176,7 +176,7 @@ extension CodeArtifact {
     ) -> [CodeMetrics.TypeMetric] {
         let shape = InheritanceShape(types: flat, relationships: relationships)
         let (fanIn, fanOut) = fanMetrics(flat: flat, identity: identity)
-        // Measured over the original (un-flattened) tree since `allTypes(_:)` clears `nestedTypes`.
+        // Measured over the original (un-flattened) tree since flattening clears `nestedTypes`.
         let nesting = nestingDepths(types)
         return flat.map { type in
             CodeMetrics.TypeMetric(

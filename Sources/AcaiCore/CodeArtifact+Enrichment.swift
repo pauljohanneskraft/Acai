@@ -6,16 +6,18 @@ extension CodeArtifact {
     /// `resolver` supplies each type's language classification, resolved *per type* from its `sourceLanguage`
     /// so a polyglot artifact applies each language's own rules rather than one dominant config. Injected
     /// rather than hard-coded to stay language-agnostic; required, with no empty default. Idempotent.
-    public func enriched(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
-        resolvingExtensions()
-            .resolvingRelationshipNames()
-            .reclassifyingRelationshipKinds()
-            .inferringStructuralEdges(using: resolver)
+    public func enriched(
+        using resolver: LanguageConfigurationResolver, counting counter: TypeFlattenCounter? = nil
+    ) -> CodeArtifact {
+        resolvingExtensions(counting: counter)
+            .resolvingRelationshipNames(counting: counter)
+            .reclassifyingRelationshipKinds(counting: counter)
+            .inferringStructuralEdges(using: resolver, counting: counter)
             // Inference synthesises edges from member and supertype names, so those endpoints need
             // the same resolution — and the same ambiguity reporting — the parsed edges got above.
             // Resolving an already-canonical endpoint is a no-op, so this only adds the diagnostics a
             // single pass would otherwise leave to the next one.
-            .resolvingRelationshipNames()
+            .resolvingRelationshipNames(counting: counter)
             .deduplicatingRelationships()
     }
 
@@ -30,12 +32,13 @@ extension CodeArtifact {
     /// Rewrites relationship `source`/`target` and `inheritedTypes` names to canonical type ids, recursing
     /// into `nestedTypes`. Runs in the language-agnostic pipeline so every language gets consistent
     /// qualified names, not just tree-sitter extractors that opt in.
-    public func resolvingRelationshipNames() -> CodeArtifact {
+    public func resolvingRelationshipNames(counting counter: TypeFlattenCounter? = nil) -> CodeArtifact {
         let resolver = TypeIdentityResolver(types: types)
         // `source` is already the referencing type's own id/qualified name, so its module locates
         // the reference for both endpoints — `target` is what that type's own file/module wrote.
         let moduleByID = Dictionary(
-            Self.allTypes(types).map { ($0.id, $0.idScope.module) }, uniquingKeysWith: { first, _ in first })
+            types.flattenedTree(counting: counter).map { ($0.id, $0.idScope.module) },
+            uniquingKeysWith: { first, _ in first })
         var copy = self
         var diagnostics: [ParseDiagnostic] = []
 
@@ -111,9 +114,9 @@ extension CodeArtifact {
     /// Reclassifies an `.inheritance` edge to `.conformance` when its target resolves
     /// to a `protocol`/`interface` declared in this codebase. External first-parents are
     /// left as-is.
-    public func reclassifyingRelationshipKinds() -> CodeArtifact {
+    public func reclassifyingRelationshipKinds(counting counter: TypeFlattenCounter? = nil) -> CodeArtifact {
         let protocolIds = Set(
-            Self.allTypes(types)
+            types.flattenedTree(counting: counter)
                 .filter { $0.kind == .protocol || $0.kind == .interface }
                 .map(\.id))
         guard !protocolIds.isEmpty else { return self }
@@ -133,11 +136,13 @@ extension CodeArtifact {
     /// method/initializer signatures, and a dependency edge for `typealias` targets.
     /// `resolver` classifies primitive/collection type names *per type* from its own language, so a
     /// polyglot artifact doesn't misclassify one language's collections under another's rules.
-    public func inferringStructuralEdges(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
+    public func inferringStructuralEdges(
+        using resolver: LanguageConfigurationResolver, counting counter: TypeFlattenCounter? = nil
+    ) -> CodeArtifact {
         let identity = TypeIdentityResolver(types: types)
 
         var edges: [Relationship] = []
-        for type in Self.allTypes(types) {
+        for type in types.flattenedTree(counting: counter) {
             let module = type.idScope.module
             let inference = StructuralEdgeInference(
                 configuration: resolver.configuration(for: type),
@@ -170,7 +175,7 @@ extension CodeArtifact {
     /// every file project-wide, so `AnalysisService.analyzeProject` calls it once after all specs are
     /// merged. Idempotent.
     public func resolvingCallSiteReceivers() -> CodeArtifact {
-        let flat = Self.allTypes(types)
+        let flat = types.flattenedTree()
         let resolver = CallSiteReceiverResolver(
             identity: TypeIdentityResolver(types: types),
             typesByID: Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -211,82 +216,8 @@ extension CodeArtifact {
     /// A flat list of every type incl. nested ones (nested copies have `nestedTypes`
     /// cleared). Ids are already fully qualified, so they remain unique.
     public func flattened() -> [TypeDeclaration] {
-        Self.allTypes(types)
+        types.flattenedTree()
     }
-
-    // MARK: - Shared helpers
-
-    static func allTypes(_ types: [TypeDeclaration]) -> [TypeDeclaration] {
-        var result: [TypeDeclaration] = []
-        for type in types {
-            let nested = allTypes(type.nestedTypes)
-            var copy = type
-            copy.nestedTypes = []
-            result.append(copy)
-            result.append(contentsOf: nested)
-        }
-        return result
-    }
-
-    /// Finds an extension's target type (incl. nested types like `extension Outer.Inner`) anywhere
-    /// in `types` and merges the extension's members + nested types into it. Generic args are
-    /// stripped (`Foo<T>` → `Foo`). Returns the target's id, or `nil` when the target is external
-    /// (extension dropped).
-    static func mergeExtension(
-        _ ext: TypeDeclaration, targetName: String, into types: inout [TypeDeclaration]
-    ) -> String? {
-        let name = normalizeTypeName(targetName)
-        guard let targetId = extensionTargetID(ext, name: name, in: types) else { return nil }
-        mergeExtensionMembers(ext, intoTypeWithID: targetId, into: &types)
-        return targetId
-    }
-
-    /// Resolves the id of the single type `name` should merge into.
-    ///
-    /// An exact id, else a sole same-module match, else a sole unqualified-id match; never a foreign simple name.
-    private static func extensionTargetID(
-        _ ext: TypeDeclaration, name: String, in types: [TypeDeclaration]
-    ) -> String? {
-        let flat = allTypes(types)
-        if let exact = flat.first(where: { $0.qualifiedName == name || $0.id == name }) {
-            return exact.id
-        }
-        let candidates = flat.filter { $0.name == name || $0.id.hasSuffix(name) }
-        let extModule = ext.idScope.module
-        let sameModuleMatches = candidates.filter {
-            ($0.name == name || $0.unqualifiedID == name) && $0.idScope.module == extModule
-        }
-        if sameModuleMatches.count == 1 { return sameModuleMatches[0].id }
-        let unqualifiedMatches = candidates.filter { $0.unqualifiedID == name }
-        guard sameModuleMatches.isEmpty, unqualifiedMatches.count == 1 else { return nil }
-        return unqualifiedMatches[0].id
-    }
-
-    private static func mergeExtensionMembers(
-        _ ext: TypeDeclaration, intoTypeWithID id: String, into types: inout [TypeDeclaration]
-    ) {
-        for index in types.indices {
-            if types[index].id == id {
-                types[index].members.append(contentsOf: ext.members)
-                types[index].nestedTypes.append(contentsOf: ext.nestedTypes)
-                // Extension conformances must merge too — dropping them would hide protocol conformance
-                // from anything reading `inheritedTypes` (e.g. protocol-witness dead-code exemption).
-                let existingNames = Set(types[index].inheritedTypes.map(\.name))
-                types[index].inheritedTypes.append(
-                    contentsOf: ext.inheritedTypes.filter { !existingNames.contains($0.name) })
-                return
-            }
-            mergeExtensionMembers(ext, intoTypeWithID: id, into: &types[index].nestedTypes)
-        }
-    }
-
-    static func normalizeTypeName(_ raw: String) -> String {
-        if let lt = raw.firstIndex(of: "<") {
-            return String(raw[..<lt]).trimmingCharacters(in: .whitespaces)
-        }
-        return raw
-    }
-
 }
 
 /// Resolves a call site's deferred receiver (`.unresolvedTypeName`/`.propertyChain`) against the
