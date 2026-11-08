@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import AcaiCFamily
 @testable import AcaiCore
@@ -96,13 +97,40 @@ struct ExternCLinkageGuardTests {
 
     @Test func blankingPreservesLengthAndLineBreaks() {
         let blanked = CPlusPlusLinkageGuards(source: guardedHeader).neutralized
-        #expect(blanked.count == guardedHeader.count)
+        #expect(blanked.utf16.count == guardedHeader.utf16.count)
         #expect(
             blanked.split(separator: "\n", omittingEmptySubsequences: false).count
                 == guardedHeader.split(separator: "\n", omittingEmptySubsequences: false).count
         )
         #expect(!blanked.contains("extern"))
         #expect(blanked.contains("#ifndef ACAI_SHAPES_H_"))
+    }
+
+    /// A Windows-authored header's line terminator is a single `\r\n` grapheme cluster, which never
+    /// equals `"\n"` — so the guards have to be found without comparing against a bare newline.
+    @Test func carriageReturnLineEndingsAreHandled() {
+        let source = guardedHeader.replacingOccurrences(of: "\n", with: "\r\n")
+        let artifact = CCodeParser().parse(source: source, fileName: "shapes.h")
+        #expect(artifact.metadata.parseDiagnostics.isEmpty)
+        #expect(artifact.types.map(\.name) == ["Point"])
+        #expect(artifact.types.first?.location?.line == 10)
+    }
+
+    /// `Node.text(in:)` indexes the source by UTF-16 offset, so a guard carrying a non-ASCII
+    /// comment is blanked to the same UTF-16 width rather than one space per character. A space is
+    /// one UTF-16 unit and one byte, so UTF-16 and UTF-8 widths cannot both be held; UTF-16 is the
+    /// one every text accessor here counts in.
+    @Test func blankingIsLengthExactAcrossNonASCII() {
+        let source = """
+        #ifdef __cplusplus
+        extern "C" {
+        #endif  // naïve — 🎉
+        void ping(void);
+        """
+        let blanked = CPlusPlusLinkageGuards(source: source).neutralized
+        #expect(blanked.utf16.count == source.utf16.count)
+        let artifact = CCodeParser().parse(source: source, fileName: "ping.h")
+        #expect(artifact.freestandingFunctions.map(\.name) == ["ping"])
     }
 
     @Test func unrelatedConditionalsAreUntouched() {
