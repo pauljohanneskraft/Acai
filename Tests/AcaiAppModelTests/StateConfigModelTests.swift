@@ -146,6 +146,26 @@ struct StateConfigModelTests {
         #expect(!StateConfigModel(artifact: artifact).hasGlobalVariables)
     }
 
+    @Test func restoringReplacesTheDraftWithoutWalkingTheAnalysisAgain() {
+        let walks = Locked(0)
+        var model = StateConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+
+        model.restore(StateDiagramConfiguration(typeName: "Loader", variableName: "state", maxStates: 45))
+        #expect(model.scope == .type("Loader"))
+        #expect(model.variableName == "state")
+        #expect(model.maxStates == 45)
+        #expect(model.variableNames.first == "label")
+
+        model.restore(nil)
+        #expect(model.scope == nil)
+        #expect(model.variableName.isEmpty)
+        #expect(model.maxStates == 20)
+        #expect(walks.value == 1)
+    }
+
     @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
         let walks = Locked(0)
         var model = StateConfigModel(

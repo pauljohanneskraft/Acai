@@ -33,7 +33,6 @@ struct StateDiagramSidebar: View {
 
     init(
         viewModel: StateDiagramViewModel,
-        artifact: CodeArtifact,
         codebaseID: UUID,
         tab: Binding<StateDiagramSidebarTab>,
         onApply: @escaping (StateDiagramConfiguration) -> Void,
@@ -48,9 +47,7 @@ struct StateDiagramSidebar: View {
         self.onApplyFilter = onApplyFilter
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
-        _config = State(initialValue: StateConfigModel(
-            artifact: artifact, initial: viewModel.configuration
-        ))
+        _config = State(initialValue: viewModel.draftConfiguration)
     }
 
     var body: some View {

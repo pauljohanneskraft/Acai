@@ -31,9 +31,17 @@ public struct StateConfigModel: Sendable {
         typeIDsWithStoredProperties = lookups.typeIDs
         variableNamesByScope = lookups.variableNamesByScope
         hasGlobalVariables = !artifact.globalVariables.isEmpty
-        scope = initial.map { $0.typeName.map(Scope.type) ?? .globals }
-        variableName = initial?.variableName ?? ""
-        maxStates = initial?.maxStates ?? 20
+        scope = nil
+        variableName = ""
+        maxStates = 20
+        restore(initial)
+    }
+
+    /// Replaces the draft with `configuration`, keeping the lookups already derived.
+    public mutating func restore(_ configuration: StateDiagramConfiguration?) {
+        scope = configuration.map { $0.typeName.map(Scope.type) ?? .globals }
+        variableName = configuration?.variableName ?? ""
+        maxStates = configuration?.maxStates ?? 20
     }
 
     public var canCreate: Bool { scope != nil && !variableName.isEmpty }

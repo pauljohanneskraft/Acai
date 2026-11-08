@@ -31,7 +31,7 @@ struct CallGraphSidebar: View {
     @State private var scopeQuery = ""
 
     init(
-        artifact: CodeArtifact,
+        draftScope: CallGraphConfigModel,
         graph: CallGraph,
         selectedNodeIDs: Set<String>,
         scope: CallGraphScope,
@@ -55,7 +55,7 @@ struct CallGraphSidebar: View {
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
         self.deltaStatus = deltaStatus
-        _config = State(initialValue: CallGraphConfigModel(artifact: artifact, initial: scope))
+        _config = State(initialValue: draftScope)
     }
 
     var body: some View {

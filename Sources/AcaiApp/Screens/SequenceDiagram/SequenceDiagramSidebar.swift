@@ -35,7 +35,6 @@ struct SequenceDiagramSidebar: View {
 
     init(
         viewModel: SequenceDiagramViewModel,
-        artifact: CodeArtifact,
         codebaseID: UUID,
         tab: Binding<SequenceDiagramSidebarTab>,
         onApply: @escaping (SequenceDiagramConfiguration) -> Void,
@@ -50,9 +49,7 @@ struct SequenceDiagramSidebar: View {
         self.onApplyFilter = onApplyFilter
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
-        _config = State(initialValue: SequenceConfigModel(
-            artifact: artifact, initial: viewModel.configuration
-        ))
+        _config = State(initialValue: viewModel.draftConfiguration)
     }
 
     var body: some View {

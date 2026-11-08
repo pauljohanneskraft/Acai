@@ -26,15 +26,15 @@ public struct SequenceConfigModel: Sendable {
     }
 
     private let artifact: CodeArtifact
-    private let initial: SequenceDiagramConfiguration?
+    private var initial: SequenceDiagramConfiguration?
     private let lookups: SequenceEntryPointLookups
 
     public private(set) var step: Step = .entryPoint
     /// Empty is the top-level (no class) scope — it round-trips directly, so re-editing a
     /// free-function entry restores the right picker state with no translation.
-    public private(set) var entryTypeName: String
-    public var entryMethodName: String
-    public var maxDepth: Int
+    public private(set) var entryTypeName = ""
+    public var entryMethodName = ""
+    public var maxDepth = 5
     public private(set) var mappings: [InterfaceMapping] = []
 
     public init(
@@ -43,11 +43,18 @@ public struct SequenceConfigModel: Sendable {
         walkObserver: AnalysisWalkObserver? = nil
     ) {
         self.artifact = artifact
-        self.initial = initial
         lookups = SequenceEntryPointLookups(artifact: artifact, walkObserver: walkObserver)
-        entryTypeName = initial?.entryTypeName ?? ""
-        entryMethodName = initial?.entryMethodName ?? ""
-        maxDepth = initial?.maxDepth ?? 5
+        restore(initial)
+    }
+
+    /// Replaces the draft with `configuration`, keeping the lookups already derived.
+    public mutating func restore(_ configuration: SequenceDiagramConfiguration?) {
+        initial = configuration
+        step = .entryPoint
+        mappings = []
+        entryTypeName = configuration?.entryTypeName ?? ""
+        entryMethodName = configuration?.entryMethodName ?? ""
+        maxDepth = configuration?.maxDepth ?? 5
     }
 
     // MARK: - Steps

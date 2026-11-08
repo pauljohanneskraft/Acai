@@ -234,6 +234,31 @@ struct SequenceConfigModelTests {
         #expect(model.methodNames.isEmpty)
     }
 
+    @Test func restoringReturnsToTheEntryPointWithTheGivenConfigurationAndItsMapping() throws {
+        let walks = Locked(0)
+        var model = SequenceConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+        model.selectEntryType("Service")
+        model.entryMethodName = "run"
+        _ = model.advance()
+
+        model.restore(SequenceDiagramConfiguration(
+            entryTypeName: "Service", entryMethodName: "run", maxDepth: 7, typeMapping: ["Store": "DiskStore"]))
+        #expect(model.step == .entryPoint)
+        #expect(model.mappings.isEmpty)
+        #expect(model.maxDepth == 7)
+        _ = model.advance()
+        #expect(try #require(model.mappings.first).selection == "DiskStore")
+
+        model.restore(nil)
+        #expect(model.entryTypeName.isEmpty)
+        #expect(model.entryMethodName.isEmpty)
+        #expect(model.maxDepth == 5)
+        #expect(walks.value == 1)
+    }
+
     @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
         let walks = Locked(0)
         var model = SequenceConfigModel(
