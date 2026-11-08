@@ -191,7 +191,7 @@ struct NewCodebaseSheetModelTests {
 
         #expect(sheet.derivedName == "Widgets")
 
-        sheet.addLocalFolder()
+        _ = try sheet.addLocalFolder()
 
         #expect(fixture.store.projects.first?.codebases.map(\.name) == ["Widgets"])
     }
@@ -213,9 +213,9 @@ struct NewCodebaseSheetModelTests {
         defer { fixture.tearDown() }
         let sheet = fixture.sheet
         sheet.directoryURL = URL(fileURLWithPath: "/tmp/acai-one/Widgets", isDirectory: true)
-        sheet.addLocalFolder()
+        _ = try sheet.addLocalFolder()
         sheet.directoryURL = URL(fileURLWithPath: "/tmp/acai-two/Widgets", isDirectory: true)
-        sheet.addLocalFolder()
+        _ = try sheet.addLocalFolder()
 
         #expect(fixture.store.projects.first?.codebases.map(\.name) == ["Widgets", "Widgets 2"])
     }

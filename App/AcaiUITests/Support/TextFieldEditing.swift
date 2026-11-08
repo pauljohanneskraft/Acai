@@ -4,7 +4,7 @@ import XCTest
 extension XCUIElement {
     /// `typeText` alone would just append to an already-populated field.
     func clearAndTypeText(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
-        tapWhenReady("the text field", file: file, line: line)
+        focus("the text field", file: file, line: line)
         // An empty field reports its placeholder as its value, so comparing the two is what tells
         // "has text" from "has a prompt" — otherwise every field pays a burst of deletes it doesn't need.
         if let currentValue = value as? String, !currentValue.isEmpty, currentValue != placeholderValue {

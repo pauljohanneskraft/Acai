@@ -17,7 +17,9 @@ struct RowRenameAffordance {
         row.reveal(description, until: rename, file: file, line: line) { $0.rightClick() }
         #else
         let rename = app.buttons["Rename"]
-        row.reveal(description, until: rename, file: file, line: line) { $0.press(forDuration: 1.5) }
+        row.reveal(
+            description, until: rename, recoveringThrough: app.buttons["BackButton"], file: file, line: line
+        ) { $0.press(forDuration: 1.5) }
         #endif
         rename.tapWhenReady(
             "\(description)'s Rename action (if its detail screen opened instead, the reveal gesture "

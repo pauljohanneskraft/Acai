@@ -2,6 +2,12 @@ import AcaiGit
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The sheet's focusable controls, in Tab order: the combine toggle, then one per discovered root.
+enum NewCodebaseField: Hashable {
+    case root(String)
+    case combineRoots
+}
+
 struct NewCodebaseSheet: View {
     let projectID: UUID
     let remoteService: GitRemoteService
@@ -43,6 +49,7 @@ struct NewCodebaseSheetContent: View {
         _sheet = StateObject(wrappedValue: sheet())
     }
 
+    @FocusState var focusedField: NewCodebaseField?
     @State var isChoosingDirectory = false
     @State private var repositorySearch = ""
 
@@ -62,6 +69,7 @@ struct NewCodebaseSheetContent: View {
                 switch sheet.source {
                 case .localFolder:
                     localFolderSection
+                    projectRootsSection
                 case .remoteURL:
                     remoteURLSection
                 case .gitHub:
@@ -83,6 +91,7 @@ struct NewCodebaseSheetContent: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(.app("View.NewCodebaseSheet.Cancel")) { dismiss() }
+                        .accessibilityIdentifier("newCodebase.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     confirmButton
@@ -230,10 +239,10 @@ struct NewCodebaseSheetContent: View {
         switch sheet.source {
         case .localFolder:
             Button(.app("View.NewCodebaseSheet.Add")) {
-                sheet.addLocalFolder()
+                addLocalFolder()
                 dismiss()
             }
-            .disabled(sheet.directoryURL == nil)
+            .disabled(!sheet.canAddLocalFolder)
             .accessibilityIdentifier("newCodebase.addButton")
         case .remoteURL, .gitHub:
             let pending = sheet.pendingClone
@@ -248,6 +257,25 @@ struct NewCodebaseSheetContent: View {
             .disabled(pending == nil || sheet.clonePhase.isInFlight)
             .accessibilityIdentifier("newCodebase.cloneButton")
             AsyncOperationStatusView(identifierPrefix: "newCodebase.clone", phase: sheet.clonePhase)
+        }
+    }
+
+    private func addLocalFolder() {
+        let addition: LocalFolderAddition
+        do {
+            addition = try sheet.addLocalFolder()
+        } catch {
+            model.store.report(error.localizedDescription)
+            return
+        }
+        // The store holds one error, so the lost-access one wins over the skipped-folders one.
+        if let failure = addition.bookmarkFailures.first {
+            model.store.report(.app("Error.ScopedResourceAccess.BookmarkFailed \(failure.path) \(failure.reason)"))
+        } else if addition.insertion.alreadyPresent > 0 {
+            model.store.report(.app("Error.NewCodebaseSheet.AlreadyAdded \(addition.insertion.alreadyPresent)"))
+        }
+        if let first = addition.insertion.addedIDs.first {
+            model.open(.codebase(first))
         }
     }
 
