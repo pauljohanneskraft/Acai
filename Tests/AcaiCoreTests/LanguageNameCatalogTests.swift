@@ -35,8 +35,6 @@ struct LanguageNameCatalogTests {
         #expect(catalog.language(named: "cobol") == nil)
     }
 
-    /// Two parsers may report one language — a dialect routed by file content — and help text must
-    /// not offer its name twice.
     @Test("A language two parsers report is named once")
     func duplicateLanguageIsNamedOnce() {
         let catalog = LanguageNameCatalog(

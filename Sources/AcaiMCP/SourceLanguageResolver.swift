@@ -1,8 +1,6 @@
 import MCP
 import AcaiLibrary
 
-/// Maps language names (`swift`, `kotlin`, `typescript`, …) onto the engine's `SourceLanguage`
-/// constants, taking both the names and the mapping from the registered parsers.
 struct SourceLanguageResolver: Sendable {
     private let catalog = LanguageNameCatalog.standard
 

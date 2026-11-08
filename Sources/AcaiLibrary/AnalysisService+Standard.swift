@@ -51,8 +51,6 @@ extension AnalysisService {
 }
 
 extension LanguageNameCatalog {
-    /// The names the CLI's `--language` and the MCP server's `languages` filter accept, taken from
-    /// `standardParsers` so neither keeps a list of its own.
     public static let standard = LanguageNameCatalog(parsers: AnalysisService.standardParsers)
 }
 

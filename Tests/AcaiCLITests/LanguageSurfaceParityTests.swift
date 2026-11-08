@@ -4,9 +4,6 @@ import AcaiLibrary
 @testable import AcaiCLI
 @testable import AcaiMCP
 
-/// The three surfaces that name languages must offer the same set, and that set must be the one
-/// `AnalysisService.standard` actually parses. Before `LanguageNameCatalog` the CLI and the MCP server
-/// each kept their own table, so registering a parser left both rejecting its language.
 @Suite("Language surface parity")
 struct LanguageSurfaceParityTests {
 
@@ -35,7 +32,7 @@ struct LanguageSurfaceParityTests {
     }
 
     @Test("Every registry language resolves on both surfaces, whatever its casing")
-    func everyRegisteredLanguageResolves() throws {
+    func everyRegisteredLanguageResolves() {
         let resolver = SourceLanguageResolver()
         for parser in AnalysisService.standardParsers {
             let name = parser.language.rawValue
@@ -53,15 +50,14 @@ struct LanguageSurfaceParityTests {
         #expect(!LanguageOption.allValueStrings.contains("cobol"))
     }
 
-    /// The DocC references spell the list out in prose, which is the one copy deriving the names from
-    /// the registry cannot keep in step on its own.
+    /// The DocC prose is the one copy of the list the registry cannot derive.
     @Test(
         "Both DocC references list every registered language",
         arguments: [
             ("Sources/AcaiCLI/AcaiCLI.docc/AcaiCLI.md", "`--language` accepts, case-insensitively: "),
             ("Sources/AcaiMCP/AcaiMCP.docc/AcaiMCP.md", "`languages` accepts, case-insensitively: ")
         ])
-    func documentedLanguagesMatchTheRegistry(path: String, prefix: String) throws {
+    func documentedLanguagesMatchTheRegistry(path: String, prefix: String) {
         let documented = DocumentedLanguageList(markdownAt: path, sentenceStartingWith: prefix)
         let missing = Set(registryNames).subtracting(documented.names).sorted()
         let stale = Set(documented.names).subtracting(registryNames).sorted()
@@ -74,8 +70,6 @@ struct LanguageSurfaceParityTests {
     }
 }
 
-/// The language names one DocC page's prose lists, read from the sentence that introduces them.
-/// Located by `#filePath` so it resolves identically on macOS and Linux, as `CLIReferencePage` does.
 private struct DocumentedLanguageList {
 
     let names: [String]
