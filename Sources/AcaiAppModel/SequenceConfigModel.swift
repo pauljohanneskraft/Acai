@@ -27,6 +27,7 @@ public struct SequenceConfigModel: Sendable {
 
     private let artifact: CodeArtifact
     private let initial: SequenceDiagramConfiguration?
+    private let lookups: SequenceEntryPointLookups
 
     public private(set) var step: Step = .entryPoint
     /// Empty is the top-level (no class) scope — it round-trips directly, so re-editing a
@@ -36,9 +37,15 @@ public struct SequenceConfigModel: Sendable {
     public var maxDepth: Int
     public private(set) var mappings: [InterfaceMapping] = []
 
-    public init(artifact: CodeArtifact, initial: SequenceDiagramConfiguration? = nil) {
+    public init(
+        artifact: CodeArtifact,
+        initial: SequenceDiagramConfiguration? = nil,
+        walkObserver: AnalysisWalkObserver? = nil
+    ) {
         self.artifact = artifact
         self.initial = initial
+        lookups = SequenceEntryPointLookups(artifact: artifact)
+        walkObserver?.didWalk()
         entryTypeName = initial?.entryTypeName ?? ""
         entryMethodName = initial?.entryMethodName ?? ""
         maxDepth = initial?.maxDepth ?? 5
@@ -57,8 +64,11 @@ public struct SequenceConfigModel: Sendable {
         }
     }
 
-    public mutating func advance() -> Advance {
-        mappings = resolvableMappings()
+    /// `selections` pre-fills each row, defaulting to the configuration the model was built with.
+    /// A caller that advances more than once — the sidebar, which stays on screen across applies —
+    /// passes the mapping now in effect so the rows reflect it rather than the one it opened with.
+    public mutating func advance(selectedConcreteTypes selections: [String: String]? = nil) -> Advance {
+        mappings = resolvableMappings(selections: selections ?? initial?.typeMapping ?? [:])
         guard !mappings.isEmpty else { return .finished(configuration) }
         step = .resolveInterfaces
         return .resolveInterfaces
@@ -91,7 +101,7 @@ public struct SequenceConfigModel: Sendable {
     /// One row per abstraction the trace reaches that has at least one conformer to offer. The
     /// mapping key stays the raw participant name (existential spellings included) because the
     /// generator substitutes receiver strings verbatim.
-    private func resolvableMappings() -> [InterfaceMapping] {
+    private func resolvableMappings(selections: [String: String]) -> [InterfaceMapping] {
         let preview = SequenceDiagramBuilder(
             entryPoint: (entryTypeName, entryMethodName), maxDepth: maxDepth
         ).build(from: artifact)
@@ -103,7 +113,7 @@ public struct SequenceConfigModel: Sendable {
             rows.append(InterfaceMapping(
                 protocolName: participant.name,
                 candidates: candidates,
-                selection: initial?.typeMapping[participant.name]
+                selection: selections[participant.name]
             ))
         }
         return rows
@@ -114,25 +124,35 @@ public struct SequenceConfigModel: Sendable {
     /// The codebase's top-level (free) functions — the entry points available when no class is
     /// selected (an empty entry-type name, which `sequenceDiagram(entryPoint:)` resolves against
     /// `freestandingFunctions`).
-    public var freeFunctionNames: [String] {
-        artifact.freestandingFunctions.map(\.name).uniqued().sorted()
-    }
+    public var freeFunctionNames: [String] { lookups.freeFunctionNames }
 
-    public var callableTypeNames: [String] {
-        artifact.types
-            .filter { $0.members.contains { $0.kind == .method } }
-            .map(\.name)
-            .uniqued()
-            .sorted()
-    }
+    public var callableTypeNames: [String] { lookups.callableTypeNames }
 
     public var methodNames: [String] {
         guard !entryTypeName.isEmpty else { return freeFunctionNames }
-        guard let type = artifact.types.first(where: { $0.name == entryTypeName }) else { return [] }
-        return type.members
-            .filter { $0.kind == .method }
-            .map(\.name)
-            .uniqued()
-            .sorted()
+        return lookups.methodNamesByType[entryTypeName] ?? []
+    }
+}
+
+/// Every entry-point option list, derived in one pass over the analysis. The pickers read these on
+/// each render, and the method list was re-scanned for the selected type on each one.
+private struct SequenceEntryPointLookups {
+    let freeFunctionNames: [String]
+    let callableTypeNames: [String]
+    /// Keyed on the written type name, first declaration of a name winning, which is what
+    /// scanning `types` for the name did.
+    let methodNamesByType: [String: [String]]
+
+    init(artifact: CodeArtifact) {
+        freeFunctionNames = artifact.freestandingFunctions.map(\.name).uniqued().sorted()
+        var callable: [String] = []
+        var methodNames: [String: [String]] = [:]
+        for type in artifact.types {
+            let names = type.members.filter { $0.kind == .method }.map(\.name).uniqued().sorted()
+            if methodNames[type.name] == nil { methodNames[type.name] = names }
+            if !names.isEmpty { callable.append(type.name) }
+        }
+        callableTypeNames = callable.uniqued().sorted()
+        methodNamesByType = methodNames
     }
 }

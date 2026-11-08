@@ -1,6 +1,7 @@
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiTestSupport
 import AcaiAppModel
 
 @Suite("State Config Model")
@@ -143,5 +144,43 @@ struct StateConfigModelTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .init(rawValue: "swift"), filePaths: ["A.swift"]))
         #expect(!StateConfigModel(artifact: artifact).hasGlobalVariables)
+    }
+
+    /// The seam is injected per instance, so this counts only this model's own passes. The picker
+    /// lists are read on every render and `selectScope` re-reads the variable list, so a lookup
+    /// derived per access rather than per model would show up here as more than one walk.
+    @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
+        let walks = Locked(0)
+        var model = StateConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+        #expect(walks.value == 1)
+
+        for _ in 0..<5 {
+            _ = model.typeDisplayNames
+            _ = model.typeIDsWithStoredProperties
+            _ = model.variableNames
+            _ = model.hasGlobalVariables
+        }
+        model.selectScope(.type("Loader"))
+        model.selectScope(.globals)
+        model.selectScope(nil)
+        _ = model.variableNames
+
+        #expect(walks.value == 1)
+    }
+
+    @Test func twoModelsEachCountTheirOwnWalk() {
+        let first = Locked(0)
+        let second = Locked(0)
+        _ = StateConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { first.withValue { $0 += 1 } }
+        )
+        _ = StateConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { second.withValue { $0 += 1 } }
+        )
+        #expect(first.value == 1)
+        #expect(second.value == 1)
     }
 }

@@ -1,6 +1,7 @@
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiTestSupport
 import AcaiAppModel
 
 @Suite("Sequence Config Model")
@@ -203,5 +204,42 @@ struct SequenceConfigModelTests {
         #expect(model.entryTypeName.isEmpty)
         #expect(model.freeFunctionNames == ["main"])
         #expect(model.methodNames == ["main"])
+    }
+
+    /// The seam is injected per instance, so this counts only this model's own passes. `advance()`
+    /// runs a fresh trace by design — that is the Next tap's work, not a lookup — so this exercises
+    /// the option lists and the scope change around it.
+    @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
+        let walks = Locked(0)
+        var model = SequenceConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+        #expect(walks.value == 1)
+
+        for _ in 0..<5 {
+            _ = model.freeFunctionNames
+            _ = model.callableTypeNames
+            _ = model.methodNames
+        }
+        model.selectEntryType("Service")
+        model.selectEntryType("Store")
+        model.selectEntryType("")
+        _ = model.methodNames
+
+        #expect(walks.value == 1)
+    }
+
+    @Test func twoModelsEachCountTheirOwnWalk() {
+        let first = Locked(0)
+        let second = Locked(0)
+        _ = SequenceConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { first.withValue { $0 += 1 } }
+        )
+        _ = SequenceConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { second.withValue { $0 += 1 } }
+        )
+        #expect(first.value == 1)
+        #expect(second.value == 1)
     }
 }
