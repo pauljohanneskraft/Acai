@@ -29,9 +29,7 @@ struct GitRepositoryLocksTests {
             await releaseFirst.wait()
             await log.record("first-end")
         }
-        // Launched before the first demonstrably holds the lock, the second could win the race, and
-        // both assertions below would be about the scheduler's choice rather than about the lock.
-        // Bounded so a lock that never grants the first operation fails here rather than hanging.
+        // The second launches only once the first holds the lock, so the order is the lock's, not the scheduler's.
         try await firstHoldsLock.wait(timeout: .seconds(10))
 
         let second = Task {
@@ -44,9 +42,7 @@ struct GitRepositoryLocksTests {
         }
         await secondEnteredRun.wait()
 
-        // `secondEnteredRun` has already established the second task is running and about to call
-        // `locks.run`, so the only thing left to wait out is `acquire()`'s own suspension — which is
-        // why a short bound is sound rather than a guess at how slow the runner is. The timeout is the pass.
+        // Timing out is the pass: the second's body must not run while the first holds the lock.
         await #expect(throws: AsyncGate.TimedOut.self) {
             try await secondStarted.wait(timeout: .milliseconds(200))
         }
