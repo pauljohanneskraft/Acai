@@ -20,9 +20,6 @@ struct DiagramImageEncoderTests {
         return try #require(context.makeImage())
     }
 
-    /// `CGImageDestination` writes the image as it stands, so the PNG comes back at exactly the
-    /// raster's own pixel size — the `NSBitmapImageRep`/`UIImage` round trip #484 removes copies it
-    /// first. Needs no window server, unlike `ImageRenderer`.
     @Test func writesPNGStraightFromTheImageAtItsOwnPixelSize() throws {
         let image = try filledImage(width: 37, height: 19)
 

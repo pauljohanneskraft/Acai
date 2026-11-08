@@ -7,8 +7,7 @@ struct RenderSizeLimitsTests {
 
     private let limits = RenderSizeLimits.standard
 
-    /// The area bound is a square root, so squaring it back can land a few ULPs above the ceiling.
-    /// These are memory budgets, not exact pixel counts.
+    /// Squaring the square-root area bound back can land a few ULPs above the ceiling.
     private let slack: CGFloat = 1.000001
 
     @Test func keepsTheRequestedScaleForADiagramThatFits() {
@@ -24,8 +23,7 @@ struct RenderSizeLimitsTests {
         #expect(limits.scale(for: .zero, requested: 2) == 2)
     }
 
-    /// #484's own case: swift-nio's 6,832 x 8,192 pt diagram rasterised 13,664 x 16,384 at scale 2 —
-    /// inside the per-dimension ceiling, and 224 megapixels of it.
+    /// swift-nio's 6,832 x 8,192 pt diagram: within the dimension ceiling at scale 2, but 224 megapixels.
     @Test func lowersTheScaleUntilAnOversizedDiagramFitsTheAreaCap() {
         let pointSize = CGSize(width: 6_832, height: 8_192)
 
@@ -36,8 +34,7 @@ struct RenderSizeLimitsTests {
         #expect(pixels <= limits.maxPixelArea * slack)
     }
 
-    /// An elongated diagram hits the per-dimension ceiling with its area nowhere near the cap, so
-    /// that bound has to keep binding on its own.
+    /// An elongated diagram hits the dimension ceiling with its area nowhere near the cap.
     @Test func stillCapsEachDimensionWhenTheAreaFits() {
         let pointSize = CGSize(width: 40_000, height: 200)
 

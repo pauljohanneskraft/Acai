@@ -44,8 +44,6 @@ struct DiagramImageRendererTests {
         #expect(Array(data.prefix(4)) == [0x89, 0x50, 0x4E, 0x47])
     }
 
-    /// The engine hands the rendered `CGImage` to its encoder and returns exactly those bytes, so
-    /// nothing re-wraps or re-rasterises it on the way out — the intermediate copy #484 removes.
     @Test @MainActor func routesTheRenderedImageThroughItsEncoderUntouched() throws {
         let encoder = RecordingImageEncoder()
         let data: Data
@@ -60,10 +58,26 @@ struct DiagramImageRendererTests {
         #expect(data == RecordingImageEncoder.sentinel)
         #expect(encoder.encoded.count == 1)
     }
+
+    /// Uncapped, 120 x 80 pt at scale 2 is 240 x 160; the 2,400-pixel area cap halves the scale to 0.5.
+    @Test @MainActor func rastersAtTheScaleItsAreaCapAllows() throws {
+        let encoder = RecordingImageEncoder()
+        let limits = RenderSizeLimits(maxPixelDimension: 16384, maxPixelArea: 2_400)
+        do {
+            _ = try DiagramImageRenderer(encoder: encoder, limits: limits).render(
+                Color.blue.frame(width: 120, height: 80),
+                contentSize: CGSize(width: 120, height: 80), scale: 2, padding: 0)
+        } catch DiagramImageRenderError.renderingFailed {
+            return
+        }
+
+        let image = try #require(encoder.encoded.first)
+        #expect(image.width == 60)
+        #expect(image.height == 40)
+    }
 }
 
-/// Records what the engine hands its encoder, answering with bytes no real encoder would produce
-/// so a test can tell a pass-through from a re-encode.
+/// Answers with bytes no real encoder would produce, so a test can tell a pass-through from a re-encode.
 private final class RecordingImageEncoder: DiagramImageEncoding, @unchecked Sendable {
     static let sentinel = Data([0xDE, 0xAD, 0xBE, 0xEF])
 

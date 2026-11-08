@@ -31,8 +31,7 @@ public struct DiagramImageRenderer {
     /// it can seed default arguments (e.g. ``RenderingContext``) outside the main actor.
     nonisolated public static let defaultPadding: CGFloat = 40
 
-    /// Renders a snapshot view sized to `contentSize` (plus padding) to PNG, at the scale
-    /// ``RenderSizeLimits/scale(for:requested:)`` allows for that raster.
+    /// Renders a view sized `contentSize` plus `padding` per side, at the scale ``RenderSizeLimits`` allows.
     public func render(
         _ view: some View,
         contentSize: CGSize,

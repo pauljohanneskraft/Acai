@@ -2,14 +2,12 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
-/// Turns a rendered `CGImage` into encoded image data. A seam: the rasterisation engine holds one
-/// of these rather than encoding inline, so what reaches the encoder is observable.
+/// Turns a rendered `CGImage` into encoded image data.
 public protocol DiagramImageEncoding: Sendable {
     func encode(_ image: CGImage) throws -> Data
 }
 
-/// Writes PNG straight from the `CGImage`. `NSBitmapImageRep(cgImage:)` and `UIImage.pngData()`
-/// each copy the whole raster first, doubling the peak for a large diagram.
+/// Writes PNG straight from the `CGImage`, without a full-raster `NSBitmapImageRep`/`UIImage` copy.
 public struct PNGImageEncoder: DiagramImageEncoding {
 
     public init() {}
