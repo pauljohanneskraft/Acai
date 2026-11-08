@@ -398,7 +398,9 @@ let package = Package(
             dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiArtifactGenerator"],
             exclude: ["Fixtures"]
         ),
-        .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
+        // Also depends on `AcaiLibrary` and `AcaiMCP` so `LanguageSurfaceParityTests` can compare the
+        // CLI's accepted `--language` values against the MCP schema enum and the registry itself.
+        .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore", "AcaiLibrary", "AcaiMCP"]),
         .testTarget(name: "AcaiMCPTests", dependencies: mcpTestDependencies),
         .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram"]),
 
