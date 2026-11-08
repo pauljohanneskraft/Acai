@@ -2,9 +2,6 @@ import Testing
 import AcaiCore
 @testable import AcaiRender
 
-/// Phase 1 of the layout, on its own: the engine only ever hands it sorted node ids, so what matters
-/// here is what it does with the *shape* of the hierarchy — including shapes a real codebase has and
-/// a tree does not.
 @Suite("Layer Assigner")
 struct LayerAssignerTests {
 
@@ -29,8 +26,7 @@ struct LayerAssignerTests {
 
     @Test("A cycle in the hierarchy terminates and still assigns every node")
     func cyclesTerminate() {
-        // B and C inherit from each other, below a genuine root. The visited set is what stops the
-        // walk; without it this never returns.
+        // B and C inherit from each other, below a genuine root.
         let layers = assignment(of: ["A", "B", "C"], [("B", "A"), ("C", "B"), ("B", "C")])
         #expect(Set(layers.keys) == ["A", "B", "C"])
         #expect(layers["A"] == 0)

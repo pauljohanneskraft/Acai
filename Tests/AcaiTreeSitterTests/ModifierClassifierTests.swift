@@ -5,8 +5,6 @@ import Testing
 @Suite("Modifier Classifier")
 struct ModifierClassifierTests {
 
-    /// A Java-shaped classifier: package-private by default, annotations collected verbatim, and one
-    /// `postProcess` rule that depends on the assembled result rather than a single child.
     private let classifier = ModifierClassifier(
         defaultAccessLevel: .packagePrivate,
         annotationNodeTypes: ["annotation", "marker_annotation"],

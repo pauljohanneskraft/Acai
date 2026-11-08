@@ -27,8 +27,6 @@ struct FieldReadResolverTests {
         let reads = try reads(knownProperties: ["count", "label"])
         #expect(reads.map(\.name) == ["count", "label", "count", "count"])
         #expect(reads.compactMap { $0.location?.line } == [3, 4, 5, 5])
-        // Bare and `this.`-qualified reads alike are recorded without a receiver, as the engine
-        // filters by name only.
         #expect(reads.allSatisfy { $0.receiver == nil })
     }
 

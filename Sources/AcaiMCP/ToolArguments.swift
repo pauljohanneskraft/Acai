@@ -9,9 +9,7 @@ struct ToolArguments: Sendable {
         self.values = values ?? [:]
     }
 
-    /// A present non-string (e.g. `module: 3`) throws `invalidParams` rather than reading as `nil` —
-    /// a mistyped selector facet must be rejected, not dropped so the selector silently widens to
-    /// everything.
+    /// A present non-string throws, so a mistyped selector facet cannot silently widen the selection.
     func string(_ key: String) throws -> String? {
         try typed(key, as: "a string", \.stringValue)
     }
@@ -51,8 +49,6 @@ struct ToolArguments: Sendable {
         return strings.compactMap { $0 }
     }
 
-    /// A present key of the wrong type reports *that*, so a caller is not sent looking for an
-    /// argument it did pass.
     func requiredString(_ key: String) throws -> String {
         guard let value = try string(key) else {
             throw MCPError.invalidParams("Missing required argument '\(key)'.")

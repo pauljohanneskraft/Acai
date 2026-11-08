@@ -2,8 +2,6 @@ import CoreGraphics
 import Testing
 @testable import AcaiRender
 
-/// Phase 3 of the layout, on its own: layers in, centres out. The engine's own tests see this only
-/// through a finished diagram, so the spacing, centring and determinism it owes are pinned here.
 @Suite("Coordinate Assigner")
 struct CoordinateAssignerTests {
 

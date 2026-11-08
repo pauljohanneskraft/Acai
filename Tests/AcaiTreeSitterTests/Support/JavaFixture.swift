@@ -2,16 +2,11 @@ import AcaiCore
 import TreeSitterJava
 @testable import AcaiTreeSitter
 
-/// A parsed Java file plus the context the shared seams read text and locations through.
-///
-/// `Node` holds its `Tree`, so keeping the root alive keeps the tree alive.
 struct JavaFixture {
 
     let context: SourceFileContext
     let root: Node
 
-    /// `nil` only when the grammar fails to load or produces no tree — a packaging failure, not
-    /// something a malformed snippet can cause.
     init?(_ source: String, fileName: String = "Fixture.java") {
         let grammar = TreeSitterGrammar(
             language: Language(language: tree_sitter_java()),

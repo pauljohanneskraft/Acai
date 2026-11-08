@@ -117,8 +117,7 @@ struct AssignmentResolutionTests {
         #expect(plain.value(of: literal)?.kind == .stringLiteral)
 
         var interpolating = LiteralNodeTypes.java
-        // Java has no interpolation; `string_fragment` stands in for the child type a language that
-        // does would list, so the branch is covered without a second grammar.
+        // Java has no interpolation; `string_fragment` stands in for an interpolation child type.
         interpolating.interpolationChildTypes = ["string_fragment"]
         let classifier = LiteralClassifier(context: fixture.context, literals: interpolating)
         #expect(classifier.value(of: literal)?.kind == .expression)

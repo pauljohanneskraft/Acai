@@ -3,12 +3,7 @@ import MCP
 import Testing
 @testable import AcaiMCP
 
-/// Every dispatchable tool's four argument-failure modes: a path that does not exist, an argument of
-/// the wrong JSON type, an unknown language, and each required argument omitted in turn.
-///
-/// Driven off each tool's own `inputSchema` rather than a hand-kept table, so a tool added later is
-/// swept without touching this file — and a tool that introduces a required argument this suite has
-/// no fixture value for fails here rather than going uncovered.
+/// Driven off each tool's `inputSchema`, so a tool added later is swept without touching this file.
 @Suite("Tool Error Paths")
 struct ToolErrorPathTests {
 

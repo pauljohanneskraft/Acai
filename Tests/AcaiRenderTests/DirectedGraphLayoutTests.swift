@@ -2,9 +2,6 @@ import CoreGraphics
 import Testing
 @testable import AcaiRender
 
-/// The placement the call-graph, package and state models all share. They each assert their own
-/// typed output; what none of them checks is that the shared step underneath is reproducible, which
-/// is what makes a rendered diagram comparable to its golden at all.
 @Suite("Directed Graph Layout")
 struct DirectedGraphLayoutTests {
 
@@ -45,8 +42,11 @@ struct DirectedGraphLayoutTests {
 
     @Test("Reordering the nodes does not move them")
     func layoutIsStableUnderNodeReordering() {
-        let forward = layout(["a", "b", "c", "d"], edges: chain)
-        let reversed = layout(["d", "c", "b", "a"], edges: chain)
+        // A shared layer and same-sized components, so input order has something to reorder.
+        let fanIn: [(from: String, to: String)] = [("b", "a"), ("c", "a"), ("d", "a"), ("f", "e"), ("h", "g")]
+        let forward = layout(["a", "b", "c", "d", "e", "f", "g", "h"], edges: fanIn)
+        let reversed = layout(["h", "g", "f", "e", "d", "c", "b", "a"], edges: fanIn)
+        #expect(forward.framesByID.count == 8)
         #expect(reversed.framesByID == forward.framesByID)
         #expect(reversed.contentSize == forward.contentSize)
     }

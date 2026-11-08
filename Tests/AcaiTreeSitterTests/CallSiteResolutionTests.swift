@@ -2,8 +2,6 @@ import AcaiCore
 import Testing
 @testable import AcaiTreeSitter
 
-/// A minimal `CallSiteSyntax` over Java's `method_invocation`: enough grammar knowledge to reach the
-/// shared decision tree, and nothing a plugin would add on top.
 private struct JavaCallSyntax: CallSiteSyntax {
 
     let context: SourceFileContext
@@ -90,8 +88,7 @@ struct CallSiteResolutionTests {
         #expect(location.filePath == "Fixture.java")
         #expect(location.line == 4)
         #expect(location.endLine == 4)
-        // No column assertion: tree-sitter reports a byte offset into UTF-16 source, so
-        // `Node.location(in:)` returns twice the real column for an ASCII line.
+        // Not the exact column: `Node.location(in:)` doubles it, since tree-sitter's offset is in UTF-16 bytes.
         #expect(location.column > 0)
     }
 

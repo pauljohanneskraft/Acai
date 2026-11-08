@@ -76,8 +76,7 @@ struct DocumentationReaderTests {
         class Repository {}
         """))
         let body = try #require(fixture.firstNode(ofType: "class_body"))
-        // The body carries no comment run of its own; `class_declaration` stands in for the wrapper
-        // node types (`export …`, `template …`) a language that has them would list.
+        // `class_declaration` stands in for a wrapper node type such as `export …`.
         let opaque = DocumentationReader(convention: javadoc, commentNodeTypes: ["line_comment"])
         #expect(opaque.documentation(above: body, in: fixture.context) == nil)
         let transparent = DocumentationReader(
