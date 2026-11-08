@@ -116,6 +116,27 @@ extension XCUIElement {
         XCTFail("\(description) never became enabled", file: file, line: line)
     }
 
+    /// A `Toggle` reports its new value a render pass after the tap.
+    func waitUntilOn(
+        _ description: String, timeout: TimeInterval = .uiTransition,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if isOn { return }
+            Thread.sleep(forTimeInterval: 0.25)
+        } while Date() < deadline
+        if isOn { return }
+        XCTFail("\(description) never turned on", file: file, line: line)
+    }
+
+    /// `1`/`0` on macOS, `"1"`/`"0"` on iOS.
+    private var isOn: Bool {
+        if let flag = value as? Bool { return flag }
+        if let text = value as? String { return text == "1" }
+        return false
+    }
+
     /// Taps exactly once. Use this for anything with a side effect (creating, deleting, toggling).
     func tapWhenReady(
         _ description: String, timeout: TimeInterval = .uiTransition,
@@ -124,6 +145,33 @@ extension XCUIElement {
         waitUntilReady(description, timeout: timeout, file: file, line: line)
         SystemBanners().dismiss(file: file, line: line)
         tap()
+    }
+
+    /// Typing before the field holds keyboard focus fails, and a loaded simulator can take a tap without
+    /// focusing; focusing is idempotent, so the tap repeats until focus lands.
+    func typeWhenFocused(
+        _ text: String, into description: String, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        focus(description, attempts: attempts, file: file, line: line)
+        typeText(text)
+    }
+
+    func focus(
+        _ description: String, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let focused = NSPredicate(format: "hasKeyboardFocus == true")
+        for _ in 0..<attempts {
+            waitUntilReady(description, file: file, line: line)
+            SystemBanners().dismiss(file: file, line: line)
+            tap()
+            let expectation = XCTNSPredicateExpectation(predicate: focused, object: self)
+            if XCTWaiter().wait(for: [expectation], timeout: .uiTransition / Double(attempts)) == .completed {
+                return
+            }
+        }
+        XCTFail("\(description) never took keyboard focus", file: file, line: line)
     }
 
     /// Taps, and taps again only while `destination` hasn't appeared. Only for idempotent navigation
@@ -146,8 +194,10 @@ extension XCUIElement {
     }
 
     /// `tap(_:until:)` for a gesture that only reveals (opening a context menu), never one that acts.
+    /// A long press a loaded simulator delivers as a tap opens the row instead; `back` returns to it.
     func reveal(
         _ description: String, until destination: XCUIElement, attempts: Int = 3,
+        recoveringThrough back: XCUIElement? = nil,
         file: StaticString = #filePath, line: UInt = #line, _ gesture: @MainActor (XCUIElement) -> Void
     ) {
         for _ in 0..<attempts {
@@ -155,7 +205,9 @@ extension XCUIElement {
             SystemBanners().dismiss(file: file, line: line)
             gesture(self)
             if destination.waitForExistence(timeout: .uiTransition / Double(attempts)) { return }
-            if !exists || !isHittable { break }
+            if exists && isHittable { continue }
+            guard let back, back.exists else { break }
+            back.tap("the way back to \(description)", until: self, file: file, line: line)
         }
         destination.waitOrFail("the destination of revealing \(description)", file: file, line: line)
     }
