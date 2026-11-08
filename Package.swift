@@ -383,7 +383,16 @@ let package = Package(
         .testTarget(name: "AcaiJVMTests", dependencies: ["AcaiJVM", "AcaiCore"]),
         .testTarget(name: "AcaiDartTests", dependencies: ["AcaiDart", "AcaiCore"]),
         .testTarget(name: "AcaiPythonTests", dependencies: ["AcaiPython", "AcaiCore"]),
-        .testTarget(name: "AcaiCFamilyTests", dependencies: ["AcaiCFamily", "AcaiCore"]),
+        .testTarget(
+            name: "AcaiCFamilyTests",
+            dependencies: [
+                "AcaiCFamily",
+                "AcaiCore",
+                // A real grammar to drive `TreeSitterGrammar`'s shared parse pipeline with.
+                "AcaiTreeSitter",
+                .product(name: "TreeSitterC", package: "tree-sitter-c"),
+            ]
+        ),
         .testTarget(
             name: "AcaiDiagramTests",
             dependencies: ["AcaiDiagram", "AcaiCore", "AcaiQuality", "AcaiArtifactGenerator"]),
