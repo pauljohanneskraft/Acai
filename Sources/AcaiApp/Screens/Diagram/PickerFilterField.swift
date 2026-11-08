@@ -13,7 +13,7 @@ struct PickerFilterField: View {
     /// What the field shows. Follows each keystroke; `text` follows it once typing pauses.
     @State private var draft = ""
 
-    private let debounce = Duration.milliseconds(200)
+    private let debounce: Duration = .milliseconds(200)
 
     var body: some View {
         HStack(spacing: .spacingXS) {
@@ -39,8 +39,7 @@ struct PickerFilterField: View {
         .onAppear { draft = text }
         .task(id: draft) {
             guard draft != text else { return }
-            try? await Task.sleep(for: debounce)
-            guard !Task.isCancelled else { return }
+            guard (try? await Task.sleep(for: debounce)) != nil else { return }
             text = draft
         }
     }
