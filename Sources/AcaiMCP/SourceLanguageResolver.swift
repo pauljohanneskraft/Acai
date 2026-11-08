@@ -1,24 +1,15 @@
 import MCP
 import AcaiLibrary
 
-/// Maps language names (`swift`, `kotlin`, `typescript`, …) onto the engine's `SourceLanguage` constants.
+/// Maps language names (`swift`, `kotlin`, `typescript`, …) onto the engine's `SourceLanguage`
+/// constants, taking both the names and the mapping from the registered parsers.
 struct SourceLanguageResolver: Sendable {
-    private let entries: [(name: String, language: CodeArtifact.SourceLanguage)] = [
-        ("swift", .swift),
-        ("kotlin", .kotlin),
-        ("java", .java),
-        ("typescript", .typeScript),
-        ("javascript", .javaScript),
-        ("dart", .dart),
-        ("python", .python),
-        ("c", .c),
-        ("cpp", .cpp)
-    ]
+    private let catalog = LanguageNameCatalog.standard
 
-    var names: [String] { entries.map(\.name) }
+    var names: [String] { catalog.names }
 
     func language(named name: String) -> CodeArtifact.SourceLanguage? {
-        entries.first { $0.name == name.lowercased() }?.language
+        catalog.language(named: name)
     }
 
     /// An empty result means "no restriction", as `AnalysisService.analyzeProject` reads it.

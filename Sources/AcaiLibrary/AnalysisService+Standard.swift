@@ -50,6 +50,12 @@ extension AnalysisService {
     )
 }
 
+extension LanguageNameCatalog {
+    /// The names the CLI's `--language` and the MCP server's `languages` filter accept, taken from
+    /// `standardParsers` so neither keeps a list of its own.
+    public static let standard = LanguageNameCatalog(parsers: AnalysisService.standardParsers)
+}
+
 extension CodeArtifact {
     /// Classifies **each type** by its own stamped `sourceLanguage`, so a mixed-language codebase is
     /// styled/enriched/filtered per-language rather than by one dominant config. Falls back to the
