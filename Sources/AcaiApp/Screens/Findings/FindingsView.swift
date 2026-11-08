@@ -55,15 +55,15 @@ struct FindingsView: View {
     @ViewBuilder
     private func content(project: Project) -> some View {
         if project.codebases.isEmpty {
-            emptyState(
-                text: .app("View.FindingsView.NoCodebasesYet"),
+            ActionableEmptyState(
+                text: .app("View.FindingsView.NoCodebasesYet"), systemImage: "checkmark.seal",
                 identifier: "findings.noCodebasesState")
         } else {
             let aggregator = FindingsAggregator(project: project, model: model)
             let notIndexed = aggregator.codebasesNotIndexed()
             if notIndexed.count == project.codebases.count {
-                emptyState(
-                    text: .app("View.FindingsView.NoCodebaseIndexedYet"),
+                ActionableEmptyState(
+                    text: .app("View.FindingsView.NoCodebaseIndexedYet"), systemImage: "checkmark.seal",
                     identifier: "findings.notIndexedState")
             } else {
                 let allFindings = aggregator.findings()
@@ -77,33 +77,6 @@ struct FindingsView: View {
                 }
             }
         }
-    }
-
-    private func emptyState(text: LocalizedStringResource, identifier: String) -> some View {
-        emptyState(text: text, identifier: identifier) { EmptyView() }
-    }
-
-    /// `children: .contain` keeps `action`'s own button queryable beside the container's identifier.
-    private func emptyState<Action: View>(
-        text: LocalizedStringResource, identifier: String, @ViewBuilder action: () -> Action
-    ) -> some View {
-        VStack(spacing: .spacingM) {
-            Image(systemName: "checkmark.seal")
-                .font(.system(size: 40))
-                .foregroundStyle(.secondary)
-            Text(localized: text)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, .spacingXXL)
-            action()
-                // Same treatment as `emptyProjectContentState`'s actions, which gives the 44pt touch target.
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(identifier)
     }
 
     private func loadingState(count: Int) -> some View {
@@ -133,10 +106,11 @@ struct FindingsView: View {
             }
             Divider()
             if visible.isEmpty {
-                emptyState(
+                ActionableEmptyState(
                     text: allFindings.isEmpty
                         ? .app("View.FindingsView.NoFindingsClean")
                         : .app("View.FindingsView.NoFindingsMatchFilters"),
+                    systemImage: "checkmark.seal",
                     identifier: "findings.emptyState"
                 ) {
                     if !allFindings.isEmpty, list.hasActiveFilters { clearFiltersButton }

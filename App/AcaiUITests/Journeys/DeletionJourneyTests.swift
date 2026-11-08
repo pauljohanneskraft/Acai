@@ -40,6 +40,13 @@ final class DeletionJourneyTests: UIJourneyTestCase {
 
         browser.projectRow(id: seeded.projectID)
             .waitForDisappearanceOrFail("the deleted project's row")
+
+        // Deleting the fixture's only project is the one way to reach the zero-projects sidebar.
+        browser.emptyState.waitOrFail("the sidebar's no-projects state")
+        validateScreenshot("ProjectBrowser", state: "noProjects")
+
+        browser.emptyStateNewProjectButton.tap(
+            "the empty sidebar's New Project button", until: NewProjectSheetScreen(app: app).titleField)
     }
 
     private func openSeededCodebaseDetail(from projectDetail: ProjectDetailScreen) -> CodebaseDetailScreen {
