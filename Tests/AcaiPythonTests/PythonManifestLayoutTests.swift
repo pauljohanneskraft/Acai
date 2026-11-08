@@ -230,6 +230,39 @@ struct PythonManifestLayoutTests {
         }
     }
 
+    /// A manifest that is there but cannot be read is not the same as no manifest: the layout it
+    /// declares is lost, so the fallback probe has to be reported rather than taken silently.
+    @Test func anUnreadableManifestFallsBackAndRecordsADiagnostic() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("python-layout-\(UUID().uuidString)", isDirectory: true)
+            .standardizedFileURL
+        // A directory in the manifest's place: present to the detector, unreadable to the reader.
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent("pyproject.toml"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try write("src/app.py", in: root)
+
+        let discovered = try spec(root)
+        #expect(discovered.sourceDirs.map(\.lastPathComponent) == ["src"])
+        let diagnostic = try #require(discovered.diagnostics.first)
+        #expect(discovered.diagnostics.count == 1)
+        #expect(diagnostic.kind == .incompleteDiscovery)
+        #expect(diagnostic.location.filePath == "pyproject.toml")
+        #expect(diagnostic.message.contains("could not be read"))
+    }
+
+    @Test func anAbsentManifestRecordsNoDiagnostic() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("python-layout-\(UUID().uuidString)", isDirectory: true)
+            .standardizedFileURL
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try write("requirements.txt", in: root, contents: "requests\n")
+        try write("src/app.py", in: root)
+
+        #expect(try spec(root).diagnostics.isEmpty)
+    }
+
     @Test func aWellFormedManifestRecordsNoDiagnostic() throws {
         try withProject("""
         [tool.hatch.build.targets.wheel]

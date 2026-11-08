@@ -110,6 +110,38 @@ struct CMakeNestedRootTests {
         }
     }
 
+    /// A listfile the detector found but cannot read loses every root it declares, so discovery has
+    /// to say so rather than report the project as a single root.
+    @Test func anUnreadableListfileIsReported() throws {
+        try withTempDir { root in
+            // A directory in the listfile's place: present to the detector, unreadable to the reader.
+            try FileManager.default.createDirectory(
+                at: root.appendingPathComponent("CMakeLists.txt"), withIntermediateDirectories: true)
+            try write("main.c", in: root)
+            try write("core/CMakeLists.txt", in: root, contents: "add_library(core core.c)")
+            try write("core/core.c", in: root)
+
+            let spec = try #require(detector.discoverSourceSpecs(at: root, requestedLanguages: [.c]).first)
+            #expect(spec.nestedRootPaths.isEmpty)
+            #expect(spec.diagnostics.map(\.kind) == [.incompleteDiscovery])
+            #expect(spec.diagnostics.first?.location.filePath == "CMakeLists.txt")
+            #expect(spec.diagnostics.first?.message.contains("CMakeLists.txt") == true)
+        }
+    }
+
+    @Test func anUnreadableListfilesDiagnosticReachesTheHealthReport() async throws {
+        try await withTempDirAsync { root in
+            try FileManager.default.createDirectory(
+                at: root.appendingPathComponent("CMakeLists.txt"), withIntermediateDirectories: true)
+            try write("main.c", in: root, contents: "struct Widget { int value; };\n")
+
+            let artifact = try await AnalysisService.standard.analyzeProject(at: root, allowedLanguages: [])
+            let report = HealthCheck(artifact: artifact).report
+            #expect(report.countsByKind["incompleteDiscovery"] == 1)
+            #expect(report.score == 1)
+        }
+    }
+
     // MARK: - Discovery
 
     @Test func declaredSubdirectoriesAreRootsOfTheirOwn() throws {
