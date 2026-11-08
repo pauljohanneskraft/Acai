@@ -19,7 +19,6 @@ enum SequenceDiagramSidebarTab {
 /// local draft, applied only on an explicit "Apply" tap.
 struct SequenceDiagramSidebar: View {
     @ObservedObject var viewModel: SequenceDiagramViewModel
-    let artifact: CodeArtifact
     let codebaseID: UUID
     @Binding var tab: SequenceDiagramSidebarTab
     let onApply: (SequenceDiagramConfiguration) -> Void
@@ -29,21 +28,11 @@ struct SequenceDiagramSidebar: View {
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
-    @State private var draftEntryTypeName: String
-    @State private var draftEntryMethodName: String
-    @State private var draftMaxDepth: Int
+    /// The staged entry point, the option lists it is picked from, and the interface-resolution
+    /// step "Apply" moves to when the traced path reaches a resolvable abstraction.
+    @State private var config: SequenceConfigModel
     @State private var typeQuery = ""
     @State private var methodQuery = ""
-    /// Non-empty only right after "Apply" finds abstractions along the traced path that have a
-    /// resolvable conformer — mirrors `SequenceConfigSheet`'s second phase, inline instead of modal.
-    @State private var pendingMappingRows: [MappingRow] = []
-
-    private struct MappingRow: Identifiable {
-        let id: String
-        var protocolName: String { id }
-        let candidates: [String]
-        var selection: String?
-    }
 
     init(
         viewModel: SequenceDiagramViewModel,
@@ -56,16 +45,15 @@ struct SequenceDiagramSidebar: View {
         onExportImage: @escaping () -> Void
     ) {
         self.viewModel = viewModel
-        self.artifact = artifact
         self.codebaseID = codebaseID
         self._tab = tab
         self.onApply = onApply
         self.onApplyFilter = onApplyFilter
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
-        _draftEntryTypeName = State(initialValue: viewModel.configuration.entryTypeName)
-        _draftEntryMethodName = State(initialValue: viewModel.configuration.entryMethodName)
-        _draftMaxDepth = State(initialValue: viewModel.configuration.maxDepth)
+        _config = State(initialValue: SequenceConfigModel(
+            artifact: artifact, initial: viewModel.configuration
+        ))
     }
 
     var body: some View {
@@ -100,9 +88,9 @@ struct SequenceDiagramSidebar: View {
     // MARK: - Settings
 
     private var isDraftUnchanged: Bool {
-        draftEntryTypeName == viewModel.configuration.entryTypeName
-            && draftEntryMethodName == viewModel.configuration.entryMethodName
-            && draftMaxDepth == viewModel.configuration.maxDepth
+        config.entryTypeName == viewModel.configuration.entryTypeName
+            && config.entryMethodName == viewModel.configuration.entryMethodName
+            && config.maxDepth == viewModel.configuration.maxDepth
     }
 
     private var settingsContent: some View {
@@ -115,64 +103,59 @@ struct SequenceDiagramSidebar: View {
                 LabeledContent {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $typeQuery)
-                        Picker(.app("View.SequenceDiagramSidebar.Type"), selection: $draftEntryTypeName) {
-                            Text(localized: freeFunctionNames.isEmpty
+                        Picker(.app("View.SequenceDiagramSidebar.Type"), selection: entryTypeName) {
+                            Text(localized: config.freeFunctionNames.isEmpty
                                 ? .app("View.SequenceDiagramSidebar.SelectEllipsis")
                                 : .app("View.SequenceDiagramSidebar.NoneTopLevelFunctions")).tag("")
-                            ForEach(callableTypeNames.filtered(by: typeQuery), id: \.self) {
+                            ForEach(config.callableTypeNames.filtered(by: typeQuery), id: \.self) {
                                 Text(verbatim: $0).tag($0)
                             }
                         }
                         .labelsHidden()
                         .accessibilityIdentifier("diagram.sequenceSettings.typePicker")
-                        .onChange(of: draftEntryTypeName) { _, _ in
-                            if !draftMethodNames.contains(draftEntryMethodName) {
-                                draftEntryMethodName = draftMethodNames.first ?? ""
-                            }
-                        }
                     }
                 } label: {
                     Text(.app("View.SequenceDiagramSidebar.Type"))
                 }
 
-                LabeledContent(draftEntryTypeName.isEmpty ? "Function" : "Method") {
+                LabeledContent(config.entryTypeName.isEmpty ? "Function" : "Method") {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $methodQuery)
-                        Picker(.app("View.SequenceDiagramSidebar.Method"), selection: $draftEntryMethodName) {
+                        Picker(.app("View.SequenceDiagramSidebar.Method"), selection: $config.entryMethodName) {
                             Text(.app("View.SequenceDiagramSidebar.Select")).tag("")
-                            ForEach(draftMethodNames.filtered(by: methodQuery), id: \.self) {
+                            ForEach(config.methodNames.filtered(by: methodQuery), id: \.self) {
                                 Text(verbatim: $0).tag($0)
                             }
                         }
                         .labelsHidden()
-                        .disabled(draftMethodNames.isEmpty)
+                        .disabled(config.methodNames.isEmpty)
                         .accessibilityIdentifier("diagram.sequenceSettings.methodPicker")
                     }
                 }
 
                 LabeledContent {
-                    Stepper(value: $draftMaxDepth, in: 1...20) {
-                        Text(draftMaxDepth, format: .number)
+                    Stepper(value: $config.maxDepth, in: 1...20) {
+                        Text(config.maxDepth, format: .number)
                     }
                 } label: {
                     Text(.app("View.SequenceDiagramSidebar.MaxDepth"))
                 }
 
                 Button(.app("View.SequenceDiagramSidebar.Apply"), action: apply)
-                    .disabled(isDraftUnchanged || draftEntryMethodName.isEmpty)
+                    .disabled(isDraftUnchanged || !config.canAdvance)
                     .accessibilityIdentifier("diagram.sequenceSettings.applyButton")
             }
 
-            if !pendingMappingRows.isEmpty {
+            if config.step == .resolveInterfaces {
                 Section(.app("View.SequenceDiagramSidebar.ResolveInterfaces")) {
                     Text(.app("View.SequenceDiagramSidebar.TheseAbstractionsAppearAlong"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    ForEach($pendingMappingRows) { $row in
-                        LabeledContent(row.protocolName) {
-                            Picker(row.protocolName, selection: $row.selection) {
+                    ForEach(config.mappings) { mapping in
+                        LabeledContent(mapping.protocolName) {
+                            Picker(mapping.protocolName, selection: selection(for: mapping.protocolName)) {
                                 Text(.app("View.SequenceDiagramSidebar.LeaveAbstract")).tag(String?.none)
-                                ForEach(row.candidates, id: \.self) { Text(verbatim: $0).tag(String?.some($0)) }
+                                ForEach(mapping.candidates, id: \.self) { Text(verbatim: $0).tag(String?.some($0)) }
                             }
                             .labelsHidden()
                         }
@@ -205,31 +188,22 @@ struct SequenceDiagramSidebar: View {
         .formStyle(.grouped)
     }
 
-    /// Mirrors `SequenceConfigSheet.advance()`.
+    /// Resolution rows are seeded from the mapping now in effect, not the one this sidebar opened
+    /// with, since it stays on screen across applies.
     private func apply() {
-        let preview = SequenceDiagramBuilder(
-            entryPoint: (draftEntryTypeName, draftEntryMethodName),
-            maxDepth: draftMaxDepth
-        ).build(from: artifact)
-        var rows: [MappingRow] = []
-        var seen: Set<String> = []
-        for participant in preview.participants where !seen.contains(participant.name) {
-            seen.insert(participant.name)
-            let candidates = artifact.conformerNames(ofAbstractionNamed: participant.name)
-            guard !candidates.isEmpty else { continue }
-            rows.append(MappingRow(
-                id: participant.name,
-                candidates: candidates,
-                selection: viewModel.configuration.typeMapping[participant.name]
-            ))
-        }
-        if rows.isEmpty {
-            onApply(SequenceDiagramConfiguration(
-                entryTypeName: draftEntryTypeName, entryMethodName: draftEntryMethodName, maxDepth: draftMaxDepth
-            ))
-        } else {
-            pendingMappingRows = rows
-        }
+        let advance = config.advance(selectedConcreteTypes: viewModel.configuration.typeMapping)
+        if case .finished(let configuration) = advance { onApply(configuration) }
+    }
+
+    private var entryTypeName: Binding<String> {
+        Binding(get: { config.entryTypeName }, set: { config.selectEntryType($0) })
+    }
+
+    private func selection(for protocolName: String) -> Binding<String?> {
+        Binding(
+            get: { config.mappings.first { $0.id == protocolName }?.selection },
+            set: { config.select($0, forAbstractionNamed: protocolName) }
+        )
     }
 
     private var filterBinding: Binding<AcaiQuality.Selector?> {
@@ -240,40 +214,7 @@ struct SequenceDiagramSidebar: View {
     }
 
     private func applyResolvedMapping() {
-        var mapping: [String: String] = [:]
-        for row in pendingMappingRows {
-            if let concrete = row.selection { mapping[row.protocolName] = concrete }
-        }
-        onApply(SequenceDiagramConfiguration(
-            entryTypeName: draftEntryTypeName, entryMethodName: draftEntryMethodName,
-            maxDepth: draftMaxDepth, typeMapping: mapping
-        ))
-        pendingMappingRows = []
+        onApply(config.configuration)
+        config.back()
     }
-
-    // MARK: - Lookups (duplicated from `SequenceConfigSheet`, kept independent since that type is
-    // also the creation-time flow presented from `CodebaseDetailView` and stays untouched)
-
-    private var freeFunctionNames: [String] {
-        artifact.freestandingFunctions.map(\.name).uniqued().sorted()
-    }
-
-    private var callableTypeNames: [String] {
-        artifact.types
-            .filter { $0.members.contains { $0.kind == .method } }
-            .map(\.name)
-            .uniqued()
-            .sorted()
-    }
-
-    private var draftMethodNames: [String] {
-        guard !draftEntryTypeName.isEmpty else { return freeFunctionNames }
-        guard let type = artifact.types.first(where: { $0.name == draftEntryTypeName }) else { return [] }
-        return type.members
-            .filter { $0.kind == .method }
-            .map(\.name)
-            .uniqued()
-            .sorted()
-    }
-
 }
