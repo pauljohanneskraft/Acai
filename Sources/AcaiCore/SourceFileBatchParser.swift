@@ -99,8 +99,10 @@ struct SourceFileBatchParser {
                 message: strictFailure.localizedDescription
             ))
         }
-        // Repairing decoding is byte-identical to its input exactly when that input was valid UTF-8,
-        // so the round trip answers whether anything was actually replaced.
+        // The failable initializer the rule prefers is the one this method exists to get past:
+        // replacing the invalid bytes is the point. Repairing decoding returns its input unchanged
+        // exactly when that input was valid, which is how the replacement is detected below.
+        // swiftlint:disable:next optional_data_string_conversion
         let decoded = String(decoding: data, as: UTF8.self)
         var artifact = codeParser.parse(source: decoded, fileName: relativePath)
         guard !decoded.utf8.elementsEqual(data) else { return .parsed(artifact) }
