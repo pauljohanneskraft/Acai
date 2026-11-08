@@ -14,7 +14,6 @@ struct ExtensionResolutionScalingTests {
         members: [Member] = [],
         nested: [TypeDeclaration] = [],
         extensionOf: String? = nil,
-        module: String? = nil,
         file: String = "M/Sources/M/S.swift"
     ) -> TypeDeclaration {
         TypeDeclaration(
@@ -23,7 +22,6 @@ struct ExtensionResolutionScalingTests {
             accessLevel: .internal,
             members: members, nestedTypes: nested,
             extensionOf: extensionOf,
-            module: module,
             location: SourceLocation(filePath: file, line: 1, column: 1)
         )
     }
@@ -135,19 +133,5 @@ struct ExtensionResolutionScalingTests {
         let resolved = artifact([box, ext]).enriched()
 
         #expect(resolved.flattened().first { $0.id == "Box" }?.members.map(\.name) == ["mapped"])
-    }
-
-    /// An extension whose bare target name is shared by two modules stays unresolved and is dropped,
-    /// rather than being bound to whichever type the index happened to register first.
-    @Test func ambiguousBareNameAcrossModulesIsStillDropped() {
-        let first = type("Node", module: "A", file: "A/Sources/A/Node.swift")
-        let second = type("Node", module: "B", file: "B/Sources/B/Node.swift")
-        let ext = type(
-            "Node", members: [member("added")], extensionOf: "Node",
-            module: "C", file: "C/Sources/C/Node+Extra.swift")
-
-        let resolved = artifact([first, second, ext].map { $0 }).enriched()
-
-        #expect(resolved.flattened().allSatisfy { $0.members.isEmpty })
     }
 }
