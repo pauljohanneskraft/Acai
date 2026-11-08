@@ -16,8 +16,7 @@ final class GitHubSignInTests: UIJourneyTestCase {
         browser.openSettings()
 
         let github = GitHubAccountScreen(app: app)
-        github.patField.tapWhenReady("the personal access token field")
-        github.patField.typeText("fixture-token")
+        github.patField.typeWhenFocused("fixture-token", into: "the personal access token field")
         github.signInWithTokenButton.waitUntilEnabled("Sign In with Token, once a token is entered")
         github.signInWithTokenButton.tapWhenReady("Sign In with Token")
 

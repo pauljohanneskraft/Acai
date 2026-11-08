@@ -61,6 +61,13 @@ struct UITestFixtureResolver: Sendable {
         environment[Self.gitHubRepositorySizeVariable].flatMap { Int($0) }
     }
 
+    static let localFolderVariable = "ACAI_UITEST_LOCAL_FOLDER"
+
+    /// Picked directly by "Choose…", since XCUITest cannot drive the system file importer.
+    func resolveLocalFolderURL() -> URL? {
+        url(Self.localFolderVariable)
+    }
+
     static let codebaseArtifactsVariable = "ACAI_UITEST_CODEBASE_ARTIFACTS"
 
     /// Newline-separated `<codebaseID>\t<path>` records — see `CodebaseAnalyzingResolver`. A
