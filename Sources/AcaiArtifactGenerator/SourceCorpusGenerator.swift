@@ -10,8 +10,10 @@ public struct SourceCorpusGenerator: Sendable {
 
         var fileExtension: String {
             switch self {
-            case .swift: "swift"
-            case .java: "java"
+            case .swift:
+                "swift"
+            case .java:
+                "java"
             }
         }
 
