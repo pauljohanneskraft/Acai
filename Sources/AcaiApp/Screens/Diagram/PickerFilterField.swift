@@ -3,14 +3,11 @@ import SwiftUI
 /// A small filter field placed above a `Picker` whose option list can grow into the hundreds (e.g.
 /// every type or method in a large codebase) — narrows the menu's contents before it's even opened,
 /// instead of leaving the user to scroll a long alphabetized list.
-///
-/// Typing is debounced: every keystroke otherwise re-filters the list and rebuilds the whole menu.
-/// Clearing publishes at once, since a tap is not repeated input.
 struct PickerFilterField: View {
     @Binding var text: String
     var placeholder: String = "Filter…"
 
-    /// What the field shows. Follows each keystroke; `text` follows it once typing pauses.
+    /// What the field shows; `text` follows it once typing pauses, or at once when cleared.
     @State private var draft = ""
 
     private let debounce: Duration = .milliseconds(200)

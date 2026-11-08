@@ -1,9 +1,7 @@
 import AcaiCore
 import AcaiDiagram
 
-/// The call graph's scope choice — whole codebase, one module or one type. Serves both the
-/// creation-time sheet and the diagram sidebar, whose scope edit is staged and applied explicitly
-/// because a new scope rebuilds the graph from scratch.
+/// The call graph's scope choice: the whole codebase, one module or one type.
 public struct CallGraphConfigModel: Sendable {
     public var scope: CallGraphScope
 
@@ -16,21 +14,20 @@ public struct CallGraphConfigModel: Sendable {
         initial: CallGraphScope = .wholeCodebase,
         walkObserver: AnalysisWalkObserver? = nil
     ) {
-        let lookups = CallGraphScopeLookups(artifact: artifact)
-        walkObserver?.didWalk()
+        let lookups = CallGraphScopeLookups(artifact: artifact, walkObserver: walkObserver)
         scope = initial
         typeNames = lookups.typeNames
         moduleNames = lookups.moduleNames
     }
 }
 
-/// Both scope option lists, derived in one pass over the analysis. The pickers read these on each
-/// render, and the module list rebuilt a whole `ModuleMap` each time.
+/// Both scope option lists, derived in one pass over the analysis.
 private struct CallGraphScopeLookups {
     let typeNames: [String]
     let moduleNames: [String]
 
-    init(artifact: CodeArtifact) {
+    init(artifact: CodeArtifact, walkObserver: AnalysisWalkObserver?) {
+        walkObserver?.didWalk()
         let modules = ModuleMap(artifact: artifact)
         var types: [String] = []
         var moduleNames: [String] = []

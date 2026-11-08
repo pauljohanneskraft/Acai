@@ -26,8 +26,7 @@ public struct StateConfigModel: Sendable {
         initial: StateDiagramConfiguration? = nil,
         walkObserver: AnalysisWalkObserver? = nil
     ) {
-        let lookups = StateScopeLookups(artifact: artifact)
-        walkObserver?.didWalk()
+        let lookups = StateScopeLookups(artifact: artifact, walkObserver: walkObserver)
         typeDisplayNames = lookups.displayNames
         typeIDsWithStoredProperties = lookups.typeIDs
         variableNamesByScope = lookups.variableNamesByScope
@@ -63,14 +62,14 @@ public struct StateConfigModel: Sendable {
     }
 }
 
-/// Every scope's option list, derived in one pass over the analysis. The pickers read these on each
-/// render, and deriving a scope's variables on demand was O(members × types).
+/// Every scope's option list, derived in one pass over the analysis.
 private struct StateScopeLookups {
     let displayNames: TypeDisplayNames
     let typeIDs: [String]
     let variableNamesByScope: [StateConfigModel.Scope: [String]]
 
-    init(artifact: CodeArtifact) {
+    init(artifact: CodeArtifact, walkObserver: AnalysisWalkObserver?) {
+        walkObserver?.didWalk()
         var storedProperties: [(id: String, members: [Member])] = []
         var enumTypeNames: Set<String> = []
         func walk(_ types: [TypeDeclaration]) {
@@ -100,7 +99,6 @@ private struct StateScopeLookups {
 
 /// Orders a scope's stored properties so the ones a state space is usually built from come first.
 private struct StateHolderOrdering {
-    /// Matched by the property's written type name, which is what a member carries.
     let enumTypeNames: Set<String>
 
     private let primitiveNames: Set<String> = ["bool", "boolean", "int", "integer", "string"]

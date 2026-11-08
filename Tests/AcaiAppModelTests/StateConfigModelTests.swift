@@ -146,9 +146,6 @@ struct StateConfigModelTests {
         #expect(!StateConfigModel(artifact: artifact).hasGlobalVariables)
     }
 
-    /// The seam is injected per instance, so this counts only this model's own passes. The picker
-    /// lists are read on every render and `selectScope` re-reads the variable list, so a lookup
-    /// derived per access rather than per model would show up here as more than one walk.
     @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
         let walks = Locked(0)
         var model = StateConfigModel(

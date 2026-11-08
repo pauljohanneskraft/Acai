@@ -180,8 +180,7 @@ struct StateDiagramSidebar: View {
         onApply(config.configuration)
     }
 
-    /// The scope picker goes through `selectScope` rather than the stored property, so a scope
-    /// change takes a now-unresolvable variable selection with it.
+    /// Goes through `selectScope` so a scope change drops a variable the new scope lacks.
     private var scope: Binding<StateConfigModel.Scope?> {
         Binding(get: { config.scope }, set: { config.selectScope($0) })
     }

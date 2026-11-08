@@ -44,8 +44,7 @@ public struct SequenceConfigModel: Sendable {
     ) {
         self.artifact = artifact
         self.initial = initial
-        lookups = SequenceEntryPointLookups(artifact: artifact)
-        walkObserver?.didWalk()
+        lookups = SequenceEntryPointLookups(artifact: artifact, walkObserver: walkObserver)
         entryTypeName = initial?.entryTypeName ?? ""
         entryMethodName = initial?.entryMethodName ?? ""
         maxDepth = initial?.maxDepth ?? 5
@@ -64,9 +63,7 @@ public struct SequenceConfigModel: Sendable {
         }
     }
 
-    /// `selections` pre-fills each row, defaulting to the configuration the model was built with.
-    /// A caller that advances more than once — the sidebar, which stays on screen across applies —
-    /// passes the mapping now in effect so the rows reflect it rather than the one it opened with.
+    /// `selections` pre-fills each row; it defaults to the mapping the model was built with.
     public mutating func advance(selectedConcreteTypes selections: [String: String]? = nil) -> Advance {
         mappings = resolvableMappings(selections: selections ?? initial?.typeMapping ?? [:])
         guard !mappings.isEmpty else { return .finished(configuration) }
@@ -134,16 +131,15 @@ public struct SequenceConfigModel: Sendable {
     }
 }
 
-/// Every entry-point option list, derived in one pass over the analysis. The pickers read these on
-/// each render, and the method list was re-scanned for the selected type on each one.
+/// Every entry-point option list, derived in one pass over the analysis.
 private struct SequenceEntryPointLookups {
     let freeFunctionNames: [String]
     let callableTypeNames: [String]
-    /// Keyed on the written type name, first declaration of a name winning, which is what
-    /// scanning `types` for the name did.
+    /// The first declaration of a type name wins.
     let methodNamesByType: [String: [String]]
 
-    init(artifact: CodeArtifact) {
+    init(artifact: CodeArtifact, walkObserver: AnalysisWalkObserver?) {
+        walkObserver?.didWalk()
         freeFunctionNames = artifact.freestandingFunctions.map(\.name).uniqued().sorted()
         var callable: [String] = []
         var methodNames: [String: [String]] = [:]

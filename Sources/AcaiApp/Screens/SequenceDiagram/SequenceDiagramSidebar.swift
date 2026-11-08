@@ -28,8 +28,7 @@ struct SequenceDiagramSidebar: View {
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
-    /// The staged entry point, the option lists it is picked from, and the interface-resolution
-    /// step "Apply" moves to when the traced path reaches a resolvable abstraction.
+    /// The staged entry point and interface resolution, plus the option lists they are picked from.
     @State private var config: SequenceConfigModel
     @State private var typeQuery = ""
     @State private var methodQuery = ""
@@ -188,8 +187,7 @@ struct SequenceDiagramSidebar: View {
         .formStyle(.grouped)
     }
 
-    /// Resolution rows are seeded from the mapping now in effect, not the one this sidebar opened
-    /// with, since it stays on screen across applies.
+    /// Seeds the rows from the mapping now in effect, which changes with each apply.
     private func apply() {
         let advance = config.advance(selectedConcreteTypes: viewModel.configuration.typeMapping)
         if case .finished(let configuration) = advance { onApply(configuration) }

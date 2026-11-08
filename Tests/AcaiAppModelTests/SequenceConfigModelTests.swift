@@ -206,9 +206,34 @@ struct SequenceConfigModelTests {
         #expect(model.methodNames == ["main"])
     }
 
-    /// The seam is injected per instance, so this counts only this model's own passes. `advance()`
-    /// runs a fresh trace by design — that is the Next tap's work, not a lookup — so this exercises
-    /// the option lists and the scope change around it.
+    @Test func advancingSeedsTheRowsFromTheGivenMappingOverTheInitialOne() throws {
+        let initial = SequenceDiagramConfiguration(
+            entryTypeName: "Service", entryMethodName: "run", typeMapping: ["Store": "DiskStore"])
+        var model = SequenceConfigModel(artifact: artifact(), initial: initial)
+
+        _ = model.advance(selectedConcreteTypes: [:])
+        #expect(try #require(model.mappings.first).selection == nil)
+
+        _ = model.advance()
+        #expect(try #require(model.mappings.first).selection == "DiskStore")
+    }
+
+    @Test func aRepeatedTypeNameOffersTheFirstDeclarationsMethods() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .init(rawValue: "swift"), filePaths: ["Twin.swift"]),
+            types: [
+                TypeDeclaration(id: "A.Twin", name: "Twin", qualifiedName: "A.Twin", kind: .struct,
+                                accessLevel: .public),
+                TypeDeclaration(id: "B.Twin", name: "Twin", qualifiedName: "B.Twin", kind: .struct,
+                                accessLevel: .public,
+                                members: [Member(name: "go", kind: .method, accessLevel: .internal)])
+            ]
+        )
+        var model = SequenceConfigModel(artifact: artifact)
+        model.selectEntryType("Twin")
+        #expect(model.methodNames.isEmpty)
+    }
+
     @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
         let walks = Locked(0)
         var model = SequenceConfigModel(

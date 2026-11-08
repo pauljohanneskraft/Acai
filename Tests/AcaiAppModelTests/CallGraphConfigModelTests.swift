@@ -7,9 +7,7 @@ import AcaiAppModel
 @Suite("Call Graph Config Model")
 struct CallGraphConfigModelTests {
 
-    /// `Service` and `Helper` declare methods and so can be scoped to; `Record` holds only
-    /// properties and cannot. `Service` appears twice to prove the lists are uniqued, and the three
-    /// file paths sit in two different module directories.
+    /// `Record` has no methods and sits alone in its module; `Service` appears twice.
     private func artifact() -> CodeArtifact {
         let method = Member(name: "run", kind: .method, accessLevel: .public)
         let service = TypeDeclaration(
@@ -26,13 +24,13 @@ struct CallGraphConfigModelTests {
             id: "Record", name: "Record", qualifiedName: "Record", kind: .struct,
             accessLevel: .public,
             members: [Member(name: "id", kind: .property, accessLevel: .public)],
-            location: SourceLocation(filePath: "Sources/Core/Record.swift", line: 1, column: 1)
+            location: SourceLocation(filePath: "Sources/Records/Record.swift", line: 1, column: 1)
         )
         return CodeArtifact(
             metadata: .init(
                 sourceLanguage: .init(rawValue: "swift"),
                 filePaths: ["Sources/Core/Service.swift", "Sources/Support/Helper.swift",
-                            "Sources/Core/Record.swift"]
+                            "Sources/Records/Record.swift"]
             ),
             types: [service, helper, record, service]
         )
@@ -47,14 +45,8 @@ struct CallGraphConfigModelTests {
         #expect(CallGraphConfigModel(artifact: artifact()).typeNames == ["Helper", "Service"])
     }
 
-    @Test func theModuleListIsTheOneTheModuleMapDerives() {
-        let artifact = artifact()
-        let modules = ModuleMap(artifact: artifact)
-        let expected = artifact.types
-            .map { modules.module(forFilePath: $0.location?.filePath ?? "") }
-            .uniqued()
-            .sorted()
-        #expect(CallGraphConfigModel(artifact: artifact).moduleNames == expected)
+    @Test func everyTypesModuleIsOfferedEvenWithoutMethods() {
+        #expect(CallGraphConfigModel(artifact: artifact()).moduleNames == ["Core", "Records", "Support"])
     }
 
     @Test func theListsAreUniquedAndSorted() {
@@ -71,7 +63,6 @@ struct CallGraphConfigModelTests {
         #expect(model.moduleNames.isEmpty)
     }
 
-    /// The seam is injected per instance, so this counts only this model's own passes.
     @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
         let walks = Locked(0)
         var model = CallGraphConfigModel(
