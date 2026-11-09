@@ -280,6 +280,32 @@ struct DetectorTests {
         }
     }
 
+    /// A package's command-line entry points live in `bin/` and its build helpers in `tool/`, both
+    /// beside `lib/` rather than under it, so preferring `lib` alone left them unanalysed.
+    @Test func flutterCollectsBinAndToolBesideLib() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("lib/main.dart", in: root)
+            try write("bin/cli.dart", in: root)
+            try write("tool/build.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == ["lib", "bin", "tool"])
+        }
+    }
+
+    /// Without `lib/` the probe falls back to the root, which already contains `bin/` and `tool/` —
+    /// listing them again would analyse those files twice.
+    @Test func flutterFallsBackToRootWithoutLib() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("bin/cli.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == [root.lastPathComponent])
+        }
+    }
+
     // MARK: - Python
 
     @Test func pythonDetectsManifestAndVerifiesSources() throws {

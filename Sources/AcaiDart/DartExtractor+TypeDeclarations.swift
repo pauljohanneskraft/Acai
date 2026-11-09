@@ -167,6 +167,39 @@ extension DartExtractor {
         )
     }
 
+    // MARK: - Type Alias
+
+    /// `typedef Callback = void Function(Result result);` and `typedef Pair<T> = Map<T, T>;` — the
+    /// alias name is the `type_identifier` left of the `=`, and everything else names the aliased
+    /// type. Dart's older `typedef void Callback(Result result);` form has no `=`: there the name is
+    /// the last `type_identifier`, the one carrying the parameter list, and the return type in front
+    /// of it is part of the target.
+    func extractTypeAlias(_ node: Node) -> TypeDeclaration? {
+        let children = node.children()
+        let equalsIndex = children.firstIndex { !$0.isNamed && $0.text(in: context) == "=" }
+        let searched = equalsIndex.map { children[..<$0] } ?? children[...]
+        guard let nameIndex = searched.lastIndex(where: { $0.nodeType == "type_identifier" }) else {
+            return nil
+        }
+        let name = children[nameIndex].text(in: context)
+        guard !name.isEmpty else { return nil }
+
+        let targetNodes = children.enumerated()
+            .filter { $0.offset != nameIndex && $0.element.isNamed }
+            .map(\.element)
+            .filter { $0.nodeType != "type_parameters" && $0.nodeType != "annotation" }
+
+        let typeId = declarations.qualifiedName(name)
+        return TypeDeclaration(
+            id: typeId, name: name, qualifiedName: typeId, kind: .typeAlias,
+            accessLevel: DartName(name).accessLevel,
+            genericParameters: typeReferences.typeParametersFromChildren(node),
+            inheritedTypes: typeReferences.aliasTarget(targetNodes),
+            annotations: annotations.annotations(of: node),
+            namespace: declarations.currentNamespace, location: node.location(in: context)
+        )
+    }
+
     // MARK: - Extension Declaration
 
     mutating func extractExtensionDeclaration(_ node: Node) -> TypeDeclaration? {
