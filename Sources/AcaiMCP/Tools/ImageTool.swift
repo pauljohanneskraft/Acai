@@ -82,13 +82,13 @@ struct ImageTool: AnalysisTool {
         case .callgraph:
             return try await CallGraphImageExporter(
                 scale: scale, palette: palette,
-                scope: CallGraphScopeOption(raw: arguments.string("scope"))).render(artifact: artifact)
+                scope: CallGraphScopeOption(raw: try arguments.string("scope"))).render(artifact: artifact)
         }
     }
 
     private func classConfiguration(_ arguments: ToolArguments) throws -> ClassDiagramConfiguration {
         var configuration = ClassDiagramConfiguration()
-        if let focus = arguments.string("focus") {
+        if let focus = try arguments.string("focus") {
             configuration.focus = FocusConfiguration(
                 rootTypeName: focus, maxDepth: try arguments.int("focusDepth"), direction: .both)
             configuration.grouping = .none

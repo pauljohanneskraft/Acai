@@ -12,7 +12,6 @@ enum CallGraphSidebarTab {
 /// fresh identity, dropping positions/undo history), so scope edits stage into a local draft
 /// applied only on an explicit "Apply" tap.
 struct CallGraphSidebar: View {
-    let artifact: CodeArtifact
     let graph: CallGraph
     let selectedNodeIDs: Set<String>
     let scope: CallGraphScope
@@ -27,11 +26,12 @@ struct CallGraphSidebar: View {
     let deltaStatus: (String) -> DeltaStatus?
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
-    @State private var draftScope: CallGraphScope
+    /// The staged scope edit, plus the option lists it is picked from.
+    @State private var config: CallGraphConfigModel
     @State private var scopeQuery = ""
 
     init(
-        artifact: CodeArtifact,
+        draftScope: CallGraphConfigModel,
         graph: CallGraph,
         selectedNodeIDs: Set<String>,
         scope: CallGraphScope,
@@ -44,7 +44,6 @@ struct CallGraphSidebar: View {
         onExportImage: @escaping () -> Void,
         deltaStatus: @escaping (String) -> DeltaStatus? = { _ in nil }
     ) {
-        self.artifact = artifact
         self.graph = graph
         self.selectedNodeIDs = selectedNodeIDs
         self.scope = scope
@@ -56,7 +55,7 @@ struct CallGraphSidebar: View {
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
         self.deltaStatus = deltaStatus
-        _draftScope = State(initialValue: scope)
+        _config = State(initialValue: draftScope)
     }
 
     var body: some View {
@@ -100,9 +99,9 @@ struct CallGraphSidebar: View {
                 LabeledContent {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $scopeQuery)
-                        Picker(.app("View.CallGraphSidebar.Scope"), selection: $draftScope) {
+                        Picker(.app("View.CallGraphSidebar.Scope"), selection: $config.scope) {
                             Text(.app("View.CallGraphSidebar.WholeCodebase")).tag(CallGraphScope.wholeCodebase)
-                            let modules = moduleNames.filtered(by: scopeQuery)
+                            let modules = config.moduleNames.filtered(by: scopeQuery)
                             if !modules.isEmpty {
                                 Section(.app("View.CallGraphSidebar.Modules")) {
                                     ForEach(modules, id: \.self) { name in
@@ -111,7 +110,7 @@ struct CallGraphSidebar: View {
                                 }
                             }
                             Section(.app("View.CallGraphSidebar.Types")) {
-                                ForEach(typeNames.filtered(by: scopeQuery), id: \.self) { name in
+                                ForEach(config.typeNames.filtered(by: scopeQuery), id: \.self) { name in
                                     Text(verbatim: name).tag(CallGraphScope.type(name))
                                 }
                             }
@@ -123,8 +122,8 @@ struct CallGraphSidebar: View {
                     Text(.app("View.CallGraphSidebar.Scope"))
                 }
 
-                Button(.app("View.CallGraphSidebar.Apply")) { onApplyScope(draftScope) }
-                    .disabled(draftScope == scope)
+                Button(.app("View.CallGraphSidebar.Apply")) { onApplyScope(config.scope) }
+                    .disabled(config.scope == scope)
                     .accessibilityIdentifier("diagram.callGraphSettings.applyButton")
             }
 
@@ -149,23 +148,4 @@ struct CallGraphSidebar: View {
         .formStyle(.grouped)
     }
 
-    // MARK: - Lookups
-    // Duplicated from `CallGraphConfigSheet`, kept independent since that type is also the
-    // creation-time flow presented from `CodebaseDetailView` and stays untouched.
-
-    private var typeNames: [String] {
-        artifact.types
-            .filter { type in type.members.contains { $0.kind == .method } }
-            .map(\.name)
-            .uniqued()
-            .sorted()
-    }
-
-    private var moduleNames: [String] {
-        let modules = ModuleMap(artifact: artifact)
-        return artifact.types
-            .map { modules.module(forFilePath: $0.location?.filePath ?? "") }
-            .uniqued()
-            .sorted()
-    }
 }

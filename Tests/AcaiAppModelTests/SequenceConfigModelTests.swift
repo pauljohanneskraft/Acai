@@ -1,6 +1,7 @@
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiTestSupport
 import AcaiAppModel
 
 @Suite("Sequence Config Model")
@@ -203,5 +204,92 @@ struct SequenceConfigModelTests {
         #expect(model.entryTypeName.isEmpty)
         #expect(model.freeFunctionNames == ["main"])
         #expect(model.methodNames == ["main"])
+    }
+
+    @Test func advancingSeedsTheRowsFromTheGivenMappingOverTheInitialOne() throws {
+        let initial = SequenceDiagramConfiguration(
+            entryTypeName: "Service", entryMethodName: "run", typeMapping: ["Store": "DiskStore"])
+        var model = SequenceConfigModel(artifact: artifact(), initial: initial)
+
+        _ = model.advance(selectedConcreteTypes: [:])
+        #expect(try #require(model.mappings.first).selection == nil)
+
+        _ = model.advance()
+        #expect(try #require(model.mappings.first).selection == "DiskStore")
+    }
+
+    @Test func aRepeatedTypeNameOffersTheFirstDeclarationsMethods() {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .init(rawValue: "swift"), filePaths: ["Twin.swift"]),
+            types: [
+                TypeDeclaration(id: "A.Twin", name: "Twin", qualifiedName: "A.Twin", kind: .struct,
+                                accessLevel: .public),
+                TypeDeclaration(id: "B.Twin", name: "Twin", qualifiedName: "B.Twin", kind: .struct,
+                                accessLevel: .public,
+                                members: [Member(name: "go", kind: .method, accessLevel: .internal)])
+            ]
+        )
+        var model = SequenceConfigModel(artifact: artifact)
+        model.selectEntryType("Twin")
+        #expect(model.methodNames.isEmpty)
+    }
+
+    @Test func restoringReturnsToTheEntryPointWithTheGivenConfigurationAndItsMapping() throws {
+        let walks = Locked(0)
+        var model = SequenceConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+        model.selectEntryType("Service")
+        model.entryMethodName = "run"
+        _ = model.advance()
+
+        model.restore(SequenceDiagramConfiguration(
+            entryTypeName: "Service", entryMethodName: "run", maxDepth: 7, typeMapping: ["Store": "DiskStore"]))
+        #expect(model.step == .entryPoint)
+        #expect(model.mappings.isEmpty)
+        #expect(model.maxDepth == 7)
+        _ = model.advance()
+        #expect(try #require(model.mappings.first).selection == "DiskStore")
+
+        model.restore(nil)
+        #expect(model.entryTypeName.isEmpty)
+        #expect(model.entryMethodName.isEmpty)
+        #expect(model.maxDepth == 5)
+        #expect(walks.value == 1)
+    }
+
+    @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
+        let walks = Locked(0)
+        var model = SequenceConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+        #expect(walks.value == 1)
+
+        for _ in 0..<5 {
+            _ = model.freeFunctionNames
+            _ = model.callableTypeNames
+            _ = model.methodNames
+        }
+        model.selectEntryType("Service")
+        model.selectEntryType("Store")
+        model.selectEntryType("")
+        _ = model.methodNames
+
+        #expect(walks.value == 1)
+    }
+
+    @Test func twoModelsEachCountTheirOwnWalk() {
+        let first = Locked(0)
+        let second = Locked(0)
+        _ = SequenceConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { first.withValue { $0 += 1 } }
+        )
+        _ = SequenceConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { second.withValue { $0 += 1 } }
+        )
+        #expect(first.value == 1)
+        #expect(second.value == 1)
     }
 }

@@ -32,7 +32,7 @@ extension AcaiCommand {
 
         @Option(name: .long, help: ArgumentHelp(
             "Limit analysis to one or more languages when using --source/a path" +
-            " (\(LanguageOption.allValuesList))." +
+            " (\(LanguageNameCatalog.standard.namesList))." +
             " Repeat the flag for multiple: --language kotlin --language java."
         ))
         var language: [LanguageOption] = []

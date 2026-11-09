@@ -1,6 +1,7 @@
 import Testing
 import AcaiCore
 import AcaiDiagram
+import AcaiTestSupport
 import AcaiAppModel
 
 @Suite("State Config Model")
@@ -143,5 +144,60 @@ struct StateConfigModelTests {
         let artifact = CodeArtifact(
             metadata: .init(sourceLanguage: .init(rawValue: "swift"), filePaths: ["A.swift"]))
         #expect(!StateConfigModel(artifact: artifact).hasGlobalVariables)
+    }
+
+    @Test func restoringReplacesTheDraftWithoutWalkingTheAnalysisAgain() {
+        let walks = Locked(0)
+        var model = StateConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+
+        model.restore(StateDiagramConfiguration(typeName: "Loader", variableName: "state", maxStates: 45))
+        #expect(model.scope == .type("Loader"))
+        #expect(model.variableName == "state")
+        #expect(model.maxStates == 45)
+        #expect(model.variableNames.first == "label")
+
+        model.restore(nil)
+        #expect(model.scope == nil)
+        #expect(model.variableName.isEmpty)
+        #expect(model.maxStates == 20)
+        #expect(walks.value == 1)
+    }
+
+    @Test func theLookupsWalkTheAnalysisOncePerModelLifetime() {
+        let walks = Locked(0)
+        var model = StateConfigModel(
+            artifact: artifact(),
+            walkObserver: AnalysisWalkObserver { walks.withValue { $0 += 1 } }
+        )
+        #expect(walks.value == 1)
+
+        for _ in 0..<5 {
+            _ = model.typeDisplayNames
+            _ = model.typeIDsWithStoredProperties
+            _ = model.variableNames
+            _ = model.hasGlobalVariables
+        }
+        model.selectScope(.type("Loader"))
+        model.selectScope(.globals)
+        model.selectScope(nil)
+        _ = model.variableNames
+
+        #expect(walks.value == 1)
+    }
+
+    @Test func twoModelsEachCountTheirOwnWalk() {
+        let first = Locked(0)
+        let second = Locked(0)
+        _ = StateConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { first.withValue { $0 += 1 } }
+        )
+        _ = StateConfigModel(
+            artifact: artifact(), walkObserver: AnalysisWalkObserver { second.withValue { $0 += 1 } }
+        )
+        #expect(first.value == 1)
+        #expect(second.value == 1)
     }
 }

@@ -73,6 +73,14 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     private(set) var configuration: StateDiagramConfiguration?
     private var diff: StateDiagramDiff?
+    private var configLookups: StateConfigModel
+
+    /// A draft of the configuration in effect, reusing lookups derived once per analysis.
+    var draftConfiguration: StateConfigModel {
+        var draft = configLookups
+        draft.restore(configuration)
+        return draft
+    }
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
     let rotorPlanCache = DiagramRotorPlanCache()
@@ -88,6 +96,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         self.artifact = artifact
         self.comparisonArtifact = comparisonArtifact
         self.configuration = configuration
+        self.configLookups = StateConfigModel(artifact: artifact)
         self.positionOverrides = restoredPositions
         self.result = nil
         rebuild(configuration: configuration)
@@ -97,6 +106,7 @@ final class StateDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
         self.artifact = artifact
         self.comparisonArtifact = comparison
+        configLookups = StateConfigModel(artifact: artifact)
         rebuild(configuration: configuration)
         positionOverrides = [:]
         selectedNodeIDs = []
