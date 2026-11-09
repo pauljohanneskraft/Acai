@@ -1,0 +1,1 @@
+Python's `Enum` gives every member a value — `pop = 1` is the declaration, and a member without one is just an annotation, not a case — so a case carrying no constant is not expressible. Python's enum cases are covered by `enum-raw-value`, where every language attaches one.

@@ -44,6 +44,15 @@ import AcaiCore
 /// 11. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
 ///    and Python must declare `__init__` before it is used, so declaration order is not a shared
 ///    property — but parameter order is.
+/// 12. **An enum case's constant rides with its name, and the plumbing carrying it is dropped.** A
+///    case takes its constant as `= 1` (Swift, TypeScript, Python, C, C++) or as a constructor
+///    argument, `pop(1)` (Java, Kotlin, Dart), so either way the case reads `pop = 1`. What differs
+///    is the overhead each spelling forces: Swift has to declare the raw-value type, and Java and
+///    Dart a constructor to receive the argument plus a property to hold it. So on an `enumeration`
+///    a `#primitive` supertype, a constructor, and a stored property fed by one of that
+///    constructor's parameters are dropped, as is a conformance edge onto a primitive — the only
+///    thing that produces one. A method, a computed property, a non-primitive supertype and any
+///    other stored property are kept.
 struct ContractNormalizer {
     let configuration: LanguageConfiguration
 
@@ -57,9 +66,12 @@ struct ContractNormalizer {
             types: artifact.types.map { declaration(of: $0) }.sorted { $0.name < $1.name },
             freeFunctions: artifact.freestandingFunctions.map(signature(of:)).sorted(by: signatureOrder),
             globals: artifact.globalVariables.map(signature(of:)).sorted(by: signatureOrder),
-            relationships: artifact.relationships.map(edge(of:)).sorted { lhs, rhs in
-                (lhs.kind, lhs.source, lhs.target) < (rhs.kind, rhs.source, rhs.target)
-            }
+            relationships: artifact.relationships
+                .filter { !isRawValueConformance($0) }
+                .map(edge(of:))
+                .sorted { lhs, rhs in
+                    (lhs.kind, lhs.source, lhs.target) < (rhs.kind, rhs.source, rhs.target)
+                }
         )
     }
 
@@ -76,9 +88,9 @@ struct ContractNormalizer {
             modifiers: type.modifiers.filter { !implied.contains($0) }.map(\.rawValue).sorted(),
             generics: type.genericParameters.map(generic(of:)),
             annotations: annotationNames(type.annotations, restating: type.modifiers),
-            supertypes: type.inheritedTypes.map { typeName(of: $0) }.sorted(),
-            members: type.members.map(signature(of:)).sorted(by: signatureOrder),
-            enumCases: type.enumCases.map(\.name).sorted(),
+            supertypes: supertypes(of: type),
+            members: members(of: type).map(signature(of:)).sorted(by: signatureOrder),
+            enumCases: type.enumCases.map(enumCase(of:)).sorted(),
             nested: type.nestedTypes
                 .map { declaration(of: $0, isNested: true) }
                 .sorted { $0.name < $1.name },
@@ -108,6 +120,40 @@ struct ContractNormalizer {
             }.sorted(),
             documentation: member.documentation
         )
+    }
+
+    /// Rule 12: `pop = 1` and `pop(1)` attach the same constant, so the value rides along with the
+    /// name rather than in a field of its own.
+    private func enumCase(of enumCase: EnumCase) -> String {
+        guard let rawValue = enumCase.rawValue else { return enumCase.name }
+        return "\(enumCase.name) = \(rawValue)"
+    }
+
+    /// Rule 12: Swift's `enum Genre: Int` names the type its constants take; the languages that
+    /// write `= 1` without one, and those that pass the constant to a constructor, name nothing.
+    private func supertypes(of type: TypeDeclaration) -> [String] {
+        let names = type.inheritedTypes.map { typeName(of: $0) }.sorted()
+        guard type.kind == .enum else { return names }
+        return names.filter { $0 != Self.primitiveToken }
+    }
+
+    /// Rule 12: an enum constant written `pop(1)` needs a constructor to receive the argument and a
+    /// property to hold it, which `= 1` needs neither of.
+    private func members(of type: TypeDeclaration) -> [Member] {
+        guard type.kind == .enum else { return type.members }
+        let received = Set(
+            type.members.filter { $0.kind == .initializer }.flatMap { $0.parameters.map(\.internalName) })
+        return type.members.filter { member in
+            guard member.kind != .initializer else { return false }
+            let isStored = member.kind == .property && !member.isComputed
+            return !(isStored && received.contains(member.name))
+        }
+    }
+
+    /// Rule 12: no language lets a declaration conform to a primitive, so a conformance onto one is
+    /// Swift's raw-value declaration and nothing else.
+    private func isRawValueConformance(_ relationship: Relationship) -> Bool {
+        relationship.kind == .conformance && classify(relationship.target) == Self.primitiveToken
     }
 
     private func generic(of parameter: GenericParameter) -> String {
