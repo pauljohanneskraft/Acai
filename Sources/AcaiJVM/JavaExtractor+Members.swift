@@ -5,12 +5,16 @@ import AcaiTreeSitter
 
 extension JavaExtractor {
 
+    private static let fieldNodeTypes: Set<String> = ["field_declaration", "constant_declaration"]
+
     /// An enum keeps its methods and fields in an `enum_body_declarations` child rather than directly
     /// under its body, so the two scope pre-passes below look through it.
     private func declarationChildren(ofBody node: Node) -> [Node] {
-        node.children().flatMap { child in
-            child.nodeType == "enum_body_declarations" ? child.children() : [child]
+        let children = node.children()
+        guard let nested = children.first(where: { $0.nodeType == "enum_body_declarations" }) else {
+            return children
         }
+        return children + nested.children()
     }
 
     /// `fieldName → typeName` from the type's own members plus its declared fields, so a same-type
@@ -22,9 +26,8 @@ extension JavaExtractor {
         for member in existingMembers where member.kind == .property {
             if let typeName = member.type?.name { knownProperties[member.name] = typeName }
         }
-        let fieldNodeTypes: Set<String> = ["field_declaration", "constant_declaration"]
-        for child in declarationChildren(ofBody: node)
-        where child.nodeType.map(fieldNodeTypes.contains) ?? false {
+        for child in declarationChildren(ofBody: node) {
+            guard let nodeType = child.nodeType, Self.fieldNodeTypes.contains(nodeType) else { continue }
             for field in fieldMembers(from: child, scope: nil) where field.kind == .property {
                 if let typeName = field.type?.name { knownProperties[field.name] = typeName }
             }
@@ -305,7 +308,7 @@ extension JavaExtractor {
     func extractMethodDeclaration(
         _ node: Node,
         scope: CallSiteScope = CallSiteScope(),
-        defaults: JavaMemberDefaults = .classBody
+        defaults: JavaMemberDefaults
     ) -> Member? {
         let body = node.child(byFieldName: "body")
         let modifierInfo = defaults.method(modifiers.info(fromParentOf: node), hasBody: body != nil)
