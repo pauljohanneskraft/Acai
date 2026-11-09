@@ -83,7 +83,7 @@ struct DiagramTool: AnalysisTool {
                 maxStates: try arguments.int("maxStates") ?? 20)
             return try StateDiagramTextExporter(request: request, theme: nil).export(from: artifact)
         case .callgraph:
-            let request = CallGraphRequest(scope: CallGraphScopeOption(raw: arguments.string("scope")))
+            let request = CallGraphRequest(scope: CallGraphScopeOption(raw: try arguments.string("scope")))
             return try CallGraphTextExporter(request: request, theme: nil).export(from: artifact)
         }
     }
@@ -92,7 +92,7 @@ struct DiagramTool: AnalysisTool {
         _ arguments: ToolArguments, languages: LanguageConfigurationResolver
     ) throws -> ClassDiagramOptions {
         var options = ClassDiagramOptions(languages: languages)
-        if let focus = arguments.string("focus") {
+        if let focus = try arguments.string("focus") {
             options.focus = FocusConfiguration(
                 rootTypeName: focus, maxDepth: try arguments.int("focusDepth"), direction: .both)
             // A focused view is a local neighbourhood; grouping splits it into mismatched clusters.

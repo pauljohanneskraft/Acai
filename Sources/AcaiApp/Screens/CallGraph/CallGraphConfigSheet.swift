@@ -2,13 +2,12 @@ import SwiftUI
 import AcaiCore
 import AcaiDiagram
 
+/// `CallGraphConfigModel` owns the scope rules and the option lists; this renders them.
 struct CallGraphConfigSheet: View {
-    let artifact: CodeArtifact
-    let initial: CallGraphScope
     let onCancel: () -> Void
     let onCreate: (CallGraphScope) -> Void
 
-    @State private var scope: CallGraphScope
+    @State private var model: CallGraphConfigModel
     @State private var scopeQuery = ""
 
     init(
@@ -17,11 +16,9 @@ struct CallGraphConfigSheet: View {
         onCancel: @escaping () -> Void,
         onCreate: @escaping (CallGraphScope) -> Void
     ) {
-        self.artifact = artifact
-        self.initial = initial
         self.onCancel = onCancel
         self.onCreate = onCreate
-        _scope = State(initialValue: initial)
+        _model = State(initialValue: CallGraphConfigModel(artifact: artifact, initial: initial))
     }
 
     var body: some View {
@@ -37,9 +34,9 @@ struct CallGraphConfigSheet: View {
                 LabeledContent {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $scopeQuery)
-                        Picker(.app("View.CallGraphConfigSheet.Scope"), selection: $scope) {
+                        Picker(.app("View.CallGraphConfigSheet.Scope"), selection: $model.scope) {
                             Text(.app("View.CallGraphConfigSheet.WholeCodebase")).tag(CallGraphScope.wholeCodebase)
-                            let modules = moduleNames.filtered(by: scopeQuery)
+                            let modules = model.moduleNames.filtered(by: scopeQuery)
                             if !modules.isEmpty {
                                 Section(.app("View.CallGraphConfigSheet.Modules")) {
                                     ForEach(modules, id: \.self) { name in
@@ -48,7 +45,7 @@ struct CallGraphConfigSheet: View {
                                 }
                             }
                             Section(.app("View.CallGraphConfigSheet.Types")) {
-                                ForEach(typeNames.filtered(by: scopeQuery), id: \.self) { name in
+                                ForEach(model.typeNames.filtered(by: scopeQuery), id: \.self) { name in
                                     Text(verbatim: name).tag(CallGraphScope.type(name))
                                 }
                             }
@@ -67,30 +64,12 @@ struct CallGraphConfigSheet: View {
                 Spacer()
                 Button(.app("View.CallGraphConfigSheet.Cancel"), role: .cancel, action: onCancel)
                     .keyboardShortcut(.cancelDialog)
-                Button(.app("View.CallGraphConfigSheet.Create")) { onCreate(scope) }
+                Button(.app("View.CallGraphConfigSheet.Create")) { onCreate(model.scope) }
                     .keyboardShortcut(.confirmDialog)
                     .accessibilityIdentifier("callGraphConfig.createButton")
             }
         }
         .padding(.spacingL)
         .frame(maxWidth: 460)
-    }
-
-    // MARK: - Lookups
-
-    private var typeNames: [String] {
-        artifact.types
-            .filter { type in type.members.contains { $0.kind == .method } }
-            .map(\.name)
-            .uniqued()
-            .sorted()
-    }
-
-    private var moduleNames: [String] {
-        let modules = ModuleMap(artifact: artifact)
-        return artifact.types
-            .map { modules.module(forFilePath: $0.location?.filePath ?? "") }
-            .uniqued()
-            .sorted()
     }
 }
