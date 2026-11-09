@@ -25,6 +25,13 @@ extension ArtifactDiff {
             sections.append(ReportSection(title: "Relationship changes", lines: edgeLines).text)
         }
 
+        if !functions.isEmpty {
+            sections.append(ReportSection(title: "Free function changes", lines: functions.reportLines).text)
+        }
+        if !globals.isEmpty {
+            sections.append(ReportSection(title: "Global variable changes", lines: globals.reportLines).text)
+        }
+
         let metricLines = moduleMetricDeltas.compactMap(\.reportLine)
         if !metricLines.isEmpty {
             sections.append(ReportSection(title: "Module metric changes", lines: metricLines).text)
@@ -45,6 +52,14 @@ private struct ReportSection {
 
     var text: String {
         ([title + ":"] + lines.map { "  " + $0 }).joined(separator: "\n")
+    }
+}
+
+private extension MemberDelta {
+    var reportLines: [String] {
+        added.map { "+ \($0)" }
+            + removed.map { "- \($0)" }
+            + changed.map { "~ \($0.before) → \($0.after)" }
     }
 }
 

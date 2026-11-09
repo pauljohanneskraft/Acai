@@ -48,6 +48,16 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
         self.changedGlobals = globals.changed
     }
 
+    /// The free-function delta regrouped, for a consumer that renders its three lists together.
+    public var functions: MemberDelta {
+        MemberDelta(added: addedFunctions, removed: removedFunctions, changed: changedFunctions)
+    }
+
+    /// The module-scope-variable delta regrouped, as ``functions``.
+    public var globals: MemberDelta {
+        MemberDelta(added: addedGlobals, removed: removedGlobals, changed: changedGlobals)
+    }
+
     /// `true` only when nothing changed structurally *or* metrically — a refactor that shifts
     /// coupling without adding/removing anything still makes this `false`.
     public var isEmpty: Bool {
