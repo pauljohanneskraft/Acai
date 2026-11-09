@@ -254,7 +254,7 @@ Result shape: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summa
 
 ### `acai_diff`
 
-Structural delta between two revisions — added/removed types, changed relationships, metric movement.
+Structural delta between two revisions — added/removed types, changed relationships, added/removed/changed free functions and module-scope variables, metric movement. Both sides are analysed concurrently.
 
 | Property | Type | Notes |
 | --- | --- | --- |
@@ -266,7 +266,9 @@ Structural delta between two revisions — added/removed types, changed relation
 
 Note there's no `path` here. **Both sides must be real filesystem paths** — unlike the CLI, a bare stored-analysis name is not resolved. Produce baselines with `acai store` on the CLI and pass the resulting `.json` path. A baseline whose `schemaVersion` is newer than this build understands is rejected with the found and expected version numbers, rather than being misread.
 
-Result shape: `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` — `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).
+Types are matched by **module plus qualified name**, not by artifact id — an id is re-scoped to the file path as soon as a second file declares the same name, and always for a file-private type, so id matching reported an untouched type as removed-and-added. Relationship endpoints resolve through the same match. The file path separates two declarations of one qualified name inside one module and nothing else.
+
+Result shape: `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` — `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed). Beyond the type, relationship and metric lists, `ArtifactDiff` carries `addedFunctions` / `removedFunctions` / `changedFunctions` and `addedGlobals` / `removedGlobals` / `changedGlobals`; a `changed` entry is `{ name, before, after }` over the two signatures. These are the only place a C or Python codebase's top-level code appears, since neither hangs it off a type.
 
 ### `acai_diagram`
 
