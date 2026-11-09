@@ -55,14 +55,14 @@ public struct LcomAnalysis {
     }
 
     /// The disjoint-set over member indices, linked by shared field access and mutual self-calls.
-    private func partition(of methods: [Member]) -> DisjointSet {
-        var components = DisjointSet(count: methods.count)
-        linkBySharedField(methods, into: &components)
-        linkByMutualCall(methods, into: &components)
+    private func partition(of members: [Member]) -> DisjointSet {
+        var components = DisjointSet(count: members.count)
+        linkBySharedField(members, into: &components)
+        linkByMutualCall(members, into: &components)
         return components
     }
 
-    /// Union methods that access a common stored property — by read or write, same field name and a
+    /// Union members that access a common stored property — by read or write, same field name and a
     /// `self`/bare receiver.
     private func linkBySharedField(_ methods: [Member], into components: inout DisjointSet) {
         let properties = Set(type.members.filter(\.isStoredProperty).map(\.name))
@@ -82,7 +82,7 @@ public struct LcomAnalysis {
         }
     }
 
-    /// Union methods where one calls the other (self/own-type receiver, matching a sibling method name).
+    /// Union members where one calls the other (self/own-type receiver, matching a sibling method name).
     private func linkByMutualCall(_ methods: [Member], into components: inout DisjointSet) {
         let indexByName = Dictionary(
             methods.enumerated().map { ($1.name, $0) }, uniquingKeysWith: { first, _ in first })

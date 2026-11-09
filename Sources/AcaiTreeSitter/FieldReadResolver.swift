@@ -43,13 +43,14 @@ public struct FieldReadResolver {
         from node: Node, knownProperties: Set<String>, receiver: inout ReceiverWindow,
         into reads: inout [FieldAccess]
     ) {
-        let name = node.text(in: context)
-        if let nodeType = node.nodeType, identifierTypes.contains(nodeType),
-           knownProperties.contains(name), receiver.isOwn {
-            reads.append(FieldAccess(name: name, receiver: nil, location: node.location(in: context)))
+        if let nodeType = node.nodeType, identifierTypes.contains(nodeType) {
+            let name = node.text(in: context)
+            if knownProperties.contains(name), receiver.isOwn {
+                reads.append(FieldAccess(name: name, receiver: nil, location: node.location(in: context)))
+            }
         }
         let children = node.children()
-        guard !children.isEmpty else { return receiver.push(name) }
+        guard !children.isEmpty else { return receiver.push(node.text(in: context)) }
         for child in children {
             collect(from: child, knownProperties: knownProperties, receiver: &receiver, into: &reads)
         }
