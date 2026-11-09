@@ -85,6 +85,8 @@ extension type Meters(double value) implements Comparable<Meters> {
 }
 
 typedef Callback = void Function(Result result);
+typedef Registry = Map<String, Store>;
+typedef Transform<T extends Comparable<T>> = Result Function(Vector<T> input);
 
 class Handler {
   Callback? onResult;

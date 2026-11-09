@@ -529,7 +529,17 @@
       "genericParameters" : [
         {
           "constraints" : [
+            {
+              "kind" : "superclass",
+              "type" : {
+                "genericArguments" : [
 
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "num"
+              }
+            }
           ],
           "name" : "T"
         }
@@ -761,7 +771,17 @@
       "genericParameters" : [
         {
           "constraints" : [
+            {
+              "kind" : "superclass",
+              "type" : {
+                "genericArguments" : [
 
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "num"
+              }
+            }
           ],
           "name" : "T"
         },
@@ -2327,6 +2347,178 @@
       "genericParameters" : [
 
       ],
+      "id" : "geometry.Callback",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "void Function(Result result)"
+        }
+      ],
+      "kind" : "typeAlias",
+      "location" : {
+        "column" : 1,
+        "endLine" : 87,
+        "filePath" : "types.dart",
+        "line" : 87
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Callback",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Callback"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "geometry.Registry",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+            {
+              "genericArguments" : [
+
+              ],
+              "isArray" : false,
+              "isOptional" : false,
+              "name" : "String"
+            },
+            {
+              "genericArguments" : [
+
+              ],
+              "isArray" : false,
+              "isOptional" : false,
+              "name" : "Store"
+            }
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Map"
+        }
+      ],
+      "kind" : "typeAlias",
+      "location" : {
+        "column" : 1,
+        "endLine" : 88,
+        "filePath" : "types.dart",
+        "line" : 88
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Registry",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Registry"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+        {
+          "constraints" : [
+            {
+              "kind" : "superclass",
+              "type" : {
+                "genericArguments" : [
+                  {
+                    "genericArguments" : [
+
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "T"
+                  }
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "Comparable"
+              }
+            }
+          ],
+          "name" : "T"
+        }
+      ],
+      "id" : "geometry.Transform",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "Result Function(Vector<T> input)"
+        }
+      ],
+      "kind" : "typeAlias",
+      "location" : {
+        "column" : 1,
+        "endLine" : 89,
+        "filePath" : "types.dart",
+        "line" : 89
+      },
+      "members" : [
+
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Transform",
+      "namespace" : "geometry",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "geometry.Transform"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
       "id" : "geometry.Handler",
       "inheritedTypes" : [
 
@@ -2334,9 +2526,9 @@
       "kind" : "class",
       "location" : {
         "column" : 1,
-        "endLine" : 101,
+        "endLine" : 103,
         "filePath" : "types.dart",
-        "line" : 89
+        "line" : 91
       },
       "members" : [
         {
@@ -2360,9 +2552,9 @@
           "kind" : "property",
           "location" : {
             "column" : 25,
-            "endLine" : 90,
+            "endLine" : 92,
             "filePath" : "types.dart",
-            "line" : 90
+            "line" : 92
           },
           "modifiers" : [
 
@@ -2404,9 +2596,9 @@
           "kind" : "property",
           "location" : {
             "column" : 39,
-            "endLine" : 91,
+            "endLine" : 93,
             "filePath" : "types.dart",
-            "line" : 91
+            "line" : 93
           },
           "modifiers" : [
 
@@ -2448,9 +2640,9 @@
           "kind" : "property",
           "location" : {
             "column" : 29,
-            "endLine" : 92,
+            "endLine" : 94,
             "filePath" : "types.dart",
-            "line" : 92
+            "line" : 94
           },
           "modifiers" : [
             "final"
@@ -2492,9 +2684,9 @@
           "kind" : "initializer",
           "location" : {
             "column" : 5,
-            "endLine" : 93,
+            "endLine" : 95,
             "filePath" : "types.dart",
-            "line" : 93
+            "line" : 95
           },
           "modifiers" : [
 
@@ -2533,9 +2725,9 @@
             {
               "location" : {
                 "column" : 9,
-                "endLine" : 98,
+                "endLine" : 100,
                 "filePath" : "types.dart",
-                "line" : 98
+                "line" : 100
               },
               "methodName" : "touch",
               "receiver" : {
@@ -2550,27 +2742,27 @@
             {
               "location" : {
                 "column" : 39,
-                "endLine" : 96,
+                "endLine" : 98,
                 "filePath" : "types.dart",
-                "line" : 96
+                "line" : 98
               },
               "name" : "store"
             },
             {
               "location" : {
                 "column" : 9,
-                "endLine" : 97,
+                "endLine" : 99,
                 "filePath" : "types.dart",
-                "line" : 97
+                "line" : 99
               },
               "name" : "onResult"
             },
             {
               "location" : {
                 "column" : 9,
-                "endLine" : 98,
+                "endLine" : 100,
                 "filePath" : "types.dart",
-                "line" : 98
+                "line" : 100
               },
               "name" : "store"
             }
@@ -2582,9 +2774,9 @@
           "kind" : "method",
           "location" : {
             "column" : 5,
-            "endLine" : 95,
+            "endLine" : 97,
             "filePath" : "types.dart",
-            "line" : 95
+            "line" : 97
           },
           "modifiers" : [
 
