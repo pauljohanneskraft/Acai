@@ -1,5 +1,18 @@
 import Foundation
 
+// MARK: - Source Collection
+
+/// What every spec's file collection shares within one analysis: the project root paths are reported
+/// relative to, the tree enumerated once for the whole analysis, and the project's `.gitignore`.
+///
+/// Grouped rather than passed as three parameters apiece so adding one does not push
+/// ``AnalysisService/parseSpec(_:from:fileCache:includingFile:)`` past what a reader can hold.
+private struct SourceCollection {
+    let rootURL: URL
+    let index: SourceFileIndex
+    let gitignore: GitignoreFilter?
+}
+
 // MARK: - Analysis Service
 
 /// Language-agnostic by construction: it holds whatever parsers and project-discovery strategy it
@@ -22,6 +35,11 @@ public struct AnalysisService: Sendable {
     /// read whole. Defaults to ``AcaiConstants/maximumSourceFileBytes``.
     public let maximumSourceFileBytes: Int
 
+    /// Counts the directory listings source collection performs. `nil` (the default) counts
+    /// nothing; a regression test injects one to assert the tree is enumerated once per analysis
+    /// rather than once per registered language.
+    public let directoryEnumerationCounter: OperationCounter?
+
     public var registry: LanguageRegistry { LanguageRegistry(parsers: parsers) }
 
     /// Every registered language's build-output/dependency directories plus the universal VCS one —
@@ -39,7 +57,8 @@ public struct AnalysisService: Sendable {
         parsers: [any CodeParser],
         projectDiscovery: ProjectDiscovery? = nil,
         fileParsingConcurrencyLimit: Int? = nil,
-        maximumSourceFileBytes: Int = AcaiConstants.standard.maximumSourceFileBytes
+        maximumSourceFileBytes: Int = AcaiConstants.standard.maximumSourceFileBytes,
+        directoryEnumerationCounter: OperationCounter? = nil
     ) {
         self.parsers = parsers
         self.projectDiscovery = projectDiscovery ?? ProjectDiscovery(
@@ -49,6 +68,7 @@ public struct AnalysisService: Sendable {
         )
         self.fileParsingConcurrencyLimit = fileParsingConcurrencyLimit
         self.maximumSourceFileBytes = maximumSourceFileBytes
+        self.directoryEnumerationCounter = directoryEnumerationCounter
     }
 
     // MARK: - Parser Registry
@@ -102,9 +122,10 @@ public struct AnalysisService: Sendable {
         let modules = ModuleMap(roots: discoveredRoots.map(\.path), filePaths: [])
         var parsedSpecs: [ParsedSpec] = []
         var freshEntries: [String: ParsedFileCache.Entry] = [:]
+        let collection = sourceCollection(at: rootURL, over: specs, gitignore: gitignore)
         for spec in specs.mergedByLanguage {
             if let parsed = try await parseSpec(
-                spec, rootURL: rootURL, gitignore: gitignore, fileCache: reusable, includingFile: includingFile
+                spec, from: collection, fileCache: reusable, includingFile: includingFile
             ) {
                 freshEntries.merge(parsed.fileCacheEntries) { _, new in new }
                 parsedSpecs.append(parsed.scopingTypeIDs(modules: modules))
@@ -132,10 +153,26 @@ public struct AnalysisService: Sendable {
         return result
     }
 
+    /// Walks every spec's source directories once, over every registered language's extensions, so
+    /// no spec enumerates the tree again for its own.
+    private func sourceCollection(
+        at rootURL: URL, over specs: [SourceSpec], gitignore: GitignoreFilter?
+    ) -> SourceCollection {
+        SourceCollection(
+            rootURL: rootURL,
+            index: SourceFileIndex(
+                sourceDirs: specs.flatMap(\.sourceDirs),
+                extensions: Set(parsers.flatMap(\.fileExtensions).map { $0.lowercased() }),
+                excludingDirectories: excludedDirectories,
+                enumerationCounter: directoryEnumerationCounter
+            ),
+            gitignore: gitignore
+        )
+    }
+
     private func parseSpec(
         _ spec: SourceSpec,
-        rootURL: URL,
-        gitignore: GitignoreFilter?,
+        from collection: SourceCollection,
         fileCache: ParsedFileCache?,
         includingFile: (String) -> Bool
     ) async throws -> ParsedSpec? {
@@ -146,7 +183,7 @@ public struct AnalysisService: Sendable {
             return nil
         }
         let collected = collectFiles(
-            for: codeParser, in: spec, rootURL: rootURL, gitignore: gitignore, includingFile: includingFile
+            for: codeParser, in: spec, from: collection, includingFile: includingFile
         )
         guard !collected.files.isEmpty else {
             return ParsedSpec(
@@ -155,7 +192,7 @@ public struct AnalysisService: Sendable {
         }
 
         let batch = SourceFileBatchParser(
-            codeParser: codeParser, rootURL: rootURL,
+            codeParser: codeParser, rootURL: collection.rootURL,
             concurrencyLimit: fileParsingConcurrencyLimit, maximumFileBytes: maximumSourceFileBytes
         )
         let parsed = try await batch.parse(collected.files, reusing: fileCache)
@@ -188,38 +225,34 @@ public struct AnalysisService: Sendable {
         return result
     }
 
-    /// Skips every registered language's build-output/dependency directories (plus the universal VCS
-    /// dir), not just `codeParser`'s own, then the spec's own excluded paths, before applying
-    /// `includingFile`. A symbolic link the walk could not resolve (dangling, or outside the caller's
-    /// security scope) becomes a `.skipped` diagnostic rather than vanishing the way it did before
-    /// #303 — the same promise the per-file size ceiling makes for a file that exists but is too big.
+    /// Reads the analysis-wide index — built over every registered language's extensions, skipping
+    /// every language's build-output/dependency directories plus the universal VCS one — then applies
+    /// the spec's own excluded paths before `includingFile`. A symbolic link the walk could not
+    /// resolve (dangling, or outside the caller's security scope) becomes a `.skipped` diagnostic
+    /// rather than vanishing the way it did before #303 — the same promise the per-file size ceiling
+    /// makes for a file that exists but is too big.
     private func collectFiles(
         for codeParser: any CodeParser,
         in spec: SourceSpec,
-        rootURL: URL,
-        gitignore: GitignoreFilter?,
+        from collection: SourceCollection,
         includingFile: (String) -> Bool
     ) -> (files: [URL], diagnostics: [ParseDiagnostic]) {
-        let exts = Set(codeParser.fileExtensions)
-        let excluded = excludedDirectories
-        var diagnostics: [ParseDiagnostic] = []
-        let files = spec.sourceDirs
-            .flatMap { sourceDir -> [URL] in
-                FileManager.default.fileURLs(
-                    in: sourceDir, withExtensions: exts, excludingDirectories: excluded
-                ) { unresolved in
-                    diagnostics.append(ParseDiagnostic(
-                        location: SourceLocation(filePath: unresolved.relativePath(from: rootURL), line: 0, column: 0),
-                        kind: .skipped,
-                        message: "symbolic link could not be resolved"
-                    ))
-                }
-            }
+        let rootURL = collection.rootURL
+        let diagnostics = collection.index.unresolvedLinks(under: spec.sourceDirs).map { unresolved in
+            ParseDiagnostic(
+                location: SourceLocation(filePath: unresolved.relativePath(from: rootURL), line: 0, column: 0),
+                kind: .skipped,
+                message: "symbolic link could not be resolved"
+            )
+        }
+        let extensions = Set(codeParser.fileExtensions.map { $0.lowercased() })
+        let files = collection.index
+            .files(withExtensions: extensions, under: spec.sourceDirs)
             .removingDuplicates { $0.standardizedFileURL.path }
             .filter { !spec.excludes($0) }
             .filter { url in
                 let path = url.relativePath(from: rootURL)
-                return (gitignore?.includes(path) ?? true) && includingFile(path)
+                return (collection.gitignore?.includes(path) ?? true) && includingFile(path)
             }
         return (files, diagnostics)
     }
