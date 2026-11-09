@@ -1,9 +1,9 @@
-/// LCOM4-style lack-of-cohesion for a type: the number of connected components among its methods,
-/// where two methods are connected when they touch a common stored property or one calls the other.
-/// A result of `1` means the type is cohesive (one responsibility); higher counts mark a type doing
-/// several unrelated jobs.
+/// LCOM4-style lack-of-cohesion for a type: the number of connected components among the members that
+/// carry its instance behaviour, where two are connected when they touch a common stored property or
+/// one calls the other. A result of `1` means the type is cohesive (one responsibility); higher counts
+/// mark a type doing several unrelated jobs.
 ///
-/// Two methods are linked when they share access to a stored property by **read or write**
+/// Two members are linked when they share access to a stored property by **read or write**
 /// (``Member/fieldReads`` and ``Member/assignments``) or when one self-dispatches a call to the other.
 public struct LcomAnalysis {
     let type: TypeDeclaration
@@ -12,28 +12,49 @@ public struct LcomAnalysis {
         self.type = type
     }
 
-    /// Number of connected components among the type's methods (0 for none, 1 when cohesive).
+    /// Number of connected components among the type's behaviour members (0 for none, 1 when cohesive).
     var componentCount: Int {
-        let methods = type.members.filter { $0.kind == .method }
-        guard methods.count > 1 else { return methods.count }
-        return partition(of: methods).componentCount
+        let members = cohesionMembers
+        guard members.count > 1 else { return members.count }
+        return partition(of: members).componentCount
     }
 
-    /// The method-name clusters the type splits into — the *shape* of its lack of cohesion, turning the
+    /// The members cohesion is measured over: instance behaviour only.
+    ///
+    /// A `static`/`class` member cannot touch instance state, so including one guaranteed a component
+    /// of its own and inflated every utility-bearing type. Computed properties and subscripts are
+    /// behaviour — their accessors are code reaching into the same fields methods do. Initialisers are
+    /// excluded because populating every stored property would link all of them, collapsing the metric
+    /// to `1` for any type with a memberwise initialiser.
+    private var cohesionMembers: [Member] {
+        type.members.filter { member in
+            guard !member.modifiers.contains(.static), !member.modifiers.contains(.class) else { return false }
+            switch member.kind {
+            case .method, .subscript:
+                return true
+            case .property:
+                return member.isComputed
+            case .initializer, .deinitializer:
+                return false
+            }
+        }
+    }
+
+    /// The member-name clusters the type splits into — the *shape* of its lack of cohesion, turning the
     /// `lackOfCohesion` count into an actionable extract-class proposal ("these methods belong together;
     /// those form a separate responsibility"). One inner array per connected component; a cohesive type
-    /// yields a single cluster. Method names within each cluster and the clusters themselves are sorted
+    /// yields a single cluster. Member names within each cluster and the clusters themselves are sorted
     /// for stable output.
     public var components: [[String]] {
-        let methods = type.members.filter { $0.kind == .method }
-        guard methods.count > 1 else { return methods.isEmpty ? [] : [[methods[0].name]] }
-        var partition = partition(of: methods)
+        let members = cohesionMembers
+        guard members.count > 1 else { return members.isEmpty ? [] : [[members[0].name]] }
+        var partition = partition(of: members)
         return partition.groups()
-            .map { indices in indices.map { methods[$0].name }.sorted() }
+            .map { indices in indices.map { members[$0].name }.sorted() }
             .sorted { ($0.first ?? "") < ($1.first ?? "") }
     }
 
-    /// The disjoint-set over method indices, linked by shared field access and mutual self-calls.
+    /// The disjoint-set over member indices, linked by shared field access and mutual self-calls.
     private func partition(of methods: [Member]) -> DisjointSet {
         var components = DisjointSet(count: methods.count)
         linkBySharedField(methods, into: &components)

@@ -40,6 +40,20 @@ extension TypeDeclaration {
         return total == 0 ? 0 : Double(stored) / Double(total)
     }
 
+    /// Weighted methods per class (WMC): the sum of cyclomatic complexity over the type's methods and
+    /// initialisers. A member the parser gave no complexity for contributes `1` — the irreducible
+    /// complexity of a single path — so an unmeasured body never reads as free.
+    var weightedMethodComplexity: Int {
+        members
+            .filter { $0.kind == .method || $0.kind == .initializer }
+            .reduce(0) { $0 + ($1.cyclomaticComplexity ?? 1) }
+    }
+
+    /// The plain count of declared methods, which ``weightedMethodComplexity`` weights by complexity.
+    var numberOfMethods: Int {
+        members.filter { $0.kind == .method }.count
+    }
+
     /// Refused-bequest candidates — a subclass that overrides much of what it inherits may not
     /// truly be a subtype.
     var overrideCount: Int {

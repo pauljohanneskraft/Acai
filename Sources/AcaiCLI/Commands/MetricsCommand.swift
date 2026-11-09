@@ -19,7 +19,8 @@ extension AcaiCommand {
 
         @Option(name: .long, help: ArgumentHelp(
             "Per-type ranking for the human tables: "
-            + "fanOut (default), fanIn, weightedMethods, depthOfInheritance, numberOfChildren, "
+            + "fanOut (default), fanIn, weightedMethods, numberOfMethods, depthOfInheritance, "
+            + "numberOfChildren, "
             + "responseForClass, publicMemberCount, publicMemberRatio, mutablePublicState, maxParameters, "
             + "meanParameters, dataClassScore, overrideCount, nestingDepth, deepAndWide, lackOfCohesion, "
             + "featureEnvyMethods, linesOfCode."))

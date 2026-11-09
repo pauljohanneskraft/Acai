@@ -47,14 +47,24 @@ no thresholds and no language configuration (raw values only — judgement is le
   ``CodeMetrics/TypeMetric/deepAndWide``, `DIT × NOC`) — refused-bequest and fragile-hierarchy-hub
   signals.
 - **Cohesion** (``CodeMetrics/TypeMetric/lackOfCohesion``, see ``LcomAnalysis``) — an LCOM4-style count
-  of the connected components among a type's methods (1 = cohesive; higher = several unrelated jobs).
+  of the connected components among the members carrying a type's instance behaviour (1 = cohesive;
+  higher = several unrelated jobs).
 - **Feature envy** (``CodeMetrics/TypeMetric/featureEnvyMethods``, see `FeatureEnvy`) — methods more
   interested in another declared type than their own.
 
-**Known limitation:** ``SourceLocation`` records only a start line, so true method length and
-cyclomatic complexity are not derivable; ``CodeMetrics/TypeMetric/weightedMethods`` stays a method-count
-proxy for WMC. ``CodeMetrics/TypeMetric/lackOfCohesion`` links methods by shared property access —
-reads (``Member/fieldReads``) and writes (``Member/assignments``) — plus self-dispatched calls.
+``CodeMetrics/TypeMetric/weightedMethods`` is the textbook WMC: the sum of
+``Member/cyclomaticComplexity`` over the type's methods and initialisers, counting a member the parser
+measured no body for as 1. ``CodeMetrics/TypeMetric/numberOfMethods`` keeps the plain count beside it,
+and is what ``CodeMetrics/TypeMetric/responseForClass`` starts from.
+
+``CodeMetrics/TypeMetric/lackOfCohesion`` links members by shared property access — reads
+(``Member/fieldReads``) and writes (``Member/assignments``) — plus self-dispatched calls. It measures
+methods, computed properties and subscripts, since each is code reaching into the type's fields;
+`static`/`class` members cannot touch instance state and initialisers populate every field, so both
+would distort the count and are excluded.
+
+**Known limitation:** ``SourceLocation`` records only a start line, so true method *length* is not
+derivable — ``CodeMetrics/TypeMetric/linesOfCode`` measures a declaration's span, not a single member's.
 
 ### Writing a new parser
 
