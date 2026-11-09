@@ -8,9 +8,11 @@ extension JSExtractor {
     // MARK: - Class Body
 
     func parseClassBody(_ bodyNode: Node, into typeDecl: inout TypeDeclaration) {
+        let properties = memberExtractor.propertyIndex(fromBody: bodyNode)
         let scope = CallSiteScope(
-            knownProperties: memberExtractor.propertyMap(fromBody: bodyNode),
+            knownProperties: properties.types,
             knownTypeNames: declarations.declaredTypeNames,
+            knownPropertyNames: properties.names,
             knownMethodReturnTypes: memberExtractor.methodReturnTypeMap(fromBody: bodyNode)
         )
 

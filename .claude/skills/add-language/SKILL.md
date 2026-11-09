@@ -182,8 +182,14 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
      directory with neither fails the matrix, so this is not optional. Read
      `ContractNormalizer`'s documented rules first: they list exactly which per-language variation is
      erased, and a difference not on that list is a bug in your extractor, not a reason for a waiver.
-     Use the existing waivers as the bar for how precise a reason has to be ("C has no class type; its
-     only aggregate is a struct, a different `TypeKind`…"), never "not supported".
+     Where your language expresses the construct but spells **one field** of it differently, reach for
+     an allowance in `<feature>.expected.json` rather than a waiver, so the rest of the feature is
+     still checked: `"languages": { "<lang>": { "unchecked": ["type"] } }` stops comparing a declared
+     type the language does not carry, and `{ "typeKinds": { "class": "struct" } }` maps the
+     expectation's kind onto the one your language naturally reports. A waiver is for a construct the
+     language has not got at all. Use the existing waivers as the bar for how precise a reason has to
+     be ("C has no member functions, so the documented member this feature compares — a method
+     carrying its return type — cannot be declared."), never "not supported".
 
 10. **Documentation** — add a `Sources/Acai<Lang>/Acai<Lang>.docc/Acai<Lang>.md` catalog page (copy an
    existing plugin's), then **link it from the module map** in

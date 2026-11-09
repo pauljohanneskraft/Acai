@@ -1,1 +1,1 @@
-JavaScript carries no parameter-type annotation, so a call through a parameter has no receiver type to resolve to.
+JavaScript carries no parameter-type annotation, so a call through a parameter has no receiver type to resolve against; the resolved receiver is what this feature compares, so there is nothing left to check.

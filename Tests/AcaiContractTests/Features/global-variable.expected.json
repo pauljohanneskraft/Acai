@@ -1,0 +1,8 @@
+{
+  "globals": [
+    { "name": "total", "role": "property", "access": "+", "type": "#primitive" }
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
+}

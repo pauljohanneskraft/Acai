@@ -1,0 +1,1 @@
+Java has no top-level variable; every field belongs to a class, so the closest form is a static field on a holder type.

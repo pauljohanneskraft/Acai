@@ -8,5 +8,8 @@
         { "name": "<init>", "role": "initializer", "access": "+", "parameters": ["id: #primitive"] }
       ]
     }
-  ]
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
 }
