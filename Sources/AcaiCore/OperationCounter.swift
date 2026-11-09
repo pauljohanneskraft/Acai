@@ -19,8 +19,4 @@ public final class OperationCounter: @unchecked Sendable {
     public func record() {
         lock.withLock { occurrences += 1 }
     }
-
-    public func reset() {
-        lock.withLock { occurrences = 0 }
-    }
 }

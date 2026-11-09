@@ -82,17 +82,15 @@ struct SourceFileIndex {
 
 /// The source directories worth walking: one entry per directory that does not sit inside another.
 ///
-/// Ancestors are considered first — a containing path is always the shorter one — so a directory is
-/// dropped only once the directory that covers it has been kept.
+/// Sorting puts a containing directory before everything it contains — a proper path prefix always
+/// sorts before the longer path — so a directory is dropped only once the one covering it is kept.
 private struct WalkRoots {
     let paths: [String]
 
     init(_ directories: [URL]) {
         var kept: [String] = []
-        for path in directories
-            .map(\.standardizedFileURL.path)
-            .removingDuplicates()
-            .sorted(by: { $0.count < $1.count }) where !kept.contains(where: { path.isInside($0) }) {
+        for path in directories.map(\.standardizedFileURL.path).uniqued().sorted() {
+            guard !kept.contains(where: { path.isInside($0) }) else { continue }
             kept.append(path)
         }
         paths = kept
