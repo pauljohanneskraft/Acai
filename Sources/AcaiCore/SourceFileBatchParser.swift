@@ -21,6 +21,10 @@ struct SourceFileBatchParser {
 
     let maximumFileBytes: Int
 
+    /// Parsing recurses per nesting level, which a cooperative-pool thread's 512 KB stack cannot
+    /// hold for a deeply nested file.
+    let largeStackRunner = LargeStackRunner.standard
+
     /// A `nil` cache skips fingerprinting and yields no cache entries.
     func parse(_ files: [URL], reusing cache: ParsedFileCache?) async throws -> Outcome {
         guard !files.isEmpty else { return .empty }
@@ -51,7 +55,7 @@ struct SourceFileBatchParser {
                 let file = files[index]
                 group.addTask {
                     try Task.checkCancellation()
-                    let outcome = self.parseFile(file)
+                    let outcome = await self.largeStackRunner.run { self.parseFile(file) }
                     try Task.checkCancellation()
                     return (index, outcome)
                 }

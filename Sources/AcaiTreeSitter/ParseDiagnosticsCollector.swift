@@ -15,7 +15,7 @@ public struct ParseDiagnosticsCollector {
     /// Call only when `root.hasError`; on a clean tree this walks the whole file to find nothing.
     public func diagnostics(in root: Node) -> [ParseDiagnostic] {
         var diagnostics: [ParseDiagnostic] = []
-        func walk(_ node: Node) {
+        root.walkPreorder { node in
             if node.isMissing {
                 diagnostics.append(ParseDiagnostic(
                     location: node.location(in: context), kind: .missing,
@@ -26,11 +26,7 @@ public struct ParseDiagnosticsCollector {
                     location: node.location(in: context), kind: .error, message: "unexpected syntax"
                 ))
             }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(walk)
-            }
         }
-        walk(root)
         return diagnostics
     }
 }

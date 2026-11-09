@@ -25,17 +25,13 @@ public extension Node {
     /// no language) found while walking this node's subtree. A branch node whose type is a key in
     /// `fallbackMarkers` is skipped when one of its direct children has a type in that key's value —
     /// the fallback arm of a `switch`/`when`-style construct (`default`/`else`) is not itself a
-    /// decision. Iterative (explicit stack) so a deeply nested body can't overflow the stack.
+    /// decision.
     func cyclomaticComplexity(branchKinds: Set<String>, fallbackMarkers: [String: Set<String>] = [:]) -> Int {
         var complexity = 1
-        var stack: [Node] = [self]
-        while let node = stack.popLast() {
+        walkPreorder { node in
             if let type = node.nodeType, branchKinds.contains(type),
                !node.isFallbackBranch(markers: fallbackMarkers[type]) {
                 complexity += 1
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map { stack.append($0) }
             }
         }
         return complexity

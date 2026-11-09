@@ -167,11 +167,10 @@ struct PythonMemberExtractor {
     }
 
     private func collectAssignmentNodes(_ node: Node, into result: inout [Node]) {
-        if node.nodeType == "assignment" || node.nodeType == "augmented_assignment" {
-            result.append(node)
-        }
-        for child in node.namedChildren() {
-            collectAssignmentNodes(child, into: &result)
+        node.walkNamedPreorder { candidate in
+            if candidate.nodeType == "assignment" || candidate.nodeType == "augmented_assignment" {
+                result.append(candidate)
+            }
         }
     }
 }

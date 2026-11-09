@@ -22,7 +22,8 @@ public struct SwiftPackageManagerDetector: BuildSystemDetector {
         else {
             return [probedSpec(at: root, reason: "the manifest could not be read")]
         }
-        let sources = SwiftPackageSources(root: root, manifest: SwiftPackageManifest(source: source))
+        let manifest = LargeStackRunner.standard.runSynchronously { SwiftPackageManifest(source: source) }
+        let sources = SwiftPackageSources(root: root, manifest: manifest)
         switch sources.outcome {
         case .resolved(let sourceDirs, let excludedPaths):
             return [SourceSpec(language: .swift, sourceDirs: sourceDirs, root: root, excludedPaths: excludedPaths)]
