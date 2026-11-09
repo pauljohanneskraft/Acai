@@ -23,11 +23,16 @@ struct OverloadResolver: Sendable {
 
     func targets(of site: CallSite) -> [Member] {
         guard candidates.count > 1, let labels = site.arguments else { return candidates }
-        let byArity = candidates.filter { $0.acceptsArgumentCount(labels.count) }
-        guard byArity.count != 1 else { return byArity }
+        let accepting = candidates.filter { $0.acceptsArgumentCount(labels.count) }
+        guard accepting.count != 1 else { return accepting }
         // No overload accepting this arity means the arity is the unreliable part (a parser that
         // undercounts a trailing closure, a call through a typealias), so it narrows nothing.
-        let remaining = byArity.isEmpty ? candidates : byArity
+        var remaining = accepting.isEmpty ? candidates : accepting
+        // An overload whose parameter count the call matches exactly beats one it only reaches by
+        // omitting a defaulted parameter — the way the languages themselves resolve it.
+        let exact = remaining.filter { $0.parameters.count == labels.count }
+        if !exact.isEmpty { remaining = exact }
+        guard remaining.count > 1 else { return remaining }
         let byLabels = remaining.filter { $0.matchesArgumentLabels(labels) }
         return byLabels.count == 1 ? byLabels : remaining
     }

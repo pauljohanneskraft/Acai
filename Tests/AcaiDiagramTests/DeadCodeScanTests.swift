@@ -186,7 +186,7 @@ struct DeadCodeScanTests {
             member("init", kind: .initializer, labels: ["name", "size"])
         ])]
         #expect(
-            report(types, scanning: [.method, .initializer]).candidates.map(\.id) == ["Widget.init(name:size:)"])
+            report(types, scanning: [.method, .initializer]).candidates.map(\.id) == ["Widget.init(name:,size:)"])
     }
 
     /// A call whose argument list narrows to neither overload falls back to the name, which spares
@@ -209,7 +209,7 @@ struct DeadCodeScanTests {
         ])]
         #expect(
             report(types, scanning: [.method, .initializer]).candidates.map(\.id)
-                == ["Widget.init(name:)", "Widget.init(name:size:)"])
+                == ["Widget.init(name:)", "Widget.init(name:,size:)"])
     }
 
     @Test func theReportNamesTheKindsItScannedInDeclarationOrder() {

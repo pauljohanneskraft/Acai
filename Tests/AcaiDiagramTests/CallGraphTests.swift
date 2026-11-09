@@ -294,8 +294,10 @@ struct CallGraphTests {
 
         #expect(graph.coverage.total == 3)
         #expect(graph.coverage.resolved == 2)
-        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleA.Config.run()", to: "ModuleA.Config.used()", weight: 1)))
-        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleB.Config.run()", to: "ModuleB.Config.used()", weight: 1)))
+        #expect(graph.edges.contains(
+            CallGraph.Edge(from: "ModuleA.Config.run()", to: "ModuleA.Config.used()", weight: 1)))
+        #expect(graph.edges.contains(
+            CallGraph.Edge(from: "ModuleB.Config.run()", to: "ModuleB.Config.used()", weight: 1)))
         #expect(graph.nodes.map(\.id).sorted() == [
             "Client.run()", "ModuleA.Config.run()", "ModuleA.Config.used()",
             "ModuleB.Config.run()", "ModuleB.Config.used()"

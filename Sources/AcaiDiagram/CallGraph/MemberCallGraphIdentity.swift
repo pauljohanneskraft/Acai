@@ -1,23 +1,17 @@
 import AcaiCore
 
 extension Member {
-    /// The parameter list the call graph keys this member's node on — `"(from:to:)"`,
-    /// `"(String,int)"`, `"(_,_)"` or `"()"` — or `nil` for a member that declares no parameter list
-    /// at all, so a property and a no-argument method of the same name stay distinct nodes.
+    /// The parameter list the call graph keys this member's node on — `"(name:String,size:Int)"`,
+    /// `"(String,int)"`, `"(_,_)"`, `"()"` — or `nil` for a member that declares no parameter list at
+    /// all, so a property and a no-argument method of the same name stay distinct nodes.
     ///
-    /// The spelling follows what the language records: external labels where it has them, simple
-    /// parameter type names where it records types instead, `_` where it records neither. Rendering
-    /// the whole list one way, rather than per parameter, keeps the key legible as a diagram label.
+    /// Each parameter contributes whatever the language records for it: its external label and its
+    /// simple type name where both are known, one of them where only one is, `_` where neither is.
+    /// Both matter — a type list cannot tell Swift's `move(to:)` from `move(from:)`, and a label list
+    /// cannot tell one unlabelled Java overload from another.
     var callGraphParameterList: String? {
         guard kind != .property else { return nil }
-        guard !parameters.isEmpty else { return "()" }
-        if parameters.contains(where: { $0.externalName?.isEmpty == false }) {
-            return "(" + parameters.map { "\($0.externalName ?? "_"):" }.joined() + ")"
-        }
-        if parameters.contains(where: { $0.type != nil }) {
-            return "(" + parameters.map { $0.type?.name ?? "_" }.joined(separator: ",") + ")"
-        }
-        return "(" + parameters.map { _ in "_" }.joined(separator: ",") + ")"
+        return "(" + parameters.map(\.callGraphToken).joined(separator: ",") + ")"
     }
 
     /// Whether a call passing `count` arguments could be a call to this member: a parameter with a
@@ -37,6 +31,19 @@ extension Member {
         return zip(labels, parameters).allSatisfy { label, parameter in
             guard let label else { return true }
             return label == parameter.externalName
+        }
+    }
+}
+
+extension Parameter {
+    /// How this parameter reads inside ``Member/callGraphParameterList``.
+    var callGraphToken: String {
+        let label = externalName.flatMap { $0.isEmpty ? nil : "\($0):" }
+        switch (label, type?.name) {
+        case (let label?, let type?): return label + type
+        case (let label?, nil): return label
+        case (nil, let type?): return type
+        case (nil, nil): return "_"
         }
     }
 }
