@@ -23,11 +23,13 @@ import AcaiCore
 ///    layer names a kind, and it is the level at which a Swift `protocol` and a Java `interface` are
 ///    the same declaration. It still distinguishes `class` from `struct` from `enumeration`, so a
 ///    class mis-parsed as a struct is not hidden.
-/// 7. **`open` is dropped from a type's and a member's modifiers, and `abstract` from an interface's.**
-///    Inheritability is spelled by *presence* in Kotlin and Swift and by the *absence* of `final`
-///    everywhere else, so the same inheritable class carries opposite markers; and an interface is
-///    abstract by definition, which Dart's `abstract interface class` must say out loud and a Swift
-///    `protocol` or Java `interface` must not. `abstract` on a *class* is kept. `static` is dropped
+/// 7. **`open` is dropped from a type's and a member's modifiers, and `abstract` from an interface
+///    and from its members.** Inheritability is spelled by *presence* in Kotlin and Swift and by the
+///    *absence* of `final` everywhere else, so the same inheritable class carries opposite markers;
+///    and an interface and its requirements are abstract by definition, which Dart's `abstract
+///    interface class` and Java's implicitly-abstract interface method must say out loud and a Swift
+///    `protocol` or a Kotlin `interface` must not. `abstract` on a *class* is kept, as it is on a
+///    *class*'s member — there it is a real choice the author made. `static` is dropped
 ///    from a *nested type* for the same reason: a nested type that does not capture its enclosing
 ///    instance is `static class` in Java and an unmarked `class` in Kotlin, C++, Python and Swift.
 ///    `static` on a *member* is kept — that is a feature of its own.
@@ -55,8 +57,10 @@ struct ContractNormalizer {
     func shape(of artifact: CodeArtifact) -> ContractShape {
         ContractShape(
             types: artifact.types.map { declaration(of: $0) }.sorted { $0.name < $1.name },
-            freeFunctions: artifact.freestandingFunctions.map(signature(of:)).sorted(by: signatureOrder),
-            globals: artifact.globalVariables.map(signature(of:)).sorted(by: signatureOrder),
+            freeFunctions: artifact.freestandingFunctions
+                .map { signature(of: $0) }
+                .sorted(by: signatureOrder),
+            globals: artifact.globalVariables.map { signature(of: $0) }.sorted(by: signatureOrder),
             relationships: artifact.relationships.map(edge(of:)).sorted { lhs, rhs in
                 (lhs.kind, lhs.source, lhs.target) < (rhs.kind, rhs.source, rhs.target)
             }
@@ -68,6 +72,8 @@ struct ContractNormalizer {
     private func declaration(of type: TypeDeclaration, isNested: Bool = false) -> ContractShape.Declaration {
         let isInterface = type.kind == .interface || type.kind == .protocol
         var implied: Set<Modifier> = isInterface ? [.open, .abstract] : [.open]
+        // `static` is implied for a nested *type* only; on a member it is a feature of its own.
+        let impliedForMembers = implied
         if isNested { implied.insert(.static) }
         return ContractShape.Declaration(
             name: simpleName(type.name),
@@ -77,7 +83,9 @@ struct ContractNormalizer {
             generics: type.genericParameters.map(generic(of:)),
             annotations: annotationNames(type.annotations, restating: type.modifiers),
             supertypes: type.inheritedTypes.map { typeName(of: $0) }.sorted(),
-            members: type.members.map(signature(of:)).sorted(by: signatureOrder),
+            members: type.members
+                .map { signature(of: $0, impliedModifiers: impliedForMembers) }
+                .sorted(by: signatureOrder),
             enumCases: type.enumCases.map(\.name).sorted(),
             nested: type.nestedTypes
                 .map { declaration(of: $0, isNested: true) }
@@ -86,7 +94,9 @@ struct ContractNormalizer {
         )
     }
 
-    private func signature(of member: Member) -> ContractShape.Signature {
+    private func signature(
+        of member: Member, impliedModifiers: Set<Modifier> = [.open]
+    ) -> ContractShape.Signature {
         // A stored property's initializer expression is per-language — `[]` in Swift, `listOf()` in
         // Kotlin, absent in Java and C++ — so the calls it makes are not a shared property. A
         // *method*'s calls and reads are, which is where the call and read features live.
@@ -96,7 +106,7 @@ struct ContractNormalizer {
             role: member.kind.rawValue,
             access: member.accessLevel.umlSymbol,
             modifiers: member.modifiers
-                .filter { $0 != .open }
+                .filter { !impliedModifiers.contains($0) }
                 .map { ($0 == .suspend ? Modifier.async : $0).rawValue }
                 .sorted(),
             annotations: annotationNames(member.annotations, restating: member.modifiers),

@@ -2,7 +2,8 @@ from typing import Protocol
 
 
 class Playable(Protocol):
-    pass
+    def play(self) -> bool:
+        ...
 
 
 class Song(Playable):
