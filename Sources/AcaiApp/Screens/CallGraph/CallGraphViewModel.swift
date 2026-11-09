@@ -31,6 +31,14 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     let rotorPlanCache = DiagramRotorPlanCache()
 
     private var diff: CallGraphDiff?
+    private var configLookups: CallGraphConfigModel
+
+    /// A draft of the scope in effect, reusing lookups derived once per analysis.
+    var draftScope: CallGraphConfigModel {
+        var draft = configLookups
+        draft.scope = scope
+        return draft
+    }
 
     // MARK: - Init
 
@@ -41,6 +49,7 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
         self.artifact = artifact
         self.scope = scope
         self.comparisonArtifact = comparisonArtifact
+        self.configLookups = CallGraphConfigModel(artifact: artifact)
         self.filter = filter
         self.graph = CallGraph()
         self.positionOverrides = restoredPositions
@@ -56,6 +65,7 @@ final class CallGraphViewModel: ObservableObject, LayoutBackedCanvas {
     func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
         self.artifact = artifact
         self.comparisonArtifact = comparison
+        configLookups = CallGraphConfigModel(artifact: artifact)
         rebuild()
         positionOverrides = [:]
         selectedNodeIDs = []
