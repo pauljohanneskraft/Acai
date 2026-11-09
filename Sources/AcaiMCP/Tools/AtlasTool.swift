@@ -101,7 +101,7 @@ struct AtlasTool: AnalysisTool {
     }
 
     private func codebaseName(_ arguments: ToolArguments) throws -> String {
-        if let name = arguments.string("name") { return name }
+        if let name = try arguments.string("name") { return name }
         let path = try arguments.requiredString("path")
         return URL(fileURLWithPath: path).standardizedFileURL.lastPathComponent
     }
