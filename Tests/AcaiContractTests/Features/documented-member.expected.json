@@ -14,5 +14,8 @@
         }
       ]
     }
-  ]
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
 }

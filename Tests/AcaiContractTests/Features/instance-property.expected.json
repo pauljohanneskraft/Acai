@@ -8,5 +8,8 @@
         { "name": "size", "role": "property", "access": "+", "type": "#primitive" }
       ]
     }
-  ]
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
 }

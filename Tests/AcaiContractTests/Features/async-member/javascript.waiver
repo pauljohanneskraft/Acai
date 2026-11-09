@@ -1,1 +1,0 @@
-JavaScript carries no return-type annotation, and its async method returns a promise rather than the awaited value.

@@ -8,5 +8,8 @@
         { "name": "reset", "role": "method", "access": "+", "modifiers": ["static"], "type": "#primitive" }
       ]
     }
-  ]
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
 }

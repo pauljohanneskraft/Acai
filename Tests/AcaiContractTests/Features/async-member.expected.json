@@ -8,5 +8,8 @@
         { "name": "fetch", "role": "method", "access": "+", "modifiers": ["async"], "type": "#primitive" }
       ]
     }
-  ]
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
 }

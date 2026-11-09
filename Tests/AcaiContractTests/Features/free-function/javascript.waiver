@@ -1,1 +1,0 @@
-JavaScript carries no return-type annotation, so a top-level function's declared type cannot be compared.
