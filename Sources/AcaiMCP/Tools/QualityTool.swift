@@ -65,7 +65,7 @@ struct QualityTool: AnalysisTool {
     private func baselineArtifact(
         _ arguments: ToolArguments, _ cache: AnalysisSnapshotCache, rules: QualityRules
     ) async throws -> CodeArtifact? {
-        guard let path = arguments.string("baseline") else {
+        guard let path = try arguments.string("baseline") else {
             guard rules.movements.isEmpty else {
                 throw MCPError.invalidParams(
                     "The rules file declares \(rules.movements.count) movement rule(s), which require"

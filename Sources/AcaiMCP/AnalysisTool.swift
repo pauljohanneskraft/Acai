@@ -50,7 +50,7 @@ extension AnalysisTool {
 
     /// Absent, the built-in curated smell budgets apply.
     func qualityRules(_ arguments: ToolArguments) throws -> QualityRules {
-        guard let rulesPath = arguments.string("rules") else { return .defaultQuality }
+        guard let rulesPath = try arguments.string("rules") else { return .defaultQuality }
         do {
             let yaml = try String(contentsOf: URL(fileURLWithPath: rulesPath), encoding: .utf8)
             return try YAMLDecoder().decode(QualityRules.self, from: yaml)
@@ -130,10 +130,10 @@ extension AnalysisTool {
     /// Qualified because Foundation re-exports ObjectiveC's own `Selector` on Darwin.
     func selector(from arguments: ToolArguments) throws -> AcaiQuality.Selector {
         AcaiQuality.Selector(
-            module: arguments.string("module"),
-            typeGlob: arguments.string("type"),
-            stereotype: arguments.string("stereotype"),
-            annotation: arguments.string("annotation"),
+            module: try arguments.string("module"),
+            typeGlob: try arguments.string("type"),
+            stereotype: try arguments.string("stereotype"),
+            annotation: try arguments.string("annotation"),
             minimumAccess: try EnumArgument<AccessLevel>.minimumAccess.value(in: arguments),
             kind: try EnumArgument<TypeKind>.kind.value(in: arguments),
             minMembers: try arguments.int("minMembers"),
