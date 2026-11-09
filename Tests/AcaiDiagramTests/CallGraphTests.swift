@@ -34,8 +34,8 @@ struct CallGraphTests {
         #expect(graph.coverage.resolved == 1)
         #expect(graph.coverage.total == 1)
         #expect(graph.coverage.fraction == 1)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "B.work", weight: 1)])
-        #expect(graph.nodes.map(\.id) == ["A.run", "B.work"])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "B.work()", weight: 1)])
+        #expect(graph.nodes.map(\.id) == ["A.run()", "B.work()"])
     }
 
     @Test func unresolvedCallLowersCoverageButKeepsNoEdge() {
@@ -83,7 +83,7 @@ struct CallGraphTests {
             ]
         )
         let graph = CallGraphBuilder().build(from: artifact)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "A.helper", weight: 1)])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "A.helper()", weight: 1)])
     }
 
     @Test func repeatedCallAccumulatesWeight() {
@@ -108,16 +108,16 @@ struct CallGraphTests {
             ]
         )
         let graph = CallGraphBuilder().build(from: artifact)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "B.work", weight: 2)])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "B.work()", weight: 2)])
     }
 
     @Test func typeScopeBoundsCallersButKeepsCalleeLeaf() {
         let graph = CallGraphBuilder(scope: .type("A")).build(from: twoTypeArtifact())
-        let aNode = graph.nodes.first { $0.id == "A.run" }
-        let bNode = graph.nodes.first { $0.id == "B.work" }
+        let aNode = graph.nodes.first { $0.id == "A.run()" }
+        let bNode = graph.nodes.first { $0.id == "B.work()" }
         #expect(aNode?.inScope == true)
         #expect(bNode?.inScope == false)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "B.work", weight: 1)])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "B.work()", weight: 1)])
     }
 
     @Test func moduleScopeFiltersByBuildProduct() {
@@ -125,8 +125,8 @@ struct CallGraphTests {
         // Put B in a different module so a Core-scoped graph drops B as a caller.
         artifact.types[1].location = SourceLocation(filePath: "Other/B.swift", line: 1, column: 1)
         let graph = CallGraphBuilder(scope: .module("Core")).build(from: artifact)
-        #expect(graph.nodes.first { $0.id == "A.run" }?.inScope == true)
-        #expect(graph.nodes.first { $0.id == "B.work" }?.inScope == false)
+        #expect(graph.nodes.first { $0.id == "A.run()" }?.inScope == true)
+        #expect(graph.nodes.first { $0.id == "B.work()" }?.inScope == false)
     }
 
     @Test func freeFunctionCallerAndCalleeAppear() {
@@ -152,11 +152,11 @@ struct CallGraphTests {
         )
         let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.edges == [
-            CallGraph.Edge(from: "A.run", to: "log", weight: 1),
-            CallGraph.Edge(from: "log", to: "format", weight: 1)
+            CallGraph.Edge(from: "A.run()", to: "log()", weight: 1),
+            CallGraph.Edge(from: "log()", to: "format()", weight: 1)
         ])
-        #expect(graph.nodes.first { $0.id == "log" }?.isFreeFunction == true)
-        #expect(graph.nodes.first { $0.id == "log" }?.label == "log")
+        #expect(graph.nodes.first { $0.id == "log()" }?.isFreeFunction == true)
+        #expect(graph.nodes.first { $0.id == "log()" }?.label == "log")
     }
 
     @Test func sameTypeMethodWinsOverFreeFunctionOfSameName() {
@@ -177,7 +177,7 @@ struct CallGraphTests {
             freestandingFunctions: [Member(name: "helper", kind: .method, accessLevel: .internal)]
         )
         let graph = CallGraphBuilder().build(from: artifact)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "A.helper", weight: 1)])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "A.helper()", weight: 1)])
     }
 
     @Test func selfDispatchFallsBackToFreeFunctionWhenNoSelfMethod() {
@@ -200,7 +200,7 @@ struct CallGraphTests {
         )
         let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.coverage.resolved == 1)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "format", weight: 1)])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "format()", weight: 1)])
     }
 
     @Test func typeScopeExcludesFreeFunctionsAsCallers() {
@@ -252,7 +252,7 @@ struct CallGraphTests {
         )
         let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.coverage.resolved == 1)
-        #expect(graph.edges == [CallGraph.Edge(from: "Inner.run", to: "Inner.helper", weight: 1)])
+        #expect(graph.edges == [CallGraph.Edge(from: "Inner.run()", to: "Inner.helper()", weight: 1)])
     }
 
     @Test func ambiguousSimpleNameIsUnresolvedNotFirstWins() {
@@ -294,10 +294,11 @@ struct CallGraphTests {
 
         #expect(graph.coverage.total == 3)
         #expect(graph.coverage.resolved == 2)
-        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleA.Config.run", to: "ModuleA.Config.used", weight: 1)))
-        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleB.Config.run", to: "ModuleB.Config.used", weight: 1)))
+        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleA.Config.run()", to: "ModuleA.Config.used()", weight: 1)))
+        #expect(graph.edges.contains(CallGraph.Edge(from: "ModuleB.Config.run()", to: "ModuleB.Config.used()", weight: 1)))
         #expect(graph.nodes.map(\.id).sorted() == [
-            "Client.run", "ModuleA.Config.run", "ModuleA.Config.used", "ModuleB.Config.run", "ModuleB.Config.used"
+            "Client.run()", "ModuleA.Config.run()", "ModuleA.Config.used()",
+            "ModuleB.Config.run()", "ModuleB.Config.used()"
         ])
     }
 

@@ -794,6 +794,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 61,
@@ -809,6 +812,9 @@
               }
             },
             {
+              "arguments" : [
+
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 87,
@@ -824,6 +830,9 @@
               }
             },
             {
+              "arguments" : [
+
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 107,
@@ -839,6 +848,9 @@
               }
             },
             {
+              "arguments" : [
+
+              ],
               "location" : {
                 "column" : 61,
                 "endLine" : 27,
@@ -1291,6 +1303,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 31,
@@ -1790,6 +1805,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+                null
+              ],
               "location" : {
                 "column" : 31,
                 "endLine" : 68,

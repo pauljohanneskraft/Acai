@@ -148,7 +148,7 @@ struct ImplicitInitializerCoverageTests {
         class Helper:
             def __init__(self): pass
         """)
-        #expect(graph.edges.contains { $0.from == "Worker.go" && $0.to == "Helper.__init__" })
+        #expect(graph.edges.contains { $0.from == "Worker.go()" && $0.to == "Helper.__init__()" })
         #expect(graph.coverage.resolved == 1)
         #expect(graph.coverage.total == 1)
     }
@@ -176,7 +176,7 @@ struct ImplicitInitializerCoverageTests {
         let graph = CallGraphBuilder().build(from: artifact)
         #expect(graph.coverage.resolved == 1)
         #expect(graph.coverage.total == 1)
-        #expect(graph.edges.contains { $0.from == "Worker.go" && $0.to == "Helper" })
+        #expect(graph.edges.contains { $0.from == "Worker.go()" && $0.to == "worker.py:Helper()" })
     }
 
     /// A capitalised factory function from another file reads as a speculative construction, so it

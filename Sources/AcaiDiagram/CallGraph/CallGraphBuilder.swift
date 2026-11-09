@@ -96,7 +96,7 @@ private struct CallGraphAccumulator {
     }
 
     func makeGraph(title: String?) -> CallGraph {
-        let sortedNodes = nodes.values.sorted { $0.id < $1.id }
+        let sortedNodes = disambiguated(Array(nodes.values)).sorted { $0.id < $1.id }
         let sortedEdges = weights
             .sorted { ($0.key.from, $0.key.to) < ($1.key.from, $1.key.to) }
             .map { CallGraph.Edge(from: $0.key.from, to: $0.key.to, weight: $0.value) }
@@ -106,6 +106,21 @@ private struct CallGraphAccumulator {
             edges: sortedEdges,
             coverage: CallGraph.Coverage(resolved: resolved, total: total)
         )
+    }
+
+    /// A node's parameter list and declaring file are what *distinguish* it from a namesake, so a
+    /// node with no namesake in the graph shows neither: a lone `place` reads better as
+    /// `OrderService.place` than as `OrderService.place(order:)`, while two overloads must not draw
+    /// the same label twice. The id keeps both either way — this is only what the label shows.
+    private func disambiguated(_ nodes: [CallGraph.Node]) -> [CallGraph.Node] {
+        let counts = Dictionary(grouping: nodes) { "\($0.typeName).\($0.methodName)" }.mapValues(\.count)
+        return nodes.map { node in
+            guard counts["\(node.typeName).\(node.methodName)"] == 1 else { return node }
+            var plain = node
+            plain.signature = nil
+            plain.container = nil
+            return plain
+        }
     }
 
     // MARK: - Accumulation

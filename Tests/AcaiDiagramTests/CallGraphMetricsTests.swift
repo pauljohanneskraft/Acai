@@ -50,12 +50,12 @@ struct CallGraphMetricsTests {
         let report = CallGraphMetrics(artifact: chainArtifact()).report
         #expect(report.coverage.fraction == 1)
         // Hottest first: B.work has fan-in 1, so it ranks ahead of A.run.
-        #expect(report.nodes.first?.id == "B.work")
-        let work = report.nodes.first { $0.id == "B.work" }
+        #expect(report.nodes.first?.id == "B.work()")
+        let work = report.nodes.first { $0.id == "B.work()" }
         #expect(work?.fanIn == 1)
         #expect(work?.fanOut == 0)
         #expect(work?.location?.filePath == "B.swift")
-        let run = report.nodes.first { $0.id == "A.run" }
+        let run = report.nodes.first { $0.id == "A.run()" }
         #expect(run?.fanOut == 1)
         #expect(run?.isRecursive == false)
     }
@@ -67,7 +67,7 @@ struct CallGraphMetricsTests {
 
         let clusters = MethodCycles(artifact: mutualRecursionArtifact()).clusters
         #expect(clusters.count == 1)
-        #expect(clusters[0].methods.map(\.id) == ["A.ping", "B.pong"])
+        #expect(clusters[0].methods.map(\.id) == ["A.ping()", "B.pong()"])
         #expect(clusters[0].methods.first?.location?.filePath == "A.swift")
     }
 

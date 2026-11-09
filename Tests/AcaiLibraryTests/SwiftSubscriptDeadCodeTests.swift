@@ -15,7 +15,7 @@ struct SwiftSubscriptDeadCodeTests {
         """, fileName: "Thing.swift")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id) == ["Uncalled.init"])
+        #expect(report.candidates.map(\.id) == ["Uncalled.init()"])
     }
 
     /// Opting `.initializer` and `.subscript` in doesn't relax the method scan.
@@ -29,7 +29,7 @@ struct SwiftSubscriptDeadCodeTests {
         """, fileName: "Thing.swift")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).sorted() == ["Thing.init", "Thing.subscript", "Thing.unusedMethod"])
+        #expect(report.candidates.map(\.id).sorted() == ["Thing.init(unused:)", "Thing.subscript(i:)", "Thing.unusedMethod()"])
     }
 
     @Test func aCalledSwiftSubscriptIsNotReportedWhileAnUncalledOneIs() {
@@ -43,7 +43,7 @@ struct SwiftSubscriptDeadCodeTests {
         """, fileName: "Thing.swift")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id) == ["Uncalled.subscript"])
+        #expect(report.candidates.map(\.id) == ["Uncalled.subscript(i:)"])
     }
 
     @Test func aSwiftSubscriptCalledOnlyFromAnotherFileIsNotReported() {
