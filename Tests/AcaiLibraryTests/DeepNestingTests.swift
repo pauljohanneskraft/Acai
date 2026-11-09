@@ -153,6 +153,20 @@ struct DeepNestingTests {
         }
     }
 
+    /// Lowering SwiftParser's nesting limit was rejected because a partial parse must stay visible.
+    /// SwiftParser stops at 256 levels and returns a partial tree, so the file above its limit is
+    /// exactly the case that has to carry a diagnostic rather than look like a clean parse. The
+    /// Tree-sitter grammars have no such limit and parse the full depth, which is why this is
+    /// asserted for Swift alone.
+    @Test func aPartialSwiftParseCarriesADiagnostic() async throws {
+        let swift = try #require(Self.dialects.first { $0.name == "Swift" })
+        let nested = String(repeating: "(", count: Self.depth) + "1" + String(repeating: ")", count: Self.depth)
+        let source = swift.file(swift.binding(nested))
+        try await SourceTreeFixture([swift.fileName: source]).analysed { artifact in
+            #expect(artifact.metadata.parseDiagnostics.contains { $0.kind == .error })
+        }
+    }
+
     /// The Swift manifest reader recurses the same way a source file does, and discovery calls it
     /// synchronously, so it needs the large-stack thread too.
     @Test func aDeeplyNestedPackageManifestDoesNotCrash() async throws {

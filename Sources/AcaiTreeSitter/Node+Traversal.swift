@@ -14,6 +14,20 @@ public extension Node {
         walk(children: { $0.namedChildren() }, visit: visit)
     }
 
+    /// The first descendant of type `type` in pre-order, searching named children only. Stops at
+    /// the first hit, and iterative for the same reason ``walkPreorder(_:)`` is.
+    ///
+    /// Unlike ``firstChild(withType:)`` this searches the whole subtree, and unlike
+    /// ``walkNamedPreorder(_:)`` it does not visit what comes after the match.
+    func firstDescendant(withType type: String) -> Node? {
+        var stack: [Node] = namedChildren().reversed()
+        while let node = stack.popLast() {
+            if node.nodeType == type { return node }
+            stack.append(contentsOf: node.namedChildren().reversed())
+        }
+        return nil
+    }
+
     /// Children are pushed in reverse so the left-most is popped first, which is what makes the
     /// visit order pre-order rather than mirrored.
     private func walk(children: (Node) -> [Node], visit: (Node) -> Void) {
