@@ -398,7 +398,8 @@ let package = Package(
             dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiArtifactGenerator"],
             exclude: ["Fixtures"]
         ),
-        .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
+        // `AcaiMCP` is here for `LanguageSurfaceParityTests`, which compares the CLI and MCP language lists.
+        .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore", "AcaiLibrary", "AcaiMCP"]),
         .testTarget(name: "AcaiMCPTests", dependencies: mcpTestDependencies),
         .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram"]),
 

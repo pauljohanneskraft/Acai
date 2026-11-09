@@ -6,8 +6,9 @@ struct RowDeleteAffordance {
     let app: XCUIApplication
 
     /// Reveals `row`'s Delete action and taps it, leaving its confirmation on screen for the caller.
+    /// `back` reselects what lists `row` when a press delivered as a tap replaced it in the detail column.
     func tapDelete(
-        on row: XCUIElement, _ description: String,
+        on row: XCUIElement, _ description: String, recoveringThrough back: XCUIElement? = nil,
         file: StaticString = #filePath, line: UInt = #line
     ) {
         #if os(macOS)
@@ -22,9 +23,9 @@ struct RowDeleteAffordance {
             SystemBanners().dismiss(file: file, line: line)
             row.swipeLeft()
         } else {
-            row.reveal(
-                description, until: delete, recoveringThrough: app.buttons["BackButton"], file: file, line: line
-            ) { $0.press(forDuration: 1.5) }
+            row.reveal(description, until: delete, recoveringThrough: back, file: file, line: line) {
+                $0.press(forDuration: 1.5)
+            }
         }
         #endif
         delete.tapWhenReady(
