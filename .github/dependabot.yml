@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: "swift"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "deps"
+    ignore:
+      # tree-sitter-python is pinned exactly because CPythonScanner vendors this version's
+      # scanner.c, which must match the same version's parser.c external-token table.
+      - dependency-name: "tree-sitter-python"

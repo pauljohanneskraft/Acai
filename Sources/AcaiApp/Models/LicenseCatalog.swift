@@ -3,7 +3,7 @@ import Foundation
 struct DependencyLicense: Codable, Identifiable, Hashable {
     var id: String { name }
     let name: String
-    /// `nil` for a branch pin — `Package.resolved` reports a branch name instead of a version there.
+    /// `nil` for a revision pin — `Package.resolved` records no version for one.
     let version: String?
     let revision: String
     let location: String

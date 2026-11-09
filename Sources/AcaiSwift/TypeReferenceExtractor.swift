@@ -60,6 +60,17 @@ struct TypeReferenceExtractor {
         return TypeReference(name: typeSyntax.trimmedDescription)
     }
 
+    /// A generic argument is a type in all but the value-generic spellings (`InlineArray<5, Int>`),
+    /// where it is an expression; keeping both in `genericArguments` preserves the clause's arity.
+    func extractTypeReference(from argument: GenericArgumentSyntax.Argument) -> TypeReference {
+        switch argument {
+        case .type(let typeSyntax):
+            return extractTypeReference(from: typeSyntax)
+        case .expr(let exprSyntax):
+            return TypeReference(name: exprSyntax.trimmedDescription)
+        }
+    }
+
     func flattenCompositionType(_ typeSyntax: TypeSyntax) -> [TypeReference] {
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
             return composition.elements.map { extractTypeReference(from: $0.type) }
