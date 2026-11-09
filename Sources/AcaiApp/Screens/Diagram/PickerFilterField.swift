@@ -7,14 +7,20 @@ struct PickerFilterField: View {
     @Binding var text: String
     var placeholder: String = "Filter…"
 
+    /// What the field shows; `text` follows it once typing pauses, or at once when cleared.
+    @State private var draft = ""
+
+    private let debounce: Duration = .milliseconds(200)
+
     var body: some View {
         HStack(spacing: .spacingXS) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField(placeholder, text: $text)
+            TextField(placeholder, text: $draft)
                 .textFieldStyle(.plain)
-            if !text.isEmpty {
+            if !draft.isEmpty {
                 Button {
+                    draft = ""
                     text = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -27,6 +33,12 @@ struct PickerFilterField: View {
         .padding(.horizontal, .spacingXS)
         .padding(.vertical, .spacingXS)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+        .onAppear { draft = text }
+        .task(id: draft) {
+            guard draft != text else { return }
+            guard (try? await Task.sleep(for: debounce)) != nil else { return }
+            text = draft
+        }
     }
 }
 

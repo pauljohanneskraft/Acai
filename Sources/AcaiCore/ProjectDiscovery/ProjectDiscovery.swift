@@ -49,6 +49,7 @@ public struct ProjectDiscovery: Sendable {
     ) -> [SourceSpec] {
         var walk = DiscoveryWalk(discovery: self, requestedLanguages: requestedLanguages)
         walk.descend(into: rootURL)
+        guard !Task.isCancelled else { return [] }
         return walk.specs + fallbackSpecs(
             at: rootURL,
             requestedLanguages: requestedLanguages,
@@ -88,6 +89,7 @@ private struct DiscoveryWalk {
     }
 
     mutating func descend(into directory: URL) {
+        guard !Task.isCancelled else { return }
         claim(at: directory)
         for child in subdirectories(of: directory) where !isInsideClaimedSubtree(child) {
             descend(into: child)
