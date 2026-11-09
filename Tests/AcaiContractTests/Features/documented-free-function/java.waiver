@@ -1,0 +1,1 @@
+Java has no top-level function; every method belongs to a class, so there is no free function to document.

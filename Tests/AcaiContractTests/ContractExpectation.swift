@@ -16,7 +16,7 @@ struct ContractExpectation: Decodable {
     /// What one language is allowed to differ in, short of waiving the whole feature.
     struct LanguageAllowance: Decodable, Equatable {
         /// A field of the projection a language may be excused from stating.
-        enum Field: String, Decodable, CaseIterable {
+        enum Field: String, Decodable {
             /// Every declared type: a signature's own type and the type of each of its parameters.
             case type
             /// A declaration's UML stereotype.

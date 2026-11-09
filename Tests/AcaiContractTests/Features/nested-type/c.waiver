@@ -1,1 +1,1 @@
-C has no class type, so there is no nested class; a nested struct definition has no enclosing-type scope and is visible file-wide.
+C has no enclosing-type scope; a struct defined inside another is visible file-wide and is parsed as a second top-level type, not as a nested one.

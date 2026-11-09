@@ -1,0 +1,11 @@
+{
+  "freeFunctions": [
+    {
+      "name": "compute", "role": "method", "access": "+", "type": "#primitive",
+      "documentation": "What it works out."
+    }
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
+}
