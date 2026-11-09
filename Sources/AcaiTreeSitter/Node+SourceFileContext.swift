@@ -40,11 +40,10 @@ extension Node {
     }
 
     /// This argument list's text with its enclosing parentheses removed, so `(1, "x")` reads as
-    /// `1, "x"`. `nil` when the list holds no arguments, which is what a constant written without
-    /// them carries.
+    /// `1, "x"`. `nil` for an empty list, which is what a declaration written without one carries.
     public func argumentListText(in context: SourceFileContext) -> String? {
         let text = text(in: context).trimmingCharacters(in: .whitespacesAndNewlines)
-        let unwrapped = text.hasPrefix("(") && text.hasSuffix(")") && text.count >= 2
+        let unwrapped = text.hasPrefix("(") && text.hasSuffix(")")
             ? String(text.dropFirst().dropLast())
             : text
         let arguments = unwrapped.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -49,10 +49,10 @@ import AcaiCore
 ///    argument, `pop(1)` (Java, Kotlin, Dart), so either way the case reads `pop = 1`. What differs
 ///    is the overhead each spelling forces: Swift has to declare the raw-value type, and Java and
 ///    Dart a constructor to receive the argument plus a property to hold it. So on an `enumeration`
-///    a `#primitive` supertype, a constructor, and a stored property fed by one of that
-///    constructor's parameters are dropped, as is a conformance edge onto a primitive — the only
-///    thing that produces one. A method, a computed property, a non-primitive supertype and any
-///    other stored property are kept.
+///    a `#primitive` supertype is dropped — its only meaning is naming the raw-value type — as is
+///    the conformance edge onto it, and, where a case really carries a constant, the constructor
+///    plus any stored property one of its parameters feeds. A method, a computed property, a
+///    non-primitive supertype, and a constructor on an enum whose cases carry no constant are kept.
 struct ContractNormalizer {
     let configuration: LanguageConfiguration
 
@@ -138,9 +138,12 @@ struct ContractNormalizer {
     }
 
     /// Rule 12: an enum constant written `pop(1)` needs a constructor to receive the argument and a
-    /// property to hold it, which `= 1` needs neither of.
+    /// property to hold it, which `= 1` needs neither of. Gated on a case actually carrying a
+    /// constant, so a constructor an enum declares for its own sake still has to show up.
     private func members(of type: TypeDeclaration) -> [Member] {
-        guard type.kind == .enum else { return type.members }
+        guard type.kind == .enum, type.enumCases.contains(where: { $0.rawValue != nil }) else {
+            return type.members
+        }
         let received = Set(
             type.members.filter { $0.kind == .initializer }.flatMap { $0.parameters.map(\.internalName) })
         return type.members.filter { member in
