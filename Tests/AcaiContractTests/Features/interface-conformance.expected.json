@@ -1,6 +1,13 @@
 {
   "types": [
-    { "name": "Playable", "kind": "interface", "access": "+" },
+    {
+      "name": "Playable",
+      "kind": "interface",
+      "access": "+",
+      "members": [
+        { "name": "play", "role": "method", "access": "+", "type": "#primitive" }
+      ]
+    },
     { "name": "Song", "kind": "class", "access": "+", "supertypes": ["Playable"] }
   ],
   "relationships": [
