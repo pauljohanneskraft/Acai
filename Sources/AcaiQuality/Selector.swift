@@ -72,11 +72,19 @@ public struct Selector: Codable, Hashable, Sendable {
 
     public func matches(_ node: GraphView.Node) -> Bool {
         if let exclude, exclude.contains(where: { $0.matches(node) }) { return false }
+        return matchesIdentity(node) && matchesDeclaration(node)
+    }
+
+    private func matchesIdentity(_ node: GraphView.Node) -> Bool {
         if let explicitIDs, !explicitIDs.contains(node.id) { return false }
         if let module, !Glob(module).matches(node.module) { return false }
         if let typeGlob, ![node.id, node.qualifiedName, node.unqualifiedID].contains(where: Glob(typeGlob).matches) {
             return false
         }
+        return true
+    }
+
+    private func matchesDeclaration(_ node: GraphView.Node) -> Bool {
         if let stereotype, node.stereotype != stereotype { return false }
         if let annotation, !node.annotations.contains(annotation.normalizedAnnotation) { return false }
         if let minimumAccess, node.access.visibilityRank < minimumAccess.visibilityRank { return false }
