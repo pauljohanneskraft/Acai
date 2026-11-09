@@ -204,22 +204,12 @@ struct CallSiteCollector {
         from node: DeclReferenceExprSyntax, propertyMap: [String: String]
     ) -> FieldAccess? {
         let name = node.baseName.text
-        guard propertyMap[name] != nil, readsOwnInstance(node) else { return nil }
+        guard propertyMap[name] != nil, node.namesEnclosingInstanceMember else { return nil }
         return FieldAccess(
             name: name,
             receiver: nil,
             location: sourceLocations.sourceLocation(of: node)
         )
-    }
-
-    /// Whether the identifier names *this* instance's property: `x` and `self.x` do, `other.x` does
-    /// not, and neither does `.x` — a member of something else entirely, or an implicit member whose
-    /// base the type system supplies.
-    private func readsOwnInstance(_ node: DeclReferenceExprSyntax) -> Bool {
-        guard let access = node.parent?.as(MemberAccessExprSyntax.self), access.declName.id == node.id
-        else { return true }
-        guard let base = access.base else { return false }
-        return base.as(DeclReferenceExprSyntax.self)?.baseName.tokenKind == .keyword(.self)
     }
 
     /// A bare method name used as a first-class value (`action: chooseFile`, `.onAppear(perform:
@@ -429,5 +419,18 @@ struct CallSiteCollector {
         }
         let name = declRef.baseName.text
         return isTypeName(name) ? name : nil
+    }
+}
+
+extension DeclReferenceExprSyntax {
+
+    /// Whether this identifier names a member of the *enclosing* instance: `x` and `self.x` do,
+    /// `other.x` does not, and neither does `.x` — an implicit member whose base the type system
+    /// supplies rather than one of this type's own.
+    var namesEnclosingInstanceMember: Bool {
+        guard let access = parent?.as(MemberAccessExprSyntax.self), access.declName.id == id
+        else { return true }
+        guard let base = access.base else { return false }
+        return base.as(DeclReferenceExprSyntax.self)?.baseName.tokenKind == .keyword(.self)
     }
 }
