@@ -410,7 +410,10 @@ let package = Package(
         // `AcaiMCP` is here for `LanguageSurfaceParityTests`, which compares the CLI and MCP language lists.
         .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore", "AcaiLibrary", "AcaiMCP"]),
         .testTarget(name: "AcaiMCPTests", dependencies: mcpTestDependencies),
-        .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram"]),
+        .testTarget(
+            name: "AcaiAppModelTests",
+            dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram", "AcaiTestSupport"]
+        ),
 
         // MARK: Characterization goldens pinning every parser's whole encoded `CodeArtifact`.
         // `exclude`, not `resources`: the tests read both directories by path (via `#filePath`, like

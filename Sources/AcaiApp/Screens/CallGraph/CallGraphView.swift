@@ -159,7 +159,7 @@ private struct CallGraphCanvasView: View {
 
     private var sidebar: CallGraphSidebar {
         CallGraphSidebar(
-            artifact: artifact,
+            draftScope: viewModel.draftScope,
             graph: viewModel.graph,
             selectedNodeIDs: viewModel.selectedNodeIDs,
             scope: scope,
