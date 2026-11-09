@@ -35,6 +35,10 @@ struct DirectoryTreeWalk {
     /// `.gitignore` walk, which already has its own diagnostics for malformed rules).
     var onUnresolvedEntry: ((URL) -> Void)?
 
+    /// Records one listing per directory entered. `nil` (the default) records nothing; a regression
+    /// test injects one to assert a tree is listed once per analysis rather than once per language.
+    var enumerationCounter: OperationCounter?
+
     /// Calls `body` once per directory with that directory's files. Hidden entries are listed —
     /// `.gitignore` is one — but a hidden directory is never descended into, matching the source
     /// collection this shares a tree with.
@@ -80,6 +84,7 @@ struct DirectoryTreeWalk {
     /// arrived by, so the link's own spelling — and therefore every relative path derived from it —
     /// survives.
     private func sortedChildren(of directory: URL, at resolved: URL) -> [Child] {
+        enumerationCounter?.record()
         let contents = try? fileManager.contentsOfDirectory(
             at: resolved,
             includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
