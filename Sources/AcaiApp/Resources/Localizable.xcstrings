@@ -18993,6 +18993,28 @@
         }
       }
     },
+    "View.ModuleCouplingChartView.ComputingMetrics" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metriken werden berechnet…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computing metrics…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calcul des métriques…"
+          }
+        }
+      }
+    },
     "View.ModuleCouplingChartView.Done" : {
       "localizations" : {
         "de" : {
