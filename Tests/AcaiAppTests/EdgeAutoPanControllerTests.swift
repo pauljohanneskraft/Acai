@@ -5,45 +5,66 @@ import Testing
 
 @Suite("Edge Auto-Pan")
 struct EdgeAutoPanControllerTests {
-    private func controllerAtRightEdge(reducesMotion: Bool) -> (EdgeAutoPanController, Deltas) {
+    private func controllerAtRightEdge(reducesMotion: Bool) -> EdgeAutoPanController {
         let controller = EdgeAutoPanController()
         controller.viewportSize = CGSize(width: 300, height: 600)
         controller.canvasLocation = CGPoint(x: 290, y: 300)
         controller.reducesMotion = reducesMotion
-        let deltas = Deltas()
-        controller.onPanTick = { deltas.values.append($0) }
-        return (controller, deltas)
+        return controller
+    }
+
+    private func deltas(from controller: EdgeAutoPanController, ticks: Int) -> [CGSize] {
+        (0..<ticks).compactMap { _ in controller.nextPanDelta() }
     }
 
     @Test("Without Reduce Motion, every tick at the edge pans a little")
     func continuousPan() {
-        let (controller, deltas) = controllerAtRightEdge(reducesMotion: false)
-        controller.tick()
-        controller.tick()
-        #expect(deltas.values.count == 2)
-        #expect(deltas.values.allSatisfy { $0.width > 0 && $0.width < 10 && $0.height == 0 })
+        let controller = controllerAtRightEdge(reducesMotion: false)
+        let values = deltas(from: controller, ticks: 2)
+        #expect(values.count == 2)
+        #expect(values.allSatisfy { $0.width > 0 && $0.width < 10 && $0.height == 0 })
     }
 
     @Test("With Reduce Motion, holding at the edge jumps a third of the viewport every half second")
     func steppedPan() {
-        let (controller, deltas) = controllerAtRightEdge(reducesMotion: true)
-        for _ in 0..<29 { controller.tick() }
-        #expect(deltas.values.isEmpty)
-        controller.tick()
-        #expect(deltas.values == [CGSize(width: 100, height: 0)])
-        for _ in 0..<30 { controller.tick() }
-        #expect(deltas.values.count == 2)
+        let controller = controllerAtRightEdge(reducesMotion: true)
+        var values = deltas(from: controller, ticks: 29)
+        #expect(values.isEmpty)
+        values += deltas(from: controller, ticks: 1)
+        #expect(values == [CGSize(width: 100, height: 0)])
+        values += deltas(from: controller, ticks: 30)
+        #expect(values.count == 2)
     }
 
     @Test("With Reduce Motion, leaving the edge restarts the wait before the next jump")
     func steppedPanResetsAwayFromEdge() {
-        let (controller, deltas) = controllerAtRightEdge(reducesMotion: true)
-        for _ in 0..<20 { controller.tick() }
+        let controller = controllerAtRightEdge(reducesMotion: true)
+        var values = deltas(from: controller, ticks: 20)
         controller.canvasLocation = CGPoint(x: 150, y: 300)
-        controller.tick()
+        values += deltas(from: controller, ticks: 1)
         controller.canvasLocation = CGPoint(x: 290, y: 300)
-        for _ in 0..<29 { controller.tick() }
-        #expect(deltas.values.isEmpty)
+        values += deltas(from: controller, ticks: 29)
+        #expect(values.isEmpty)
+    }
+
+    @Test("Stopping a pan releases the canvas state the tick handler captured")
+    func stoppingReleasesTheCapturedCanvas() {
+        weak var leaked: EdgeAutoPanController?
+
+        do {
+            let storage = CanvasStorage()
+            leaked = storage.controller
+            storage.controller.viewportSize = CGSize(width: 300, height: 600)
+            storage.controller.canvasLocation = CGPoint(x: 290, y: 300)
+            storage.controller.start { canvasDelta in storage.offset.width -= canvasDelta.width }
+
+            storage.controller.tick()
+            #expect(storage.offset.width < 0, "the handler passed to start() should drive the pan")
+
+            storage.controller.stop()
+        }
+
+        #expect(leaked == nil)
     }
 
     @Test("A curve respecting Reduce Motion becomes no animation")
@@ -53,6 +74,10 @@ struct EdgeAutoPanControllerTests {
     }
 }
 
-private final class Deltas {
-    var values: [CGSize] = []
+/// Stands in for the SwiftUI `@State` storage a canvas keeps its controller in: the handler the
+/// canvas installs writes back through state that owns the controller, so a handler outliving the
+/// pan is a retain cycle.
+private final class CanvasStorage {
+    let controller = EdgeAutoPanController()
+    var offset: CGSize = .zero
 }

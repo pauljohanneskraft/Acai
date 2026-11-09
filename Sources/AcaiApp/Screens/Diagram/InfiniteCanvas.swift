@@ -93,6 +93,7 @@ struct InfiniteCanvas<Content: View>: View {
             #endif
             .onAppear { onViewportSizeChange?(geometry.size) }
             .onChange(of: geometry.size) { _, newSize in onViewportSizeChange?(newSize) }
+            .onDisappear { autoPanController.stop() }
         }
         .overlay(alignment: .bottomTrailing) { zoomIndicator }
     }
@@ -110,24 +111,25 @@ struct InfiniteCanvas<Content: View>: View {
 
     // MARK: - Auto-Pan Configuration
 
-    /// Called every body evaluation to keep the auto-pan controller in sync.
+    /// Called every body evaluation to keep the auto-pan controller in sync. The tick handler is
+    /// handed over only while a drag is auto-panning: holding it any longer would retain this view
+    /// through the `@State` storage the controller itself lives in.
     private func configureAutoPan(viewportSize: CGSize) {
         autoPanController.scale = scale
         autoPanController.offset = offset
         autoPanController.viewportSize = viewportSize
         autoPanController.reducesMotion = reduceMotion
 
-        autoPanController.onPanTick = { canvasDelta in
+        guard let loc = autoPanDragLocation else {
+            autoPanController.stop()
+            return
+        }
+
+        autoPanController.canvasLocation = loc
+        autoPanController.start { canvasDelta in
             offset.x -= canvasDelta.width * scale
             offset.y -= canvasDelta.height * scale
             onAutoPanDelta?(canvasDelta)
-        }
-
-        if let loc = autoPanDragLocation {
-            autoPanController.canvasLocation = loc
-            if !autoPanController.isRunning { autoPanController.start() }
-        } else {
-            autoPanController.stop()
         }
     }
 
