@@ -56,7 +56,7 @@ struct WeightedMethodsTests {
         let members = [
             method("classify", complexity: 7),
             Member(name: "render", kind: .method, accessLevel: .internal, callSites: [
-                CallSite(receiver: .type(name: "Printer"), methodName: "draw")
+                CallSite(receiver: .type("Printer"), methodName: "draw")
             ], cyclomaticComplexity: 5)
         ]
         // Two declared methods plus one distinct call target — unchanged by the complexity weighting.

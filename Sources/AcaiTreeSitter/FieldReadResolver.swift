@@ -34,25 +34,25 @@ public struct FieldReadResolver {
         return reads
     }
 
-    /// Walks the body's tokens in source order, so the window always holds the two tokens preceding
-    /// the one being classified whatever shape the grammar gives a member access.
+    /// Pre-order, over every child rather than only the named ones, so the window advances one source
+    /// token at a time and holds the two tokens preceding whatever is being classified — which is what
+    /// lets one implementation serve grammars that spell a member access in quite different shapes.
+    /// A name is classified before its own tokens are pushed, since an identifier node is not always a
+    /// leaf (Kotlin's `simple_identifier` wraps its token).
     private func collect(
         from node: Node, knownProperties: Set<String>, receiver: inout ReceiverWindow,
         into reads: inout [FieldAccess]
     ) {
-        let children = node.children()
-        guard children.isEmpty else {
-            for child in children {
-                collect(from: child, knownProperties: knownProperties, receiver: &receiver, into: &reads)
-            }
-            return
-        }
         let name = node.text(in: context)
         if let nodeType = node.nodeType, identifierTypes.contains(nodeType),
            knownProperties.contains(name), receiver.isOwn {
             reads.append(FieldAccess(name: name, receiver: nil, location: node.location(in: context)))
         }
-        receiver.push(name)
+        let children = node.children()
+        guard !children.isEmpty else { return receiver.push(name) }
+        for child in children {
+            collect(from: child, knownProperties: knownProperties, receiver: &receiver, into: &reads)
+        }
     }
 }
 

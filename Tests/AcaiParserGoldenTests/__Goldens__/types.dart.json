@@ -1085,15 +1085,6 @@
                 "line" : 37
               },
               "name" : "rows"
-            },
-            {
-              "location" : {
-                "column" : 121,
-                "endLine" : 37,
-                "filePath" : "types.dart",
-                "line" : 37
-              },
-              "name" : "rows"
             }
           ],
           "genericParameters" : [
@@ -1803,15 +1794,6 @@
                 "line" : 67
               },
               "name" : "weight"
-            },
-            {
-              "location" : {
-                "column" : 101,
-                "endLine" : 67,
-                "filePath" : "types.dart",
-                "line" : 67
-              },
-              "name" : "weight"
             }
           ],
           "genericParameters" : [
@@ -1910,15 +1892,7 @@
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
-            {
-              "location" : {
-                "column" : 49,
-                "endLine" : 71,
-                "filePath" : "types.dart",
-                "line" : 71
-              },
-              "name" : "first"
-            }
+
           ],
           "genericParameters" : [
 
