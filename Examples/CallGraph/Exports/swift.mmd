@@ -2,12 +2,12 @@
 title: Call graph
 ---
 flowchart LR
-    OrderController_submit["OrderController.submit"]
-    OrderRepository_save["OrderRepository.save"]
-    OrderService_place["OrderService.place"]
-    PaymentService_charge["PaymentService.charge"]
-    Validator_validate["Validator.validate"]
-    OrderController_submit --> OrderService_place
-    OrderController_submit --> Validator_validate
-    OrderService_place --> OrderRepository_save
-    OrderService_place --> PaymentService_charge
+    OrderController_submit_order_Order_["OrderController.submit"]
+    OrderRepository_save_Order_["OrderRepository.save"]
+    OrderService_place_Order_["OrderService.place"]
+    PaymentService_charge_Order_["PaymentService.charge"]
+    Validator_validate_Order_["Validator.validate"]
+    OrderController_submit_order_Order_ --> OrderService_place_Order_
+    OrderController_submit_order_Order_ --> Validator_validate_Order_
+    OrderService_place_Order_ --> OrderRepository_save_Order_
+    OrderService_place_Order_ --> PaymentService_charge_Order_

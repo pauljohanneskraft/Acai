@@ -6,13 +6,13 @@ digraph {
   fontsize=12;
   node [shape=box style="rounded,filled" fontname="Helvetica" fontsize=12];
   edge [fontname="Helvetica" fontsize=10];
-  "OrderController.submit" [label="OrderController.submit" fillcolor="#e3f2fd"];
-  "OrderRepository.save" [label="OrderRepository.save" fillcolor="#e3f2fd"];
-  "OrderService.place" [label="OrderService.place" fillcolor="#e3f2fd"];
-  "PaymentService.charge" [label="PaymentService.charge" fillcolor="#e3f2fd"];
-  "Validator.validate" [label="Validator.validate" fillcolor="#e3f2fd"];
-  "OrderController.submit" -> "OrderService.place";
-  "OrderController.submit" -> "Validator.validate";
-  "OrderService.place" -> "OrderRepository.save";
-  "OrderService.place" -> "PaymentService.charge";
+  "OrderController.submit(Order)" [label="OrderController.submit" fillcolor="#e3f2fd"];
+  "OrderRepository.save(Order)" [label="OrderRepository.save" fillcolor="#e3f2fd"];
+  "OrderService.place(Order)" [label="OrderService.place" fillcolor="#e3f2fd"];
+  "PaymentService.charge(Order)" [label="PaymentService.charge" fillcolor="#e3f2fd"];
+  "Validator.validate(Order)" [label="Validator.validate" fillcolor="#e3f2fd"];
+  "OrderController.submit(Order)" -> "OrderService.place(Order)";
+  "OrderController.submit(Order)" -> "Validator.validate(Order)";
+  "OrderService.place(Order)" -> "OrderRepository.save(Order)";
+  "OrderService.place(Order)" -> "PaymentService.charge(Order)";
 }

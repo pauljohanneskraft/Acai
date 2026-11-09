@@ -35,7 +35,7 @@ struct CallGraphConstructionTests {
             constructedMembers: [Member(name: "init", kind: .initializer, accessLevel: .internal)],
             site: CallSite(receiver: .type("B"), methodName: "init", isConstruction: true)))
         #expect(graph.coverage.resolved == 1)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "B.init", weight: 1)])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "B.init()", weight: 1)])
     }
 
     @Test func aMissingInitializerOnATypeThatDeclaresOthersStaysUnresolved() {
@@ -82,7 +82,7 @@ struct CallGraphConstructionTests {
             site: CallSite(receiver: .type("B"), methodName: "subscript", isSpeculative: true)))
         #expect(graph.coverage.resolved == 1)
         #expect(graph.coverage.total == 1)
-        #expect(graph.edges == [CallGraph.Edge(from: "A.run", to: "B.subscript", weight: 1)])
+        #expect(graph.edges == [CallGraph.Edge(from: "A.run()", to: "B.subscript()", weight: 1)])
     }
 
     @Test func theConstructionMarkerIsEncodedOnlyWhenSet() throws {

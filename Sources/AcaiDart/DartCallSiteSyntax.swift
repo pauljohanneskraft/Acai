@@ -67,6 +67,18 @@ struct DartCallSiteSyntax: CallSiteSyntax {
         )
     }
 
+    /// Dart hangs the argument list off the trailing `selector`'s `argument_part` rather than an
+    /// `arguments` field, and spells a named argument as a `label` ahead of the expression.
+    func callArguments(of node: Node) -> [String?]? {
+        guard let selector = node.namedChildren().last, isArgumentSelector(selector),
+              let part = selector.firstChild(withType: "argument_part"),
+              let arguments = part.firstChild(withType: "arguments")
+        else { return nil }
+        return arguments.namedChildren().map { argument in
+            argument.firstChild(withType: "label")?.firstChild(withType: "identifier")?.text(in: context)
+        }
+    }
+
     /// The trailing `selector` that carries the call's arguments — what makes the shape a call at
     /// all rather than a plain property access.
     private func isArgumentSelector(_ node: Node) -> Bool {

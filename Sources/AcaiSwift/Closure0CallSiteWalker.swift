@@ -22,7 +22,8 @@ final class Closure0CallSiteWalker: SyntaxVisitor {
         collected.append(CallSite(
             receiver: elementReceiver,
             methodName: memberAccess.declName.baseName.text,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            arguments: node.callSiteArguments
         ))
         return .visitChildren
     }

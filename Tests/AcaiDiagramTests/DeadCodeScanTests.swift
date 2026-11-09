@@ -22,10 +22,13 @@ struct DeadCodeScanTests {
         kind: MemberKind,
         access: AccessLevel = .private,
         modifiers: [Modifier] = [],
-        annotations: [String] = []
+        annotations: [String] = [],
+        labels: [String] = []
     ) -> Member {
         Member(
-            name: name, kind: kind, accessLevel: access, modifiers: modifiers, annotations: annotations,
+            name: name, kind: kind, accessLevel: access, modifiers: modifiers,
+            parameters: labels.map { Parameter(externalName: $0, internalName: $0) },
+            annotations: annotations,
             location: SourceLocation(filePath: "S.swift", line: 1, column: 1))
     }
 
@@ -70,7 +73,7 @@ struct DeadCodeScanTests {
             languages: LanguageConfigurationResolver(
                 single: LanguageConfiguration(entryPointMarkers: EntryPointMarkers(annotations: ["test"])))).report
 
-        #expect(report.candidates.map(\.id) == ["Service.unused"])
+        #expect(report.candidates.map(\.id) == ["Service.unused()"])
         // A resolved call to `used` means coverage is 100%.
         #expect(report.coverage.fraction == 1)
     }
@@ -79,7 +82,7 @@ struct DeadCodeScanTests {
         let report = DeadCodeScan(
             artifact: artifact(),
             languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
-        #expect(report.candidates.map(\.id).sorted() == ["Service.lifecycle", "Service.unused"])
+        #expect(report.candidates.map(\.id).sorted() == ["Service.lifecycle()", "Service.unused()"])
     }
 
     /// A bare `foo()` reaches the scan as a `.selfDispatch` call site; the private method it targets
@@ -126,7 +129,7 @@ struct DeadCodeScanTests {
         let report = DeadCodeScan(
             artifact: CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [proto, tool]),
             languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
-        #expect(report.candidates.map(\.id) == ["Tool.orphan"])
+        #expect(report.candidates.map(\.id) == ["Tool.orphan()"])
     }
 
     /// Two declared types sharing a simple name each call their own method by self-dispatch; neither
@@ -160,7 +163,7 @@ struct DeadCodeScanTests {
     /// declaration is invisible where it does not — the whole point of `deadCodeMemberKinds`.
     @Test func anUncalledInitializerIsACandidateOnlyWhereTheLanguageScansInitializers() {
         let types = [widget([member("init", kind: .initializer)])]
-        #expect(report(types, scanning: [.method, .initializer]).candidates.map(\.id) == ["Widget.init"])
+        #expect(report(types, scanning: [.method, .initializer]).candidates.map(\.id) == ["Widget.init()"])
         #expect(report(types).candidates.isEmpty)
     }
 
@@ -172,22 +175,41 @@ struct DeadCodeScanTests {
         #expect(report(types, scanning: [.method, .initializer]).candidates.isEmpty)
     }
 
-    /// Overloads share the `Type.name` id, so a call to one initializer spares every overload — a known
-    /// false-negative trade-off, pinned so a change to it is deliberate.
-    @Test func aCallToOneInitializerOverloadSparesTheOther() {
+    /// A call naming one overload leaves the other reported: each overload is its own candidate, and
+    /// the call's argument list says which one it reached (issue #506).
+    @Test func aCallToOneInitializerOverloadStillReportsTheOther() {
+        let types = [widget([
+            method("make", access: .public, calls: [
+                CallSite(receiver: .type("Widget"), methodName: "init", arguments: ["name"])
+            ]),
+            member("init", kind: .initializer, labels: ["name"]),
+            member("init", kind: .initializer, labels: ["name", "size"])
+        ])]
+        #expect(
+            report(types, scanning: [.method, .initializer]).candidates.map(\.id) == ["Widget.init(name:,size:)"])
+    }
+
+    /// A call whose argument list narrows to neither overload falls back to the name, which spares
+    /// both: an uncalled overload reported dead because the graph guessed its sibling would be worse
+    /// than one it missed.
+    @Test func anUnnarrowableCallSparesEveryOverload() {
         let types = [widget([
             method("make", access: .public, calls: [CallSite(receiver: .type("Widget"), methodName: "init")]),
-            member("init", kind: .initializer),
-            member("init", kind: .initializer)
+            member("init", kind: .initializer, labels: ["name"]),
+            member("init", kind: .initializer, labels: ["size"])
         ])]
         #expect(report(types, scanning: [.method, .initializer]).candidates.isEmpty)
     }
 
-    /// The same collapse from the other side: uncalled overloads are each reported under the one id.
-    @Test func uncalledInitializerOverloadsAreReportedUnderOneId() {
-        let types = [widget([member("init", kind: .initializer), member("init", kind: .initializer)])]
+    /// Uncalled overloads are separate candidates, each named by its own parameter list.
+    @Test func uncalledInitializerOverloadsAreReportedSeparately() {
+        let types = [widget([
+            member("init", kind: .initializer, labels: ["name"]),
+            member("init", kind: .initializer, labels: ["name", "size"])
+        ])]
         #expect(
-            report(types, scanning: [.method, .initializer]).candidates.map(\.id) == ["Widget.init", "Widget.init"])
+            report(types, scanning: [.method, .initializer]).candidates.map(\.id)
+                == ["Widget.init(name:)", "Widget.init(name:,size:)"])
     }
 
     @Test func theReportNamesTheKindsItScannedInDeclarationOrder() {
@@ -217,7 +239,7 @@ struct DeadCodeScanTests {
 
     @Test func anUncalledSubscriptIsACandidateOnlyWhereTheLanguageScansSubscripts() {
         let types = [widget([member("subscript", kind: .subscript)])]
-        #expect(report(types, scanning: [.method, .subscript]).candidates.map(\.id) == ["Widget.subscript"])
+        #expect(report(types, scanning: [.method, .subscript]).candidates.map(\.id) == ["Widget.subscript()"])
         #expect(report(types).candidates.isEmpty)
     }
 
@@ -280,7 +302,7 @@ struct DeadCodeScanTests {
             inheritedTypes: [TypeReference(name: "Makeable")],
             members: [method("init")],
             location: SourceLocation(filePath: "Tool.swift", line: 1, column: 1))
-        #expect(report([proto, tool]).candidates.map(\.id) == ["Tool.init"])
+        #expect(report([proto, tool]).candidates.map(\.id) == ["Tool.init()"])
     }
 }
 

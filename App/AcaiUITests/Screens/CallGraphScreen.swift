@@ -1,17 +1,20 @@
 import XCTest
 
 final class CallGraphScreen: DiagramScreenBase {
-    /// Keyed by `CallGraph.Node.id` (`"Type.method"`) — no separate stable id, same caveat as
-    /// `ClassDiagramScreen.typeNode`.
+    /// Keyed by `CallGraph.Node.id`, which carries the member's parameter list
+    /// (`"Derived.doWork()"`) — no separate stable id, same caveat as `ClassDiagramScreen.typeNode`.
     func node(id: String) -> XCUIElement {
         app.descendants(matching: .any)["diagram.callGraphNode.\(id)"]
     }
 
-    /// A method node as VoiceOver reads it: labelled `Type.method` and carrying a non-empty description.
-    func describedNode(id: String) -> XCUIElement {
+    /// A method node as VoiceOver reads it: carrying a non-empty description, and labelled
+    /// `CallGraph.Node.label` — which is *not* the id, since a node shows its parameter list only
+    /// where a namesake in the graph makes it ambiguous. Both are passed so a drift between them
+    /// fails here rather than silently matching nothing.
+    func describedNode(id: String, label: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(
             format: "identifier == %@ AND label == %@ AND value != nil AND value != ''",
-            "diagram.callGraphNode.\(id)", id
+            "diagram.callGraphNode.\(id)", label
         )).firstMatch
     }
 

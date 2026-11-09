@@ -12,6 +12,12 @@ public protocol CallSiteSyntax {
 
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite?
 
+    /// The argument list of the call at `node`, one entry per argument carrying its label where the
+    /// language labels arguments. `nil` when this node exposes no argument list, which leaves
+    /// overload selection to fall back on the called member's name. Default: the named children of
+    /// the node's `arguments` field, unlabelled.
+    func callArguments(of node: Node) -> [String?]?
+
     /// Local-variable name → provably-declared type, so calls on locals resolve
     /// (`var x = Foo(); x.method()`). Default: no locals. A language overrides this to recognise its
     /// typed/constructed local declarations, emitting only provable types.
@@ -21,6 +27,12 @@ public protocol CallSiteSyntax {
 extension CallSiteSyntax {
 
     public func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] { [:] }
+
+    public func callArguments(of node: Node) -> [String?]? {
+        node.child(byFieldName: "arguments").map { list in
+            list.namedChildren().map { _ in nil }
+        }
+    }
 
     /// Lets a language's ``localBindings(in:scope:)`` write only a per-node recogniser. A later
     /// binding for the same name wins.
@@ -62,7 +74,10 @@ public struct CallSiteResolver {
     }
 
     private func collect(_ node: Node, scope: CallSiteScope, into sites: inout [CallSite]) {
-        if let site = syntax.resolveCallSite(node, scope: scope) {
+        if var site = syntax.resolveCallSite(node, scope: scope) {
+            // Collected here rather than in each language's resolver so every grammar records the
+            // call's arity by default, from the one node that classified as a call.
+            site.arguments = syntax.callArguments(of: node)
             sites.append(site)
         }
         for child in node.namedChildren() {
