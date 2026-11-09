@@ -135,6 +135,11 @@ A skipped file is not a silent one: it becomes a `skipped` parse diagnostic carr
 Both are counted by [`analyze --health`](#analyze), so a type you expected to find and can't is
 explained rather than simply absent.
 
+**Sources in another encoding are analysed, not dropped.** A file that isn't valid UTF-8 — Latin-1
+and CP1252 are common in older C, C++ and Java code — is read with each invalid byte replaced by
+U+FFFD, so its types are still extracted, and it carries a `lossyDecoding` diagnostic naming it: an
+identifier spelled with a replaced byte is not the one in the source.
+
 **Symbolic links are followed.** A workspace that symlinks a shared package into place — common in
 JavaScript monorepos and Bazel-style layouts — is analyzed rather than silently losing that
 directory. Each directory is entered at most once however many links alias it, so a link pointing at
@@ -215,7 +220,10 @@ looking at without guessing from a decode failure; a file written before this fi
 
 `--health`'s diagnostics include `skipped` (a file over the size ceiling) and `invalidPattern` (a
 `.gitignore` line no rule could be read from) alongside the parser's own `error`, `missing`,
-`unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed).
+`unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed). Two more kinds are
+reported but don't lower the score: `incompleteDiscovery` (a build manifest that couldn't be read or
+fully interpreted, so discovery fell back to probing the filesystem) and `lossyDecoding` (a source
+that isn't valid UTF-8, analysed with each invalid byte replaced by U+FFFD).
 
 The report also carries the scope the parse ran over, under `discoveredRoots`: one entry per project
 root discovery claimed, each with its `path` (relative to the analysed folder, `"."` for the folder
