@@ -223,7 +223,7 @@ A realistic loop:
 | --- | --- | --- |
 | Swift | SwiftSyntax | Fullest support — includes cyclomatic complexity. |
 | Kotlin | Tree-sitter | Full types, members, generics, enum raw values, complexity. |
-| Java | Tree-sitter | As Kotlin, plus enum constructor arguments as associated values. |
+| Java | Tree-sitter | As Kotlin — enum constructor arguments land in the raw value. |
 | TypeScript | Tree-sitter | Interfaces, enums, typed members — the full picture. |
 | JavaScript | Tree-sitter | ⚠️ Thin: no type annotations, so little beyond inheritance. |
 | Dart | Tree-sitter | Mixins, abstract classes; filters `*.g.dart`, `*.freezed.dart` and friends. |
