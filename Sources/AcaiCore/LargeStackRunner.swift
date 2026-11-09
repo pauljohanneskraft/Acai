@@ -48,7 +48,7 @@ public struct LargeStackRunner: Sendable {
     private func start(_ body: @escaping @Sendable () -> Void) {
         let thread = Thread(block: body)
         thread.stackSize = stackSize
-        thread.name = "com.acai.parse"
+        thread.name = "com.acai.large-stack"
         thread.start()
     }
 
