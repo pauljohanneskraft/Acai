@@ -14,7 +14,24 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
     public var moduleMetricDeltas: [ModuleMetricDelta]
     public var typeMetricDeltas: [TypeMetricDelta]
 
-    public init(types: TypeDelta = .empty, relationships: RelationshipDelta = .empty, metrics: MetricDelta = .empty) {
+    /// Free (non-member) function signatures. The only place a C or Python codebase's top-level
+    /// code shows up, since neither hangs it off a type.
+    public var addedFunctions: [String]
+    public var removedFunctions: [String]
+    public var changedFunctions: [MemberChange]
+
+    /// Module-scope variable signatures.
+    public var addedGlobals: [String]
+    public var removedGlobals: [String]
+    public var changedGlobals: [MemberChange]
+
+    public init(
+        types: TypeDelta = .empty,
+        relationships: RelationshipDelta = .empty,
+        metrics: MetricDelta = .empty,
+        functions: MemberDelta = .empty,
+        globals: MemberDelta = .empty
+    ) {
         self.addedTypes = types.added
         self.removedTypes = types.removed
         self.changedTypes = types.changed
@@ -23,6 +40,12 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
         self.changedRelationships = relationships.changed
         self.moduleMetricDeltas = metrics.modules
         self.typeMetricDeltas = metrics.types
+        self.addedFunctions = functions.added
+        self.removedFunctions = functions.removed
+        self.changedFunctions = functions.changed
+        self.addedGlobals = globals.added
+        self.removedGlobals = globals.removed
+        self.changedGlobals = globals.changed
     }
 
     /// `true` only when nothing changed structurally *or* metrically — a refactor that shifts
@@ -32,6 +55,8 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
             && addedRelationships.isEmpty && removedRelationships.isEmpty
             && changedRelationships.isEmpty
             && moduleMetricDeltas.isEmpty && typeMetricDeltas.isEmpty
+            && addedFunctions.isEmpty && removedFunctions.isEmpty && changedFunctions.isEmpty
+            && addedGlobals.isEmpty && removedGlobals.isEmpty && changedGlobals.isEmpty
     }
 
     public func status(of relationship: Relationship) -> DeltaStatus {

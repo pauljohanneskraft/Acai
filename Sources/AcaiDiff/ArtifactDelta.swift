@@ -33,6 +33,26 @@ public struct RelationshipDelta: Sendable {
     public static let empty = RelationshipDelta()
 }
 
+/// Added, removed and signature-changed declarations of one flat group — a type's members, or an
+/// artifact's free functions or module-scope variables.
+public struct MemberDelta: Sendable {
+    /// Excludes members in `changed`.
+    public var added: [String]
+    /// Excludes members in `changed`.
+    public var removed: [String]
+    public var changed: [MemberChange]
+
+    public init(added: [String] = [], removed: [String] = [], changed: [MemberChange] = []) {
+        self.added = added
+        self.removed = removed
+        self.changed = changed
+    }
+
+    public var isEmpty: Bool { added.isEmpty && removed.isEmpty && changed.isEmpty }
+
+    public static let empty = MemberDelta()
+}
+
 public struct MetricDelta: Sendable {
     public var modules: [ModuleMetricDelta]
     public var types: [TypeMetricDelta]

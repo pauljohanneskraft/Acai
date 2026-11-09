@@ -16,19 +16,21 @@ public struct ArtifactDiffer: Sendable {
     public func diff(old: CodeArtifact, new: CodeArtifact) -> ArtifactDiff {
         let oldTypes = old.flattened()
         let newTypes = new.flattened()
-        let oldByID = Dictionary(oldTypes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let newByID = Dictionary(newTypes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let identities = TypeIdentities(old: oldTypes, new: newTypes, moduleResolver: moduleResolver)
+        let oldByIdentity = Dictionary(
+            oldTypes.map { (identities.old.identity(of: $0.id), $0) }, uniquingKeysWith: { first, _ in first })
+        let newByIdentity = Dictionary(
+            newTypes.map { (identities.new.identity(of: $0.id), $0) }, uniquingKeysWith: { first, _ in first })
 
-        let oldIDs = Set(oldByID.keys)
-        let newIDs = Set(newByID.keys)
-
-        let addedTypes = newIDs.subtracting(oldIDs).sorted()
-        let removedTypes = oldIDs.subtracting(newIDs).sorted()
-        let changedTypes = newIDs.intersection(oldIDs).compactMap { id -> TypeChange? in
-            typeChange(id: id, old: oldByID[id]!, new: newByID[id]!)
+        let addedTypes = newByIdentity.filter { oldByIdentity[$0.key] == nil }.map(\.value.id).sorted()
+        let removedTypes = oldByIdentity.filter { newByIdentity[$0.key] == nil }.map(\.value.id).sorted()
+        let changedTypes = newByIdentity.compactMap { identity, newType -> TypeChange? in
+            guard let oldType = oldByIdentity[identity] else { return nil }
+            return typeChange(id: newType.id, old: oldType, new: newType)
         }.sorted { $0.id < $1.id }
 
-        let (added, removed, changed) = relationshipDiff(old: old.relationships, new: new.relationships)
+        let (added, removed, changed) = relationshipDiff(
+            old: old.relationships, new: new.relationships, identities: identities)
 
         let oldMetrics = old.computeMetrics()
         let newMetrics = new.computeMetrics()
@@ -38,7 +40,9 @@ public struct ArtifactDiffer: Sendable {
             relationships: RelationshipDelta(added: added, removed: removed, changed: changed),
             metrics: MetricDelta(
                 modules: moduleMetricDeltas(old: oldMetrics, new: newMetrics),
-                types: typeMetricDeltas(old: oldMetrics, new: newMetrics))
+                types: typeMetricDeltas(old: oldMetrics, new: newMetrics)),
+            functions: memberDelta(old: old.freestandingFunctions, new: new.freestandingFunctions),
+            globals: memberDelta(old: old.globalVariables, new: new.globalVariables)
         )
     }
 
@@ -47,13 +51,15 @@ public struct ArtifactDiffer: Sendable {
     /// added and unchanged ones and a caller can tint each by `ArtifactDiff.status(of:)`.
     public func unionArtifact(old: CodeArtifact, new: CodeArtifact) -> CodeArtifact {
         let newFlat = new.flattened()
-        let newIDs = Set(newFlat.map(\.id))
-        let removedTypes = old.flattened().filter { !newIDs.contains($0.id) }
+        let oldFlat = old.flattened()
+        let identities = TypeIdentities(old: oldFlat, new: newFlat, moduleResolver: moduleResolver)
+        let newIdentities = Set(newFlat.map { identities.new.identity(of: $0.id) })
+        let removedTypes = oldFlat.filter { !newIdentities.contains(identities.old.identity(of: $0.id)) }
         let types = newFlat + removedTypes
 
-        var seenKeys = Set(new.relationships.map(\.diffKey))
+        var seenKeys = Set(new.relationships.map { identities.new.key(of: $0) })
         var relationships = new.relationships
-        for rel in old.relationships where seenKeys.insert(rel.diffKey).inserted {
+        for rel in old.relationships where seenKeys.insert(identities.old.key(of: rel)).inserted {
             relationships.append(rel)
         }
 
@@ -61,9 +67,16 @@ public struct ArtifactDiffer: Sendable {
             metadata: new.metadata,
             types: types.sorted { $0.id < $1.id },
             relationships: relationships.sorted { $0.diffKey < $1.diffKey },
-            freestandingFunctions: new.freestandingFunctions,
-            globalVariables: new.globalVariables
+            freestandingFunctions: union(new.freestandingFunctions, old.freestandingFunctions),
+            globalVariables: union(new.globalVariables, old.globalVariables)
         )
+    }
+
+    /// `preferred` first, then every declaration of `other` whose signature it does not already
+    /// carry — so a removed free function survives into the delta diagram.
+    private func union(_ preferred: [Member], _ other: [Member]) -> [Member] {
+        var seen = Set(preferred.map(\.diffSignature))
+        return preferred + other.filter { seen.insert($0.diffSignature).inserted }
     }
 
     // MARK: - Types
@@ -72,35 +85,43 @@ public struct ArtifactDiffer: Sendable {
         let kindChange = old.kind == new.kind ? nil : Change(before: old.kind, after: new.kind)
         let accessChange = old.accessLevel == new.accessLevel
             ? nil : Change(before: old.accessLevel, after: new.accessLevel)
+        let members = memberDelta(old: old.members, new: new.members)
 
-        let oldSignatures = Set(old.members.map(\.diffSignature))
-        let newSignatures = Set(new.members.map(\.diffSignature))
-        var addedSignatures = newSignatures.subtracting(oldSignatures)
-        var removedSignatures = oldSignatures.subtracting(newSignatures)
-
-        let changedMembers = pairedMemberChanges(
-            oldMembers: old.members.filter { removedSignatures.contains($0.diffSignature) },
-            newMembers: new.members.filter { addedSignatures.contains($0.diffSignature) }
-        )
-        for change in changedMembers {
-            removedSignatures.remove(change.before)
-            addedSignatures.remove(change.after)
-        }
-
-        let addedMembers = addedSignatures.sorted()
-        let removedMembers = removedSignatures.sorted()
-
-        guard kindChange != nil || accessChange != nil
-            || !addedMembers.isEmpty || !removedMembers.isEmpty || !changedMembers.isEmpty
-        else { return nil }
+        guard kindChange != nil || accessChange != nil || !members.isEmpty else { return nil }
 
         return TypeChange(
             id: id,
             kindChange: kindChange,
             accessChange: accessChange,
-            addedMembers: addedMembers,
-            removedMembers: removedMembers,
-            changedMembers: changedMembers.sorted { $0.name < $1.name }
+            addedMembers: members.added,
+            removedMembers: members.removed,
+            changedMembers: members.changed
+        )
+    }
+
+    // MARK: - Members
+
+    /// Set-differences two flat member lists by signature, then pairs what is left by name. Used for
+    /// a type's members and for an artifact's free functions and module-scope variables alike.
+    private func memberDelta(old: [Member], new: [Member]) -> MemberDelta {
+        let oldSignatures = Set(old.map(\.diffSignature))
+        let newSignatures = Set(new.map(\.diffSignature))
+        var addedSignatures = newSignatures.subtracting(oldSignatures)
+        var removedSignatures = oldSignatures.subtracting(newSignatures)
+
+        let changed = pairedMemberChanges(
+            oldMembers: old.filter { removedSignatures.contains($0.diffSignature) },
+            newMembers: new.filter { addedSignatures.contains($0.diffSignature) }
+        )
+        for change in changed {
+            removedSignatures.remove(change.before)
+            addedSignatures.remove(change.after)
+        }
+
+        return MemberDelta(
+            added: addedSignatures.sorted(),
+            removed: removedSignatures.sorted(),
+            changed: changed.sorted { $0.name < $1.name }
         )
     }
 
@@ -119,10 +140,12 @@ public struct ArtifactDiffer: Sendable {
     // MARK: - Relationships
 
     private func relationshipDiff(
-        old: [Relationship], new: [Relationship]
+        old: [Relationship], new: [Relationship], identities: TypeIdentities
     ) -> (added: [Relationship], removed: [Relationship], changed: [RelationshipChange]) {
-        let oldByKey = Dictionary(old.map { ($0.diffKey, $0) }, uniquingKeysWith: { first, _ in first })
-        let newByKey = Dictionary(new.map { ($0.diffKey, $0) }, uniquingKeysWith: { first, _ in first })
+        let oldByKey = Dictionary(
+            old.map { (identities.old.key(of: $0), $0) }, uniquingKeysWith: { first, _ in first })
+        let newByKey = Dictionary(
+            new.map { (identities.new.key(of: $0), $0) }, uniquingKeysWith: { first, _ in first })
 
         let oldKeys = Set(oldByKey.keys)
         let newKeys = Set(newByKey.keys)
@@ -130,7 +153,7 @@ public struct ArtifactDiffer: Sendable {
         let added = newByKey.filter { !oldKeys.contains($0.key) }.map(\.value)
         let removed = oldByKey.filter { !newKeys.contains($0.key) }.map(\.value)
         let changed = newByKey.compactMap { key, after -> RelationshipChange? in
-            guard let before = oldByKey[key], before != after else { return nil }
+            guard let before = oldByKey[key], before.labelSignature != after.labelSignature else { return nil }
             return RelationshipChange(before: before, after: after)
         }
 
