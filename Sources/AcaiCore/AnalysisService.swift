@@ -22,8 +22,6 @@ public struct AnalysisService: Sendable {
     /// read whole. Defaults to ``AcaiConstants/maximumSourceFileBytes``.
     public let maximumSourceFileBytes: Int
 
-    /// Records how many array elements the file-, language- and spec-level merges copy. `nil` (the
-    /// default) records nothing; a regression test injects one to assert the merge stays linear.
     public let mergeElementCounter: MergeElementCounter?
 
     public var registry: LanguageRegistry { LanguageRegistry(parsers: parsers) }

@@ -1,7 +1,6 @@
 import Foundation
 
-/// Writes a synthetic source corpus for the performance regression tests. The same seed and shape
-/// always produce byte-identical files, so one run's counters are comparable with another's.
+/// A synthetic source corpus whose files are byte-identical for the same seed and shape.
 public struct SourceCorpusGenerator: Sendable {
 
     public enum Language: String, Sendable, CaseIterable {
@@ -17,8 +16,7 @@ public struct SourceCorpusGenerator: Sendable {
             }
         }
 
-        /// Java declares no extensions, so ``SourceCorpusGenerator/Shape/extensionsPerFile`` is
-        /// inert for it rather than approximated by some other declaration.
+        /// Java has no extensions, so ``SourceCorpusGenerator/Shape/extensionsPerFile`` is inert for it.
         var hasExtensions: Bool { self == .swift }
     }
 
@@ -26,8 +24,7 @@ public struct SourceCorpusGenerator: Sendable {
         public var files: Int
         public var typesPerFile: Int
         public var extensionsPerFile: Int
-        /// How many of a file's types nest a type under one shared name, so ids collide across files
-        /// the way a real corpus's repeated `Error`/`Configuration` nestings do.
+        /// How many of a file's types nest a type named `Shared`, so simple names repeat across files.
         public var sameNamedNestedTypesPerFile: Int
         /// Parenthesis nesting of the one expression in each generated method.
         public var expressionDepth: Int
@@ -57,7 +54,6 @@ public struct SourceCorpusGenerator: Sendable {
         self.seed = seed
     }
 
-    /// The corpus as `(fileName, text)` pairs, in generation order.
     public func sources() -> [(fileName: String, text: String)] {
         var random = SeededGenerator(seed: seed)
         var result: [(fileName: String, text: String)] = []
@@ -70,7 +66,6 @@ public struct SourceCorpusGenerator: Sendable {
         return result
     }
 
-    /// Writes the corpus into `directory`, creating it if needed, and returns the files written.
     @discardableResult
     public func write(into directory: URL) throws -> [URL] {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

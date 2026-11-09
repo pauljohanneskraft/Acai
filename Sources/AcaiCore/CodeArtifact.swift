@@ -173,12 +173,7 @@ extension CodeArtifact {
             + types.count + relationships.count + freestandingFunctions.count + globalVariables.count
     }
 
-    /// Concatenates `fragments` in order with each array's capacity reserved up front, so assembling
-    /// a group costs one copy per element rather than one per fragment — the difference between a
-    /// linear and a quadratic merge in the number of files.
-    ///
-    /// `nil` for no fragments; one fragment is adopted untouched, which is what keeps the spec- and
-    /// language-level merges free in a project with one of each.
+    /// Concatenates in one pass; `nil` for no fragments, and a single fragment is adopted without copying.
     public init?(merging fragments: [CodeArtifact], countingInto counter: MergeElementCounter? = nil) {
         guard let first = fragments.first else { return nil }
         guard fragments.count > 1 else {

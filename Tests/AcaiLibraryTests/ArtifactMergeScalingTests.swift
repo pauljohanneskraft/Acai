@@ -3,10 +3,7 @@ import Testing
 import AcaiArtifactGenerator
 import AcaiLibrary
 
-/// `CodeArtifact(merging:)` replaced a fold of pairwise `merging(with:)`, which copied both arrays
-/// once per fragment and made assembling an analysis quadratic in the number of files (#485). These
-/// pin the merged result unchanged and the copying linear, counted rather than timed so the
-/// assertion means the same thing on loaded CI hardware.
+/// Copies are counted rather than timed, so the bounds hold on loaded CI hardware.
 @Suite("Artifact merge scaling")
 struct ArtifactMergeScalingTests {
 
@@ -71,6 +68,8 @@ struct ArtifactMergeScalingTests {
         try SourceCorpusGenerator(shape: .init(files: files, typesPerFile: 8), seed: 99).write(into: directory)
         let artifact = try await service.analyzeProject(at: directory, allowedLanguages: [])
         #expect(artifact.types.count >= files * 8)
+        #expect(counter.elementsCopied >= artifact.metadata.filePaths.count)
+        #expect(counter.elementsCopied <= 2 * artifact.elementCount)
         return counter.elementsCopied
     }
 
