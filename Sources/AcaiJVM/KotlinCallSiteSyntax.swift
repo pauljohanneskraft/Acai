@@ -44,6 +44,19 @@ struct KotlinCallSiteSyntax: CallSiteSyntax {
         )
     }
 
+    /// Kotlin hangs the argument list off a `call_suffix` rather than an `arguments` field. A
+    /// `value_argument` only carries a label when it spells one with `=`; without that check a
+    /// positional argument that happens to be a bare identifier would read as a label.
+    func callArguments(of node: Node) -> [String?]? {
+        guard let suffix = node.firstChild(withType: "call_suffix"),
+              let values = suffix.firstChild(withType: "value_arguments")
+        else { return nil }
+        return values.allChildren(withType: "value_argument").map { argument in
+            guard argument.hasChild(withType: "=") else { return nil }
+            return argument.firstChild(withType: "simple_identifier")?.text(in: context)
+        }
+    }
+
     /// Provable local-variable types: an explicit annotation (`val x: Foo`), a `Foo()` construction of
     /// a declared type (`val x = Foo()`), or a same-type method call with an unambiguous return type
     /// (`val x = compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.

@@ -2,21 +2,13 @@ import AcaiCore
 import AcaiDiagram
 
 extension DeadCodeScan.Candidate {
-    /// `id` is `"TypeName.methodName"` for a type's member, or a bare function name for a
-    /// freestanding function — resolved structurally by splitting on the last `.` and checking
-    /// whether the prefix names a real type in `artifact`, since the candidate carries no
-    /// structured kind of its own.
+    /// The declaration this candidate points at, from the type and member names it carries. A
+    /// `typeName` naming no type in `artifact` — a qualified id for a type that two modules declare
+    /// under the same simple name — leaves the member unqualified rather than inventing a type.
     func codeElementReference(in artifact: CodeArtifact) -> CodeElementReference? {
-        guard let dotRange = id.range(of: ".", options: .backwards) else {
-            return .method(typeName: nil, methodName: id)
+        guard let typeName, artifact.flattened().contains(where: { $0.name == typeName }) else {
+            return .method(typeName: nil, methodName: memberName)
         }
-        let typeName = String(id[..<dotRange.lowerBound])
-        let methodName = String(id[dotRange.upperBound...])
-        guard !typeName.isEmpty, !methodName.isEmpty,
-              artifact.flattened().contains(where: { $0.name == typeName })
-        else {
-            return .method(typeName: nil, methodName: id)
-        }
-        return .method(typeName: typeName, methodName: methodName)
+        return .method(typeName: typeName, methodName: memberName)
     }
 }

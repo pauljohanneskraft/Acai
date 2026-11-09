@@ -13,6 +13,10 @@ import AcaiCore
 /// free function of that name, since a bare `foo()` is recorded as `.selfDispatch`), a `.free`
 /// when `methodName` matches a free function. The resolved share is `CallGraph.coverage`.
 ///
+/// Where a name matches several declarations — an overload set, or same-named free functions in
+/// different files — ``OverloadResolver`` picks by the call's argument list and the call site's own
+/// file; a call it cannot narrow to one is attributed to every candidate.
+///
 /// A value you instantiate with the scope/title and ask to `build(from:)`.
 public struct CallGraphBuilder: Sendable {
     public var scope: CallGraphScope
@@ -33,12 +37,21 @@ public struct CallGraphBuilder: Sendable {
     }
 }
 
+/// One declaration a call site was attributed to: the member, the type that owns it (`nil` for a
+/// free function), and whether that owner is inside the graph's scope.
+private struct CallTarget {
+    let type: TypeDeclaration?
+    let member: Member
+    let inScope: Bool
+}
+
 private struct CallGraphAccumulator {
     private let identityResolver: TypeIdentityResolver
     private let nodeIdentity: CallGraphNodeIdentity
     private let typesByID: [String: TypeDeclaration]
-    private let methodKeys: Set<String>
-    private let freeFunctionNames: Set<String>
+    /// Type id → member name → every declaration of that name, so an overload set arrives whole.
+    private let membersByTypeID: [String: [String: [Member]]]
+    private let freeFunctionsByName: [String: [Member]]
     private let allTypes: [TypeDeclaration]
     private let freeFunctions: [Member]
     private let modules: ModuleMap
@@ -57,12 +70,10 @@ private struct CallGraphAccumulator {
         identityResolver = TypeIdentityResolver(types: types)
         nodeIdentity = CallGraphNodeIdentity(types: types)
         typesByID = Dictionary(types.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        var keys: Set<String> = []
-        for type in types {
-            for member in type.members { keys.insert("\(type.id).\(member.name)") }
-        }
-        methodKeys = keys
-        freeFunctionNames = Set(freeFunctions.map(\.name))
+        membersByTypeID = Dictionary(
+            types.map { ($0.id, Dictionary(grouping: $0.members, by: \.name)) },
+            uniquingKeysWith: { first, _ in first })
+        freeFunctionsByName = Dictionary(grouping: freeFunctions, by: \.name)
     }
 
     mutating func run(scope: CallGraphScope) {
@@ -70,7 +81,7 @@ private struct CallGraphAccumulator {
         let inScopeIDs = Set(inScopeTypes.map(\.id))
         for type in inScopeTypes {
             for member in type.members where !member.callSites.isEmpty {
-                let fromID = ensureNode(for: type, methodName: member.name, inScope: true)
+                let fromID = ensureNode(for: type, member: member, inScope: true)
                 accumulate(
                     callSites: member.callSites, callerType: type,
                     fromID: fromID, inScopeIDs: inScopeIDs
@@ -79,7 +90,7 @@ private struct CallGraphAccumulator {
         }
         // Free functions are callers everywhere except a single-type focus.
         for function in scopedFreeFunctions(scope) where !function.callSites.isEmpty {
-            let fromID = ensureNode(for: nil, methodName: function.name, inScope: true)
+            let fromID = ensureNode(for: nil, member: function, inScope: true)
             accumulate(callSites: function.callSites, callerType: nil, fromID: fromID, inScopeIDs: inScopeIDs)
         }
     }
@@ -103,7 +114,8 @@ private struct CallGraphAccumulator {
         callSites: [CallSite], callerType: TypeDeclaration?, fromID: String, inScopeIDs: Set<String>
     ) {
         for site in callSites {
-            guard let target = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs) else {
+            let targets = resolve(site: site, callerType: callerType, inScopeIDs: inScopeIDs)
+            guard !targets.isEmpty else {
                 if constructsTypeWithImplicitInitializer(site) {
                     total += 1
                     resolved += 1
@@ -112,40 +124,64 @@ private struct CallGraphAccumulator {
                 }
                 continue
             }
+            // One call site, however many declarations its name could not be narrowed past.
             total += 1
             resolved += 1
-            let toID = ensureNode(for: target.type, methodName: target.methodName, inScope: target.inScope)
-            weights[Pair(from: fromID, to: toID), default: 0] += 1
+            for target in targets {
+                let toID = ensureNode(for: target.type, member: target.member, inScope: target.inScope)
+                weights[Pair(from: fromID, to: toID), default: 0] += 1
+            }
         }
     }
 
     private func resolve(
         site: CallSite, callerType: TypeDeclaration?, inScopeIDs: Set<String>
-    ) -> (type: TypeDeclaration?, methodName: String, inScope: Bool)? {
+    ) -> [CallTarget] {
         switch site.receiver {
         case .type(let receiver):
             // A bare receiver name shared by two or more declared types can't be attributed to
             // either without guessing, so it is left unresolved rather than bound to a first match.
-            guard case .resolved(let id) = identityResolver.resolve(receiver), let type = typesByID[id.value],
-                  methodKeys.contains("\(id.value).\(site.methodName)") else {
-                return nil
-            }
-            return (type, site.methodName, inScopeIDs.contains(id.value))
+            guard case .resolved(let id) = identityResolver.resolve(receiver), let type = typesByID[id.value]
+            else { return [] }
+            return members(of: type, site: site, inScope: inScopeIDs.contains(id.value))
         case .selfDispatch:
-            if let callerType, methodKeys.contains("\(callerType.id).\(site.methodName)") {
-                return (callerType, site.methodName, inScopeIDs.contains(callerType.id))
+            if let callerType {
+                let own = members(of: callerType, site: site, inScope: inScopeIDs.contains(callerType.id))
+                if !own.isEmpty { return own }
             }
             // A bare `foo()` tagged `.selfDispatch` may actually be a free function.
-            guard freeFunctionNames.contains(site.methodName) else { return nil }
-            return (nil, site.methodName, false)
+            return freeFunctionTargets(site: site)
         case .free:
-            guard freeFunctionNames.contains(site.methodName) else { return nil }
-            return (nil, site.methodName, false)
+            return freeFunctionTargets(site: site)
         case .unknown, .unresolvedTypeName, .propertyChain, .ownProperty, .ownPropertyElement, .ownMethodReturn:
             // `CodeArtifact.resolvingCallSiteReceivers()` already promoted whatever it could to
             // `.type`; anything still deferred here is genuinely unresolvable.
-            return nil
+            return []
         }
+    }
+
+    private func members(of type: TypeDeclaration, site: CallSite, inScope: Bool) -> [CallTarget] {
+        let candidates = membersByTypeID[type.id]?[site.methodName] ?? []
+        return OverloadResolver(candidates: candidates)
+            .targets(of: site)
+            .map { CallTarget(type: type, member: $0, inScope: inScope) }
+    }
+
+    /// A free function is keyed by its file, so resolution prefers a declaration in the calling
+    /// file: a file-local function shadows a same-named one elsewhere in the project. Only when the
+    /// call's own file declares none does the whole project's set of that name apply.
+    private func freeFunctionTargets(site: CallSite) -> [CallTarget] {
+        let candidates = freeFunctionsByName[site.methodName] ?? []
+        guard candidates.count > 1 else {
+            return candidates.map { CallTarget(type: nil, member: $0, inScope: false) }
+        }
+        let sameFile = site.location.map { location in
+            candidates.filter { $0.location?.filePath == location.filePath }
+        } ?? []
+        let pool = sameFile.isEmpty ? candidates : sameFile
+        return OverloadResolver(candidates: pool)
+            .targets(of: site)
+            .map { CallTarget(type: nil, member: $0, inScope: false) }
     }
 
     /// A resolved construction with no declared initializer to target: there is no member for an edge,
@@ -187,17 +223,35 @@ private struct CallGraphAccumulator {
 
     // MARK: - Nodes
 
-    private mutating func ensureNode(for type: TypeDeclaration?, methodName: String, inScope: Bool) -> String {
-        let typeName = type.map(nodeIdentity.nodeName) ?? ""
-        let id = typeName.isEmpty ? methodName : "\(typeName).\(methodName)"
-        if var existing = nodes[id] {
+    private mutating func ensureNode(for type: TypeDeclaration?, member: Member, inScope: Bool) -> String {
+        guard let type else { return ensureFreeFunctionNode(member, inScope: inScope) }
+        let id = nodeIdentity.nodeID(for: member, in: type)
+        return ensureNode(
+            CallGraph.Node(
+                id: id, typeName: nodeIdentity.nodeName(for: type), methodName: member.name,
+                inScope: inScope, signature: member.callGraphParameterList),
+            inScope: inScope)
+    }
+
+    private mutating func ensureFreeFunctionNode(_ function: Member, inScope: Bool) -> String {
+        ensureNode(
+            CallGraph.Node(
+                id: nodeIdentity.nodeID(forFreeFunction: function), typeName: "",
+                methodName: function.name, inScope: inScope,
+                signature: function.callGraphParameterList,
+                container: nodeIdentity.container(forFreeFunction: function)),
+            inScope: inScope)
+    }
+
+    private mutating func ensureNode(_ node: CallGraph.Node, inScope: Bool) -> String {
+        if var existing = nodes[node.id] {
             if inScope && !existing.inScope {
                 existing.inScope = true
-                nodes[id] = existing
+                nodes[node.id] = existing
             }
         } else {
-            nodes[id] = CallGraph.Node(id: id, typeName: typeName, methodName: methodName, inScope: inScope)
+            nodes[node.id] = node
         }
-        return id
+        return node.id
     }
 }

@@ -46,7 +46,8 @@ struct CallSiteCollector {
                 receiver: resolved.receiver,
                 methodName: methodName,
                 location: sourceLocations.sourceLocation(of: node),
-                isConstruction: methodName == "init"
+                isConstruction: methodName == "init",
+                arguments: node.callSiteArguments
             )
         }
         if let declRef = callee.as(DeclReferenceExprSyntax.self) {
@@ -56,7 +57,8 @@ struct CallSiteCollector {
                     receiver: knownTypeNames.contains(name) ? .type(name) : .unresolvedTypeName(name),
                     methodName: "init",
                     location: sourceLocations.sourceLocation(of: node),
-                    isConstruction: true
+                    isConstruction: true,
+                    arguments: node.callSiteArguments
                 )
             }
             return implicitCall(named: name, node: node, propertyMap: propertyMap)
@@ -78,7 +80,8 @@ struct CallSiteCollector {
         else { return nil }
         return CallSite(
             receiver: resolved.receiver, methodName: "subscript",
-            location: sourceLocations.sourceLocation(of: node), isSpeculative: true
+            location: sourceLocations.sourceLocation(of: node), isSpeculative: true,
+            arguments: node.callSiteArguments
         )
     }
 
@@ -106,7 +109,8 @@ struct CallSiteCollector {
         else { return nil }
         return CallSite(
             receiver: origin, methodName: memberAccess.declName.baseName.text,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            arguments: node.callSiteArguments
         )
     }
 
@@ -121,7 +125,8 @@ struct CallSiteCollector {
         return CallSite(
             receiver: .selfDispatch,
             methodName: name,
-            location: sourceLocations.sourceLocation(of: node)
+            location: sourceLocations.sourceLocation(of: node),
+            arguments: node.callSiteArguments
         )
     }
 

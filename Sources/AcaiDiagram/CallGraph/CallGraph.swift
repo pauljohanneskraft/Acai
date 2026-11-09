@@ -13,8 +13,9 @@ public struct CallGraph: Codable, Hashable, Sendable {
     // MARK: - Node
 
     public struct Node: Codable, Hashable, Sendable, Identifiable {
-        /// Stable id: `"TypeName.methodName"` for methods, `"methodName"` for free functions. When
-        /// two declared types share a simple name, the qualified type id disambiguates instead.
+        /// Stable id, as ``CallGraphNodeIdentity`` spells it: the owning type (or, for a free
+        /// function, the declaring file) then the member name and its parameter list, so overloads
+        /// and same-named file-local functions are separate nodes.
         public var id: String
         /// The owning type's simple name, or its qualified id when another declared type shares that
         /// simple name; empty for a free function.
@@ -23,15 +24,35 @@ public struct CallGraph: Codable, Hashable, Sendable {
         /// `true` when the method belongs to the scoped focus (vs. an out-of-scope callee
         /// pulled in as a leaf), so the app can de-emphasise external leaves.
         public var inScope: Bool
+        /// The parameter list that distinguishes this node from its same-named overloads, as
+        /// ``Member/callGraphParameterList`` renders it. `nil` for a member that declares none.
+        public var signature: String?
+        /// What qualifies a free function in place of a type: the name of the file declaring it,
+        /// which is also what scopes its id. `nil` for a member of a type, and for a free function
+        /// whose parser recorded no location.
+        public var container: String?
 
-        public init(id: String, typeName: String, methodName: String, inScope: Bool) {
+        public init(
+            id: String,
+            typeName: String,
+            methodName: String,
+            inScope: Bool,
+            signature: String? = nil,
+            container: String? = nil
+        ) {
             self.id = id
             self.typeName = typeName
             self.methodName = methodName
             self.inScope = inScope
+            self.signature = signature
+            self.container = container
         }
 
-        public var label: String { typeName.isEmpty ? methodName : "\(typeName).\(methodName)" }
+        public var label: String {
+            let qualifier = typeName.isEmpty ? (container ?? "") : typeName
+            let qualified = qualifier.isEmpty ? methodName : "\(qualifier).\(methodName)"
+            return qualified + (signature ?? "")
+        }
 
         public var isFreeFunction: Bool { typeName.isEmpty }
     }
