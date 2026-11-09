@@ -78,6 +78,14 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
 
     private(set) var configuration: SequenceDiagramConfiguration
     private var diff: SequenceDiagramDiff?
+    private var configLookups: SequenceConfigModel
+
+    /// A draft of the configuration in effect, reusing lookups derived once per analysis.
+    var draftConfiguration: SequenceConfigModel {
+        var draft = configLookups
+        draft.restore(configuration)
+        return draft
+    }
 
     let history = DiagramHistoryManager<[String: CGPoint]>()
     let rotorPlanCache = DiagramRotorPlanCache()
@@ -93,6 +101,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
         self.artifact = artifact
         self.comparisonArtifact = comparisonArtifact
         self.configuration = configuration
+        self.configLookups = SequenceConfigModel(artifact: artifact)
         // Lifelines move horizontally only; `moveNode` already pins every override's `y` to 0, so
         // restored positions round-trip cleanly with no normalization needed here.
         self.positionOverrides = restoredPositions
@@ -121,6 +130,7 @@ final class SequenceDiagramViewModel: ObservableObject, LayoutBackedCanvas {
     func updateComparison(artifact: CodeArtifact, comparison: CodeArtifact?) {
         self.artifact = artifact
         self.comparisonArtifact = comparison
+        configLookups = SequenceConfigModel(artifact: artifact)
         rebuildDiagram()
         positionOverrides = [:]
         selectedNodeIDs = []

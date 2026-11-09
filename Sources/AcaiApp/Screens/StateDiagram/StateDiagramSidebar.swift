@@ -17,7 +17,6 @@ enum StateDiagramSidebarTab {
 /// on an explicit "Apply" tap rather than live-binding on every change.
 struct StateDiagramSidebar: View {
     @ObservedObject var viewModel: StateDiagramViewModel
-    let artifact: CodeArtifact
     let codebaseID: UUID
     @Binding var tab: StateDiagramSidebarTab
     let onApply: (StateDiagramConfiguration) -> Void
@@ -27,23 +26,13 @@ struct StateDiagramSidebar: View {
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
 
-    /// Mirrors `StateConfigSheet`'s own private `Scope`, duplicated rather than shared since that
-    /// sheet stays untouched (it's also the creation-time flow presented from
-    /// `CodebaseDetailView`).
-    private enum Scope: Hashable {
-        case type(String)
-        case globals
-    }
-
-    @State private var draftScope: Scope?
-    @State private var draftVariableName: String
-    @State private var draftMaxStates: Int
+    /// The staged variable choice, plus the scope/variable option lists it is picked from.
+    @State private var config: StateConfigModel
     @State private var scopeQuery = ""
     @State private var variableQuery = ""
 
     init(
         viewModel: StateDiagramViewModel,
-        artifact: CodeArtifact,
         codebaseID: UUID,
         tab: Binding<StateDiagramSidebarTab>,
         onApply: @escaping (StateDiagramConfiguration) -> Void,
@@ -52,22 +41,13 @@ struct StateDiagramSidebar: View {
         onExportImage: @escaping () -> Void
     ) {
         self.viewModel = viewModel
-        self.artifact = artifact
         self.codebaseID = codebaseID
         self._tab = tab
         self.onApply = onApply
         self.onApplyFilter = onApplyFilter
         self.onSaveAsFreeform = onSaveAsFreeform
         self.onExportImage = onExportImage
-        if let configuration = viewModel.configuration {
-            _draftScope = State(initialValue: configuration.typeName.map(Scope.type) ?? .globals)
-            _draftVariableName = State(initialValue: configuration.variableName)
-            _draftMaxStates = State(initialValue: configuration.maxStates)
-        } else {
-            _draftScope = State(initialValue: nil)
-            _draftVariableName = State(initialValue: "")
-            _draftMaxStates = State(initialValue: 20)
-        }
+        _config = State(initialValue: viewModel.draftConfiguration)
     }
 
     var body: some View {
@@ -102,11 +82,11 @@ struct StateDiagramSidebar: View {
     // MARK: - Settings
 
     private var isDraftUnchanged: Bool {
-        guard let configuration = viewModel.configuration else { return draftScope == nil }
-        let draftTypeName: String? = if case .type(let name) = draftScope { name } else { nil }
-        return draftTypeName == configuration.typeName
-            && draftVariableName == configuration.variableName
-            && draftMaxStates == configuration.maxStates
+        guard let configuration = viewModel.configuration else { return config.scope == nil }
+        let draft = config.configuration
+        return draft.typeName == configuration.typeName
+            && draft.variableName == configuration.variableName
+            && draft.maxStates == configuration.maxStates
     }
 
     private var settingsContent: some View {
@@ -119,25 +99,22 @@ struct StateDiagramSidebar: View {
                 LabeledContent {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $scopeQuery)
-                        Picker(.app("View.StateDiagramSidebar.Scope"), selection: $draftScope) {
-                            Text(.app("View.StateDiagramSidebar.Select")).tag(Scope?.none)
-                            if !artifact.globalVariables.isEmpty {
-                                Text(.app("View.StateDiagramSidebar.GlobalVariables")).tag(Scope?.some(.globals))
+                        Picker(.app("View.StateDiagramSidebar.Scope"), selection: scope) {
+                            Text(.app("View.StateDiagramSidebar.Select")).tag(StateConfigModel.Scope?.none)
+                            if config.hasGlobalVariables {
+                                Text(.app("View.StateDiagramSidebar.GlobalVariables"))
+                                    .tag(StateConfigModel.Scope?.some(.globals))
                             }
-                            let names = artifact.typeDisplayNames
-                            let scopeIDs = typeIDsWithStoredProperties(names)
+                            let names = config.typeDisplayNames
+                            let scopeIDs = config.typeIDsWithStoredProperties
                                 .filtered(by: scopeQuery, label: names.name(forID:))
                             ForEach(scopeIDs, id: \.self) { id in
-                                Text(verbatim: names.name(forID: id)).tag(Scope?.some(.type(id)))
+                                Text(verbatim: names.name(forID: id))
+                                    .tag(StateConfigModel.Scope?.some(.type(id)))
                             }
                         }
                         .labelsHidden()
                         .accessibilityIdentifier("diagram.stateSettings.scopePicker")
-                        .onChange(of: draftScope) { _, _ in
-                            if !draftVariableNames.contains(draftVariableName) {
-                                draftVariableName = draftVariableNames.first ?? ""
-                            }
-                        }
                     }
                 } label: {
                     Text(.app("View.StateDiagramSidebar.Scope"))
@@ -146,14 +123,14 @@ struct StateDiagramSidebar: View {
                 LabeledContent {
                     VStack(alignment: .leading, spacing: .spacingXS) {
                         PickerFilterField(text: $variableQuery)
-                        Picker(.app("View.StateDiagramSidebar.Variable"), selection: $draftVariableName) {
+                        Picker(.app("View.StateDiagramSidebar.Variable"), selection: $config.variableName) {
                             Text(.app("View.StateDiagramSidebar.Select")).tag("")
-                            ForEach(draftVariableNames.filtered(by: variableQuery), id: \.self) {
+                            ForEach(config.variableNames.filtered(by: variableQuery), id: \.self) {
                                 Text(verbatim: $0).tag($0)
                             }
                         }
                         .labelsHidden()
-                        .disabled(draftScope == nil)
+                        .disabled(config.scope == nil)
                         .accessibilityIdentifier("diagram.stateSettings.variablePicker")
                     }
                 } label: {
@@ -161,15 +138,15 @@ struct StateDiagramSidebar: View {
                 }
 
                 LabeledContent {
-                    Stepper(value: $draftMaxStates, in: 5...100, step: 5) {
-                        Text(draftMaxStates, format: .number)
+                    Stepper(value: $config.maxStates, in: 5...100, step: 5) {
+                        Text(config.maxStates, format: .number)
                     }
                 } label: {
                     Text(.app("View.StateDiagramSidebar.MaxStates"))
                 }
 
                 Button(.app("View.StateDiagramSidebar.Apply"), action: apply)
-                    .disabled(isDraftUnchanged || draftScope == nil || draftVariableName.isEmpty)
+                    .disabled(isDraftUnchanged || !config.canCreate)
                     .accessibilityIdentifier("diagram.stateSettings.applyButton")
             }
 
@@ -197,10 +174,12 @@ struct StateDiagramSidebar: View {
     }
 
     private func apply() {
-        let typeName: String? = if case .type(let name) = draftScope { name } else { nil }
-        onApply(StateDiagramConfiguration(
-            typeName: typeName, variableName: draftVariableName, maxStates: draftMaxStates
-        ))
+        onApply(config.configuration)
+    }
+
+    /// Goes through `selectScope` so a scope change drops a variable the new scope lacks.
+    private var scope: Binding<StateConfigModel.Scope?> {
+        Binding(get: { config.scope }, set: { config.selectScope($0) })
     }
 
     private var filterBinding: Binding<AcaiQuality.Selector?> {
@@ -209,64 +188,6 @@ struct StateDiagramSidebar: View {
             set: { onApplyFilter($0) }
         )
     }
-
-    // MARK: - Lookups (duplicated from `StateConfigSheet`, kept independent since that type is also
-    // the creation-time flow presented from `CodebaseDetailView` and stays untouched)
-
-    private var typesWithStoredProperties: [TypeDeclaration] {
-        var result: [TypeDeclaration] = []
-        func walk(_ types: [TypeDeclaration]) {
-            for type in types {
-                if type.members.contains(where: { $0.kind == .property && !$0.isComputed }) {
-                    result.append(type)
-                }
-                walk(type.nestedTypes)
-            }
-        }
-        walk(artifact.types)
-        return result
-    }
-
-    private func typeIDsWithStoredProperties(_ names: TypeDisplayNames) -> [String] {
-        typesWithStoredProperties.map(\.id).uniqued()
-            .sorted { (names.name(forID: $0), $0) < (names.name(forID: $1), $1) }
-    }
-
-    private var draftVariableNames: [String] {
-        let members: [Member]
-        switch draftScope {
-        case .type(let id):
-            members = typesWithStoredProperties.first { $0.id == id }?
-                .members.filter { $0.kind == .property && !$0.isComputed } ?? []
-        case .globals:
-            members = artifact.globalVariables
-        case nil:
-            return []
-        }
-        let plausible = members.filter { isPlausibleStateHolder($0) }.map(\.name)
-        let rest = members.filter { !isPlausibleStateHolder($0) }.map(\.name)
-        return (plausible.uniqued().sorted() + rest.uniqued().sorted()).uniqued()
-    }
-
-    private func isPlausibleStateHolder(_ member: Member) -> Bool {
-        guard let typeName = member.type?.name else { return false }
-        if enumTypeNames.contains(typeName) { return true }
-        let simple = typeName.lowercased()
-        return ["bool", "boolean", "int", "integer", "string"].contains(simple)
-    }
-
-    private var enumTypeNames: Set<String> {
-        var names: Set<String> = []
-        func walk(_ types: [TypeDeclaration]) {
-            for type in types {
-                if type.kind == .enum { names.insert(type.name) }
-                walk(type.nestedTypes)
-            }
-        }
-        walk(artifact.types)
-        return names
-    }
-
 }
 
 /// Split into an extension to stay under the file's own type-body-length limit — same pattern
