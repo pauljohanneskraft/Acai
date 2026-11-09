@@ -43,9 +43,14 @@ public struct DiagramImageRenderer {
             height: contentSize.height + padding * 2
         )
 
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = limits.scale(for: pointSize, requested: scale)
-        guard let cgImage = renderer.cgImage else {
+        let effectiveScale = limits.scale(for: pointSize, requested: scale)
+        // Frees the view graph before encoding rather than whenever a run loop next drains.
+        let image: CGImage? = autoreleasepool {
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = effectiveScale
+            return renderer.cgImage
+        }
+        guard let cgImage = image else {
             throw DiagramImageRenderError.renderingFailed
         }
         return try encoder.encode(cgImage)
