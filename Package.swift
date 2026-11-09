@@ -378,6 +378,15 @@ let package = Package(
         // with no `AcaiCore` dependency. Used only by test targets.
         .target(name: "AcaiArtifactGenerator", dependencies: ["AcaiCore"]),
         .testTarget(name: "AcaiCoreTests", dependencies: ["AcaiCore", "AcaiTestSupport"]),
+        // Java's grammar alone exercises every shared seam, so no plugin is needed.
+        .testTarget(
+            name: "AcaiTreeSitterTests",
+            dependencies: [
+                "AcaiTreeSitter",
+                "AcaiCore",
+                .product(name: "TreeSitterJava", package: "tree-sitter-java"),
+            ]
+        ),
         .testTarget(name: "AcaiSwiftTests", dependencies: ["AcaiSwift", "AcaiCore"]),
         .testTarget(name: "AcaiJSTests", dependencies: ["AcaiJS", "AcaiCore"]),
         .testTarget(name: "AcaiJVMTests", dependencies: ["AcaiJVM", "AcaiCore"]),
@@ -398,9 +407,13 @@ let package = Package(
             dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiArtifactGenerator"],
             exclude: ["Fixtures"]
         ),
-        .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore"]),
+        // `AcaiMCP` is here for `LanguageSurfaceParityTests`, which compares the CLI and MCP language lists.
+        .testTarget(name: "AcaiCLITests", dependencies: ["AcaiCLI", "AcaiCore", "AcaiLibrary", "AcaiMCP"]),
         .testTarget(name: "AcaiMCPTests", dependencies: mcpTestDependencies),
-        .testTarget(name: "AcaiAppModelTests", dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram"]),
+        .testTarget(
+            name: "AcaiAppModelTests",
+            dependencies: ["AcaiAppModel", "AcaiCore", "AcaiDiagram", "AcaiTestSupport"]
+        ),
 
         // MARK: Characterization goldens pinning every parser's whole encoded `CodeArtifact`.
         // `exclude`, not `resources`: the tests read both directories by path (via `#filePath`, like

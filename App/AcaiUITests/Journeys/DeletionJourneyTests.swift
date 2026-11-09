@@ -10,7 +10,9 @@ final class DeletionJourneyTests: UIJourneyTestCase {
         let projectDetail = openSeededProject(analysis: .parsed)
         let codebaseRow = projectDetail.codebaseRow(id: seeded.codebaseID)
 
-        RowDeleteAffordance(app: app).tapDelete(on: codebaseRow, "the seeded codebase's row")
+        RowDeleteAffordance(app: app).tapDelete(
+            on: codebaseRow, "the seeded codebase's row",
+            recoveringThrough: ProjectBrowserScreen(app: app).projectRow(id: seeded.projectID))
         cancelConfirmation()
         XCTAssertTrue(codebaseRow.exists, "cancelling the confirmation must not delete the codebase")
 

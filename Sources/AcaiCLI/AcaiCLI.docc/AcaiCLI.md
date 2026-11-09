@@ -111,7 +111,7 @@ These appear on nearly every command.
 | `--source <source>` | Path to a source directory to analyze on the fly. |
 | `--language <language>` | Restrict analysis to one or more languages. Repeatable. |
 
-`--language` accepts: `swift`, `kotlin`, `java`, `typescript`, `javascript`, `dart`, `python`, `c`, `cpp`. Repeat for several: `--language kotlin --language java`. Unknown values are rejected at parse time.
+`--language` accepts, case-insensitively: `swift`, `kotlin`, `java`, `typescript`, `javascript`, `dart`, `python`, `c`, `cpp`. Repeat for several: `--language kotlin --language java`. Unknown values are rejected at parse time.
 
 `--from` resolves in order: an existing `.json` file path; an existing directory, looked up in the
 shared analysis store by its resolved path (this is how the CLI picks up an analysis the app or an MCP
