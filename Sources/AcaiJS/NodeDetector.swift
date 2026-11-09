@@ -64,7 +64,9 @@ public struct NodeDetector: BuildSystemDetector {
             self.root = root
             self.dirs = discovered.dirs
             self.diagnostics = discovered.diagnostics
-            self.hasTypeScript = SourceFilePresence(extensions: ["ts", "tsx"]).exist(inAnyOf: discovered.dirs)
+            self.hasTypeScript = SourceFilePresence(
+                extensions: Set(JSCodeParser().fileExtensions)
+            ).exist(inAnyOf: discovered.dirs)
         }
 
         func specs(for request: LanguageRequest) -> [SourceSpec] {
@@ -73,7 +75,8 @@ public struct NodeDetector: BuildSystemDetector {
                 specs.append(SourceSpec(language: .typeScript, sourceDirs: dirs, root: root))
             }
             if request.wants(.javaScript), !hasTypeScript || request.explicitlyWants(.javaScript),
-               SourceFilePresence(extensions: ["js", "jsx", "mjs"]).exist(inAnyOf: dirs) {
+               SourceFilePresence(extensions: Set(JSCodeParser(isTypeScript: false).fileExtensions))
+                   .exist(inAnyOf: dirs) {
                 specs.append(SourceSpec(language: .javaScript, sourceDirs: dirs, root: root))
             }
             // A manifest that could not be followed is one fact about the project, not one per

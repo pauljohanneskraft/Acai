@@ -1,0 +1,488 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 69,
+            "endLine" : 14,
+            "filePath" : "storefront.jsx",
+            "line" : 14
+          },
+          "methodName" : "useState",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        },
+        {
+          "location" : {
+            "column" : 99,
+            "endLine" : 16,
+            "filePath" : "storefront.jsx",
+            "line" : 16
+          },
+          "methodName" : "setHovered",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        },
+        {
+          "location" : {
+            "column" : 71,
+            "endLine" : 18,
+            "filePath" : "storefront.jsx",
+            "line" : 18
+          },
+          "methodName" : "onRemove",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 15,
+        "endLine" : 21,
+        "filePath" : "storefront.jsx",
+        "line" : 13
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "CartLine",
+      "parameters" : [
+        {
+          "internalName" : "{ name, quantity, onRemove }",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ]
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    }
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "discoveredRoots" : [
+
+    ],
+    "filePaths" : [
+      "storefront.jsx"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "javaScript"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "source" : "Storefront",
+      "target" : "React.Component"
+    }
+  ],
+  "schemaVersion" : 1,
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "CartTotal",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 15,
+        "endLine" : 11,
+        "filePath" : "storefront.jsx",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "endLine" : 5,
+                "filePath" : "storefront.jsx",
+                "line" : 5
+              },
+              "op" : "assign",
+              "targetName" : "lines",
+              "value" : {
+                "kind" : "expression",
+                "text" : "lines"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "endLine" : 6,
+            "filePath" : "storefront.jsx",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "constructor",
+          "parameters" : [
+            {
+              "internalName" : "lines",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+            "lines"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "endLine" : 10,
+            "filePath" : "storefront.jsx",
+            "line" : 8
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "quantity",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "length",
+            "lines"
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "CartTotal",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "CartTotal"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Storefront",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "React.Component"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 15,
+        "endLine" : 46,
+        "filePath" : "storefront.jsx",
+        "line" : 23
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "endLine" : 26,
+                "filePath" : "storefront.jsx",
+                "line" : 26
+              },
+              "op" : "assign",
+              "targetName" : "state",
+              "value" : {
+                "kind" : "expression",
+                "text" : "{ expanded: false }"
+              }
+            },
+            {
+              "location" : {
+                "column" : 17,
+                "endLine" : 27,
+                "filePath" : "storefront.jsx",
+                "line" : 27
+              },
+              "op" : "assign",
+              "targetName" : "total",
+              "value" : {
+                "kind" : "expression",
+                "text" : "new CartTotal(props.lines)"
+              }
+            }
+          ],
+          "callSites" : [
+            {
+              "isConstruction" : true,
+              "location" : {
+                "column" : 43,
+                "endLine" : 27,
+                "filePath" : "storefront.jsx",
+                "line" : 27
+              },
+              "methodName" : "constructor",
+              "receiver" : {
+                "type" : {
+                  "_0" : "CartTotal"
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "endLine" : 28,
+            "filePath" : "storefront.jsx",
+            "line" : 24
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "constructor",
+          "parameters" : [
+            {
+              "internalName" : "props",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ]
+            }
+          ],
+          "referencedTypeNames" : [
+            "CartTotal",
+            "expanded",
+            "lines",
+            "props",
+            "state",
+            "total"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 17,
+                "endLine" : 31,
+                "filePath" : "storefront.jsx",
+                "line" : 31
+              },
+              "methodName" : "setState",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "endLine" : 32,
+            "filePath" : "storefront.jsx",
+            "line" : 30
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "toggle",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "expanded",
+            "setState",
+            "state"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 71,
+                "endLine" : 37,
+                "filePath" : "storefront.jsx",
+                "line" : 37
+              },
+              "methodName" : "toggle",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "endLine" : 45,
+            "filePath" : "storefront.jsx",
+            "line" : 34
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "render",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "CartLine",
+            "h1",
+            "key",
+            "line",
+            "lines",
+            "map",
+            "name",
+            "onClick",
+            "props",
+            "section",
+            "title",
+            "toggle",
+            "ul"
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Storefront",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Storefront"
+    }
+  ]
+}

@@ -23,6 +23,8 @@ struct ParserGoldenTests {
         .init(parser: JavaCodeParser(), fileName: "Shop.java"),
         .init(parser: JSCodeParser(), fileName: "shop.ts"),
         .init(parser: JSCodeParser(isTypeScript: false), fileName: "shop.js"),
+        .init(parser: JSCodeParser(), fileName: "storefront.tsx"),
+        .init(parser: JSCodeParser(isTypeScript: false), fileName: "storefront.jsx"),
         .init(parser: DartCodeParser(), fileName: "shop.dart"),
         .init(parser: DartCodeParser(), fileName: "globals.dart"),
         .init(parser: DartCodeParser(), fileName: "members.dart"),
