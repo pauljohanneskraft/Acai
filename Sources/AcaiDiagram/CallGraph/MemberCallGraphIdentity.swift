@@ -40,10 +40,14 @@ extension Parameter {
     var callGraphToken: String {
         let label = externalName.flatMap { $0.isEmpty ? nil : "\($0):" }
         switch (label, type?.name) {
-        case (let label?, let type?): return label + type
-        case (let label?, nil): return label
-        case (nil, let type?): return type
-        case (nil, nil): return "_"
+        case (let label?, let type?):
+            return label + type
+        case (let label?, nil):
+            return label
+        case (nil, let type?):
+            return type
+        case (nil, nil):
+            return "_"
         }
     }
 }

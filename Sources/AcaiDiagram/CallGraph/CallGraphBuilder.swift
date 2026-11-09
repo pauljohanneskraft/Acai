@@ -14,8 +14,9 @@ import AcaiCore
 /// when `methodName` matches a free function. The resolved share is `CallGraph.coverage`.
 ///
 /// Where a name matches several declarations — an overload set, or same-named free functions in
-/// different files — ``OverloadResolver`` picks by the call's argument list and the call site's own
-/// file; a call it cannot narrow to one is attributed to every candidate.
+/// different files — ``OverloadResolver`` picks by the call's argument list, and a free-function
+/// call prefers a declaration in the calling file. A call that narrows to none of them is left
+/// unresolved; one that narrows to several is attributed to each.
 ///
 /// A value you instantiate with the scope/title and ask to `build(from:)`.
 public struct CallGraphBuilder: Sendable {
