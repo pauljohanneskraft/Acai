@@ -10,6 +10,7 @@
     }
   ],
   "languages": {
-    "javascript": { "unchecked": ["type"] }
+    "javascript": { "unchecked": ["type"] },
+    "c": { "typeKinds": { "class": "struct" } }
   }
 }
