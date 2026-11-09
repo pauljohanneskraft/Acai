@@ -2,9 +2,7 @@ import Testing
 @testable import AcaiJS
 @testable import AcaiCore
 
-/// The grammar is picked from the file extension, and getting that wrong is silent: the TypeScript
-/// grammar has no JSX, so it yields a partial artifact with `ERROR` nodes rather than refusing the
-/// file. These pin the routing by its observable consequence — the diagnostics — in both directions.
+/// A wrong grammar is silent: it yields a partial artifact with `ERROR` nodes, so these assert the diagnostics.
 @Suite("JS grammar selection")
 struct JSGrammarSelectionTests {
 
@@ -28,16 +26,17 @@ struct JSGrammarSelectionTests {
         #expect(artifact.relationships.contains { $0.target == "React.Component" })
     }
 
-    /// The same source under the TypeScript grammar, which is what `.tsx` used to get. Asserting the
-    /// failure keeps the two grammars from being quietly collapsed back into one.
     @Test("the TypeScript grammar cannot read the same component")
     func typeScriptGrammarRejectsJSX() {
         let artifact = JSCodeParser().parse(source: Self.component, fileName: "badge.ts")
         #expect(!artifact.metadata.parseDiagnostics.isEmpty)
     }
 
-    @Test("a .jsx component parses with no diagnostics")
-    func jsxParsesCleanly() {
+    @Test(
+        "every JavaScript extension parses JSX with no diagnostics",
+        arguments: ["badge.js", "badge.jsx", "badge.mjs", "badge.cjs", "Badge.JSX"]
+    )
+    func javaScriptExtensionsParseJSX(fileName: String) {
         let source = """
         export class Badge extends React.Component {
             render() {
@@ -45,22 +44,35 @@ struct JSGrammarSelectionTests {
             }
         }
         """
-        let artifact = JSCodeParser(isTypeScript: false).parse(source: source, fileName: "badge.jsx")
+        let artifact = JSCodeParser(isTypeScript: false).parse(source: source, fileName: fileName)
         #expect(artifact.metadata.parseDiagnostics.isEmpty)
         #expect(artifact.types.map(\.name) == ["Badge"])
     }
 
-    /// `.mts`/`.cts` take the TypeScript grammar, so their type annotations still have to survive.
-    @Test("TypeScript module extensions keep their annotations", arguments: ["badge.mts", "badge.cts"])
-    func moduleExtensionsParseAsTypeScript(fileName: String) {
+    @Test(
+        "TypeScript extensions keep the angle-bracket cast TSX cannot read",
+        arguments: ["badge.ts", "badge.mts", "badge.cts", "Badge.TS"]
+    )
+    func typeScriptExtensionsParseCasts(fileName: String) {
         let source = """
         export class Badge {
-            label: string = "";
+            label: string = <string>"";
         }
         """
         let artifact = JSCodeParser().parse(source: source, fileName: fileName)
         #expect(artifact.metadata.parseDiagnostics.isEmpty)
         #expect(artifact.types.first?.members.first?.type?.name == "string")
+    }
+
+    @Test("TSX cannot read an angle-bracket cast")
+    func tsxRejectsCasts() {
+        let source = """
+        export class Badge {
+            label: string = <string>"";
+        }
+        """
+        let artifact = JSCodeParser().parse(source: source, fileName: "badge.tsx")
+        #expect(!artifact.metadata.parseDiagnostics.isEmpty)
     }
 
     @Test("every extension a Node project can hold is claimed by exactly one parser")

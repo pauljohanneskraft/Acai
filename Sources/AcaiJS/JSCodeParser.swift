@@ -36,16 +36,13 @@ public struct JSCodeParser: CodeParser {
         grammar(for: fileName).parse(source: source, fileName: fileName)
     }
 
-    /// By extension, never by sniffing the source: the two grammars read `<T>` differently and only
-    /// the extension says which reading the author meant. Every JavaScript extension takes TSX
-    /// because JavaScript has no `<T>x` cast for JSX to clash with.
+    /// Only the extension says whether `<T>x` is a cast or JSX, so the source is never sniffed.
     private func grammar(for fileName: String) -> JSGrammar {
-        ["ts", "mts", "cts"].contains { fileName.hasSuffix(".\($0)") } ? typeScript : tsx
+        let name = fileName.lowercased()
+        return ["ts", "mts", "cts"].contains { name.hasSuffix(".\($0)") } ? typeScript : tsx
     }
 }
 
-/// One grammar plus the extractor run over its trees, so a `.tsx` file yields the shapes a `.ts`
-/// file would and a `.jsx` file those of a `.js` file.
 struct JSGrammar {
     let isTypeScript: Bool
     let grammar: TreeSitterGrammar
