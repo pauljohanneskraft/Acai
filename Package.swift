@@ -388,7 +388,6 @@ let package = Package(
             dependencies: [
                 "AcaiCFamily",
                 "AcaiCore",
-                // A real grammar to drive `TreeSitterGrammar`'s shared parse pipeline with.
                 "AcaiTreeSitter",
                 .product(name: "TreeSitterC", package: "tree-sitter-c"),
             ]

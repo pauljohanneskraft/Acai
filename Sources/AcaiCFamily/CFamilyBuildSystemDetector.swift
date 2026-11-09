@@ -61,18 +61,16 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
     }
 
     /// A declared directory without a listfile of its own is no root, so it stays part of this one.
-    /// A listfile that is there but unreadable is reported, since the roots it declares are missing
-    /// from the result either way.
     private func nestedRoots(at root: URL) -> NestedRoots {
         var nested = NestedRoots()
         for file in subdirectoryFiles {
             let listfile = root.appending(path: file)
-            guard FileManager.default.fileExists(atPath: listfile.path) else { continue }
             do {
                 let declarations = CMakeListsFile(
                     source: try String(contentsOf: listfile, encoding: .utf8)).subdirectories
                 collect(declarations, declaredIn: file, at: root, into: &nested)
             } catch {
+                guard FileManager.default.fileExists(atPath: listfile.path) else { continue }
                 nested.diagnostics.append(unreadableListfileDiagnostic(file, error: error))
             }
         }

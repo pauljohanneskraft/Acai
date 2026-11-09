@@ -230,8 +230,6 @@ struct PythonManifestLayoutTests {
         }
     }
 
-    /// A manifest that is there but cannot be read is not the same as no manifest: the layout it
-    /// declares is lost, so the fallback probe has to be reported rather than taken silently.
     @Test func anUnreadableManifestFallsBackAndRecordsADiagnostic() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("python-layout-\(UUID().uuidString)", isDirectory: true)

@@ -4,8 +4,6 @@ import AcaiTreeSitter
 import TreeSitterC
 import AcaiCFamily
 
-/// `TreeSitterGrammar.parse` attaches the tree's own `ERROR`/missing-node diagnostics to whatever the
-/// extractor returned. An extractor that recorded a diagnostic of its own must keep it.
 @Suite("Tree-sitter grammar diagnostics")
 struct TreeSitterGrammarDiagnosticTests {
 

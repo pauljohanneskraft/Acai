@@ -11,7 +11,7 @@ public struct ParseDiagnostic: Codable, Equatable, Hashable, Sendable {
         /// unresolved (an ambiguous identity — see ``TypeIdentityResolver``) rather than bound to an
         /// arbitrary one. Not a parse failure: the artifact is usable, but an edge may be missing.
         case unresolvedReference
-        /// The file itself could not be read (permissions, invalid encoding) — parsing never ran.
+        /// The file itself could not be read (permissions, a vanished file) — parsing never ran.
         case unreadable
         /// The file was deliberately left out of the analysis — it exceeded the per-file size
         /// ceiling (``AcaiConstants/maximumSourceFileBytes``). The message carries its size, so a
@@ -25,12 +25,10 @@ public struct ParseDiagnostic: Codable, Equatable, Hashable, Sendable {
         /// filesystem. Not a parse failure: the files that were found parsed fine, but the set of
         /// files may not be the set the build system actually compiles.
         case incompleteDiscovery
-        /// The file was not valid UTF-8, so it was decoded with every invalid byte replaced by
-        /// U+FFFD rather than dropped. Not a parse failure: the file was analysed, but an
-        /// identifier spelled with a replaced byte is not the one in the source.
+        /// The file was not valid UTF-8 and was analysed with each invalid byte replaced by U+FFFD.
         case lossyDecoding
 
-        /// Whether the kind says the parse itself went wrong, and so lowers ``HealthCheck``'s score.
+        /// Whether a diagnostic of this kind lowers ``HealthCheck``'s score.
         public var lowersTrust: Bool {
             switch self {
             case .error, .missing, .unresolvedReference, .unreadable, .skipped, .invalidPattern:

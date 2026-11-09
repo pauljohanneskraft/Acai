@@ -66,7 +66,6 @@ struct SourceFileBatchParser {
 
     /// A read failure becomes a `.unreadable` diagnostic rather than failing the whole batch. The size
     /// check resolves the symlink first, since `attributesOfItem(atPath:)` reports a link's own size.
-    /// Strict UTF-8 decoding rejects Latin-1 and CP1252 sources, which `decodedLossily` then rescues.
     private func parseFile(_ file: URL) -> FileOutcome {
         let relativePath = file.relativePath(from: rootURL)
         let resolvedPath = file.resolvingSymlinksInPath().path
@@ -86,9 +85,6 @@ struct SourceFileBatchParser {
         }
     }
 
-    /// Re-reads a file strict UTF-8 decoding rejected, replacing every invalid byte with U+FFFD so
-    /// its types are extracted instead of dropped, and records that substitution on the artifact.
-    /// Only a file that cannot be read at all is still `.unreadable`.
     private func decodedLossily(
         _ file: URL, relativePath: String, strictFailure: any Error
     ) -> FileOutcome {
@@ -99,9 +95,7 @@ struct SourceFileBatchParser {
                 message: strictFailure.localizedDescription
             ))
         }
-        // The failable initializer the rule prefers is the one this method exists to get past:
-        // replacing the invalid bytes is the point. Repairing decoding returns its input unchanged
-        // exactly when that input was valid, which is how the replacement is detected below.
+        // The failable initializer returns nil for invalid UTF-8; replacing those bytes is the point.
         // swiftlint:disable:next optional_data_string_conversion
         let decoded = String(decoding: data, as: UTF8.self)
         var artifact = codeParser.parse(source: decoded, fileName: relativePath)

@@ -3,9 +3,6 @@ import Testing
 import AcaiCore
 @testable import AcaiLibrary
 
-/// A Latin-1 source — the common case in older C, C++ and Java trees — through the real parsers the
-/// app and CLI use, rather than a stub: its types have to come out, and the substitution has to be
-/// reported once.
 @Suite("Non-UTF-8 sources", .timeLimit(.minutes(1)))
 struct LossyDecodingAnalysisTests {
 

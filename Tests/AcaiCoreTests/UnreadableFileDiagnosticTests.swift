@@ -2,10 +2,6 @@ import Foundation
 import Testing
 @testable import AcaiCore
 
-// A source file that can't be read as the engine expects must not vanish silently and must not abort
-// the rest of the analysis. One that is merely in the wrong encoding is decoded with its invalid
-// bytes replaced, so its types survive; one that can't be read at all becomes a `ParseDiagnostic`.
-
 extension CodeArtifact.SourceLanguage {
     fileprivate static let stub = CodeArtifact.SourceLanguage(rawValue: "unreadableFileStub")
 }
@@ -39,8 +35,7 @@ struct UnreadableFileDiagnosticTests {
     func nonUTF8FileIsDecodedLossily() async throws {
         try await withTempDir { root in
             try "Good".write(to: root.appendingPathComponent("good.stub"), atomically: true, encoding: .utf8)
-            // Latin-1, as older C, C++ and Java sources commonly are: 0xFC and 0xDF are each a
-            // lone byte no valid UTF-8 scalar can start with.
+            // In Latin-1, ü and ß are lone bytes that are invalid UTF-8.
             let latin1 = try #require("Widget // Grüße".data(using: .isoLatin1))
             try latin1.write(to: root.appendingPathComponent("latin1.stub"))
 

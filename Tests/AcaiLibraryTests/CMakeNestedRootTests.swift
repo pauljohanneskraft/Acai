@@ -110,8 +110,6 @@ struct CMakeNestedRootTests {
         }
     }
 
-    /// A listfile the detector found but cannot read loses every root it declares, so discovery has
-    /// to say so rather than report the project as a single root.
     @Test func anUnreadableListfileIsReported() throws {
         try withTempDir { root in
             // A directory in the listfile's place: present to the detector, unreadable to the reader.
