@@ -133,7 +133,7 @@
       "target" : "Item"
     }
   ],
-  "schemaVersion" : 1,
+  "schemaVersion" : 2,
   "types" : [
     {
       "accessLevel" : "public",
