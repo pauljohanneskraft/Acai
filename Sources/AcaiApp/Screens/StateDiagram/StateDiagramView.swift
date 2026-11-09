@@ -115,7 +115,7 @@ struct StateDiagramView: View {
 
     private var sidebar: StateDiagramSidebar {
         StateDiagramSidebar(
-            viewModel: viewModel, artifact: artifact, codebaseID: codebase.id, tab: $sidebarTab,
+            viewModel: viewModel, codebaseID: codebase.id, tab: $sidebarTab,
             onApply: { config in
                 viewModel.applyConfiguration(config)
                 model.diagrams.updateStateConfiguration(diagramID: diagram.id, configuration: config)
