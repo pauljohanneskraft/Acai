@@ -608,9 +608,9 @@ key keeps its original name, so the output shape is unchanged by the rename.
 
 > Show the structural delta between two revisions of a codebase.
 
-Reports only what structurally changed — added/removed types, added/removed/changed relationships, and notable metric movement.
+Reports only what structurally changed — added/removed types, added/removed/changed relationships, added/removed/changed free functions and module-scope variables, and notable metric movement.
 
-Each side is a positional stored-analysis name or `.json` path, **or** a directory via `--source-old` / `--source-new`.
+Each side is a positional stored-analysis name or `.json` path, **or** a directory via `--source-old` / `--source-new`. Two sides given as directories are analysed concurrently.
 
 | Flag | Notes |
 | --- | --- |
@@ -631,10 +631,17 @@ acai diff old.json new.json --format json
 acai diff --source-old ./before --source-new ./after --diagram dot --output delta.dot
 ```
 
+Types are matched across the two revisions by **module plus qualified name**, not by artifact id. An id is re-scoped from `Module.Name` to `Path:Name` as soon as a second file declares the same name, and a file-private type is always path-scoped — so matching on the id alone reported an untouched type as removed-and-added whenever an unrelated file started declaring its name, or whenever a private type's file was renamed. The file path enters the match only to separate two declarations of one qualified name inside one module. Relationship endpoints resolve through the same match, so neither does a re-scoped id produce a phantom relationship removal.
+
+**Free functions and module-scope variables** get their own sections, `Free function changes` and `Global variable changes`, each with `+` / `-` / `~` lines carrying the full signature. For a C or Python codebase this is most of the delta, since neither language hangs its top-level code off a type. Two declarations with identical signatures are one entry, so moving a free function between files reports nothing.
+
 Delta colouring: **added green, removed red, changed amber**, with `+` / `−` / `~` badges so status is never conveyed by colour alone. Class, package, coupling and call-graph deltas are coloured in both DOT and Mermaid; sequence and state deltas are coloured in DOT only, because Mermaid's syntax for those has no per-edge colour.
 
 `--format json` output (non-`--diagram`): `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` —
 `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).
+`ArtifactDiff` carries `addedFunctions` / `removedFunctions` / `changedFunctions` and
+`addedGlobals` / `removedGlobals` / `changedGlobals` alongside its type, relationship and metric
+lists; each `changed` entry is `{ name, before, after }` over the two signatures.
 
 ---
 
