@@ -58,7 +58,7 @@
       },
       "members" : [
         {
-          "accessLevel" : "packagePrivate",
+          "accessLevel" : "public",
           "annotations" : [
 
           ],
@@ -83,7 +83,7 @@
             "line" : 7
           },
           "modifiers" : [
-
+            "abstract"
           ],
           "name" : "price",
           "parameters" : [
