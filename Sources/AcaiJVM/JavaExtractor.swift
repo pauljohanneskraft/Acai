@@ -40,15 +40,11 @@ struct JavaExtractor {
         ]).names(in: root) { $0.child(byFieldName: "name").map { $0.text(in: context) } }
 
         var declaredEnumConstants: Set<String> = []
-        func collectEnumConstants(_ node: Node) {
+        root.walkPreorder { node in
             if node.nodeType == "enum_constant", let nameNode = node.child(byFieldName: "name") {
                 declaredEnumConstants.insert(nameNode.text(in: context))
             }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(collectEnumConstants)
-            }
         }
-        collectEnumConstants(root)
 
         self.context = context
         modifiers = JavaModifiers(context: context)

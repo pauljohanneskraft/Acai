@@ -16,15 +16,11 @@ public struct TypeNamePrepass {
     /// Declarations whose name can't be read are skipped.
     public func names(in root: Node, name: (Node) -> String?) -> Set<String> {
         var names: Set<String> = []
-        func walk(_ node: Node) {
+        root.walkPreorder { node in
             if let type = node.nodeType, declarationNodeTypes.contains(type), let typeName = name(node) {
                 names.insert(typeName)
             }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(walk)
-            }
         }
-        walk(root)
         return names
     }
 }

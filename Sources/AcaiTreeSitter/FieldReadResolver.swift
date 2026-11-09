@@ -27,21 +27,13 @@ public struct FieldReadResolver {
     public func reads(in body: Node?, knownProperties: Set<String>) -> [FieldAccess] {
         guard let body, !knownProperties.isEmpty else { return [] }
         var reads: [FieldAccess] = []
-        collect(from: body, knownProperties: knownProperties, into: &reads)
-        return reads
-    }
-
-    private func collect(
-        from node: Node, knownProperties: Set<String>, into reads: inout [FieldAccess]
-    ) {
-        if let nodeType = node.nodeType, identifierTypes.contains(nodeType) {
+        body.walkNamedPreorder { node in
+            guard let nodeType = node.nodeType, identifierTypes.contains(nodeType) else { return }
             let name = node.text(in: context)
             if knownProperties.contains(name) {
                 reads.append(FieldAccess(name: name, receiver: nil, location: node.location(in: context)))
             }
         }
-        for child in node.namedChildren() {
-            collect(from: child, knownProperties: knownProperties, into: &reads)
-        }
+        return reads
     }
 }

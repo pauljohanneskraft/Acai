@@ -48,29 +48,20 @@ struct CFamilyExtractor {
         // Collects the simple name behind every `function_declarator` in the file (free functions,
         // prototypes, and member functions alike).
         var declaredFunctionNames: Set<String> = []
-        func collectFunctionNames(_ node: Node) {
-            if node.nodeType == "function_declarator" {
-                let name = typeReferences.lastComponent(
-                    of: typeReferences.parseDeclarator(node.child(byFieldName: "declarator")).name)
-                if !name.isEmpty { declaredFunctionNames.insert(name) }
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(collectFunctionNames)
-            }
+        root.walkPreorder { node in
+            guard node.nodeType == "function_declarator" else { return }
+            let name = typeReferences.lastComponent(
+                of: typeReferences.parseDeclarator(node.child(byFieldName: "declarator")).name)
+            if !name.isEmpty { declaredFunctionNames.insert(name) }
         }
-        collectFunctionNames(root)
 
         // Collects the name of every `enumerator` in the file.
         var declaredEnumConstants: Set<String> = []
-        func collectEnumConstants(_ node: Node) {
+        root.walkPreorder { node in
             if node.nodeType == "enumerator", let nameNode = node.child(byFieldName: "name") {
                 declaredEnumConstants.insert(nameNode.text(in: context))
             }
-            for index in 0..<node.childCount {
-                node.child(at: index).map(collectEnumConstants)
-            }
         }
-        collectEnumConstants(root)
 
         self.context = context
         self.dialect = dialect

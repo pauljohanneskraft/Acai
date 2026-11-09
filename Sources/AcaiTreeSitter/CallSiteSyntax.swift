@@ -28,13 +28,11 @@ extension CallSiteSyntax {
         in body: Node, binding: (Node) -> (name: String, type: String)?
     ) -> [String: String] {
         var map: [String: String] = [:]
-        func walk(_ node: Node) {
+        body.walkNamedPreorder { node in
             if let found = binding(node), !found.name.isEmpty, !found.type.isEmpty {
                 map[found.name] = found.type
             }
-            for child in node.namedChildren() { walk(child) }
         }
-        walk(body)
         return map
     }
 }
@@ -57,17 +55,12 @@ public struct CallSiteResolver {
         guard let body else { return [] }
         let merged = scope.merging(locals: syntax.localBindings(in: body, scope: scope))
         var sites: [CallSite] = []
-        collect(body, scope: merged, into: &sites)
+        body.walkNamedPreorder { node in
+            if let site = syntax.resolveCallSite(node, scope: merged) {
+                sites.append(site)
+            }
+        }
         return sites
-    }
-
-    private func collect(_ node: Node, scope: CallSiteScope, into sites: inout [CallSite]) {
-        if let site = syntax.resolveCallSite(node, scope: scope) {
-            sites.append(site)
-        }
-        for child in node.namedChildren() {
-            collect(child, scope: scope, into: &sites)
-        }
     }
 }
 

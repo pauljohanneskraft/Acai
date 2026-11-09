@@ -133,9 +133,7 @@ struct PythonMemberExtractor {
         var fields: [Member] = []
         for method in methods {
             guard let body = method.node.child(byFieldName: "body") else { continue }
-            var assignmentNodes: [Node] = []
-            collectAssignmentNodes(body, into: &assignmentNodes)
-            for assign in assignmentNodes {
+            for assign in assignmentNodes(in: body) {
                 guard let left = assign.child(byFieldName: "left"), left.nodeType == "attribute",
                       let object = left.child(byFieldName: "object"), object.nodeType == "identifier",
                       object.text(in: context) == "self",
@@ -166,12 +164,13 @@ struct PythonMemberExtractor {
         return TypeReference(name: function.text(in: context))
     }
 
-    private func collectAssignmentNodes(_ node: Node, into result: inout [Node]) {
-        if node.nodeType == "assignment" || node.nodeType == "augmented_assignment" {
-            result.append(node)
+    private func assignmentNodes(in body: Node) -> [Node] {
+        var found: [Node] = []
+        body.walkNamedPreorder { node in
+            if node.nodeType == "assignment" || node.nodeType == "augmented_assignment" {
+                found.append(node)
+            }
         }
-        for child in node.namedChildren() {
-            collectAssignmentNodes(child, into: &result)
-        }
+        return found
     }
 }

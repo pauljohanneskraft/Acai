@@ -22,11 +22,9 @@ struct JavaFixture {
     /// Every node of `type` in the subtree, in pre-order, unnamed nodes included.
     func nodes(ofType type: String) -> [Node] {
         var found: [Node] = []
-        func walk(_ node: Node) {
+        root.walkPreorder { node in
             if node.nodeType == type { found.append(node) }
-            for child in node.children() { walk(child) }
         }
-        walk(root)
         return found
     }
 
