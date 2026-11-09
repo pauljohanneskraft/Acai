@@ -122,16 +122,7 @@ public struct AnalysisService: Sendable {
         let modules = ModuleMap(roots: discoveredRoots.map(\.path), filePaths: [])
         var parsedSpecs: [ParsedSpec] = []
         var freshEntries: [String: ParsedFileCache.Entry] = [:]
-        let collection = SourceCollection(
-            rootURL: rootURL,
-            index: SourceFileIndex(
-                sourceDirs: specs.flatMap(\.sourceDirs),
-                extensions: Set(parsers.flatMap(\.fileExtensions).map { $0.lowercased() }),
-                excludingDirectories: excludedDirectories,
-                enumerationCounter: directoryEnumerationCounter
-            ),
-            gitignore: gitignore
-        )
+        let collection = sourceCollection(at: rootURL, over: specs, gitignore: gitignore)
         for spec in specs.mergedByLanguage {
             if let parsed = try await parseSpec(
                 spec, from: collection, fileCache: reusable, includingFile: includingFile
@@ -160,6 +151,23 @@ public struct AnalysisService: Sendable {
         result.metadata.parseDiagnostics.append(contentsOf: gitignore?.diagnostics ?? [])
         cache.save(freshEntries)
         return result
+    }
+
+    /// Walks every spec's source directories once, over every registered language's extensions, so
+    /// no spec enumerates the tree again for its own.
+    private func sourceCollection(
+        at rootURL: URL, over specs: [SourceSpec], gitignore: GitignoreFilter?
+    ) -> SourceCollection {
+        SourceCollection(
+            rootURL: rootURL,
+            index: SourceFileIndex(
+                sourceDirs: specs.flatMap(\.sourceDirs),
+                extensions: Set(parsers.flatMap(\.fileExtensions).map { $0.lowercased() }),
+                excludingDirectories: excludedDirectories,
+                enumerationCounter: directoryEnumerationCounter
+            ),
+            gitignore: gitignore
+        )
     }
 
     private func parseSpec(
