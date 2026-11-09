@@ -23,7 +23,6 @@ public enum Modifier: String, Codable, Equatable, Hashable, Sendable, CaseIterab
     case data
     case inner
     case inline
-    case suspend
     case readonly
     case declare
     case const

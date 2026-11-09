@@ -157,6 +157,19 @@ struct KotlinParserTests {
         #expect(artifact.freestandingFunctions[0].name == "greet")
     }
 
+    @Test func suspendFunctionIsAsync() {
+        let source = """
+        class Loader {
+            suspend fun fetch(): Int = 0
+            fun load(): Int = 0
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Loader.kt")
+        let loader = artifact.types[0]
+        #expect(loader.members.first { $0.name == "fetch" }?.modifiers.contains(.async) == true)
+        #expect(loader.members.first { $0.name == "load" }?.modifiers.contains(.async) == false)
+    }
+
     @Test func moduleGlobals() {
         let source = """
         val MAX_RETRIES: Int = 3
