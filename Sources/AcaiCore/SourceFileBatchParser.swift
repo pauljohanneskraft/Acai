@@ -85,12 +85,32 @@ struct SourceFileBatchParser {
             let source = try String(contentsOf: file, encoding: .utf8)
             return .parsed(codeParser.parse(source: source, fileName: relativePath))
         } catch {
+            return decodedLossily(file, relativePath: relativePath, strictFailure: error)
+        }
+    }
+
+    private func decodedLossily(
+        _ file: URL, relativePath: String, strictFailure: any Error
+    ) -> FileOutcome {
+        guard let data = try? Data(contentsOf: file) else {
             return .diagnostic(ParseDiagnostic(
                 location: SourceLocation(filePath: relativePath, line: 0, column: 0),
                 kind: .unreadable,
-                message: error.localizedDescription
+                message: strictFailure.localizedDescription
             ))
         }
+        // The failable initializer returns nil for invalid UTF-8; replacing those bytes is the point.
+        // swiftlint:disable:next optional_data_string_conversion
+        let decoded = String(decoding: data, as: UTF8.self)
+        var artifact = codeParser.parse(source: decoded, fileName: relativePath)
+        guard !decoded.utf8.elementsEqual(data) else { return .parsed(artifact) }
+        artifact.metadata.parseDiagnostics.append(ParseDiagnostic(
+            location: SourceLocation(filePath: relativePath, line: 0, column: 0),
+            kind: .lossyDecoding,
+            message: "\(relativePath) is not valid UTF-8. Every invalid byte was replaced with "
+                + "U+FFFD, so an identifier spelled with one is not the one in the source."
+        ))
+        return .parsed(artifact)
     }
 
     // MARK: - Merging

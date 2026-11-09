@@ -3,8 +3,9 @@ import AcaiCore
 
 /// Reads `pyproject.toml` for the directories it declares. A manifest that is absent, declares no
 /// layout, or names no usable directory yields none, leaving the caller on the conventional `src`
-/// probe. A malformed manifest, or a declared path that does not exist or leads outside the project,
-/// yields a diagnostic — discovery must not fail because a file it merely consults is wrong.
+/// probe. A manifest that cannot be read or is malformed, or a declared path that does not exist or
+/// leads outside the project, yields a diagnostic — discovery must not fail because a file it merely
+/// consults is wrong.
 struct PythonManifest: Sendable {
     private enum DeclaredDirectory {
         case usable(URL)
@@ -21,7 +22,15 @@ struct PythonManifest: Sendable {
 
     func sourceDirectories() -> (directories: [URL], diagnostics: [ParseDiagnostic]) {
         let manifest = root.appendingPathComponent(fileName)
-        guard let contents = try? String(contentsOf: manifest, encoding: .utf8) else { return ([], []) }
+        let contents: String
+        do {
+            contents = try String(contentsOf: manifest, encoding: .utf8)
+        } catch {
+            guard FileManager.default.fileExists(atPath: manifest.path) else { return ([], []) }
+            return ([], [diagnostic(
+                "could not be read (\(error.localizedDescription)); "
+                    + "falling back to the conventional source layout")])
+        }
         let declared: [String]
         do {
             declared = try PythonPackageLayout(TOMLReader(contents).parse()).declaredDirectories
