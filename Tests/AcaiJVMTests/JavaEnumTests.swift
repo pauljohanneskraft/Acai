@@ -41,6 +41,39 @@ struct JavaEnumTests {
         #expect(planet.enumCases.count == 2)
         #expect(planet.enumCases[0].name == "EARTH")
         #expect(planet.enumCases[1].name == "MARS")
+        #expect(planet.enumCases[0].rawValue == "5.976e+24, 6.37814e6")
+        #expect(planet.enumCases[1].rawValue == "6.421e+23, 3.3972e6")
+        // Associated values are Swift-only: there they are per-instance payload types, here a
+        // fixed constant argument.
+        #expect(planet.enumCases.allSatisfy { $0.associatedValues.isEmpty })
+    }
+
+    @Test func enumWithoutArgumentsCarriesNoRawValue() {
+        let source = """
+        public enum Direction {
+            NORTH, SOUTH;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Direction.java")
+        #expect(artifact.types[0].enumCases.allSatisfy { $0.rawValue == nil })
+    }
+
+    @Test func enumWithAStringArgument() {
+        let source = """
+        public enum Category {
+            FOOD(1, "food");
+
+            private final int code;
+            private final String label;
+
+            Category(int code, String label) {
+                this.code = code;
+                this.label = label;
+            }
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Category.java")
+        #expect(artifact.types[0].enumCases.first?.rawValue == "1, \"food\"")
     }
 
     @Test func enumWithInterfaces() {
