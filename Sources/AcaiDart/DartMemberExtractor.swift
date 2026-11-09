@@ -94,6 +94,16 @@ struct DartMemberExtractor {
     func enumConstant(_ node: Node) -> EnumCase? {
         let name = identifierName(of: node)
         guard !name.isEmpty else { return nil }
-        return EnumCase(name: name, location: node.location(in: context))
+        return EnumCase(
+            name: name,
+            rawValue: constructorArguments(of: node)?.argumentListText(in: context),
+            location: node.location(in: context)
+        )
+    }
+
+    /// An enhanced enum's constant wraps its arguments in an `argument_part`; a plain one has none.
+    private func constructorArguments(of node: Node) -> Node? {
+        node.firstChild(withType: "arguments")
+            ?? node.firstChild(withType: "argument_part")?.firstChild(withType: "arguments")
     }
 }

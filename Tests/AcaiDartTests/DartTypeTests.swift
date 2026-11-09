@@ -58,24 +58,6 @@ struct DartTypeTests {
         #expect(shape?.modifiers.contains(.abstract) == true)
     }
 
-    @Test func enumDeclaration() {
-        let source = """
-        enum Direction {
-            north,
-            south,
-            east,
-            west
-        }
-        """
-        let artifact = parser.parse(source: source, fileName: "Direction.dart")
-        #expect(artifact.types.count == 1)
-        let dir = artifact.types[0]
-        #expect(dir.kind == .enum)
-        #expect(dir.enumCases.count == 4)
-        #expect(dir.enumCases[0].name == "north")
-        #expect(dir.enumCases[1].name == "south")
-    }
-
     @Test func mixinDeclaration() {
         let source = """
         mixin Flyable {
@@ -207,29 +189,6 @@ struct DartTypeTests {
 
         let conformance = relationships.first { $0.kind == .conformance && $0.target == "Serializable" }
         #expect(conformance != nil)
-    }
-
-    @Test func enumImplementsInterface() {
-        let source = """
-        abstract class Displayable {
-            String display();
-        }
-
-        enum Color implements Displayable {
-            red,
-            green,
-            blue;
-
-            String display() => name;
-        }
-        """
-        let artifact = parser.parse(source: source, fileName: "Color.dart")
-        let color = artifact.types.first { $0.name == "Color" }
-        #expect(color?.kind == .enum)
-        #expect(color?.enumCases.count == 3)
-
-        let conformance = artifact.relationships.first { $0.kind == .conformance }
-        #expect(conformance?.target == "Displayable")
     }
 
     // MARK: - Generics

@@ -77,14 +77,4 @@ struct JavaParameterExtractor {
         }
         return params
     }
-
-    // MARK: - Enum Constant Arguments
-
-    /// Every argument recorded as a raw-text `Parameter` — enum-constant arguments aren't typed.
-    func argumentsAsParameters(_ node: Node) -> [Parameter] {
-        node.namedChildren().compactMap { child in
-            let argText = child.text(in: context)
-            return argText.isEmpty ? nil : Parameter(internalName: argText)
-        }
-    }
 }
