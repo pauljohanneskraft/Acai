@@ -35,7 +35,7 @@ extension AcaiCommand {
         var sourceNew: String?
 
         @Option(name: .long, help: ArgumentHelp(
-            "Limit on-the-fly analysis to one or more languages (\(LanguageOption.allValuesList))."
+            "Limit on-the-fly analysis to one or more languages (\(LanguageNameCatalog.standard.namesList))."
         ))
         var language: [LanguageOption] = []
 
