@@ -46,7 +46,8 @@ struct CoordinateAssigner {
         for layer in layers {
             for nodeID in layer {
                 guard let currentPos = positions[nodeID] else { continue }
-                let neighborXValues = (adjacency[nodeID] ?? []).compactMap { positions[$0]?.x }
+                // Sorted so the float sum, and so the coordinate, doesn't depend on hash order.
+                let neighborXValues = (adjacency[nodeID] ?? []).sorted().compactMap { positions[$0]?.x }
                 guard !neighborXValues.isEmpty else { continue }
                 let avgX = neighborXValues.reduce(0, +) / CGFloat(neighborXValues.count)
                 positions[nodeID]?.x += (avgX - currentPos.x) * 0.3  // damping factor

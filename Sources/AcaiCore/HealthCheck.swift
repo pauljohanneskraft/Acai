@@ -5,7 +5,7 @@ public struct HealthCheck: Sendable {
     public struct Report: Codable, Equatable, Sendable {
         /// Heuristic trust score in `0...1` (1 = no diagnostics). Defined as
         /// `1 - min(1, diagnostics / max(1, types))`: one diagnostic per type drives it to 0.
-        /// `incompleteDiscovery` is reported but not scored: it says nothing about the parse.
+        /// A kind whose ``ParseDiagnostic/Kind/lowersTrust`` is false is reported but not scored.
         public var score: Double
         public var typeCount: Int
         public var diagnosticCount: Int
@@ -51,7 +51,7 @@ public struct HealthCheck: Sendable {
         let typeCount = artifact.flattened().count
         let countsByKind = Dictionary(
             grouping: diagnostics, by: { $0.kind.rawValue }).mapValues(\.count)
-        let scored = diagnostics.filter { $0.kind != .incompleteDiscovery }
+        let scored = diagnostics.filter(\.kind.lowersTrust)
         let penalty = min(1, Double(scored.count) / Double(max(1, typeCount)))
         return Report(
             score: 1 - penalty,

@@ -118,7 +118,7 @@ struct SequenceDiagramView: View {
     /// Save as Freeform/Export Image move here from the toolbar.
     private var sidebar: SequenceDiagramSidebar {
         SequenceDiagramSidebar(
-            viewModel: viewModel, artifact: artifact, codebaseID: codebase.id, tab: $sidebarTab,
+            viewModel: viewModel, codebaseID: codebase.id, tab: $sidebarTab,
             onApply: { config in
                 viewModel.applyConfiguration(config)
                 model.diagrams.updateSequenceConfiguration(diagramID: diagram.id, configuration: config)
