@@ -75,16 +75,17 @@ final class GeneratedDiagramScreenshotTests: UIJourneyTestCase {
         )
         callGraph.createButton.tapWhenReady("the call graph configuration's Create button")
 
-        callGraph.node(id: "Derived.doWork").waitOrFail("the Derived.doWork node", timeout: .uiWork)
-        XCTAssertTrue(callGraph.node(id: "Helper.performTask").exists, "Helper.performTask should be drawn")
-        XCTAssertTrue(callGraph.node(id: "Worker.execute").exists, "Worker.execute should be drawn")
-        callGraph.describedNode(id: "Derived.doWork").waitOrFail("the Derived.doWork node, described to VoiceOver")
+        callGraph.node(id: "Derived.doWork()").waitOrFail("the Derived.doWork node", timeout: .uiWork)
+        XCTAssertTrue(callGraph.node(id: "Helper.performTask()").exists, "Helper.performTask should be drawn")
+        XCTAssertTrue(callGraph.node(id: "Worker.execute()").exists, "Worker.execute should be drawn")
+        callGraph.describedNode(id: "Derived.doWork()", label: "Derived.doWork")
+            .waitOrFail("the Derived.doWork node, described to VoiceOver")
         callGraph.describedCall.waitOrFail("a call edge, described to VoiceOver")
 
         callGraph.tapFitToView()
         validateScreenshot("CallGraph", state: "populated")
 
-        callGraph.filterEverythingAway(hiding: callGraph.node(id: "Derived.doWork"))
-        callGraph.clearEmptyFilter(restoring: callGraph.node(id: "Derived.doWork"))
+        callGraph.filterEverythingAway(hiding: callGraph.node(id: "Derived.doWork()"))
+        callGraph.clearEmptyFilter(restoring: callGraph.node(id: "Derived.doWork()"))
     }
 }
