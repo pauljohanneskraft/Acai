@@ -171,6 +171,15 @@ Check against a declarative rules file: forbidden dependencies, cycles, layering
 
 Cycle findings are appended only when `explore` is set *and* the rules file doesn't already own the cycle check. The rules-file schema is documented under [AcaiCLI](/documentation/acaicli/).
 
+A module cycle carries the reference behind every hop, so it can be acted on without reading files to find it. `detail.witnesses` holds them as `source type → target type (kind) at file:line`, one per hop, and the same text is appended to `message`:
+
+```json
+{ "ruleKind": "cycle", "subject": "AcaiApp,AcaiGit",
+  "message": "Module dependency cycle: AcaiApp → AcaiGit → AcaiApp. Via: …",
+  "detail": { "scope": "modules",
+              "witnesses": "AcaiApp → AcaiGit via GitPanel → GitRepository (aggregation) at Sources/AcaiApp/GitPanel.swift:18; AcaiGit → AcaiApp via GitRepository → GitPanel (dependency) at Sources/AcaiGit/GitRepository.swift:44" } }
+```
+
 > **This tool cannot gate CI.** It returns a verdict but never a non-zero exit status. Use `acai quality` on the CLI for that.
 
 Note it has no `includeGenerated` — generated-type filtering goes through the rules' own `includeGeneratedTypes` key instead.

@@ -92,19 +92,7 @@ public struct QualityEvaluator: Sendable {
     // MARK: - Cycles
 
     private func cycleViolations(_ graph: GraphView, rule: CycleRule) -> [Violation] {
-        let finder = CycleFinder(graph: graph)
-        let scope: CycleFinder.Scope = rule.scope == .modules ? .modules : .types
-        let label = scope == .modules ? "Module" : "Type"
-        return finder.cycles(scope: scope).map { cycle in
-            Violation(
-                ruleKind: "cycle",
-                message: "\(label) dependency cycle: \(cycle.description).",
-                subject: cycle.members.joined(separator: ","),
-                // Type cycles can point at the first member's declaration; module cycles have no single site.
-                source: scope == .types ? graph.node(id: cycle.members[0])?.location : nil,
-                detail: ["scope": scope.rawValue]
-            )
-        }
+        CycleFinder(graph: graph).violations(scope: rule.scope == .modules ? .modules : .types)
     }
 
     // MARK: - Layering
