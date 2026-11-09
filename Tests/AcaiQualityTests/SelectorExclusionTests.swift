@@ -29,7 +29,7 @@ struct SelectorExclusionTests {
         ).enriched()
     }
 
-    private func budget(exclude: [Selector]?) -> QualityRules {
+    private func budget(exclude: [AcaiQuality.Selector]?) -> QualityRules {
         QualityRules(budgets: [
             MetricBudget(target: Selector(kind: .class, exclude: exclude), metric: .weightedMethods, max: 3)
         ])
@@ -90,6 +90,6 @@ struct SelectorExclusionTests {
     @Test func exclusionsSurviveACodableRoundTrip() throws {
         let selector = Selector(kind: .class, exclude: [Selector(typeGlob: "Visitor")])
         let data = try JSONEncoder().encode(selector)
-        #expect(try JSONDecoder().decode(Selector.self, from: data) == selector)
+        #expect(try JSONDecoder().decode(AcaiQuality.Selector.self, from: data) == selector)
     }
 }
