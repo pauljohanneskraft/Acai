@@ -20,6 +20,15 @@ struct ArtifactModuleCouplingMetrics: ModuleCouplingMetrics {
     }
 }
 
+/// Everything that decides which artifact the chart is built from: the codebase's current analysis,
+/// plus the comparison refs that put a historical artifact on screen in place of the live one.
+/// Keying on the analysis alone would leave a comparison's metrics standing after the refs changed.
+struct ModuleCouplingChartIdentity: Equatable {
+    let analysis: ProjectBrowserViewModel.AnalysisToken
+    let comparisonBaseRef: String?
+    let comparisonGitRef: String?
+}
+
 /// Holds the Module Coupling chart's data across the chart view's re-creations. The view is built
 /// fresh on every parent update, so computing in its `init` walked the whole artifact on the main
 /// actor for every unrelated store change; living in `@State` instead, this computes once per
@@ -31,8 +40,8 @@ final class ModuleCouplingChartLoader {
     private(set) var data: ModuleCouplingChartData?
 
     private let metrics: any ModuleCouplingMetrics
-    private var computing: ProjectBrowserViewModel.AnalysisToken?
-    private var computed: ProjectBrowserViewModel.AnalysisToken?
+    private var computing: ModuleCouplingChartIdentity?
+    private var computed: ModuleCouplingChartIdentity?
 
     var isComputing: Bool { computing != nil }
 
@@ -40,7 +49,7 @@ final class ModuleCouplingChartLoader {
         self.metrics = metrics
     }
 
-    func load(identity: ProjectBrowserViewModel.AnalysisToken, of artifact: CodeArtifact) async {
+    func load(identity: ModuleCouplingChartIdentity, of artifact: CodeArtifact) async {
         guard computed != identity, computing != identity else { return }
         computing = identity
         defer { computing = nil }

@@ -32,8 +32,11 @@ struct ModuleCouplingChartView: View {
 
     /// What the metrics are computed from: a store change that leaves it alone leaves the chart's
     /// data alone too.
-    private var analysisIdentity: ProjectBrowserViewModel.AnalysisToken {
-        model.analysisToken(for: codebase.id)
+    private var chartIdentity: ModuleCouplingChartIdentity {
+        ModuleCouplingChartIdentity(
+            analysis: model.analysisToken(for: codebase.id),
+            comparisonBaseRef: diagram.comparisonBaseRef,
+            comparisonGitRef: diagram.comparisonGitRef)
     }
 
     private var metricsPhase: AsyncOperationPhase {
@@ -58,7 +61,7 @@ struct ModuleCouplingChartView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar { toolbarContent }
-            .task(id: analysisIdentity) { await loader.load(identity: analysisIdentity, of: artifact) }
+            .task(id: chartIdentity) { await loader.load(identity: chartIdentity, of: artifact) }
     }
 
     @ViewBuilder

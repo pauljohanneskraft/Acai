@@ -39,9 +39,12 @@ struct ModuleCouplingChartLoaderTests {
             ])
     }
 
-    private func identity(revision: Int = 0) -> ProjectBrowserViewModel.AnalysisToken {
-        ProjectBrowserViewModel.AnalysisToken(
-            lastIndexed: Date(timeIntervalSince1970: 0), configuration: nil, revision: revision)
+    private func identity(revision: Int = 0, comparisonGitRef: String? = nil) -> ModuleCouplingChartIdentity {
+        ModuleCouplingChartIdentity(
+            analysis: ProjectBrowserViewModel.AnalysisToken(
+                lastIndexed: Date(timeIntervalSince1970: 0), configuration: nil, revision: revision),
+            comparisonBaseRef: nil,
+            comparisonGitRef: comparisonGitRef)
     }
 
     @Test("Building the chart twice for the same analysis computes its metrics once")
@@ -79,6 +82,17 @@ struct ModuleCouplingChartLoaderTests {
         _ = await (first, second)
 
         #expect(metrics.computations == 1)
+    }
+
+    @Test("A different comparison revision recomputes, although the analysis is the same")
+    func changedComparisonRefRecomputes() async {
+        let metrics = CountingMetrics()
+        let loader = ModuleCouplingChartLoader(metrics: metrics)
+
+        await loader.load(identity: identity(comparisonGitRef: "v1"), of: artifact())
+        await loader.load(identity: identity(comparisonGitRef: "v2"), of: artifact())
+
+        #expect(metrics.computations == 2)
     }
 
     @Test("The loader reports it is computing only while it is")
