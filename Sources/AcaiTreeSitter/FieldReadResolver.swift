@@ -4,9 +4,11 @@ import AcaiCore
 /// (cohesion/feature-envy accuracy).
 ///
 /// Deliberately best-effort and grammar-light: it records every identifier-like node whose text
-/// matches a known stored-property name as a bare/`self`-qualified read. No scope tracking — a local
-/// shadowing a property is recorded under the same name; consumers filter by name and tolerate that
-/// ambiguity, as they do for [VariableAssignment](/documentation/acaicore/variableassignment).
+/// matches a known stored-property name, as long as the tokens before it do not qualify it with a
+/// foreign receiver — `count` and `this.count` are own-field reads, `other.count` is not. No scope
+/// tracking — a local shadowing a property is recorded under the same name; consumers filter by name
+/// and tolerate that ambiguity, as they do for
+/// [VariableAssignment](/documentation/acaicore/variableassignment).
 public struct FieldReadResolver {
     private let context: SourceFileContext
     private let identifierTypes: Set<String>
@@ -27,21 +29,50 @@ public struct FieldReadResolver {
     public func reads(in body: Node?, knownProperties: Set<String>) -> [FieldAccess] {
         guard let body, !knownProperties.isEmpty else { return [] }
         var reads: [FieldAccess] = []
-        collect(from: body, knownProperties: knownProperties, into: &reads)
+        var receiver = ReceiverWindow()
+        collect(from: body, knownProperties: knownProperties, receiver: &receiver, into: &reads)
         return reads
     }
 
+    /// Pre-order, over every child rather than only the named ones, so the window advances one source
+    /// token at a time and holds the two tokens preceding whatever is being classified — which is what
+    /// lets one implementation serve grammars that spell a member access in quite different shapes.
+    /// A name is classified before its own tokens are pushed, since an identifier node is not always a
+    /// leaf (Kotlin's `simple_identifier` wraps its token).
     private func collect(
-        from node: Node, knownProperties: Set<String>, into reads: inout [FieldAccess]
+        from node: Node, knownProperties: Set<String>, receiver: inout ReceiverWindow,
+        into reads: inout [FieldAccess]
     ) {
         if let nodeType = node.nodeType, identifierTypes.contains(nodeType) {
             let name = node.text(in: context)
-            if knownProperties.contains(name) {
+            if knownProperties.contains(name), receiver.isOwn {
                 reads.append(FieldAccess(name: name, receiver: nil, location: node.location(in: context)))
             }
         }
-        for child in node.namedChildren() {
-            collect(from: child, knownProperties: knownProperties, into: &reads)
+        let children = node.children()
+        guard !children.isEmpty else { return receiver.push(node.text(in: context)) }
+        for child in children {
+            collect(from: child, knownProperties: knownProperties, receiver: &receiver, into: &reads)
         }
+    }
+}
+
+/// The two source tokens preceding the one being classified, which is all it takes to tell an own-field
+/// read from a read through someone else's receiver: a member name is qualified when an access operator
+/// sits directly before it, and the receiver is the type's own instance only when the token before that
+/// operator names it.
+private struct ReceiverWindow {
+    private let accessOperators: Set<String> = [".", "?.", "!.", "->", "::"]
+    private let selfNames: Set<String> = ["self", "this"]
+    private var previous = ""
+    private var beforePrevious = ""
+
+    var isOwn: Bool {
+        !accessOperators.contains(previous) || selfNames.contains(beforePrevious)
+    }
+
+    mutating func push(_ token: String) {
+        beforePrevious = previous
+        previous = token
     }
 }

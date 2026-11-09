@@ -151,7 +151,7 @@ Per-module coupling and instability; per-type fan-in/out, weighted methods, inhe
 
 Properties: `path` *, `languages`, `refresh`, `includeGenerated`.
 
-Rank client-side: high `fanOut` means too many collaborators (an SRP risk), high `fanIn` means a change-magnet hub, high `weightedMethods` means a god class. `linesOfCode` is reported per type, per module and across the codebase (`counts.linesOfCode`), and is the natural denominator when comparing two types' other numbers.
+Rank client-side: high `fanOut` means too many collaborators (an SRP risk), high `fanIn` means a change-magnet hub, high `weightedMethods` means a god class — it is the textbook WMC, the summed cyclomatic complexity of every method and initialiser, so `numberOfMethods` is the number to read when you want the plain declaration count. `linesOfCode` is reported per type, per module and across the codebase (`counts.linesOfCode`), and is the natural denominator when comparing two types' other numbers.
 
 Result shape: `{ "metrics": <CodeMetrics>, "health": <HealthCheck.Summary> }`.
 

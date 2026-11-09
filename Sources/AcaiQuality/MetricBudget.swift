@@ -13,7 +13,10 @@ public struct MetricBudget: Codable, Equatable, Sendable {
         case fanIn
         case fanOut
         case depthOfInheritance
+        /// Weighted methods per class: the sum of cyclomatic complexity over methods and initialisers.
         case weightedMethods
+        /// The plain count of declared methods, which `weightedMethods` weights by complexity.
+        case numberOfMethods
         case numberOfChildren
         case numberOfProperties
         /// Response For a Class: declared methods + distinct call targets — high = costly to test.
@@ -39,9 +42,9 @@ public struct MetricBudget: Codable, Equatable, Sendable {
             switch self {
             case .instability, .abstractness, .distance, .publicApiSurface:
                 return true
-            case .fanIn, .fanOut, .depthOfInheritance, .weightedMethods, .numberOfChildren,
-                 .numberOfProperties, .rfc, .maxParameters, .mutablePublicState, .lcom,
-                 .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity,
+            case .fanIn, .fanOut, .depthOfInheritance, .weightedMethods, .numberOfMethods,
+                 .numberOfChildren, .numberOfProperties, .rfc, .maxParameters, .mutablePublicState,
+                 .lcom, .featureEnvyMethods, .dataClassScore, .nestingDepth, .maxCyclomaticComplexity,
                  .linesOfCode:
                 return false
             }
@@ -109,6 +112,7 @@ extension MetricBudget.Metric {
         .fanOut: { Double($0.fanOut) },
         .depthOfInheritance: { Double($0.depthOfInheritance) },
         .weightedMethods: { Double($0.weightedMethods) },
+        .numberOfMethods: { Double($0.numberOfMethods) },
         .numberOfChildren: { Double($0.numberOfChildren) },
         .numberOfProperties: { Double($0.numberOfProperties) },
         .rfc: { Double($0.responseForClass) },
@@ -147,6 +151,8 @@ extension MetricBudget.Metric {
         case .rfc:
             return "reduce the type's call surface to make it cheaper to test"
         case .weightedMethods:
+            return "extract collaborators — the type's methods carry too much branching"
+        case .numberOfMethods:
             return "extract collaborators — the type does too much"
         case .numberOfProperties:
             return "group related fields into a value type"

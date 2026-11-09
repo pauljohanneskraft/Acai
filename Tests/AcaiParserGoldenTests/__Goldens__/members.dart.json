@@ -2333,15 +2333,6 @@
                 "line" : 108
               },
               "name" : "limit"
-            },
-            {
-              "location" : {
-                "column" : 123,
-                "endLine" : 108,
-                "filePath" : "members.dart",
-                "line" : 108
-              },
-              "name" : "limit"
             }
           ],
           "genericParameters" : [
@@ -2403,15 +2394,6 @@
           ],
           "cyclomaticComplexity" : 1,
           "fieldReads" : [
-            {
-              "location" : {
-                "column" : 125,
-                "endLine" : 110,
-                "filePath" : "members.dart",
-                "line" : 110
-              },
-              "name" : "_count"
-            },
             {
               "location" : {
                 "column" : 145,
