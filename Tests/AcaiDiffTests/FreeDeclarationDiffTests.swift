@@ -56,7 +56,7 @@ struct FreeDeclarationDiffTests {
         #expect(diff.addedFunctions.isEmpty)
     }
 
-    @Test func anArtifactWithOnlyFreeFunctionsDiffsAgainstItselfAsEmpty() {
+    @Test func freeDeclarationsOnlyArtifactSelfDiffsAsEmpty() {
         let only = artifact(functions: [function("parse")], globals: [global("version", of: "String")])
         #expect(ArtifactDiffer().diff(old: only, new: only).isEmpty)
     }

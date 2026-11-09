@@ -1,7 +1,7 @@
 import AcaiCore
 
-// Grouped constructor parameters for ``ArtifactDiff``, so building one (its eight change lists stay
-// flat for a stable JSON changelog) takes three arguments instead of eight.
+// Grouped constructor parameters for ``ArtifactDiff``, so building one (its change lists stay flat
+// for a stable JSON changelog) takes five arguments instead of fourteen.
 
 public struct TypeDelta: Sendable {
     public var added: [String]

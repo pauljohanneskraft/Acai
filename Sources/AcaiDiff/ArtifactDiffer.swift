@@ -46,9 +46,11 @@ public struct ArtifactDiffer: Sendable {
         )
     }
 
-    /// The union of two revisions as a single artifact for rendering a delta diagram: every type and
-    /// relationship from both sides (new wins on collision), so removed elements appear alongside
-    /// added and unchanged ones and a caller can tint each by `ArtifactDiff.status(of:)`.
+    /// The union of two revisions as a single artifact for rendering a delta diagram: every type,
+    /// relationship and free declaration from both sides, so removed elements appear alongside added
+    /// and unchanged ones and a caller can tint each by `ArtifactDiff.status(of:)`. The new side
+    /// wins wherever both declare the same element, matched by ``TypeIdentities`` rather than by id
+    /// — otherwise a re-scoped id puts the same type, and the same edge, in twice.
     public func unionArtifact(old: CodeArtifact, new: CodeArtifact) -> CodeArtifact {
         let newFlat = new.flattened()
         let oldFlat = old.flattened()
