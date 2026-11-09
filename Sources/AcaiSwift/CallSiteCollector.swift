@@ -46,8 +46,7 @@ struct CallSiteCollector {
                 receiver: resolved.receiver,
                 methodName: methodName,
                 location: sourceLocations.sourceLocation(of: node),
-                isConstruction: methodName == "init",
-                arguments: node.callSiteArguments
+                isConstruction: methodName == "init", arguments: node.callSiteArguments
             )
         }
         if let declRef = callee.as(DeclReferenceExprSyntax.self) {
@@ -57,8 +56,7 @@ struct CallSiteCollector {
                     receiver: knownTypeNames.contains(name) ? .type(name) : .unresolvedTypeName(name),
                     methodName: "init",
                     location: sourceLocations.sourceLocation(of: node),
-                    isConstruction: true,
-                    arguments: node.callSiteArguments
+                    isConstruction: true, arguments: node.callSiteArguments
                 )
             }
             return implicitCall(named: name, node: node, propertyMap: propertyMap)
@@ -81,8 +79,7 @@ struct CallSiteCollector {
         return CallSite(
             receiver: resolved.receiver, methodName: "subscript",
             location: sourceLocations.sourceLocation(of: node), isSpeculative: true,
-            arguments: node.callSiteArguments
-        )
+            arguments: node.callSiteArguments)
     }
 
     private func isSubscriptableProjectType(_ receiver: CallReceiver) -> Bool {
@@ -109,8 +106,7 @@ struct CallSiteCollector {
         else { return nil }
         return CallSite(
             receiver: origin, methodName: memberAccess.declName.baseName.text,
-            location: sourceLocations.sourceLocation(of: node),
-            arguments: node.callSiteArguments
+            location: sourceLocations.sourceLocation(of: node), arguments: node.callSiteArguments
         )
     }
 
@@ -123,10 +119,8 @@ struct CallSiteCollector {
     ) -> CallSite? {
         guard !isTypeName(name), propertyMap[name] == nil else { return nil }
         return CallSite(
-            receiver: .selfDispatch,
-            methodName: name,
-            location: sourceLocations.sourceLocation(of: node),
-            arguments: node.callSiteArguments
+            receiver: .selfDispatch, methodName: name,
+            location: sourceLocations.sourceLocation(of: node), arguments: node.callSiteArguments
         )
     }
 
