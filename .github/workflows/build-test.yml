@@ -211,6 +211,10 @@ jobs:
       - name: Run tests
         run: swift test --parallel --enable-code-coverage
 
+      # Reuses the `acai` binary `swift test` just built, so the budget costs one render, not a build.
+      - name: Render memory budget
+        run: Scripts/ci_render_memory_budget.sh .build/debug/AcaiCLI
+
       - name: Generate code coverage
         run: |
           xcrun llvm-cov export -format="lcov" \

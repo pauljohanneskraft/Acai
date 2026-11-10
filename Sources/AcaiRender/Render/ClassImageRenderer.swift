@@ -80,8 +80,10 @@ public struct ClassImageRenderer {
 
     private func measuredSize(for node: GeneratedDiagramNode) -> CGSize? {
         #if canImport(AppKit)
-        let host = NSHostingView(rootView: TypeNodeView(node: node, isSelected: false))
-        let size = host.fittingSize
+        // Headless callers run no run loop, so each host's view graph lives until this pool drains.
+        let size = autoreleasepool {
+            NSHostingView(rootView: TypeNodeView(node: node, isSelected: false)).fittingSize
+        }
         guard size.width > 1, size.height > 1 else { return nil }
         return size
         #else
