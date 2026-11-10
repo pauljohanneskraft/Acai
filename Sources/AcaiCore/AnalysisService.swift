@@ -88,6 +88,7 @@ public struct AnalysisService: Sendable {
             ? GitignoreFilter(root: rootURL, excludingDirectories: excludedDirectories)
             : nil
         let specs = projectDiscovery.discoverSourceSpecs(in: rootURL, requestedLanguages: allowedLanguages)
+        try Task.checkCancellation()
 
         guard !specs.isEmpty else {
             let hint = allowedLanguages.isEmpty

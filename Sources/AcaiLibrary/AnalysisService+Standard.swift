@@ -50,6 +50,10 @@ extension AnalysisService {
     )
 }
 
+extension LanguageNameCatalog {
+    public static let standard = LanguageNameCatalog(parsers: AnalysisService.standardParsers)
+}
+
 extension CodeArtifact {
     /// Classifies **each type** by its own stamped `sourceLanguage`, so a mixed-language codebase is
     /// styled/enriched/filtered per-language rather than by one dominant config. Falls back to the
