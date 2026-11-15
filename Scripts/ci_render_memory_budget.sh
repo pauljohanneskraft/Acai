@@ -5,8 +5,8 @@
 set -euo pipefail
 
 ACAI="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
-# Debug build peaks at ~1,930 MB; without the autorelease pools ~2,125+ MB, without the area cap ~2,260+ MB.
-BUDGET_MB="${2:-2050}"
+# CI's debug build peaks at ~1,280 MB; dropping the autorelease pools or the area cap added 10–35% locally.
+BUDGET_MB="${2:-1380}"
 CHAINS=36
 DEPTH=33
 TYPES=$((CHAINS * DEPTH))
