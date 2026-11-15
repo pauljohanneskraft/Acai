@@ -3,15 +3,9 @@ import Testing
 @testable import AcaiCFamily
 @testable import AcaiCore
 
-/// The `#ifdef __cplusplus` / `extern "C" {` / `#endif` header guard splits a brace pair across two
-/// preprocessor branches, which Tree-sitter cannot balance. `CPlusPlusLinkageGuards` blanks the
-/// guards before parsing so the header reports neither a missing `}` nor a truncated declaration
-/// list, in either dialect.
 @Suite("C-family: extern \"C\" linkage guards")
 struct ExternCLinkageGuardTests {
 
-    /// The shape found in nearly every C library header, including this repo's vendored
-    /// `tree_sitter/alloc.h`, `array.h` and `parser.h`.
     let guardedHeader = """
     #ifndef ACAI_SHAPES_H_
     #define ACAI_SHAPES_H_
@@ -59,8 +53,6 @@ struct ExternCLinkageGuardTests {
         )
     }
 
-    /// Blanking keeps the file's length and every newline in place, so a declaration below a guard
-    /// still reports the line it is written on.
     @Test func locationsSurviveBlanking() {
         let artifact = CCodeParser().parse(source: guardedHeader, fileName: "shapes.h")
         #expect(artifact.types.first?.location?.line == 10)
@@ -83,7 +75,6 @@ struct ExternCLinkageGuardTests {
         }
     }
 
-    /// A guard holding a real declaration is not a linkage guard and must be left to the grammar.
     @Test func guardAroundRealDeclarationsIsKept() {
         let source = """
         #ifdef __cplusplus
@@ -106,8 +97,7 @@ struct ExternCLinkageGuardTests {
         #expect(blanked.contains("#ifndef ACAI_SHAPES_H_"))
     }
 
-    /// A Windows-authored header's line terminator is a single `\r\n` grapheme cluster, which never
-    /// equals `"\n"` — so the guards have to be found without comparing against a bare newline.
+    /// `\r\n` is one grapheme cluster, so it never equals `"\n"`.
     @Test func carriageReturnLineEndingsAreHandled() {
         let source = guardedHeader.replacingOccurrences(of: "\n", with: "\r\n")
         let artifact = CCodeParser().parse(source: source, fileName: "shapes.h")
@@ -116,16 +106,16 @@ struct ExternCLinkageGuardTests {
         #expect(artifact.types.first?.location?.line == 10)
     }
 
-    /// `Node.text(in:)` indexes the source by UTF-16 offset, so a guard carrying a non-ASCII
-    /// comment is blanked to the same UTF-16 width rather than one space per character. A space is
-    /// one UTF-16 unit and one byte, so UTF-16 and UTF-8 widths cannot both be held; UTF-16 is the
-    /// one every text accessor here counts in.
+    /// `Node.text(in:)` indexes the source by UTF-16 offset.
     @Test func blankingIsLengthExactAcrossNonASCII() {
         let source = """
         #ifdef __cplusplus
         extern "C" {
         #endif  // naïve — 🎉
         void ping(void);
+        #ifdef __cplusplus
+        }  /* naïve — 🎉 */
+        #endif
         """
         let blanked = CPlusPlusLinkageGuards(source: source).neutralized
         #expect(blanked.utf16.count == source.utf16.count)
@@ -140,5 +130,36 @@ struct ExternCLinkageGuardTests {
         #endif
         """
         #expect(CPlusPlusLinkageGuards(source: source).neutralized == source)
+    }
+
+    @Test func unpairedOpeningGuardStillReportsTheMissingBrace() {
+        let source = """
+        #ifdef __cplusplus
+        extern "C" {
+        #endif
+        void ping(void);
+        """
+        #expect(CPlusPlusLinkageGuards(source: source).neutralized == source)
+        let artifact = CppCodeParser().parse(source: source, fileName: "ping.hpp")
+        #expect(!artifact.metadata.parseDiagnostics.isEmpty)
+    }
+
+    @Test func unpairedClosingGuardIsKept() {
+        let source = """
+        void ping(void);
+        #ifdef __cplusplus
+        }
+        #endif
+        """
+        #expect(CPlusPlusLinkageGuards(source: source).neutralized == source)
+    }
+
+    @Test func unbalancedConditionalStillReportsADiagnostic() {
+        let source = """
+        #ifdef FEATURE
+        void ping(void);
+        """
+        let artifact = CCodeParser().parse(source: source, fileName: "ping.h")
+        #expect(!artifact.metadata.parseDiagnostics.isEmpty)
     }
 }

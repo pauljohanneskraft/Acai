@@ -1,50 +1,44 @@
-/// Blanks the `#ifdef __cplusplus … #endif` guards that wrap nothing but an `extern "C"` linkage
-/// specification's opening `extern "C" {` or its closing `}`.
-///
-/// Tree-sitter cannot balance a brace whose partner lives in another preprocessor branch, so the
-/// near-universal C header guard parses as a missing `}` and every declaration below it is lost.
-/// Each qualifying guard becomes spaces of the same UTF-16 width with its line terminators kept
-/// verbatim, so the braces go while every line number, and every offset the extractor indexes by,
-/// still lands where it did in the real file.
-///
-/// A guard holding anything else — a real C++-only declaration — is left alone.
+/// Blanks paired `#ifdef __cplusplus` guards around `extern "C" {` and `}`, keeping UTF-16 width and lines.
 struct CPlusPlusLinkageGuards {
     let source: String
 
     private let conditions: Set<String> = [
         "#ifdef__cplusplus", "#ifdefined(__cplusplus)", "#ifdefined__cplusplus"
     ]
-    private let linkageBodies: Set<String> = ["extern\"C\"{", "}"]
-    /// The real guard holds one line (`extern "C" {`) or two (the brace on its own); more than
-    /// this and it is not a linkage guard, and bounding the search keeps the scan linear.
+    private let opener = "extern\"C\"{"
+    private let closer = "}"
     private let maximumBodyLines = 3
 
     var neutralized: String {
         let lines = lineRanges
-        var guards: [Range<String.Index>] = []
+        var openGuards: [Range<String.Index>] = []
+        var pairedGuards: [Range<String.Index>] = []
         var index = 0
         while index < lines.count {
             guard let content = codeContent(of: source[lines[index]]),
                   conditions.contains(compacted(content)),
-                  let end = linkageGuardEnd(after: index, in: lines) else {
+                  let (end, body) = guardBody(after: index, in: lines) else {
                 index += 1
                 continue
             }
-            guards.append(lines[index].lowerBound..<lines[end].upperBound)
+            let range = lines[index].lowerBound..<lines[end].upperBound
+            if body == opener {
+                openGuards.append(range)
+            } else if let open = openGuards.popLast() {
+                pairedGuards += [open, range]
+            }
             index = end + 1
         }
-        return guards.isEmpty ? source : blanking(guards)
+        return pairedGuards.isEmpty ? source : blanking(pairedGuards.sorted { $0.lowerBound < $1.lowerBound })
     }
 
-    /// The index of the `#endif` closing the guard opened at `start`, when everything between the
-    /// two is one of the linkage specification's braces and nothing else.
-    private func linkageGuardEnd(after start: Int, in lines: [Range<String.Index>]) -> Int? {
+    private func guardBody(after start: Int, in lines: [Range<String.Index>]) -> (end: Int, body: String)? {
         var body = ""
         var index = start + 1
         while index < lines.count, index <= start + maximumBodyLines + 1 {
             guard let content = codeContent(of: source[lines[index]]) else { return nil }
             let compact = compacted(content)
-            if compact == "#endif" { return linkageBodies.contains(body) ? index : nil }
+            if compact == "#endif" { return body == opener || body == closer ? (index, body) : nil }
             if compact.hasPrefix("#") { return nil }
             body += compact
             index += 1
@@ -71,8 +65,7 @@ struct CPlusPlusLinkageGuards {
         return result
     }
 
-    /// `line` without its comments, or `nil` when it opens a block comment it does not close — a
-    /// shape this matcher declines to reason about rather than guess at.
+    /// `nil` when the line opens a block comment it does not close.
     private func codeContent(of line: Substring) -> String? {
         var result = ""
         var index = line.startIndex
