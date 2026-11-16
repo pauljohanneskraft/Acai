@@ -118,7 +118,7 @@ extension CodeArtifact {
     }
 
     public func computeMetrics(modules: ModuleMap) -> CodeMetrics {
-        let flat = types.flattenedTree()
+        let flat = types.flattenedTree(counting: nil)
         let identity = TypeIdentityResolver(types: types)
         let spans = declarationSpans
         return CodeMetrics(

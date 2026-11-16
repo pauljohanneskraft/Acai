@@ -1,23 +1,55 @@
 import Foundation
 
-/// Counts the type-tree flattening passes a pipeline runs, so a test can hold the count against an
-/// input whose size it varies.
-///
-/// Injected per call and `nil` in production. Deliberately not a static: `swift test --parallel`
-/// runs suites in one process, and a shared counter would mix their totals.
+/// Injected per ``AnalysisService`` rather than static, so suites running in one process don't mix totals.
 public final class TypeFlattenCounter: @unchecked Sendable {
     private let lock = NSLock()
     private var passes = 0
 
     public init() {}
 
-    /// Flattening passes recorded — one per call that walks a tree, not one per recursive step.
     public var count: Int {
         lock.withLock { passes }
     }
 
     func recordPass() {
         lock.withLock { passes += 1 }
+    }
+}
+
+extension CodeArtifact {
+    func resolvingExtensions(counting counter: TypeFlattenCounter?) -> CodeArtifact {
+        let extensions = types.filter { $0.kind == .extension }
+        var resolved = ExtensionTargetIndex(
+            types: types.filter { $0.kind != .extension }, counting: counter)
+        // Drop any standalone extension edges; conformances are re-derived below so
+        // their source is the real target id (never a dangling `extension.*` node).
+        var resolvedRelationships = relationships.filter { $0.kind != .extension }
+
+        for ext in extensions {
+            guard let targetName = ext.extensionOf,
+                  let targetId = resolved.merge(ext, targetName: targetName)
+            else {
+                // Extension of an external type (e.g. `extension Array`): dropped entirely.
+                continue
+            }
+            for inherited in ext.inheritedTypes {
+                // Attributed to the extension's module (not the extended type's) for coupling/cycles,
+                // since the conformance is declared by the extension.
+                resolvedRelationships.append(
+                    Relationship(
+                        kind: .conformance, source: targetId, target: inherited.name,
+                        origin: ext.location?.filePath)
+                )
+            }
+        }
+
+        return CodeArtifact(
+            metadata: metadata,
+            types: resolved.types,
+            relationships: resolvedRelationships,
+            freestandingFunctions: freestandingFunctions,
+            globalVariables: globalVariables
+        )
     }
 }
 
@@ -30,10 +62,7 @@ extension String {
 }
 
 extension TypeDeclaration {
-    /// Takes on an extension's members, nested types and new conformances.
-    ///
-    /// Conformances must merge too — dropping them would hide protocol conformance from anything
-    /// reading `inheritedTypes` (e.g. protocol-witness dead-code exemption).
+    /// Conformances merge too, so protocol-witness dead-code exemption still sees them.
     fileprivate mutating func absorb(_ ext: TypeDeclaration) {
         members.append(contentsOf: ext.members)
         nestedTypes.append(contentsOf: ext.nestedTypes)
@@ -43,9 +72,8 @@ extension TypeDeclaration {
 }
 
 extension Array where Element == TypeDeclaration {
-    /// Every type including nested ones, pre-order, each copy's `nestedTypes` cleared. Ids are
-    /// already fully qualified, so they stay unique.
-    func flattenedTree(counting counter: TypeFlattenCounter? = nil) -> [TypeDeclaration] {
+    /// Every type including nested ones, pre-order, each copy's `nestedTypes` cleared.
+    func flattenedTree(counting counter: TypeFlattenCounter?) -> [TypeDeclaration] {
         counter?.recordPass()
         var result: [TypeDeclaration] = []
         appendFlattened(into: &result)
@@ -76,30 +104,22 @@ extension Array where Element == TypeDeclaration {
     }
 }
 
-/// A project's type tree plus the lookups extension resolution needs over it, built in one pass and
-/// kept current as extensions merge.
-///
-/// Resolving an extension used to flatten every type again — a full recursive copy per extension,
-/// so `O(extensions × types)`. Here each type is visited once up front and every later lookup is a
-/// dictionary hit, with newly merged nested types registered as they arrive so a later extension can
-/// still target them.
+/// A type tree indexed once for extension lookup; merged nested types are registered as they arrive.
 struct ExtensionTargetIndex {
     private struct Entry {
         let id: String
         let module: String
-        /// Indices from the root through `nestedTypes`, for merging without searching.
         let path: [Int]
     }
 
     private(set) var types: [TypeDeclaration]
     private var entries: [Entry] = []
-    /// A qualified name or id to the **earliest** type declaring it, matching the document-order
-    /// `first(where:)` this replaces.
+    /// The earliest-registered type per qualified name or id.
     private var entryByExactName: [String: Int] = [:]
     private var entriesBySimpleName: [String: [Int]] = [:]
     private var entriesByUnqualifiedID: [String: [Int]] = [:]
 
-    init(types: [TypeDeclaration], counting counter: TypeFlattenCounter? = nil) {
+    init(types: [TypeDeclaration], counting counter: TypeFlattenCounter?) {
         self.types = types
         counter?.recordPass()
         for (offset, type) in types.enumerated() {
@@ -119,8 +139,7 @@ struct ExtensionTargetIndex {
         }
     }
 
-    /// Merges `ext` into its target type anywhere in the tree, returning the target's id — or `nil`
-    /// when the target is external, in which case the extension is dropped.
+    /// The target's id, or `nil` when the target is external and the extension is dropped.
     mutating func merge(_ ext: TypeDeclaration, targetName: String) -> String? {
         guard let target = targetEntry(for: ext, name: targetName.withoutGenericArguments) else { return nil }
         let path = entries[target].path
@@ -132,8 +151,7 @@ struct ExtensionTargetIndex {
         return entries[target].id
     }
 
-    /// The single type `name` should merge into: an exact id, else a sole same-module match, else a
-    /// sole unqualified-id match; never a foreign simple name.
+    /// An exact id, else a sole same-module match, else a sole unqualified-id match; never a foreign simple name.
     private func targetEntry(for ext: TypeDeclaration, name: String) -> Int? {
         if let exact = entryByExactName[name] { return exact }
         let unqualifiedMatches = entriesByUnqualifiedID[name] ?? []

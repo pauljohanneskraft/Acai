@@ -2,9 +2,15 @@ import Testing
 import Foundation
 @testable import AcaiCore
 
-/// Extension resolution used to flatten every type again for each extension, so it cost
-/// `O(extensions × types)`. These hold the flattening count flat as the extension count grows, and
-/// pin the behaviour that a one-pass index has to keep: the lookups stay current as extensions merge.
+private struct FixedArtifactParser: CodeParser {
+    let artifact: CodeArtifact
+    var language: CodeArtifact.SourceLanguage { CodeArtifact.SourceLanguage(rawValue: "fixed") }
+    var fileExtensions: [String] { ["fixed"] }
+    var configuration: LanguageConfiguration { .test }
+
+    func parse(source: String, fileName: String) -> CodeArtifact { artifact }
+}
+
 @Suite("Core: Extension Resolution Scaling")
 struct ExtensionResolutionScalingTests {
 
@@ -46,38 +52,62 @@ struct ExtensionResolutionScalingTests {
         return artifact(types)
     }
 
-    private func enriching(_ artifact: CodeArtifact, counting counter: TypeFlattenCounter) -> CodeArtifact {
-        artifact.enriched(using: LanguageConfigurationResolver(single: .test), counting: counter)
+    /// Analyses one file whose parse is `artifact`, so the counter reaches enrichment through `AnalysisService`.
+    private func flattenPasses(analysing artifact: CodeArtifact) async throws -> Int {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("acai-extension-scaling-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try "".write(to: root.appendingPathComponent("corpus.fixed"), atomically: true, encoding: .utf8)
+
+        let counter = TypeFlattenCounter()
+        let service = AnalysisService(parsers: [FixedArtifactParser(artifact: artifact)], typeFlattenCounter: counter)
+        _ = try await service.analyzeProject(at: root, allowedLanguages: [])
+        return counter.count
     }
 
-    /// The regression guard: whatever the extension count, one `enriched()` flattens the tree the
-    /// same number of times. Equality across the counts is the assertion that matters — a
-    /// per-extension flatten would make the 1,000-extension run cost about 1,000 passes more than
-    /// the 10-extension one. The ceiling catches the same regression if a pass is ever added.
-    @Test func flatteningIsConstantWhateverTheExtensionCount() {
-        let counts = [0, 1, 10, 1_000]
-        let passes = counts.map { extensionCount -> Int in
-            let counter = TypeFlattenCounter()
-            _ = enriching(corpus(typeCount: 1_000, extensionCount: extensionCount), counting: counter)
-            return counter.count
+    @Test func flatteningIsConstantWhateverTheExtensionCount() async throws {
+        var passes: [Int] = []
+        for extensionCount in [0, 1, 10, 1_000] {
+            passes.append(try await flattenPasses(analysing: corpus(typeCount: 1_000, extensionCount: extensionCount)))
         }
 
         #expect(Set(passes).count == 1, "flattening passes varied with the extension count: \(passes)")
-        #expect(passes[0] <= 8)
+        #expect(passes[0] > 0 && passes[0] <= 8)
     }
 
-    /// Flattening must not scale with the type count either: the count is per pass, not per type.
-    @Test func flatteningIsConstantWhateverTheTypeCount() {
-        let small = TypeFlattenCounter()
-        let large = TypeFlattenCounter()
-        _ = enriching(corpus(typeCount: 10, extensionCount: 10), counting: small)
-        _ = enriching(corpus(typeCount: 1_000, extensionCount: 10), counting: large)
+    @Test func flatteningIsConstantWhateverTheTypeCount() async throws {
+        let small = try await flattenPasses(analysing: corpus(typeCount: 10, extensionCount: 10))
+        let large = try await flattenPasses(analysing: corpus(typeCount: 1_000, extensionCount: 10))
 
-        #expect(small.count == large.count)
+        #expect(small == large)
     }
 
-    /// 1,000 extensions over 1,000 types: every extension's member reaches its own target, and no
-    /// extension survives as a type of its own.
+    @Test func extensionMergesIntoExactlyOneOfTwoSameIDTypes() {
+        let nestedTwin = type("Holder.Twin", members: [member("nestedOwn")])
+        let holder = type("Holder", kind: .class, nested: [nestedTwin])
+        let topLevelTwin = type("Holder.Twin", members: [member("topOwn")])
+        let ext = type("Holder.Twin", members: [member("fromExtension")], extensionOf: "Holder.Twin")
+
+        let resolved = artifact([holder, topLevelTwin, ext]).resolvingExtensions()
+
+        let twins = resolved.flattened().filter { $0.id == "Holder.Twin" }
+        #expect(twins.map { $0.members.map(\.name) } == [["nestedOwn", "fromExtension"], ["topOwn"]])
+    }
+
+    @Test func earlierRegisteredTypeWinsOverExtensionAddedNestedTypeWithTheSameID() {
+        let outer = type("Outer", kind: .class)
+        let later = type("Outer.Shared", members: [member("topOwn")])
+        let addsNested = type(
+            "Outer", nested: [type("Outer.Shared", members: [member("nestedOwn")])], extensionOf: "Outer")
+        let extendsShared = type("Outer.Shared", members: [member("fromExtension")], extensionOf: "Outer.Shared")
+
+        let resolved = artifact([outer, later, addsNested, extendsShared]).resolvingExtensions()
+
+        let shared = resolved.flattened().filter { $0.id == "Outer.Shared" }
+        #expect(shared.map { $0.members.map(\.name) } == [["nestedOwn"], ["topOwn", "fromExtension"]])
+    }
+
     @Test func everyExtensionMergesIntoItsOwnTargetAtScale() {
         let resolved = corpus(typeCount: 1_000, extensionCount: 1_000).enriched()
         let byID = Dictionary(
@@ -91,9 +121,6 @@ struct ExtensionResolutionScalingTests {
         }
     }
 
-    /// The lookups are updated in place as extensions merge, so an extension can target a nested
-    /// type that an *earlier* extension contributed — which is what re-flattening per extension used
-    /// to give for free, and what a single up-front flatten would silently drop.
     @Test func extensionTargetsNestedTypeAddedByAnEarlierExtension() {
         let outer = type("Outer", kind: .class)
         let addsInner = type(
@@ -107,7 +134,6 @@ struct ExtensionResolutionScalingTests {
         #expect(inner?.members.map(\.name).sorted() == ["fromFirst", "fromSecond"])
     }
 
-    /// A chain of extensions each adding the next nesting level, resolved in one pass.
     @Test func chainedNestedExtensionsAllResolve() {
         var types = [type("Root", kind: .class)]
         var path = "Root"
@@ -125,7 +151,6 @@ struct ExtensionResolutionScalingTests {
         #expect(resolved.flattened().count == 6)
     }
 
-    /// Generic arguments are stripped from the target name, so `extension Box<T>` finds `Box`.
     @Test func genericArgumentsAreStrippedFromTheTargetName() {
         let box = type("Box", kind: .struct)
         let ext = type("Box<T>", members: [member("mapped")], extensionOf: "Box<T>")

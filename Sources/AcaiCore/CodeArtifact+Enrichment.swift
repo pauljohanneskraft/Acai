@@ -6,8 +6,12 @@ extension CodeArtifact {
     /// `resolver` supplies each type's language classification, resolved *per type* from its `sourceLanguage`
     /// so a polyglot artifact applies each language's own rules rather than one dominant config. Injected
     /// rather than hard-coded to stay language-agnostic; required, with no empty default. Idempotent.
-    public func enriched(
-        using resolver: LanguageConfigurationResolver, counting counter: TypeFlattenCounter? = nil
+    public func enriched(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
+        enriched(using: resolver, counting: nil)
+    }
+
+    func enriched(
+        using resolver: LanguageConfigurationResolver, counting counter: TypeFlattenCounter?
     ) -> CodeArtifact {
         resolvingExtensions(counting: counter)
             .resolvingRelationshipNames(counting: counter)
@@ -32,7 +36,11 @@ extension CodeArtifact {
     /// Rewrites relationship `source`/`target` and `inheritedTypes` names to canonical type ids, recursing
     /// into `nestedTypes`. Runs in the language-agnostic pipeline so every language gets consistent
     /// qualified names, not just tree-sitter extractors that opt in.
-    public func resolvingRelationshipNames(counting counter: TypeFlattenCounter? = nil) -> CodeArtifact {
+    public func resolvingRelationshipNames() -> CodeArtifact {
+        resolvingRelationshipNames(counting: nil)
+    }
+
+    func resolvingRelationshipNames(counting counter: TypeFlattenCounter?) -> CodeArtifact {
         let resolver = TypeIdentityResolver(types: types)
         // `source` is already the referencing type's own id/qualified name, so its module locates
         // the reference for both endpoints — `target` is what that type's own file/module wrote.
@@ -114,7 +122,11 @@ extension CodeArtifact {
     /// Reclassifies an `.inheritance` edge to `.conformance` when its target resolves
     /// to a `protocol`/`interface` declared in this codebase. External first-parents are
     /// left as-is.
-    public func reclassifyingRelationshipKinds(counting counter: TypeFlattenCounter? = nil) -> CodeArtifact {
+    public func reclassifyingRelationshipKinds() -> CodeArtifact {
+        reclassifyingRelationshipKinds(counting: nil)
+    }
+
+    func reclassifyingRelationshipKinds(counting counter: TypeFlattenCounter?) -> CodeArtifact {
         let protocolIds = Set(
             types.flattenedTree(counting: counter)
                 .filter { $0.kind == .protocol || $0.kind == .interface }
@@ -136,8 +148,12 @@ extension CodeArtifact {
     /// method/initializer signatures, and a dependency edge for `typealias` targets.
     /// `resolver` classifies primitive/collection type names *per type* from its own language, so a
     /// polyglot artifact doesn't misclassify one language's collections under another's rules.
-    public func inferringStructuralEdges(
-        using resolver: LanguageConfigurationResolver, counting counter: TypeFlattenCounter? = nil
+    public func inferringStructuralEdges(using resolver: LanguageConfigurationResolver) -> CodeArtifact {
+        inferringStructuralEdges(using: resolver, counting: nil)
+    }
+
+    func inferringStructuralEdges(
+        using resolver: LanguageConfigurationResolver, counting counter: TypeFlattenCounter?
     ) -> CodeArtifact {
         let identity = TypeIdentityResolver(types: types)
 
@@ -175,7 +191,7 @@ extension CodeArtifact {
     /// every file project-wide, so `AnalysisService.analyzeProject` calls it once after all specs are
     /// merged. Idempotent.
     public func resolvingCallSiteReceivers() -> CodeArtifact {
-        let flat = types.flattenedTree()
+        let flat = types.flattenedTree(counting: nil)
         let resolver = CallSiteReceiverResolver(
             identity: TypeIdentityResolver(types: types),
             typesByID: Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -216,7 +232,7 @@ extension CodeArtifact {
     /// A flat list of every type incl. nested ones (nested copies have `nestedTypes`
     /// cleared). Ids are already fully qualified, so they remain unique.
     public func flattened() -> [TypeDeclaration] {
-        types.flattenedTree()
+        types.flattenedTree(counting: nil)
     }
 }
 

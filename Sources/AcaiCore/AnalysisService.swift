@@ -18,6 +18,8 @@ public struct AnalysisService: Sendable {
     /// parsing (`1`) for deterministic cancellation/ordering assertions.
     public let fileParsingConcurrencyLimit: Int?
 
+    public let typeFlattenCounter: TypeFlattenCounter?
+
     /// Per-file byte ceiling; a larger file is skipped with a `.skipped` diagnostic rather than
     /// read whole. Defaults to ``AcaiConstants/maximumSourceFileBytes``.
     public let maximumSourceFileBytes: Int
@@ -38,10 +40,12 @@ public struct AnalysisService: Sendable {
     public init(
         parsers: [any CodeParser],
         projectDiscovery: ProjectDiscovery? = nil,
+        typeFlattenCounter: TypeFlattenCounter? = nil,
         fileParsingConcurrencyLimit: Int? = nil,
         maximumSourceFileBytes: Int = AcaiConstants.standard.maximumSourceFileBytes
     ) {
         self.parsers = parsers
+        self.typeFlattenCounter = typeFlattenCounter
         self.projectDiscovery = projectDiscovery ?? ProjectDiscovery(
             detectors: [],
             fallback: FallbackDetector(parsers: parsers),
@@ -245,7 +249,8 @@ public struct AnalysisService: Sendable {
             let configuration = registry.configuration(for: language) ?? fallback
             // Stamp each type with its language before enrichment so provenance survives into the
             // merged artifact for later per-type classification.
-            let enriched = group.stampingSourceLanguage(language).enriched(configuration: configuration)
+            let enriched = group.stampingSourceLanguage(language)
+                .enriched(using: LanguageConfigurationResolver(single: configuration), counting: typeFlattenCounter)
             result = result.map { $0.merging(with: enriched) } ?? enriched
         }
 
