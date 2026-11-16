@@ -151,6 +151,19 @@ struct DetectorTests {
         }
     }
 
+    @Test(arguments: [
+        ("only.cjs", CodeArtifact.SourceLanguage.javaScript), ("only.mts", .typeScript), ("only.cts", .typeScript)
+    ])
+    func nodeDetectsModuleExtensions(fileName: String, language: CodeArtifact.SourceLanguage) throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: "{}")
+            try write("src/\(fileName)", in: root)
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(specs.map(\.language) == [language])
+        }
+    }
+
     /// A monorepo declares its packages in `package.json`; each one contributes its own directories
     /// rather than the root being parsed wholesale.
     @Test func nodeReadsWorkspacePackages() throws {
