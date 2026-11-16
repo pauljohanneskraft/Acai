@@ -180,8 +180,7 @@ let package = Package(
         .package(url: "https://github.com/fwcd/tree-sitter-kotlin", from: "0.3.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-typescript", from: "0.21.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-java", from: "0.21.0"),
-        // Pinned exactly: the grammar publishes no tags, so a branch requirement let every
-        // `swift package update` move it to whatever `master` happened to be at the time.
+        // Pinned to a revision: the grammar publishes no tags.
         .package(
             url: "https://github.com/UserNobody14/tree-sitter-dart",
             revision: "a9bdfa3db2fbc9b9f12c93450d04a671f33a5102"

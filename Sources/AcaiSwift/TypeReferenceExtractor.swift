@@ -60,8 +60,7 @@ struct TypeReferenceExtractor {
         return TypeReference(name: typeSyntax.trimmedDescription)
     }
 
-    /// A generic argument is a type in all but the value-generic spellings (`InlineArray<5, Int>`),
-    /// where it is an expression; keeping both in `genericArguments` preserves the clause's arity.
+    /// A value-generic argument (`InlineArray<5, Int>`) is an expression; it keeps its slot to preserve arity.
     func extractTypeReference(from argument: GenericArgumentSyntax.Argument) -> TypeReference {
         switch argument {
         case .type(let typeSyntax):

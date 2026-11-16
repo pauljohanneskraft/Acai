@@ -14,6 +14,5 @@ updates:
     commit-message:
       prefix: "deps"
     ignore:
-      # tree-sitter-python is pinned exactly because CPythonScanner vendors this version's
-      # scanner.c, which must match the same version's parser.c external-token table.
-      - dependency-name: "tree-sitter-python"
+      # CPythonScanner vendors this exact version's scanner.c; see Package.swift.
+      - dependency-name: "*tree-sitter-python*"
