@@ -39,8 +39,7 @@ extension Node {
         children().contains { $0.text(in: context) == text }
     }
 
-    /// This argument list's text with its enclosing parentheses removed, so `(1, "x")` reads as
-    /// `1, "x"`. `nil` for an empty list, which is what a declaration written without one carries.
+    /// `(1, "x")` reads as `1, "x"`; `nil` for an empty list.
     public func argumentListText(in context: SourceFileContext) -> String? {
         let text = text(in: context).trimmingCharacters(in: .whitespacesAndNewlines)
         let unwrapped = text.hasPrefix("(") && text.hasSuffix(")")

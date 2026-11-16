@@ -101,7 +101,7 @@ struct DartMemberExtractor {
         )
     }
 
-    /// An enhanced enum's constant wraps its arguments in an `argument_part`; a plain one has none.
+    /// `low(1)` wraps its arguments in an `argument_part`; `low.named(1)` holds them directly.
     private func constructorArguments(of node: Node) -> Node? {
         node.firstChild(withType: "arguments")
             ?? node.firstChild(withType: "argument_part")?.firstChild(withType: "arguments")

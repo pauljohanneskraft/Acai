@@ -43,8 +43,6 @@ struct JavaEnumTests {
         #expect(planet.enumCases[1].name == "MARS")
         #expect(planet.enumCases[0].rawValue == "5.976e+24, 6.37814e6")
         #expect(planet.enumCases[1].rawValue == "6.421e+23, 3.3972e6")
-        // Associated values are Swift-only: there they are per-instance payload types, here a
-        // fixed constant argument.
         #expect(planet.enumCases.allSatisfy { $0.associatedValues.isEmpty })
     }
 

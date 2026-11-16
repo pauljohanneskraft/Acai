@@ -45,6 +45,20 @@ struct DartEnumTests {
         #expect(category.enumCases.allSatisfy { $0.associatedValues.isEmpty })
     }
 
+    @Test func namedConstructorArgumentsBecomeTheRawValue() {
+        let source = """
+        enum Level {
+          low.fixed(1);
+
+          const Level.fixed(this.weight);
+
+          final int weight;
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Level.dart")
+        #expect(artifact.types[0].enumCases.first?.rawValue == "1")
+    }
+
     @Test func enumImplementsInterface() {
         let source = """
         abstract class Displayable {

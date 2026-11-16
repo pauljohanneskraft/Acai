@@ -122,24 +122,20 @@ struct ContractNormalizer {
         )
     }
 
-    /// Rule 12: `pop = 1` and `pop(1)` attach the same constant, so the value rides along with the
-    /// name rather than in a field of its own.
+    /// Rule 12: `pop = 1` and `pop(1)` both read `pop = 1`.
     private func enumCase(of enumCase: EnumCase) -> String {
         guard let rawValue = enumCase.rawValue else { return enumCase.name }
         return "\(enumCase.name) = \(rawValue)"
     }
 
-    /// Rule 12: Swift's `enum Genre: Int` names the type its constants take; the languages that
-    /// write `= 1` without one, and those that pass the constant to a constructor, name nothing.
+    /// Rule 12: only Swift names the raw-value type, as `enum Genre: Int`.
     private func supertypes(of type: TypeDeclaration) -> [String] {
         let names = type.inheritedTypes.map { typeName(of: $0) }.sorted()
         guard type.kind == .enum else { return names }
         return names.filter { $0 != Self.primitiveToken }
     }
 
-    /// Rule 12: an enum constant written `pop(1)` needs a constructor to receive the argument and a
-    /// property to hold it, which `= 1` needs neither of. Gated on a case actually carrying a
-    /// constant, so a constructor an enum declares for its own sake still has to show up.
+    /// Rule 12: drops the constructor and stored properties that `pop(1)` needs and `= 1` does not.
     private func members(of type: TypeDeclaration) -> [Member] {
         guard type.kind == .enum, type.enumCases.contains(where: { $0.rawValue != nil }) else {
             return type.members
@@ -153,8 +149,7 @@ struct ContractNormalizer {
         }
     }
 
-    /// Rule 12: no language lets a declaration conform to a primitive, so a conformance onto one is
-    /// Swift's raw-value declaration and nothing else.
+    /// Rule 12: a conformance onto a primitive can only be Swift's raw-value declaration.
     private func isRawValueConformance(_ relationship: Relationship) -> Bool {
         relationship.kind == .conformance && classify(relationship.target) == Self.primitiveToken
     }
