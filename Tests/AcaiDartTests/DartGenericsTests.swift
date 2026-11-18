@@ -32,34 +32,49 @@ struct DartGenericsTests {
         #expect(container.genericParameters[0].constraints.map(\.type.name) == ["Comparable"])
     }
 
-    /// A bound is a full type reference, not just a name: `Comparable<T>` has to keep its argument,
-    /// or the bound reads as the raw `Comparable` and its relationship to `T` is lost.
-    @Test func genericBoundKeepsItsTypeArguments() {
+    @Test func genericBoundKeepsItsTypeArguments() throws {
         let artifact = parser.parse(source: """
         class Container<T extends Comparable<T>, U extends num> {
             T item;
         }
         """, fileName: "Container.dart")
-        let generics = artifact.types[0].genericParameters
+        let generics = try #require(artifact.types.first).genericParameters
         #expect(generics.map(\.name) == ["T", "U"])
+        try #require(generics.count == 2)
+        let bound = try #require(generics[0].constraints.first)
         #expect(generics[0].constraints.count == 1)
-        #expect(generics[0].constraints[0].kind == .superclass)
-        #expect(generics[0].constraints[0].type.name == "Comparable")
-        #expect(generics[0].constraints[0].type.genericArguments.map(\.name) == ["T"])
+        #expect(bound.kind == .superclass)
+        #expect(bound.type.name == "Comparable")
+        #expect(bound.type.genericArguments.map(\.name) == ["T"])
         #expect(generics[1].constraints.map(\.type.name) == ["num"])
     }
 
-    /// A nested bound stays one reference rather than splitting into `Map` plus each argument.
-    @Test func genericBoundWithNestedArguments() {
+    @Test func genericBoundWithNestedArguments() throws {
         let artifact = parser.parse(source: """
         class Cache<T extends Map<String, List<int>>> {
             T store;
         }
         """, fileName: "Cache.dart")
-        let bound = artifact.types[0].genericParameters[0].constraints
-        #expect(bound.count == 1)
-        #expect(bound[0].type.name == "Map")
-        #expect(bound[0].type.genericArguments.map(\.name) == ["String", "List", "int"])
+        let parameter = try #require(artifact.types.first?.genericParameters.first)
+        #expect(parameter.constraints.count == 1)
+        let bound = try #require(parameter.constraints.first)
+        #expect(bound.type.name == "Map")
+        #expect(bound.type.genericArguments.map(\.name) == ["String", "List"])
+        let list = try #require(bound.type.genericArguments.last)
+        #expect(list.isArray)
+        #expect(list.genericArguments.map(\.name) == ["int"])
+    }
+
+    @Test func fieldTypeKeepsNestedArguments() throws {
+        let artifact = parser.parse(source: """
+        class Cache {
+            Map<String, List<int>> store;
+        }
+        """, fileName: "Cache.dart")
+        let type = try #require(artifact.types.first?.members.first?.type)
+        #expect(type.name == "Map")
+        #expect(type.genericArguments.map(\.name) == ["String", "List"])
+        #expect(type.genericArguments.last?.genericArguments.map(\.name) == ["int"])
     }
 
     @Test func multipleGenericParameters() {

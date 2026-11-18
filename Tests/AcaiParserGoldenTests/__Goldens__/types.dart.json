@@ -948,19 +948,18 @@
               },
               {
                 "genericArguments" : [
+                  {
+                    "genericArguments" : [
 
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "T"
+                  }
                 ],
-                "isArray" : false,
+                "isArray" : true,
                 "isOptional" : false,
                 "name" : "List"
-              },
-              {
-                "genericArguments" : [
-
-                ],
-                "isArray" : false,
-                "isOptional" : false,
-                "name" : "T"
               }
             ],
             "isArray" : false,
@@ -1046,19 +1045,18 @@
                   },
                   {
                     "genericArguments" : [
+                      {
+                        "genericArguments" : [
 
+                        ],
+                        "isArray" : false,
+                        "isOptional" : false,
+                        "name" : "T"
+                      }
                     ],
-                    "isArray" : false,
+                    "isArray" : true,
                     "isOptional" : false,
                     "name" : "List"
-                  },
-                  {
-                    "genericArguments" : [
-
-                    ],
-                    "isArray" : false,
-                    "isOptional" : false,
-                    "name" : "T"
                   }
                 ],
                 "isArray" : false,

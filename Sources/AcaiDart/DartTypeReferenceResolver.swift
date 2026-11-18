@@ -52,7 +52,7 @@ struct DartTypeReferenceResolver {
             case "type_identifier", "identifier":
                 if name.isEmpty { name = child.text(in: context) }
             case "type_arguments":
-                genericArgs = child.namedChildren().compactMap { typeReference($0) }
+                genericArgs = typeArguments(child)
             default:
                 break
             }
@@ -83,9 +83,7 @@ struct DartTypeReferenceResolver {
         node.allChildren(withType: "type_parameter").map { typeParameter($0) }
     }
 
-    /// `T extends Comparable<T>`: the name is the leading identifier and everything after it is the
-    /// bound, read through the full type-reference resolver so its arguments survive. The grammar
-    /// wraps the bound in `type_bound` in some positions and flattens it into siblings in others.
+    /// The grammar wraps the bound in `type_bound` in some positions and flattens it into siblings in others.
     private func typeParameter(_ node: Node) -> GenericParameter {
         var name = ""
         var boundChildren: [Node] = []
@@ -109,10 +107,7 @@ struct DartTypeReferenceResolver {
 
     // MARK: - Type Aliases
 
-    /// The aliased type of a `typedef`. A target built only from type nodes resolves structurally, so
-    /// `Map<T, T>` keeps its arguments and drives a dependency edge; a function-type target has no
-    /// single type node to name and is recorded by its source text, as the other plugins record
-    /// theirs.
+    /// A function-type target has no single type node to name, so it is recorded by its source text.
     func aliasTarget(_ children: [Node]) -> [TypeReference] {
         let isFunctionType = children.contains {
             $0.nodeType == "function_type" || $0.nodeType == "formal_parameter_list"
@@ -130,10 +125,11 @@ struct DartTypeReferenceResolver {
         flattenedTypeReferences(node.namedChildren().filter { $0.nodeType != "mixins" })
     }
 
-    /// Reads a child sequence in which the grammar emits `type_identifier` and `type_arguments` as
-    /// siblings instead of wrapping them in one node: a name is held back until its argument list is
-    /// known, so `Comparable<T>` becomes one reference rather than spurious edges to `Comparable`
-    /// and to each of its arguments.
+    func typeArguments(_ node: Node) -> [TypeReference] {
+        flattenedTypeReferences(node.namedChildren())
+    }
+
+    /// Joins the sibling `type_identifier` + `type_arguments` pairs the grammar emits into one reference each.
     func flattenedTypeReferences(_ children: [Node]) -> [TypeReference] {
         var refs: [TypeReference] = []
         var pendingName: String?
@@ -147,8 +143,7 @@ struct DartTypeReferenceResolver {
                 }
                 pendingName = child.text(in: context)
             } else if nodeType == "type_arguments", let name = pendingName {
-                let genericArgs = child.namedChildren().compactMap { typeReference($0) }
-                refs.append(TypeReference(name: name, genericArguments: genericArgs))
+                refs.append(TypeReference(name: name, genericArguments: typeArguments(child), isArray: name == "List"))
                 pendingName = nil
             } else {
                 if let name = pendingName {
@@ -241,9 +236,8 @@ struct DartTypeReferenceResolver {
             if info.type == nil { info.type = typeReference(child) }
         case "type_arguments":
             if let base = info.type {
-                let args = child.namedChildren().compactMap { typeReference($0) }
                 info.type = TypeReference(
-                    name: base.name, genericArguments: args,
+                    name: base.name, genericArguments: typeArguments(child),
                     isArray: base.name == "List"
                 )
             }

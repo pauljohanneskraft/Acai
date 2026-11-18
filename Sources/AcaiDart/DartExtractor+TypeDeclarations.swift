@@ -169,11 +169,7 @@ extension DartExtractor {
 
     // MARK: - Type Alias
 
-    /// `typedef Callback = void Function(Result result);` and `typedef Pair<T> = Map<T, T>;` — the
-    /// alias name is the `type_identifier` left of the `=`, and everything else names the aliased
-    /// type. Dart's older `typedef void Callback(Result result);` form has no `=`: there the name is
-    /// the last `type_identifier`, the one carrying the parameter list, and the return type in front
-    /// of it is part of the target.
+    /// The name is the last `type_identifier` before `=`, or in the legacy `typedef void F(…)` form the one before `(`.
     func extractTypeAlias(_ node: Node) -> TypeDeclaration? {
         let children = node.children()
         let equalsIndex = children.firstIndex { !$0.isNamed && $0.text(in: context) == "=" }
