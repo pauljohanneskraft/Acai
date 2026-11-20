@@ -1,12 +1,7 @@
 import AcaiCore
 
-/// Matches types across two revisions by a key that survives id re-scoping.
-///
-/// Project analysis rewrites a type's `id` from `Module.Name` to `Path:Name` as soon as a second
-/// file declares the same name, and always does so for a file-private type. So an unrelated new
-/// file, or a renamed one, changes the id of a type that did not itself change. Module plus
-/// qualified name is stable under both; the file path only breaks a tie where one module genuinely
-/// declares the same qualified name more than once.
+/// Matches types across revisions by module plus qualified name, which survives the path re-scoping
+/// of colliding and private ids; the file path only breaks a tie within one module.
 struct TypeIdentities: Sendable {
     /// One revision's type ids mapped to their cross-revision identity.
     struct Side: Sendable {
@@ -22,8 +17,7 @@ struct TypeIdentities: Sendable {
             identitiesByID = identities
         }
 
-        /// An id this revision declares no type for — an unresolved or external relationship
-        /// endpoint — is its own identity.
+        /// An undeclared id, such as an external relationship endpoint, is its own identity.
         func identity(of id: String) -> String { identitiesByID[id] ?? id }
 
         func key(of relationship: Relationship) -> String {
@@ -52,9 +46,7 @@ struct TypeIdentities: Sendable {
 }
 
 extension TypeDeclaration {
-    /// Module plus qualified name. Stripping the scope and prefixing the module again is idempotent
-    /// for an already module-scoped id, so one expression covers both scoped forms and a raw
-    /// parser-produced id.
+    /// Module plus the id with its file or module scope stripped.
     fileprivate func stableDiffKey(resolvedBy moduleResolver: ModuleResolver) -> String {
         let filePath = location?.filePath ?? ""
         let module = module ?? moduleResolver.productName(forFilePath: filePath)

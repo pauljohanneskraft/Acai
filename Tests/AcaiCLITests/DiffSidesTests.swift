@@ -35,7 +35,7 @@ struct DiffSidesTests {
 
     @Test func resolvesBothSidesConcurrently() async throws {
         let witness = OverlapWitness()
-        let sides = DiffSides(old: side("./before"), new: side("./after")) { requested in
+        let sides = DiffSides(old: side("./before"), new: side("./after")) { requested, _ in
             await witness.enter()
             var spins = 0
             while await witness.entered < 2, spins < 1_000 {
@@ -56,11 +56,31 @@ struct DiffSidesTests {
     private struct SideFailure: Error {}
 
     @Test func propagatesAFailureFromEitherSide() async {
-        let sides = DiffSides(old: side("./before"), new: side("./after")) { requested in
+        let sides = DiffSides(old: side("./before"), new: side("./after")) { requested, _ in
             guard requested.source == "./before" else { return self.artifact("ok") }
             throw SideFailure()
         }
 
         await #expect(throws: SideFailure.self) { _ = try await sides.resolved() }
+    }
+
+    private actor SharedParsesWitness {
+        private(set) var received: [ObjectIdentifier] = []
+
+        func record(_ parses: SharedParses) { received.append(ObjectIdentifier(parses)) }
+    }
+
+    @Test func bothSidesParseThroughOneSharedInstance() async throws {
+        let witness = SharedParsesWitness()
+        let sides = DiffSides(old: side("./before"), new: side("./after")) { requested, parses in
+            await witness.record(parses)
+            return self.artifact(requested.source ?? "")
+        }
+
+        _ = try await sides.resolved()
+
+        let received = await witness.received
+        #expect(received.count == 2)
+        #expect(Set(received).count == 1)
     }
 }

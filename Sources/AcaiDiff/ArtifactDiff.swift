@@ -14,8 +14,7 @@ public struct ArtifactDiff: Codable, Equatable, Sendable {
     public var moduleMetricDeltas: [ModuleMetricDelta]
     public var typeMetricDeltas: [TypeMetricDelta]
 
-    /// Free (non-member) function signatures. The only place a C or Python codebase's top-level
-    /// code shows up, since neither hangs it off a type.
+    /// Free (non-member) function signatures.
     public var addedFunctions: [String]
     public var removedFunctions: [String]
     public var changedFunctions: [MemberChange]

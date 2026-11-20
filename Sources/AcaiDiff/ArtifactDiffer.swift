@@ -14,6 +14,12 @@ public struct ArtifactDiffer: Sendable {
     }
 
     public func diff(old: CodeArtifact, new: CodeArtifact) -> ArtifactDiff {
+        diff(old: DiffRevision(old), new: DiffRevision(new))
+    }
+
+    public func diff(old oldRevision: DiffRevision, new newRevision: DiffRevision) -> ArtifactDiff {
+        let old = oldRevision.artifact
+        let new = newRevision.artifact
         let oldTypes = old.flattened()
         let newTypes = new.flattened()
         let identities = TypeIdentities(old: oldTypes, new: newTypes, moduleResolver: moduleResolver)
@@ -32,8 +38,8 @@ public struct ArtifactDiffer: Sendable {
         let (added, removed, changed) = relationshipDiff(
             old: old.relationships, new: new.relationships, identities: identities)
 
-        let oldMetrics = old.computeMetrics()
-        let newMetrics = new.computeMetrics()
+        let oldMetrics = oldRevision.metrics
+        let newMetrics = newRevision.metrics
 
         return ArtifactDiff(
             types: TypeDelta(added: addedTypes, removed: removedTypes, changed: changedTypes),
@@ -46,11 +52,7 @@ public struct ArtifactDiffer: Sendable {
         )
     }
 
-    /// The union of two revisions as a single artifact for rendering a delta diagram: every type,
-    /// relationship and free declaration from both sides, so removed elements appear alongside added
-    /// and unchanged ones and a caller can tint each by `ArtifactDiff.status(of:)`. The new side
-    /// wins wherever both declare the same element, matched by ``TypeIdentities`` rather than by id
-    /// — otherwise a re-scoped id puts the same type, and the same edge, in twice.
+    /// Both revisions in one artifact for a delta diagram; the new side wins per ``TypeIdentities`` match.
     public func unionArtifact(old: CodeArtifact, new: CodeArtifact) -> CodeArtifact {
         let newFlat = new.flattened()
         let oldFlat = old.flattened()
@@ -74,8 +76,6 @@ public struct ArtifactDiffer: Sendable {
         )
     }
 
-    /// `preferred` first, then every declaration of `other` whose signature it does not already
-    /// carry — so a removed free function survives into the delta diagram.
     private func union(_ preferred: [Member], _ other: [Member]) -> [Member] {
         var seen = Set(preferred.map(\.diffSignature))
         return preferred + other.filter { seen.insert($0.diffSignature).inserted }
@@ -103,8 +103,7 @@ public struct ArtifactDiffer: Sendable {
 
     // MARK: - Members
 
-    /// Set-differences two flat member lists by signature, then pairs what is left by name. Used for
-    /// a type's members and for an artifact's free functions and module-scope variables alike.
+    /// Set-differences by signature, then pairs what is left by name.
     private func memberDelta(old: [Member], new: [Member]) -> MemberDelta {
         let oldSignatures = Set(old.map(\.diffSignature))
         let newSignatures = Set(new.map(\.diffSignature))

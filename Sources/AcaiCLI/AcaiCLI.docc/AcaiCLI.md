@@ -618,7 +618,7 @@ key keeps its original name, so the output shape is unchanged by the rename.
 
 Reports only what structurally changed — added/removed types, added/removed/changed relationships, added/removed/changed free functions and module-scope variables, and notable metric movement.
 
-Each side is a positional stored-analysis name or `.json` path, **or** a directory via `--source-old` / `--source-new`. Two sides given as directories are analysed concurrently.
+Each side is a positional stored-analysis name or `.json` path, **or** a directory via `--source-old` / `--source-new`. Two sides given as directories are analysed concurrently, and a file both hold unchanged is parsed once.
 
 | Flag | Notes |
 | --- | --- |
@@ -639,7 +639,7 @@ acai diff old.json new.json --format json
 acai diff --source-old ./before --source-new ./after --diagram dot --output delta.dot
 ```
 
-Types are matched across the two revisions by **module plus qualified name**, not by artifact id. An id is re-scoped from `Module.Name` to `Path:Name` as soon as a second file declares the same name, and a file-private type is always path-scoped — so matching on the id alone reported an untouched type as removed-and-added whenever an unrelated file started declaring its name, or whenever a private type's file was renamed. The file path enters the match only to separate two declarations of one qualified name inside one module. Relationship endpoints resolve through the same match, so neither does a re-scoped id produce a phantom relationship removal.
+Types are matched across the two revisions by **module plus qualified name**, not by artifact id. An id is re-scoped from `Module.Name` to `Path:Name` as soon as a second file declares the same name, and a file-private type is always path-scoped — so an untouched type stays unchanged when an unrelated file starts declaring its name, or when a private type's file is renamed. The file path enters the match only to separate two declarations of one qualified name inside one module. Relationship endpoints resolve through the same match, so neither does a re-scoped id produce a phantom relationship removal.
 
 **Free functions and module-scope variables** get their own sections, `Free function changes` and `Global variable changes`, each with `+` / `-` / `~` lines carrying the full signature. For a C or Python codebase this is most of the delta, since neither language hangs its top-level code off a type. Two declarations with identical signatures are one entry, so moving a free function between files reports nothing.
 

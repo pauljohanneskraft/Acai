@@ -118,7 +118,9 @@ extension AcaiCommand {
             if let diagram {
                 rendered = try deltaDiagram(old: oldArtifact, new: newArtifact, format: diagram)
             } else {
-                let diff = ArtifactDiffer().diff(old: oldArtifact, new: newArtifact)
+                async let oldRevision = DiffRevision(oldArtifact)
+                async let newRevision = DiffRevision(newArtifact)
+                let diff = await ArtifactDiffer().diff(old: oldRevision, new: newRevision)
                 let health = HealthCheck(artifact: oldArtifact).summary
                     .combined(with: HealthCheck(artifact: newArtifact).summary)
                 rendered = try report(for: diff, health: health)

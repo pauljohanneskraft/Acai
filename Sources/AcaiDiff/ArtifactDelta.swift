@@ -33,8 +33,7 @@ public struct RelationshipDelta: Sendable {
     public static let empty = RelationshipDelta()
 }
 
-/// Added, removed and signature-changed declarations of one flat group — a type's members, or an
-/// artifact's free functions or module-scope variables.
+/// A type's members, or an artifact's free functions or globals, compared by signature.
 public struct MemberDelta: Sendable {
     /// Excludes members in `changed`.
     public var added: [String]
