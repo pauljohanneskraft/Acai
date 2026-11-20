@@ -262,6 +262,19 @@ struct SwiftTypeTests {
         #expect(typeRef?.genericArguments[1].name == "Int")
     }
 
+    @Test func valueGenericArgumentKeepsItsSlot() {
+        let source = """
+        struct Vector<let count: Int> {
+            var storage: InlineArray<4, Double>
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Vector.swift")
+        #expect(artifact.metadata.hasParseErrors == false)
+        let typeRef = artifact.types.first?.members.first { $0.name == "storage" }?.type
+        #expect(typeRef?.name == "InlineArray")
+        #expect(typeRef?.genericArguments.map(\.name) == ["4", "Double"])
+    }
+
     @Test func finalClass() {
         let source = """
         final class Singleton {
