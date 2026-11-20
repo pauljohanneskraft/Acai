@@ -59,7 +59,7 @@ final class CompareOtherDiagramTypesTests: UIJourneyTestCase {
         )
         callGraph.createButton.tapWhenReady("the call graph configuration's Create button")
 
-        callGraph.node(id: "Derived.doWork").waitOrFail("the Derived.doWork node", timeout: .uiWork)
+        callGraph.node(id: "Derived.doWork()").waitOrFail("the Derived.doWork node", timeout: .uiWork)
         callGraph.openCompare()
         callGraph.compare(against: "HEAD")
     }

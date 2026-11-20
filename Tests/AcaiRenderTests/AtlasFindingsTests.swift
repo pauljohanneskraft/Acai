@@ -38,7 +38,9 @@ struct AtlasFindingsTests {
 
     @Test func deadCodeCarriesTheCoverageCaveat() throws {
         let results = findings(
-            candidates: [.init(id: "Widget.unused", location: location(7))],
+            candidates: [
+                .init(id: "Widget.unused()", typeName: "Widget", memberName: "unused", location: location(7))
+            ],
             coverage: .init(resolved: 3, total: 4))
         let finding = try #require(results.first)
         #expect(finding.severity == .info)
@@ -58,7 +60,7 @@ struct AtlasFindingsTests {
     @Test func eachLensContributesInOrder() {
         let results = findings(
             violations: [Violation(ruleKind: "budget", message: "Too wide.", subject: "Widget")],
-            candidates: [.init(id: "Widget.unused", location: nil)],
+            candidates: [.init(id: "Widget.unused()", typeName: "Widget", memberName: "unused", location: nil)],
             diagnostics: [ParseDiagnostic(location: location(1), kind: .error, message: "Unexpected token.")])
         #expect(results.map(\.kind) == [.violation, .deadCode, .health])
     }
