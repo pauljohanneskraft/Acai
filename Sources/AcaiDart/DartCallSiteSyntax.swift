@@ -67,8 +67,7 @@ struct DartCallSiteSyntax: CallSiteSyntax {
         )
     }
 
-    /// Dart hangs the argument list off the trailing `selector`'s `argument_part` rather than an
-    /// `arguments` field, and spells a named argument as a `label` ahead of the expression.
+    /// The arguments hang off the trailing `selector`'s `argument_part`; a named one carries a `label`.
     func callArguments(of node: Node) -> [String?]? {
         guard let selector = node.namedChildren().last, isArgumentSelector(selector),
               let part = selector.firstChild(withType: "argument_part"),

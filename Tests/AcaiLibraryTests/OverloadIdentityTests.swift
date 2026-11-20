@@ -26,13 +26,15 @@ struct OverloadIdentityTests {
         #expect(MethodCycles(artifact: artifact).clusters.isEmpty)
     }
 
-    @Test func aDelegatingJavaConstructorIsNotACycle() {
+    /// The Java parser records no `this(...)` constructor call, so a delegating overload stands in.
+    @Test func aDelegatingJavaOverloadIsNotACycle() {
         let artifact = JavaCodeParser().parse(source: """
         class Widget {
-            Widget(String name) { this(name, 0); }
-            Widget(String name, int size) {}
+            void render(String name) { render(name, 0); }
+            void render(String name, int size) {}
         }
         """, fileName: "Widget.java")
+        #expect(CallGraphBuilder().build(from: artifact).edges.count == 1)
         #expect(MethodCycles(artifact: artifact).clusters.isEmpty)
     }
 

@@ -12,10 +12,7 @@ public protocol CallSiteSyntax {
 
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite?
 
-    /// The argument list of the call at `node`, one entry per argument carrying its label where the
-    /// language labels arguments. `nil` when this node exposes no argument list, which leaves
-    /// overload selection to fall back on the called member's name. Default: the named children of
-    /// the node's `arguments` field, unlabelled.
+    /// One entry per argument, holding its label if spelled. Default: the `arguments` field, unlabelled.
     func callArguments(of node: Node) -> [String?]?
 
     /// Local-variable name → provably-declared type, so calls on locals resolve
@@ -75,8 +72,6 @@ public struct CallSiteResolver {
 
     private func collect(_ node: Node, scope: CallSiteScope, into sites: inout [CallSite]) {
         if var site = syntax.resolveCallSite(node, scope: scope) {
-            // Collected here rather than in each language's resolver so every grammar records the
-            // call's arity by default, from the one node that classified as a call.
             site.arguments = syntax.callArguments(of: node)
             sites.append(site)
         }

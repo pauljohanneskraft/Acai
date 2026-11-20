@@ -1,9 +1,7 @@
 import SwiftSyntax
 import AcaiCore
 
-/// A Swift call expression's argument list, as the two call syntaxes that have one both spell it.
-/// `SubscriptCallExprSyntax` and `FunctionCallExprSyntax` share no SwiftSyntax protocol carrying
-/// these, so this names what they have in common.
+/// What `FunctionCallExprSyntax` and `SubscriptCallExprSyntax` share but SwiftSyntax doesn't name.
 protocol CallArgumentSyntax {
     var arguments: LabeledExprListSyntax { get }
     var trailingClosure: ClosureExprSyntax? { get }
@@ -11,10 +9,7 @@ protocol CallArgumentSyntax {
 }
 
 extension CallArgumentSyntax {
-    /// The call's arguments as ``CallSite/arguments`` records them: one entry per argument, carrying
-    /// its label where the call spells one. A trailing closure fills the parameter whose label the
-    /// call syntax omits, so it contributes an unlabelled entry — keeping the arity right, which is
-    /// what overload selection needs.
+    /// A trailing closure counts as one unlabelled argument.
     var callSiteArguments: [String?] {
         var labels: [String?] = arguments.map { $0.label?.text }
         if trailingClosure != nil { labels.append(nil) }

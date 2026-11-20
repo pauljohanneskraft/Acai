@@ -13,10 +13,7 @@ import AcaiCore
 /// free function of that name, since a bare `foo()` is recorded as `.selfDispatch`), a `.free`
 /// when `methodName` matches a free function. The resolved share is `CallGraph.coverage`.
 ///
-/// Where a name matches several declarations — an overload set, or same-named free functions in
-/// different files — ``OverloadResolver`` picks by the call's argument list, and a free-function
-/// call prefers a declaration in the calling file. A call that narrows to none of them is left
-/// unresolved; one that narrows to several is attributed to each.
+/// ``OverloadResolver`` picks among same-named declarations; a free-function call prefers its own file.
 ///
 /// A value you instantiate with the scope/title and ask to `build(from:)`.
 public struct CallGraphBuilder: Sendable {
@@ -38,8 +35,6 @@ public struct CallGraphBuilder: Sendable {
     }
 }
 
-/// One declaration a call site was attributed to: the member, the type that owns it (`nil` for a
-/// free function), and whether that owner is inside the graph's scope.
 private struct CallTarget {
     let type: TypeDeclaration?
     let member: Member
@@ -109,10 +104,7 @@ private struct CallGraphAccumulator {
         )
     }
 
-    /// A node's parameter list and declaring file are what *distinguish* it from a namesake, so a
-    /// node with no namesake in the graph shows neither: a lone `place` reads better as
-    /// `OrderService.place` than as `OrderService.place(order:)`, while two overloads must not draw
-    /// the same label twice. The id keeps both either way — this is only what the label shows.
+    /// Labels show a parameter list or file only where a namesake in the graph needs it.
     private func disambiguated(_ nodes: [CallGraph.Node]) -> [CallGraph.Node] {
         let counts = Dictionary(grouping: nodes) { "\($0.typeName).\($0.methodName)" }.mapValues(\.count)
         return nodes.map { node in
@@ -140,7 +132,6 @@ private struct CallGraphAccumulator {
                 }
                 continue
             }
-            // One call site, however many declarations its name could not be narrowed past.
             total += 1
             resolved += 1
             for target in targets {
@@ -183,9 +174,7 @@ private struct CallGraphAccumulator {
             .map { CallTarget(type: type, member: $0, inScope: inScope) }
     }
 
-    /// A free function is keyed by its file, so resolution prefers a declaration in the calling
-    /// file: a file-local function shadows a same-named one elsewhere in the project. Only when the
-    /// call's own file declares none does the whole project's set of that name apply.
+    /// A file-local function shadows a same-named one declared elsewhere.
     private func freeFunctionTargets(site: CallSite) -> [CallTarget] {
         let candidates = freeFunctionsByName[site.methodName] ?? []
         guard candidates.count > 1 else {

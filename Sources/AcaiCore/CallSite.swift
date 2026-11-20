@@ -63,11 +63,7 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
     /// Recorded on the chance its receiver is a project type; not counted at all when it resolves to no member.
     public var isSpeculative: Bool
 
-    /// The arguments passed here, one entry per argument, carrying the argument's label in the
-    /// languages that label them and `nil` where the language doesn't or the parser can't tell
-    /// (an unlabelled position, a trailing closure). `nil` — not `[]` — when the parser records no
-    /// argument list at all, which is how a zero-argument call stays distinguishable from an
-    /// unrecorded one: overload selection falls back to the member name for the latter.
+    /// One entry per argument, holding its label if spelled; `nil` when no argument list was recorded.
     public var arguments: [String?]?
 
     public init(

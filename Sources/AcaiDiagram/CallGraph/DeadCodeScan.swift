@@ -16,15 +16,10 @@ import AcaiCore
 /// markers come from the injected configuration, so this names no language.
 public struct DeadCodeScan: Sendable {
     public struct Candidate: Codable, Hashable, Sendable {
-        /// The call-graph node id this member would have had a caller edge to, as
-        /// ``CallGraphNodeIdentity`` spells it — so it distinguishes overloads, and a consumer can
-        /// match a candidate against the graph.
+        /// The call-graph node id this member would have.
         public var id: String
-        /// The owning type as the id names it, `nil` for a freestanding function. Carried so a
-        /// consumer can locate the declaration without taking the id apart, which a parameter list
-        /// holding its own dots makes unreliable.
+        /// The owning type as the id names it; `nil` for a freestanding function.
         public var typeName: String?
-        /// The member's own name, without its parameter list.
         public var memberName: String
         public var location: SourceLocation?
 

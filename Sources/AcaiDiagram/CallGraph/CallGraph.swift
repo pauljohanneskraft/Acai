@@ -13,9 +13,7 @@ public struct CallGraph: Codable, Hashable, Sendable {
     // MARK: - Node
 
     public struct Node: Codable, Hashable, Sendable, Identifiable {
-        /// Stable id, as ``CallGraphNodeIdentity`` spells it: the owning type (or, for a free
-        /// function, the declaring file) then the member name and its parameter list, so overloads
-        /// and same-named file-local functions are separate nodes.
+        /// Owning type (or declaring file), member name and parameter list, as ``CallGraphNodeIdentity`` spells it.
         public var id: String
         /// The owning type's simple name, or its qualified id when another declared type shares that
         /// simple name; empty for a free function.
@@ -24,12 +22,9 @@ public struct CallGraph: Codable, Hashable, Sendable {
         /// `true` when the method belongs to the scoped focus (vs. an out-of-scope callee
         /// pulled in as a leaf), so the app can de-emphasise external leaves.
         public var inScope: Bool
-        /// The parameter list that distinguishes this node from its same-named overloads, as
-        /// ``Member/callGraphParameterList`` renders it. `nil` for a member that declares none.
+        /// The parameter list the label shows only when a namesake makes it ambiguous.
         public var signature: String?
-        /// What qualifies a free function in place of a type: the name of the file declaring it,
-        /// which is also what scopes its id. `nil` for a member of a type, and for a free function
-        /// whose parser recorded no location.
+        /// A free function's declaring file name, shown in place of a type when ambiguous.
         public var container: String?
 
         public init(

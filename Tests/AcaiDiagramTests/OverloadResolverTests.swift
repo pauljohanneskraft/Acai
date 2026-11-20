@@ -83,23 +83,17 @@ struct OverloadResolverTests {
         #expect(OverloadResolver(candidates: [text, image]).targets(of: call([nil])) == [text, image])
     }
 
-    // MARK: - A call nothing of that name can take
-
-    /// A call no declaration of the name can accept reaches one the type does not list — a
-    /// supertype's or an extension's — so it resolves to nothing rather than to a namesake.
-    @Test func anArityNoOverloadAcceptsResolvesToNothing() {
+    /// An unrecorded default or variadic can rule every declaration out, so no match is no evidence.
+    @Test func anArityNoOverloadAcceptsFallsBackToEveryCandidate() {
         let one = method("render", [parameter("text", "String")])
         let two = method("render", [parameter("text", "String"), parameter("times", "Int")])
-        #expect(OverloadResolver(candidates: [one, two]).targets(of: call([nil, nil, nil])).isEmpty)
+        #expect(OverloadResolver(candidates: [one, two]).targets(of: call([nil, nil, nil])) == [one, two])
     }
 
-    /// The same holds for a lone declaration — this is what stops a method that calls a same-named
-    /// one inherited from a protocol extension from reading as recursion.
-    @Test func aLoneDeclarationThatCannotTakeTheCallResolvesToNothing() {
+    @Test func aLoneDeclarationThatCannotTakeTheCallStillResolvesToIt() {
         let noArguments = method("render", [])
-        #expect(OverloadResolver(candidates: [noArguments]).targets(of: call([nil, nil])).isEmpty)
+        #expect(OverloadResolver(candidates: [noArguments]).targets(of: call([nil, nil])) == [noArguments])
         #expect(OverloadResolver(candidates: [noArguments]).targets(of: call([])) == [noArguments])
-        // With no recorded argument list there is no arity to judge, so the call still resolves.
         #expect(OverloadResolver(candidates: [noArguments]).targets(of: call(nil)) == [noArguments])
     }
 }
