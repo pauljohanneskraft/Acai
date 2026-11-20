@@ -5,15 +5,29 @@ import AcaiTreeSitter
 
 extension JavaExtractor {
 
-    /// `fieldName → typeName` from the type's own members plus its direct `field_declaration`
-    /// children, so a same-type method call through a typed stored property (`this.cache.process()`)
-    /// resolves. `existingMembers` lets a record's already-collected component properties count too.
+    private static let fieldNodeTypes: Set<String> = ["field_declaration", "constant_declaration"]
+
+    /// An enum keeps its methods and fields in an `enum_body_declarations` child rather than directly
+    /// under its body, so the two scope pre-passes below look through it.
+    private func declarationChildren(ofBody node: Node) -> [Node] {
+        let children = node.children()
+        guard let nested = children.first(where: { $0.nodeType == "enum_body_declarations" }) else {
+            return children
+        }
+        return children + nested.children()
+    }
+
+    /// `fieldName → typeName` from the type's own members plus its declared fields, so a same-type
+    /// method call through a typed stored property (`this.cache.process()`) resolves. An interface
+    /// spells its fields `constant_declaration`. `existingMembers` lets a record's already-collected
+    /// component properties count too.
     private func propertyMap(existingMembers: [Member], fromBody node: Node) -> [String: String] {
         var knownProperties: [String: String] = [:]
         for member in existingMembers where member.kind == .property {
             if let typeName = member.type?.name { knownProperties[member.name] = typeName }
         }
-        for child in node.children() where child.nodeType == "field_declaration" {
+        for child in declarationChildren(ofBody: node) {
+            guard let nodeType = child.nodeType, Self.fieldNodeTypes.contains(nodeType) else { continue }
             for field in fieldMembers(from: child, scope: nil) where field.kind == .property {
                 if let typeName = field.type?.name { knownProperties[field.name] = typeName }
             }
@@ -21,12 +35,12 @@ extension JavaExtractor {
         return knownProperties
     }
 
-    /// A `methodName → returnTypeName` map from the type's direct method declarations (a one-level
+    /// A `methodName → returnTypeName` map from the type's own method declarations (a one-level
     /// pre-pass, mirroring `propertyMap` above), so a same-type method call with an unambiguous
     /// return type can seed a local's type. Overloaded names with differing return types are dropped.
     private func methodReturnTypeMap(fromBody node: Node) -> [String: String] {
         var typesByName: [String: Set<String>] = [:]
-        for child in node.children() where child.nodeType == "method_declaration" {
+        for child in declarationChildren(ofBody: node) where child.nodeType == "method_declaration" {
             guard let nameNode = child.child(byFieldName: "name"),
                   let typeNode = child.child(byFieldName: "type"),
                   let typeName = typeReferences.extractTypeReference(typeNode)?.name
@@ -129,6 +143,7 @@ extension JavaExtractor {
         var enumCases: [EnumCase] = []
         let parentQualifiedName: String
         var scope: CallSiteScope = CallSiteScope()
+        var memberDefaults: JavaMemberDefaults = .classBody
     }
 
     private mutating func extractBodyMembers(
@@ -177,13 +192,15 @@ extension JavaExtractor {
         switch role {
         case .method:
             appendIfPresent(
-                extractMethodDeclaration(child, scope: context.scope),
+                extractMethodDeclaration(child, scope: context.scope, defaults: context.memberDefaults),
                 to: &context.members
             )
         case .constructor:
             context.members.append(extractConstructorDeclaration(child, scope: context.scope))
         case .field:
-            context.members.append(contentsOf: fieldMembers(from: child, scope: context.scope))
+            context.members.append(
+                contentsOf: fieldMembers(from: child, scope: context.scope, defaults: context.memberDefaults)
+            )
         case .initializerBlock:
             // A `static { … }` / instance `{ … }` initializer block. Its calls run during
             // construction, so record them on an `.initializer` member, never a dead-code candidate.
@@ -207,7 +224,10 @@ extension JavaExtractor {
         case .enumBodyDeclarations:
             extractClassBody(child, context: &context)
         case .annotationTypeElement:
-            appendIfPresent(extractAnnotationTypeElement(child), to: &context.members)
+            appendIfPresent(
+                extractAnnotationTypeElement(child, defaults: context.memberDefaults),
+                to: &context.members
+            )
         }
     }
 
@@ -217,37 +237,52 @@ extension JavaExtractor {
         _ node: Node,
         context: inout BodyExtractionContext
     ) {
-        context.scope = CallSiteScope(
-            knownProperties: propertyMap(existingMembers: context.members, fromBody: node),
-            knownTypeNames: declarations.declaredTypeNames,
-            knownMethodReturnTypes: methodReturnTypeMap(fromBody: node)
-        )
-        extractBodyMembers(node, context: &context, dispatch: Self.classBodyDispatch)
+        extractBody(node, context: &context, dispatch: Self.classBodyDispatch, defaults: .classBody)
     }
 
     mutating func extractInterfaceBody(
         _ node: Node,
         context: inout BodyExtractionContext
     ) {
-        extractBodyMembers(node, context: &context, dispatch: Self.interfaceBodyDispatch)
+        extractBody(node, context: &context, dispatch: Self.interfaceBodyDispatch, defaults: .interfaceBody)
     }
 
     mutating func extractEnumBody(
         _ node: Node,
         context: inout BodyExtractionContext
     ) {
-        extractBodyMembers(node, context: &context, dispatch: Self.enumBodyDispatch)
+        extractBody(node, context: &context, dispatch: Self.enumBodyDispatch, defaults: .classBody)
     }
 
     mutating func extractAnnotationTypeBody(
         _ node: Node,
         context: inout BodyExtractionContext
     ) {
-        extractBodyMembers(node, context: &context, dispatch: Self.annotationTypeBodyDispatch)
+        extractBody(
+            node, context: &context, dispatch: Self.annotationTypeBodyDispatch, defaults: .interfaceBody
+        )
     }
 
-    private func extractAnnotationTypeElement(_ node: Node) -> Member? {
-        let modifierInfo = modifiers.info(fromParentOf: node)
+    /// Every body resolves its calls against the same scope — the type's own properties, the file's
+    /// declared type names and its unambiguous method return types — and tells its members which
+    /// modifiers the enclosing body implies.
+    private mutating func extractBody(
+        _ node: Node,
+        context: inout BodyExtractionContext,
+        dispatch: [String: BodyChildRole],
+        defaults: JavaMemberDefaults
+    ) {
+        context.scope = CallSiteScope(
+            knownProperties: propertyMap(existingMembers: context.members, fromBody: node),
+            knownTypeNames: declarations.declaredTypeNames,
+            knownMethodReturnTypes: methodReturnTypeMap(fromBody: node)
+        )
+        context.memberDefaults = defaults
+        extractBodyMembers(node, context: &context, dispatch: dispatch)
+    }
+
+    private func extractAnnotationTypeElement(_ node: Node, defaults: JavaMemberDefaults) -> Member? {
+        let modifierInfo = defaults.method(modifiers.info(fromParentOf: node), hasBody: false)
         let returnType = node.child(byFieldName: "type").flatMap { typeReferences.extractTypeReference($0) }
         return memberExtractor.annotationTypeElement(node, modifierInfo: modifierInfo, returnType: returnType)
     }
@@ -272,14 +307,15 @@ extension JavaExtractor {
 
     func extractMethodDeclaration(
         _ node: Node,
-        scope: CallSiteScope = CallSiteScope()
+        scope: CallSiteScope = CallSiteScope(),
+        defaults: JavaMemberDefaults
     ) -> Member? {
-        let modifierInfo = modifiers.info(fromParentOf: node)
+        let body = node.child(byFieldName: "body")
+        let modifierInfo = defaults.method(modifiers.info(fromParentOf: node), hasBody: body != nil)
         let returnType = node.child(byFieldName: "type").flatMap { typeReferences.extractTypeReference($0) }
         let generics = typeReferences.extractTypeParameters(from: node)
         let parameters = node.child(byFieldName: "parameters").map { parameterExtractor.parameters($0) } ?? []
 
-        let body = node.child(byFieldName: "body")
         let mergedScope = scope.merging(parameters: parameters)
 
         return memberExtractor.methodDeclaration(
@@ -328,8 +364,10 @@ extension JavaExtractor {
 
     /// `scope` is `nil` for the type-body pre-pass (only each field's type is read; references are
     /// left empty rather than resolving real call sites against a scope that isn't ready yet).
-    private func fieldMembers(from node: Node, scope: CallSiteScope?) -> [Member] {
-        let modifierInfo = modifiers.info(fromParentOf: node)
+    private func fieldMembers(
+        from node: Node, scope: CallSiteScope?, defaults: JavaMemberDefaults = .classBody
+    ) -> [Member] {
+        let modifierInfo = defaults.field(modifiers.info(fromParentOf: node))
         let nodeLoc = node.location(in: context)
         let fieldType = node.child(byFieldName: "type").flatMap { typeReferences.extractTypeReference($0) }
 
