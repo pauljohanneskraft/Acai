@@ -41,6 +41,9 @@ because it runs the same layout and the same views.
 
 - ``DiagramImageRenderer``
 - ``DiagramImageRenderError``
+- ``RenderSizeLimits``
+- ``DiagramImageEncoding``
+- ``PNGImageEncoder``
 
 ### Layout engine
 

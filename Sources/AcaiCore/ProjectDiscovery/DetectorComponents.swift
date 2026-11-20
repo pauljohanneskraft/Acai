@@ -41,17 +41,22 @@ public struct IndicatorFiles: Sendable {
 
 /// Resolves a build system's source directories using the "prefer the conventional subdirectory,
 /// else fall back to the project root" convention shared by SwiftPM (`Sources`), Node/Python (`src`),
-/// and Flutter (`lib`).
+/// and Flutter (`lib`). `alsoIncluding` directories are added beside the preferred one, never to the root.
 public struct SourceDirectoryProbe: Sendable {
     private let preferredSubdirectory: String
+    private let additionalSubdirectories: [String]
 
-    public init(preferring preferredSubdirectory: String) {
+    public init(preferring preferredSubdirectory: String, alsoIncluding additionalSubdirectories: [String] = []) {
         self.preferredSubdirectory = preferredSubdirectory
+        self.additionalSubdirectories = additionalSubdirectories
     }
 
     public func directories(in root: URL) -> [URL] {
         let preferred = root.appendingPathComponent(preferredSubdirectory)
-        return FileManager.default.fileExists(atPath: preferred.path) ? [preferred] : [root]
+        guard FileManager.default.fileExists(atPath: preferred.path) else { return [root] }
+        return [preferred] + additionalSubdirectories
+            .map { root.appendingPathComponent($0) }
+            .filter { FileManager.default.fileExists(atPath: $0.path) }
     }
 }
 

@@ -12,6 +12,9 @@ public protocol CallSiteSyntax {
 
     func resolveCallSite(_ node: Node, scope: CallSiteScope) -> CallSite?
 
+    /// One entry per argument, holding its label if spelled. Default: the `arguments` field, unlabelled.
+    func callArguments(of node: Node) -> [String?]?
+
     /// Local-variable name → provably-declared type, so calls on locals resolve
     /// (`var x = Foo(); x.method()`). Default: no locals. A language overrides this to recognise its
     /// typed/constructed local declarations, emitting only provable types.
@@ -21,6 +24,12 @@ public protocol CallSiteSyntax {
 extension CallSiteSyntax {
 
     public func localBindings(in body: Node, scope: CallSiteScope) -> [String: String] { [:] }
+
+    public func callArguments(of node: Node) -> [String?]? {
+        node.child(byFieldName: "arguments").map { list in
+            list.namedChildren().map { _ in nil }
+        }
+    }
 
     /// Lets a language's ``localBindings(in:scope:)`` write only a per-node recogniser. A later
     /// binding for the same name wins.
@@ -62,7 +71,8 @@ public struct CallSiteResolver {
     }
 
     private func collect(_ node: Node, scope: CallSiteScope, into sites: inout [CallSite]) {
-        if let site = syntax.resolveCallSite(node, scope: scope) {
+        if var site = syntax.resolveCallSite(node, scope: scope) {
+            site.arguments = syntax.callArguments(of: node)
             sites.append(site)
         }
         for child in node.namedChildren() {

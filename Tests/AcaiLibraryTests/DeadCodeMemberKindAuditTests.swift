@@ -298,7 +298,7 @@ extension DeadCodeMemberKindAuditTests {
         """, fileName: "Worker.java")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled()"))
         #expect(!report.candidates.map(\.id).contains("Called.Called"))
     }
 
@@ -317,7 +317,7 @@ extension DeadCodeMemberKindAuditTests {
         """, fileName: "Worker.kt")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Uncalled.init"))
+        #expect(report.candidates.map(\.id).contains("Uncalled.init(Int)"))
         #expect(!report.candidates.map(\.id).contains("Called.init"))
     }
 
@@ -340,7 +340,7 @@ extension DeadCodeMemberKindAuditTests {
         """, fileName: "worker.dart")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled"))
+        #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled()"))
         #expect(!report.candidates.map(\.id).contains("_Called._Called"))
     }
 
@@ -363,7 +363,7 @@ extension DeadCodeMemberKindAuditTests {
         """, fileName: "worker.py")
 
         let graph = CallGraphBuilder().build(from: artifact)
-        #expect(graph.edges.contains { $0.from == "Worker.run" && $0.to == "Called.__init__" })
+        #expect(graph.edges.contains { $0.from == "Worker.run()" && $0.to == "Called.__init__()" })
 
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
@@ -389,7 +389,7 @@ extension DeadCodeMemberKindAuditTests {
         """, fileName: "Worker.cpp")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled()"))
         #expect(!report.candidates.map(\.id).contains("Called.Called"))
     }
 
@@ -409,7 +409,7 @@ extension DeadCodeMemberKindAuditTests {
         """, fileName: "worker.dart")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed"))
+        #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed()"))
         #expect(!report.candidates.map(\.id).contains("Widget._calledNamed"))
     }
 
