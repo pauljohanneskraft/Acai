@@ -39,6 +39,16 @@ extension Node {
         children().contains { $0.text(in: context) == text }
     }
 
+    /// `(1, "x")` reads as `1, "x"`; `nil` for an empty list.
+    public func argumentListText(in context: SourceFileContext) -> String? {
+        let text = text(in: context).trimmingCharacters(in: .whitespacesAndNewlines)
+        let unwrapped = text.hasPrefix("(") && text.hasSuffix(")")
+            ? String(text.dropFirst().dropLast())
+            : text
+        let arguments = unwrapped.trimmingCharacters(in: .whitespacesAndNewlines)
+        return arguments.isEmpty ? nil : arguments
+    }
+
     /// Every identifier-like name in this subtree. Walks iteratively (explicit stack) so a deeply
     /// nested body can't overflow the stack. Over-captures every identifier by design; the engine
     /// keeps only names that resolve to a known type.
