@@ -43,7 +43,7 @@ struct CallGraphFreeformConversionTests {
     func methodsBecomeMethodNodes() {
         let freeform = callGraphDiagram().convertToFreeform(
             artifact: artifact(),
-            positions: ["A.run": CGPoint(x: 64, y: 128)],
+            positions: ["A.run()": CGPoint(x: 64, y: 128)],
             scale: 1, offset: .zero
         )
         #expect(freeform.nodes.count == 2)

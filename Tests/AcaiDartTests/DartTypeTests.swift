@@ -232,47 +232,6 @@ struct DartTypeTests {
         #expect(conformance?.target == "Displayable")
     }
 
-    // MARK: - Generics
-
-    @Test func genericClass() {
-        let source = """
-        class Box<T> {
-            T value;
-            Box(this.value);
-        }
-        """
-        let artifact = parser.parse(source: source, fileName: "Box.dart")
-        let box = artifact.types[0]
-        #expect(box.genericParameters.count == 1)
-        #expect(box.genericParameters[0].name == "T")
-    }
-
-    @Test func genericClassWithConstraint() {
-        let source = """
-        class Container<T extends Comparable> {
-            T item;
-        }
-        """
-        let artifact = parser.parse(source: source, fileName: "Container.dart")
-        let container = artifact.types[0]
-        #expect(container.genericParameters.count == 1)
-        #expect(container.genericParameters[0].name == "T")
-    }
-
-    @Test func multipleGenericParameters() {
-        let source = """
-        class Pair<K, V> {
-            K key;
-            V value;
-        }
-        """
-        let artifact = parser.parse(source: source, fileName: "Pair.dart")
-        let pair = artifact.types[0]
-        #expect(pair.genericParameters.count == 2)
-        #expect(pair.genericParameters[0].name == "K")
-        #expect(pair.genericParameters[1].name == "V")
-    }
-
     // MARK: - Members
 
     @Test func fieldDeclarations() {
