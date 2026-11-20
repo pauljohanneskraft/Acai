@@ -60,6 +60,16 @@ struct TypeReferenceExtractor {
         return TypeReference(name: typeSyntax.trimmedDescription)
     }
 
+    /// A value-generic argument (`InlineArray<5, Int>`) is an expression; it keeps its slot to preserve arity.
+    func extractTypeReference(from argument: GenericArgumentSyntax.Argument) -> TypeReference {
+        switch argument {
+        case .type(let typeSyntax):
+            return extractTypeReference(from: typeSyntax)
+        case .expr(let exprSyntax):
+            return TypeReference(name: exprSyntax.trimmedDescription)
+        }
+    }
+
     func flattenCompositionType(_ typeSyntax: TypeSyntax) -> [TypeReference] {
         if let composition = typeSyntax.as(CompositionTypeSyntax.self) {
             return composition.elements.map { extractTypeReference(from: $0.type) }

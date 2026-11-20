@@ -37,45 +37,45 @@ struct CallGraphViewModelTests {
 
     @Test func buildsGraphForWholeCodebaseScope() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
-        #expect(vm.graph.nodes.map(\.id) == ["A.run", "B.work"])
+        #expect(vm.graph.nodes.map(\.id) == ["A.run()", "B.work()"])
         #expect(vm.graph.coverage.resolved == 1)
         #expect(vm.graph.coverage.total == 1)
     }
 
     @Test func typeScopeMarksOnlyScopedMethodsInScope() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .type("A"))
-        #expect(vm.graph.nodes.first { $0.id == "A.run" }?.inScope == true)
-        #expect(vm.graph.nodes.first { $0.id == "B.work" }?.inScope == false)
+        #expect(vm.graph.nodes.first { $0.id == "A.run()" }?.inScope == true)
+        #expect(vm.graph.nodes.first { $0.id == "B.work()" }?.inScope == false)
     }
 
     @Test func filterKeepsOnlyMatchingTypesAndDropsTheirEdges() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
         vm.applyFilter(Selector(typeGlob: "A"))
-        #expect(vm.graph.nodes.map(\.id) == ["A.run"])
+        #expect(vm.graph.nodes.map(\.id) == ["A.run()"])
         #expect(vm.graph.edges.isEmpty)
         #expect(vm.filter == Selector(typeGlob: "A"))
     }
 
     @Test func filterKeepsPositionOverridesForSurvivingNodes() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
-        vm.positionOverrides = ["A.run": CGPoint(x: 5, y: 6)]
+        vm.positionOverrides = ["A.run()": CGPoint(x: 5, y: 6)]
         vm.applyFilter(Selector(typeGlob: "A"))
-        #expect(vm.positionOverrides["A.run"] == CGPoint(x: 5, y: 6))
+        #expect(vm.positionOverrides["A.run()"] == CGPoint(x: 5, y: 6))
     }
 
     @Test func clearingFilterRestoresEveryNode() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase, filter: Selector(typeGlob: "A"))
-        #expect(vm.graph.nodes.map(\.id) == ["A.run"])
+        #expect(vm.graph.nodes.map(\.id) == ["A.run()"])
         vm.applyFilter(nil)
-        #expect(vm.graph.nodes.map(\.id) == ["A.run", "B.work"])
+        #expect(vm.graph.nodes.map(\.id) == ["A.run()", "B.work()"])
     }
 
     @Test func selectionTogglesAndClears() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
-        vm.selectNode("A.run", extending: false)
-        #expect(vm.selectedNodeIDs == ["A.run"])
-        vm.selectNode("B.work", extending: true)
-        #expect(vm.selectedNodeIDs == ["A.run", "B.work"])
+        vm.selectNode("A.run()", extending: false)
+        #expect(vm.selectedNodeIDs == ["A.run()"])
+        vm.selectNode("B.work()", extending: true)
+        #expect(vm.selectedNodeIDs == ["A.run()", "B.work()"])
         vm.clearSelection()
         #expect(vm.selectedNodeIDs.isEmpty)
     }
@@ -83,15 +83,15 @@ struct CallGraphViewModelTests {
     @Test func restoredPositionsSeedOverrides() {
         let vm = CallGraphViewModel(
             artifact: artifact(), scope: .wholeCodebase,
-            restoredPositions: ["A.run": CGPoint(x: 42, y: 24)]
+            restoredPositions: ["A.run()": CGPoint(x: 42, y: 24)]
         )
-        #expect(vm.positionOverrides["A.run"] == CGPoint(x: 42, y: 24))
+        #expect(vm.positionOverrides["A.run()"] == CGPoint(x: 42, y: 24))
     }
 
     @Test func moveNodeUpdatesOverride() {
         let vm = CallGraphViewModel(artifact: artifact(), scope: .wholeCodebase)
-        vm.moveNode("A.run", to: CGPoint(x: 10, y: 20))
-        #expect(vm.positionOverrides["A.run"] == CGPoint(x: 10, y: 20))
+        vm.moveNode("A.run()", to: CGPoint(x: 10, y: 20))
+        #expect(vm.positionOverrides["A.run()"] == CGPoint(x: 10, y: 20))
     }
 
     @Test func exportsNonEmptyPNGData() throws {
@@ -141,20 +141,20 @@ struct CallGraphViewModelTests {
             comparisonArtifact: artifact(callingBWork: false))
 
         #expect(vm.isDeltaMode)
-        #expect(vm.nodeDeltaStatus(id: "B.work") == .added)
-        #expect(vm.nodeDeltaColor(id: "B.work") != nil)
-        #expect(vm.edgeDeltaColor(from: "A.run", to: "B.work") != nil)
+        #expect(vm.nodeDeltaStatus(id: "B.work()") == .added)
+        #expect(vm.nodeDeltaColor(id: "B.work()") != nil)
+        #expect(vm.edgeDeltaColor(from: "A.run()", to: "B.work()") != nil)
         // Everything the revisions share carries no badge and no tint.
-        #expect(vm.nodeDeltaStatus(id: "C.help") == nil)
-        #expect(vm.nodeDeltaColor(id: "C.help") == nil)
-        #expect(vm.edgeDeltaColor(from: "A.run", to: "C.help") == nil)
+        #expect(vm.nodeDeltaStatus(id: "C.help()") == nil)
+        #expect(vm.nodeDeltaColor(id: "C.help()") == nil)
+        #expect(vm.edgeDeltaColor(from: "A.run()", to: "C.help()") == nil)
     }
 
     @Test func noComparisonArtifactMeansNoDeltaStatus() {
         let vm = CallGraphViewModel(artifact: artifact(callingBWork: true), scope: .wholeCodebase)
         #expect(!vm.isDeltaMode)
-        #expect(vm.nodeDeltaStatus(id: "B.work") == nil)
-        #expect(vm.edgeDeltaColor(from: "A.run", to: "B.work") == nil)
+        #expect(vm.nodeDeltaStatus(id: "B.work()") == nil)
+        #expect(vm.edgeDeltaColor(from: "A.run()", to: "B.work()") == nil)
     }
 }
 
@@ -172,11 +172,11 @@ extension CallGraphViewModelTests {
 
         #expect(Set(plan.elements.map(\.id)) == Set(layout.nodes.map(\.id)))
         #expect(Set(plan.connections.map(\.id)) == Set(layout.edges.map(\.accessibilityID)))
-        let addedEdge = try #require(layout.edges.first { $0.from == "A.run" && $0.to == "B.work" })
+        let addedEdge = try #require(layout.edges.first { $0.from == "A.run()" && $0.to == "B.work()" })
         let changed = Set(plan.changed.map(\.id))
-        #expect(changed.contains("B.work"))
+        #expect(changed.contains("B.work()"))
         #expect(changed.contains(addedEdge.accessibilityID))
-        #expect(!changed.contains("C.help"))
+        #expect(!changed.contains("C.help()"))
     }
 
     @Test("Selection and a drag tick reuse the rotor plan; a committed drag or a filter rebuilds it")
@@ -187,6 +187,6 @@ extension CallGraphViewModelTests {
         RotorPlanCachingCheck(model: vm) { $0.rotorPlan }.verify(moving: first, to: CGPoint(x: 5000, y: 5000))
 
         vm.applyFilter(Selector(typeGlob: "A"))
-        #expect(vm.rotorPlan.elements.map(\.id) == ["A.run"])
+        #expect(vm.rotorPlan.elements.map(\.id) == ["A.run()"])
     }
 }
