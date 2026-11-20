@@ -16,8 +16,19 @@ import AcaiCore
 /// markers come from the injected configuration, so this names no language.
 public struct DeadCodeScan: Sendable {
     public struct Candidate: Codable, Hashable, Sendable {
+        /// The call-graph node id this member would have.
         public var id: String
+        /// The owning type as the id names it; `nil` for a freestanding function.
+        public var typeName: String?
+        public var memberName: String
         public var location: SourceLocation?
+
+        public init(id: String, typeName: String?, memberName: String, location: SourceLocation?) {
+            self.id = id
+            self.typeName = typeName
+            self.memberName = memberName
+            self.location = location
+        }
     }
 
     public struct Report: Codable, Hashable, Sendable {
@@ -67,22 +78,26 @@ public struct DeadCodeScan: Sendable {
             // dead even without a direct call edge (the witness analogue of `override`).
             let requirements = witnesses.requirements(for: type)
             for member in type.members where configuration.deadCodeMemberKinds.contains(member.kind) {
-                let id = "\(nodeIdentity.nodeName(for: type)).\(member.name)"
+                let id = nodeIdentity.nodeID(for: member, in: type)
                 guard !targeted.contains(id),
                       !isEntryPoint(
                         member, inContract: isContract,
                         requirements: requirements, markers: markers) else { continue }
-                candidates.append(Candidate(id: id, location: member.location))
+                candidates.append(Candidate(
+                    id: id, typeName: nodeIdentity.nodeName(for: type), memberName: member.name,
+                    location: member.location))
             }
         }
         let freestandingMarkers = languages.defaultConfiguration.entryPointMarkers
         if !artifact.freestandingFunctions.isEmpty { scannedKinds.insert(.method) }
         for function in artifact.freestandingFunctions where function.kind == .method {
-            guard !targeted.contains(function.name),
+            guard !targeted.contains(nodeIdentity.nodeID(forFreeFunction: function)),
                   !isEntryPoint(
                     function, inContract: false,
                     requirements: [], markers: freestandingMarkers) else { continue }
-            candidates.append(Candidate(id: function.name, location: function.location))
+            candidates.append(Candidate(
+                id: nodeIdentity.nodeID(forFreeFunction: function), typeName: nil,
+                memberName: function.name, location: function.location))
         }
 
         candidates.sort { $0.id < $1.id }

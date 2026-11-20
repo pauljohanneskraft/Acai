@@ -44,6 +44,32 @@ struct KotlinCallSiteSyntax: CallSiteSyntax {
         )
     }
 
+    /// A `value_argument` is labelled only when it spells `=`; a trailing lambda is one unlabelled argument.
+    func callArguments(of node: Node) -> [String?]? {
+        guard let suffix = node.firstChild(withType: "call_suffix") else { return nil }
+        let values = suffix.firstChild(withType: "value_arguments")?
+            .allChildren(withType: "value_argument")
+            .map { argument -> String? in
+                guard argument.hasChild(withType: "=") else { return nil }
+                return argument.firstChild(withType: "simple_identifier")?.text(in: context)
+            } ?? []
+        return values + trailingLambdas(of: suffix) + trailingLambdas(wrapping: node)
+    }
+
+    private func trailingLambdas(of suffix: Node) -> [String?] {
+        suffix.allChildren(withType: "annotated_lambda").map { _ in nil }
+    }
+
+    /// `f(a) { }` parses as a call whose callee is the call `f(a)`, the lambda in the outer suffix.
+    private func trailingLambdas(wrapping node: Node) -> [String?] {
+        guard let parent = node.parent, parent.nodeType == "call_expression",
+              parent.namedChildren().first == node,
+              let suffix = parent.firstChild(withType: "call_suffix"),
+              !suffix.hasChild(withType: "value_arguments")
+        else { return [] }
+        return trailingLambdas(of: suffix)
+    }
+
     /// Provable local-variable types: an explicit annotation (`val x: Foo`), a `Foo()` construction of
     /// a declared type (`val x = Foo()`), or a same-type method call with an unambiguous return type
     /// (`val x = compute()`, via `scope.knownMethodReturnTypes`), so `x.method()` resolves to `Foo`.
