@@ -169,6 +169,27 @@ copying it in place.
 | `--min-members <n>` | Types with at least *n* members — finds god types. |
 | `--min-nesting <n>` | Types nested at least *n* deep. |
 
+In a rules file a selector additionally takes `exclude:` — a list of selectors carving types *out*
+of it. Anything matching any entry is outside the selector, whatever the including facets say, which
+is the "everything except" the facets above can't express: a budget can then stay tight and carry its
+accepted exceptions by name instead of being loosened to the worst case.
+
+```yaml
+budgets:
+  - target:
+      kind: class
+      exclude:
+        - { typeGlob: "DeclarationVisitor" }   # grammar surface, not responsibility bloat
+        - { module: "*Tests" }
+    metric: weightedMethods
+    max: 25
+```
+
+Each entry is a full selector, so its own facets are AND-combined as usual — `{ module: Legacy, kind: class }`
+carves out Legacy's classes, not all of Legacy. An entry with no facets carves out everything, since that
+is what a facet-less selector matches. A module-scoped metric reads only the module facets, so an
+exclusion that names no module (`{ typeGlob: "Foo" }`) is ignored there rather than exempting every module.
+
 ### Class-diagram flags
 
 Shared by `diagram` (and partly `image`). Only flags you actually pass are applied, so a `--config` file's values survive untouched.
@@ -446,12 +467,14 @@ acai quality --source . --rules quality.yml --baseline last-release
 | Key | Shape |
 | --- | --- |
 | `forbidden` | list of `{from: Selector, to: Selector, kinds: [Kind]?, message: String?}` |
-| `cycles` | `{scope: modules \| types}` |
+| `cycles` | `{scope: modules \| types}` — a module cycle is reported with the witnessing edge for every hop |
 | `budgets` | list of `{target: Selector?, metric: <name>, max: Double?, min: Double?, message: String?}` |
 | `layers` | `{layers: [{name, selector}], allowSkip: Bool}` — ordered top to bottom, `allowSkip` defaults `true` |
 | `contracts` | list of `{into: Selector, only: Selector, kinds: [Kind]?, message: String?}` |
 | `movements` | list of `{target: Selector?, metric: <name>, minImprovement: Double?, message: String?}` — only evaluated with `--baseline` |
 | `includeGeneratedTypes` | `Bool`, default `false` |
+
+**Cycles come with their evidence.** A module cycle names one witnessing reference per hop — `source type → target type`, its relationship kind and the `file:line` to open — so `AcaiApp → AcaiGit → AcaiApp` can be broken or disproven without digging for the reference behind it. Witnesses appear in the violation message, in `detail.witnesses` for `--format json`, and in the `--explore` listing. Where an edge comes from an extension declared outside the referencing type's own file, the witness also names that file, because that provenance is what decided which module the hop leaves.
 
 **Movements — proving a change moved the measurements the right way.** Given `--baseline`, each `movements` entry states how much a metric must have improved (decreased) since then; omitting `minImprovement` (or `0`) means "must not get worse". Every *other* metric on the same target is also checked for a silent regression, so an improvement bought by a hidden cost elsewhere doesn't pass — scope `target` to what the change actually touched to keep the check focused there instead of the whole codebase.
 

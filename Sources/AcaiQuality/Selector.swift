@@ -33,6 +33,8 @@ public struct Selector: Codable, Hashable, Sendable {
     /// fails, regardless of `module`. Unlike `module` (one glob), this pins an arbitrary, pre-picked
     /// group of modules, e.g. a package diagram scoped to exactly a dependency cycle's members.
     public var explicitModules: Set<String>?
+    /// Carve-outs: anything matching any of these is outside this selector, whatever the facets say.
+    public var exclude: [Selector]?
 
     public init(
         module: String? = nil,
@@ -45,7 +47,8 @@ public struct Selector: Codable, Hashable, Sendable {
         minMembers: Int? = nil,
         minNesting: Int? = nil,
         explicitIDs: Set<String>? = nil,
-        explicitModules: Set<String>? = nil
+        explicitModules: Set<String>? = nil,
+        exclude: [Selector]? = nil
     ) {
         self.module = module
         self.typeGlob = typeGlob
@@ -58,14 +61,24 @@ public struct Selector: Codable, Hashable, Sendable {
         self.minNesting = minNesting
         self.explicitIDs = explicitIDs
         self.explicitModules = explicitModules
+        self.exclude = exclude
     }
 
     public func matches(_ node: GraphView.Node) -> Bool {
+        if let exclude, exclude.contains(where: { $0.matches(node) }) { return false }
+        return matchesIdentity(node) && matchesDeclaration(node)
+    }
+
+    private func matchesIdentity(_ node: GraphView.Node) -> Bool {
         if let explicitIDs, !explicitIDs.contains(node.id) { return false }
         if let module, !Glob(module).matches(node.module) { return false }
         if let typeGlob, ![node.id, node.qualifiedName, node.unqualifiedID].contains(where: Glob(typeGlob).matches) {
             return false
         }
+        return true
+    }
+
+    private func matchesDeclaration(_ node: GraphView.Node) -> Bool {
         if let stereotype, node.stereotype != stereotype { return false }
         if let annotation, !node.annotations.contains(annotation.normalizedAnnotation) { return false }
         if let minimumAccess, node.access.visibilityRank < minimumAccess.visibilityRank { return false }
@@ -78,7 +91,11 @@ public struct Selector: Codable, Hashable, Sendable {
 
     /// Whether this selector matches a module by name. Only `explicitModules`/`module` are
     /// consulted; a selector with neither matches every module (used by whole-codebase budgets).
+    /// An exclusion applies here only when it names modules, or a type-only one would exclude all.
     public func matchesModule(named name: String) -> Bool {
+        if let exclude, exclude.contains(where: { $0.namesModules && $0.matchesModule(named: name) }) {
+            return false
+        }
         if let explicitModules, !explicitModules.contains(name) { return false }
         guard let module else { return true }
         return Glob(module).matches(name)
@@ -88,10 +105,15 @@ public struct Selector: Codable, Hashable, Sendable {
     /// state, which carries no `TypeDeclaration` for the other facets to check against. Consults
     /// `typeGlob` (against the name) and `explicitIDs`; a selector with neither matches every name.
     public func matchesName(_ name: String) -> Bool {
+        if let exclude, exclude.contains(where: { $0.namesTypes && $0.matchesName(name) }) { return false }
         if let explicitIDs, !explicitIDs.contains(name) { return false }
         if let typeGlob, !Glob(typeGlob).matches(name) { return false }
         return true
     }
+
+    private var namesModules: Bool { module != nil || explicitModules != nil }
+
+    private var namesTypes: Bool { typeGlob != nil || explicitIDs != nil }
 }
 
 extension String {
