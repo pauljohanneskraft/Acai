@@ -2,11 +2,7 @@ import Foundation
 
 // MARK: - Source Collection
 
-/// What every spec's file collection shares within one analysis: the project root paths are reported
-/// relative to, the tree enumerated once for the whole analysis, and the project's `.gitignore`.
-///
-/// Grouped rather than passed as three parameters apiece so adding one does not push
-/// ``AnalysisService/parseSpec(_:from:fileCache:includingFile:)`` past what a reader can hold.
+/// What every spec's file collection shares within one analysis.
 private struct SourceCollection {
     let rootURL: URL
     let index: SourceFileIndex
@@ -35,9 +31,7 @@ public struct AnalysisService: Sendable {
     /// read whole. Defaults to ``AcaiConstants/maximumSourceFileBytes``.
     public let maximumSourceFileBytes: Int
 
-    /// Counts the directory listings source collection performs. `nil` (the default) counts
-    /// nothing; a regression test injects one to assert the tree is enumerated once per analysis
-    /// rather than once per registered language.
+    /// Counts the directories one analysis lists from disk.
     public let directoryEnumerationCounter: OperationCounter?
 
     public var registry: LanguageRegistry { LanguageRegistry(parsers: parsers) }
@@ -104,10 +98,13 @@ public struct AnalysisService: Sendable {
             throw ValidationError("Source directory does not exist: \(rootURL.path)")
         }
 
+        let reads = DirectoryReadCache(listingCounter: directoryEnumerationCounter)
         let gitignore = respectingGitignore
-            ? GitignoreFilter(root: rootURL, excludingDirectories: excludedDirectories)
+            ? GitignoreFilter(root: rootURL, excludingDirectories: excludedDirectories, reads: reads)
             : nil
-        let specs = projectDiscovery.discoverSourceSpecs(in: rootURL, requestedLanguages: allowedLanguages)
+        let specs = projectDiscovery.discoverSourceSpecs(
+            in: rootURL, requestedLanguages: allowedLanguages, reading: reads
+        )
         try Task.checkCancellation()
 
         guard !specs.isEmpty else {
@@ -122,7 +119,8 @@ public struct AnalysisService: Sendable {
         let modules = ModuleMap(roots: discoveredRoots.map(\.path), filePaths: [])
         var parsedSpecs: [ParsedSpec] = []
         var freshEntries: [String: ParsedFileCache.Entry] = [:]
-        let collection = sourceCollection(at: rootURL, over: specs, gitignore: gitignore)
+        let collection = sourceCollection(at: rootURL, over: specs, gitignore: gitignore, reads: reads)
+        try Task.checkCancellation()
         for spec in specs.mergedByLanguage {
             if let parsed = try await parseSpec(
                 spec, from: collection, fileCache: reusable, includingFile: includingFile
@@ -153,10 +151,8 @@ public struct AnalysisService: Sendable {
         return result
     }
 
-    /// Walks every spec's source directories once, over every registered language's extensions, so
-    /// no spec enumerates the tree again for its own.
     private func sourceCollection(
-        at rootURL: URL, over specs: [SourceSpec], gitignore: GitignoreFilter?
+        at rootURL: URL, over specs: [SourceSpec], gitignore: GitignoreFilter?, reads: DirectoryReadCache
     ) -> SourceCollection {
         SourceCollection(
             rootURL: rootURL,
@@ -164,7 +160,7 @@ public struct AnalysisService: Sendable {
                 sourceDirs: specs.flatMap(\.sourceDirs),
                 extensions: Set(parsers.flatMap(\.fileExtensions).map { $0.lowercased() }),
                 excludingDirectories: excludedDirectories,
-                enumerationCounter: directoryEnumerationCounter
+                reads: reads
             ),
             gitignore: gitignore
         )
@@ -225,11 +221,10 @@ public struct AnalysisService: Sendable {
         return result
     }
 
-    /// Reads the analysis-wide index — built over every registered language's extensions, skipping
-    /// every language's build-output/dependency directories plus the universal VCS one — then applies
-    /// the spec's own excluded paths before `includingFile`. A symbolic link the walk could not
-    /// resolve (dangling, or outside the caller's security scope) becomes a `.skipped` diagnostic
-    /// rather than vanishing the way it did before #303 — the same promise the per-file size ceiling
+    /// Skips every registered language's build-output/dependency directories (plus the universal VCS
+    /// dir), not just `codeParser`'s own, then the spec's own excluded paths, before applying
+    /// `includingFile`. A symbolic link the walk could not resolve (dangling, or outside the caller's
+    /// security scope) becomes a `.skipped` diagnostic, the same promise the per-file size ceiling
     /// makes for a file that exists but is too big.
     private func collectFiles(
         for codeParser: any CodeParser,
@@ -245,9 +240,8 @@ public struct AnalysisService: Sendable {
                 message: "symbolic link could not be resolved"
             )
         }
-        let extensions = Set(codeParser.fileExtensions.map { $0.lowercased() })
         let files = collection.index
-            .files(withExtensions: extensions, under: spec.sourceDirs)
+            .files(withExtensions: Set(codeParser.fileExtensions), under: spec.sourceDirs)
             .removingDuplicates { $0.standardizedFileURL.path }
             .filter { !spec.excludes($0) }
             .filter { url in

@@ -29,16 +29,18 @@ public struct ProjectDiscovery: Sendable {
     /// look for roots there — unlike ``excludedDirectories``, this is about discovery alone and does
     /// not stop a root above from collecting those files as its own sources.
     public let nonRootDirectories: Set<String>
-    /// Counts how many paths the walk standardises. `nil` (the default) counts nothing; a regression
-    /// test injects one to assert a directory is standardised once however many claims exist.
+    /// Counts each path the walk standardises.
     public let pathStandardizationCounter: OperationCounter?
+    /// Counts each claim the walk compares a directory against.
+    public let claimComparisonCounter: OperationCounter?
 
     public init(
         detectors: [any BuildSystemDetector],
         fallback: any BuildSystemDetector,
         excludedDirectories: Set<String> = [],
         nonRootDirectories: Set<String> = AcaiConstants.standard.defaultNonRootDirectories,
-        pathStandardizationCounter: OperationCounter? = nil
+        pathStandardizationCounter: OperationCounter? = nil,
+        claimComparisonCounter: OperationCounter? = nil
     ) {
         self.detectors = detectors
         self.fallback = fallback
@@ -46,30 +48,44 @@ public struct ProjectDiscovery: Sendable {
             .union(AcaiConstants.standard.defaultExcludedSourceDirectories)
         self.nonRootDirectories = Set(nonRootDirectories.map { $0.lowercased() })
         self.pathStandardizationCounter = pathStandardizationCounter
+        self.claimComparisonCounter = claimComparisonCounter
     }
 
     public func discoverSourceSpecs(
         in rootURL: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
-        var walk = DiscoveryWalk(discovery: self, requestedLanguages: requestedLanguages)
+        discoverSourceSpecs(in: rootURL, requestedLanguages: requestedLanguages, reading: DirectoryReadCache())
+    }
+
+    public func discoverSourceSpecs(
+        in rootURL: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage],
+        reading reads: DirectoryReadCache
+    ) -> [SourceSpec] {
+        var walk = DiscoveryWalk(discovery: self, requestedLanguages: requestedLanguages, reads: reads)
         walk.descend(into: rootURL)
         guard !Task.isCancelled else { return [] }
         return walk.specs + fallbackSpecs(
             at: rootURL,
             requestedLanguages: requestedLanguages,
-            claimed: Set(walk.specs.map(\.language)).union(walk.withheldLanguages)
+            claimed: Set(walk.specs.map(\.language)).union(walk.withheldLanguages),
+            reads: reads
         )
     }
 
-    /// Filters the fallback's own output rather than narrowing the request, because an empty request
-    /// means "every language" to a detector — there is no way to ask for "all but these".
+    /// Filters the fallback's own output too, because an empty request means "every language" to a
+    /// detector that cannot be told which languages are already claimed.
     private func fallbackSpecs(
         at rootURL: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage],
-        claimed: Set<CodeArtifact.SourceLanguage>
+        claimed: Set<CodeArtifact.SourceLanguage>,
+        reads: DirectoryReadCache
     ) -> [SourceSpec] {
-        fallback.discoverSourceSpecs(at: rootURL, requestedLanguages: requestedLanguages)
+        let specs = (fallback as? any ClaimAwareFallback)?.discoverSourceSpecs(
+            at: rootURL, requestedLanguages: requestedLanguages, excluding: claimed, reading: reads
+        ) ?? fallback.discoverSourceSpecs(at: rootURL, requestedLanguages: requestedLanguages, reading: reads)
+        return specs
             .filter { !claimed.contains($0.language) }
             .map { $0.detected(by: fallback, asFallback: true) }
     }
@@ -82,16 +98,19 @@ public struct ProjectDiscovery: Sendable {
 private struct DiscoveryWalk {
     let discovery: ProjectDiscovery
     let requestedLanguages: [CodeArtifact.SourceLanguage]
+    let reads: DirectoryReadCache
 
     var specs: [SourceSpec] = []
     var withheldLanguages: Set<CodeArtifact.SourceLanguage> = []
     private var claimedDirs: [CodeArtifact.SourceLanguage: ClaimIndex] = [:]
-    private var claimedSubtrees = ClaimIndex()
+    private var claimedSubtrees: ClaimIndex
     private var standardizer: PathStandardizer
 
-    init(discovery: ProjectDiscovery, requestedLanguages: [CodeArtifact.SourceLanguage]) {
+    init(discovery: ProjectDiscovery, requestedLanguages: [CodeArtifact.SourceLanguage], reads: DirectoryReadCache) {
         self.discovery = discovery
         self.requestedLanguages = requestedLanguages
+        self.reads = reads
+        self.claimedSubtrees = ClaimIndex(comparisonCounter: discovery.claimComparisonCounter)
         self.standardizer = PathStandardizer(counter: discovery.pathStandardizationCounter)
     }
 
@@ -106,8 +125,8 @@ private struct DiscoveryWalk {
 
     private mutating func claim(at directory: URL) {
         var claimedHere: Set<CodeArtifact.SourceLanguage> = []
-        for detector in discovery.detectors where detector.isPresent(at: directory) {
-            let claim = detector.claim(at: directory, requestedLanguages: requestedLanguages)
+        for detector in discovery.detectors where detector.isPresent(at: directory, reading: reads) {
+            let claim = detector.claim(at: directory, requestedLanguages: requestedLanguages, reading: reads)
             for spec in claim.specs where claimedHere.insert(spec.language).inserted {
                 record(spec.detected(by: detector), at: directory)
             }
@@ -127,7 +146,8 @@ private struct DiscoveryWalk {
             ClaimedDirectory(path: standardizer.path(of: $0), nestedRootPaths: nestedRoots)
         }
         let directoryPath = standardizer.path(of: directory)
-        claimedDirs[spec.language, default: ClaimIndex()].insert(contentsOf: claimed)
+        let emptyIndex = ClaimIndex(comparisonCounter: discovery.claimComparisonCounter)
+        claimedDirs[spec.language, default: emptyIndex].insert(contentsOf: claimed)
         claimedSubtrees.insert(contentsOf: claimed.filter { $0.path != directoryPath })
         specs.append(spec)
     }
@@ -138,7 +158,7 @@ private struct DiscoveryWalk {
     }
 
     private mutating func isInsideClaimedSubtree(_ directory: URL) -> Bool {
-        let path = standardizer.path(of: directory)
+        let path = standardizer.path(ofListed: directory)
         return claimedSubtrees.admits(path)
     }
 
@@ -150,12 +170,7 @@ private struct DiscoveryWalk {
     /// directory is a fixture too, so the subtree is not worth walking. The directory the caller
     /// asked about is never filtered, so analysing a fixture package directly still works.
     private func subdirectories(of directory: URL) -> [URL] {
-        let entries = (try? FileManager.default.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
-            options: [.skipsHiddenFiles]
-        )) ?? []
-        return entries
+        reads.visibleEntries(of: directory)
             .filter { !discovery.excludedDirectories.contains($0.lastPathComponent) }
             .filter { !discovery.nonRootDirectories.contains($0.lastPathComponent.lowercased()) }
             .filter { entry in
@@ -170,19 +185,20 @@ private struct ClaimedDirectory {
     let path: String
     let nestedRootPaths: [String]
 
-    /// ``ClaimIndex`` matched `candidate` against ``path`` by walking up its components before
-    /// calling this, so only the nested-root escape hatch is left to check.
+    /// Only the nested-root escape hatch: ``ClaimIndex`` has already matched `candidate` to ``path``.
     func admits(_ candidate: String) -> Bool {
         !nestedRootPaths.contains { candidate.isInside($0) }
     }
 }
 
-/// Claimed directories keyed by their own path, so asking whether a candidate sits inside any claim
-/// walks up the candidate's path components instead of scanning every claim. The linear scan it
-/// replaces accounted for 8.4 s of a large Flutter checkout's discovery, because a claim per package
-/// made the walk quadratic in the number of directories.
+/// Claims keyed by path, so an ancestor check walks up the candidate rather than scanning every claim.
 private struct ClaimIndex {
+    let comparisonCounter: OperationCounter?
     private var claimsByPath: [String: [ClaimedDirectory]] = [:]
+
+    init(comparisonCounter: OperationCounter?) {
+        self.comparisonCounter = comparisonCounter
+    }
 
     mutating func insert(contentsOf claims: [ClaimedDirectory]) {
         for claim in claims {
@@ -202,13 +218,13 @@ private struct ClaimIndex {
     }
 
     private func admits(_ candidate: String, claimedAt path: String) -> Bool {
-        claimsByPath[path]?.contains { $0.admits(candidate) } ?? false
+        claimsByPath[path]?.contains { claim in
+            comparisonCounter?.record()
+            return claim.admits(candidate)
+        } ?? false
     }
 }
 
-/// Standardises a path once and remembers the answer for the rest of the walk. `standardizedFileURL`
-/// is expensive enough to have been 18% of all CPU in a large Flutter checkout's discovery trace,
-/// because every claim check recomputed it for the directory under test.
 private struct PathStandardizer {
     let counter: OperationCounter?
     private var known: [String: String] = [:]
@@ -224,5 +240,27 @@ private struct PathStandardizer {
         let standardized = path.hasSuffix("/") && path != "/" ? String(path.dropLast()) : path
         known[url.path] = standardized
         return standardized
+    }
+
+    /// An entry a directory listing returned exists and has no `.` or `..` components, so it
+    /// standardises to its standardised parent plus its name without asking the filesystem again.
+    mutating func path(ofListed entry: URL) -> String {
+        let path = entry.path
+        if let standardized = known[path] { return standardized }
+        let parent = entry.deletingLastPathComponent().path
+        guard let standardizedParent = known[parent] else { return self.path(of: entry) }
+        let standardized = standardizedParent == "/"
+            ? "/" + entry.lastPathComponent
+            : standardizedParent + "/" + entry.lastPathComponent
+        known[path] = standardized
+        return standardized
+    }
+}
+
+extension String {
+    /// Whether this path is `other` or sits below it, compared on a path-component boundary so
+    /// `/a/foobar` is not treated as being inside `/a/foo`.
+    fileprivate func isInside(_ other: String) -> Bool {
+        self == other || hasPrefix(other.hasSuffix("/") ? other : other + "/")
     }
 }

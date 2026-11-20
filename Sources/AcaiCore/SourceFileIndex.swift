@@ -1,98 +1,69 @@
 import Foundation
 
-/// Every file one analysis can reach, walked once and bucketed by lowercased extension.
-///
-/// Source collection used to enumerate the tree once per source spec, because each spec asked only
-/// for its own language's extensions — nine walks at this repository's root, costing 841 ms. The
-/// index walks each distinct source directory once for the whole analysis instead, and a spec
-/// narrows the result to its own extensions and source directories afterwards.
-///
-/// Directories that sit inside another source directory are folded into it, so a file below two of
-/// them is still enumerated once. Directories that merely alias each other through a symbolic link
-/// are not folded: each keeps its own walk, so a spec reaches its files under the path the detector
-/// pointed at rather than under whichever alias was walked first.
+/// Every source directory of one analysis, each walked once through a shared ``DirectoryReadCache``.
 struct SourceFileIndex {
 
-    /// One walked source directory: the files below it that some registered language claims, keyed
-    /// by extension, plus the entries the walk could not resolve.
     private struct WalkedDirectory {
-        let path: String
-        let filesByExtension: [String: [URL]]
+        let files: [URL]
         let unresolvedLinks: [URL]
     }
 
-    private let walked: [WalkedDirectory]
+    private let walked: [String: WalkedDirectory]
 
-    /// `extensions` is every registered language's, not one spec's: the walk happens before any spec
-    /// is parsed, and keeping only what some language claims is what stops the index holding a whole
-    /// checkout's images and archives.
+    /// `extensions` is every registered language's, so the index never holds images or archives.
     init(
         sourceDirs: [URL],
         extensions: Set<String>,
         excludingDirectories excludedDirectories: Set<String>,
-        enumerationCounter: OperationCounter? = nil
+        reads: DirectoryReadCache
     ) {
-        walked = WalkRoots(sourceDirs).paths.map { path in
-            let directory = URL(fileURLWithPath: path)
-            var filesByExtension: [String: [URL]] = [:]
+        var walked: [String: WalkedDirectory] = [:]
+        for directory in sourceDirs where walked[directory.path] == nil {
             var unresolvedLinks: [URL] = []
-            let keep = { (file: URL) in
-                let fileExtension = file.pathExtension.lowercased()
-                guard extensions.contains(fileExtension), !file.lastPathComponent.hasPrefix(".") else { return }
-                filesByExtension[fileExtension, default: []].append(file)
-            }
-            if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
-                keep(directory)
-            } else {
-                var walk = DirectoryTreeWalk(excludedDirectories: excludedDirectories)
-                walk.onUnresolvedEntry = { unresolvedLinks.append($0) }
-                walk.enumerationCounter = enumerationCounter
-                walk.walk(from: directory) { _, files in files.forEach(keep) }
-            }
-            return WalkedDirectory(
-                path: path, filesByExtension: filesByExtension, unresolvedLinks: unresolvedLinks
-            )
+            let files = SourceDirectoryWalk(
+                directory: directory, extensions: extensions, excludedDirectories: excludedDirectories, reads: reads
+            ).files { unresolvedLinks.append($0) }
+            walked[directory.path] = WalkedDirectory(files: files, unresolvedLinks: unresolvedLinks)
         }
+        self.walked = walked
     }
 
-    /// The files under `directories` carrying one of `extensions`, each directory's own sorted by
-    /// path so parse order — and therefore the order types appear in generated DOT — is stable
-    /// across machines, which the golden-file regression tests rely on.
+    /// Sorted by path per directory, so parse order (and the generated DOT) is stable across machines.
     func files(withExtensions extensions: Set<String>, under directories: [URL]) -> [URL] {
-        directories.flatMap { directory -> [URL] in
-            let path = directory.standardizedFileURL.path
-            guard let walk = walked.first(where: { path.isInside($0.path) }) else { return [] }
-            return extensions
-                .flatMap { walk.filesByExtension[$0] ?? [] }
-                .filter { $0.path.isInside(path) }
+        directories.flatMap { directory in
+            (walked[directory.path]?.files ?? [])
+                .filter { extensions.contains($0.pathExtension.lowercased()) }
                 .sorted { $0.path < $1.path }
         }
     }
 
-    /// The entries under `directories` the walk could not resolve — a dangling symbolic link, or one
-    /// outside the caller's security scope — so a caller can report what collection dropped.
     func unresolvedLinks(under directories: [URL]) -> [URL] {
-        directories.flatMap { directory -> [URL] in
-            let path = directory.standardizedFileURL.path
-            guard let walk = walked.first(where: { path.isInside($0.path) }) else { return [] }
-            return walk.unresolvedLinks.filter { $0.path.isInside(path) }
-        }
+        directories.flatMap { walked[$0.path]?.unresolvedLinks ?? [] }
     }
 }
 
-/// The source directories worth walking: one entry per directory that does not sit inside another.
-///
-/// Sorting puts a containing directory before everything it contains — a proper path prefix always
-/// sorts before the longer path — so a directory is dropped only once the one covering it is kept.
-private struct WalkRoots {
-    let paths: [String]
+/// A source directory may be a single file a manifest names (SwiftPM's `sources:`), its own candidate.
+private struct SourceDirectoryWalk {
+    let directory: URL
+    let extensions: Set<String>
+    let excludedDirectories: Set<String>
+    let reads: DirectoryReadCache
 
-    init(_ directories: [URL]) {
-        var kept: [String] = []
-        for path in directories.map(\.standardizedFileURL.path).uniqued().sorted() {
-            guard !kept.contains(where: { path.isInside($0) }) else { continue }
-            kept.append(path)
+    func files(reportingUnresolvedLinks onUnresolvedLink: @escaping (URL) -> Void) -> [URL] {
+        if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
+            return isCandidate(directory) ? [directory] : []
         }
-        paths = kept
+        var result: [URL] = []
+        var walk = DirectoryTreeWalk(excludedDirectories: excludedDirectories)
+        walk.onUnresolvedEntry = onUnresolvedLink
+        walk.reads = reads
+        walk.walk(from: directory) { _, files in
+            result.append(contentsOf: files.filter(isCandidate))
+        }
+        return result
+    }
+
+    private func isCandidate(_ file: URL) -> Bool {
+        extensions.contains(file.pathExtension.lowercased()) && !file.lastPathComponent.hasPrefix(".")
     }
 }

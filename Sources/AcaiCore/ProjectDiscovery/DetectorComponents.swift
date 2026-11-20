@@ -37,6 +37,10 @@ public struct IndicatorFiles: Sendable {
             FileManager.default.fileExists(atPath: root.appendingPathComponent($0).path)
         }
     }
+
+    public func present(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        names.contains { reads.hasEntry(named: $0, in: root) }
+    }
 }
 
 /// Resolves a build system's source directories using the "prefer the conventional subdirectory,
@@ -52,6 +56,11 @@ public struct SourceDirectoryProbe: Sendable {
     public func directories(in root: URL) -> [URL] {
         let preferred = root.appendingPathComponent(preferredSubdirectory)
         return FileManager.default.fileExists(atPath: preferred.path) ? [preferred] : [root]
+    }
+
+    public func directories(in root: URL, reading reads: DirectoryReadCache) -> [URL] {
+        let preferred = root.appendingPathComponent(preferredSubdirectory)
+        return reads.hasEntry(named: preferredSubdirectory, in: root) ? [preferred] : [root]
     }
 }
 
@@ -71,13 +80,26 @@ public struct SourceFilePresence: Sendable {
     }
 
     public func exist(in directory: URL) -> Bool {
-        !FileManager.default.fileExtensionsPresent(
-            in: directory, among: extensions, excludingDirectories: excludedDirectories
-        ).isEmpty
+        exist(in: directory, readingThrough: nil)
+    }
+
+    public func exist(in directory: URL, reading reads: DirectoryReadCache) -> Bool {
+        exist(in: directory, readingThrough: reads)
     }
 
     public func exist(inAnyOf directories: [URL]) -> Bool {
         directories.contains { exist(in: $0) }
+    }
+
+    public func exist(inAnyOf directories: [URL], reading reads: DirectoryReadCache) -> Bool {
+        directories.contains { exist(in: $0, reading: reads) }
+    }
+
+    private func exist(in directory: URL, readingThrough reads: DirectoryReadCache?) -> Bool {
+        !FileManager.default.fileExtensionsPresent(
+            in: directory, among: extensions, excludingDirectories: excludedDirectories,
+            reading: reads, stoppingAtFirst: true
+        ).isEmpty
     }
 }
 
