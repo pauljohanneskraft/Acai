@@ -235,37 +235,7 @@ extension CodeArtifact {
     }
 
     public func resolvingExtensions() -> CodeArtifact {
-        var resolvedTypes = types.filter { $0.kind != .extension }
-        let extensions = types.filter { $0.kind == .extension }
-        // Drop any standalone extension edges; conformances are re-derived below so
-        // their source is the real target id (never a dangling `extension.*` node).
-        var resolvedRelationships = relationships.filter { $0.kind != .extension }
-
-        for ext in extensions {
-            guard let targetName = ext.extensionOf,
-                  let targetId = Self.mergeExtension(ext, targetName: targetName, into: &resolvedTypes)
-            else {
-                // Extension of an external type (e.g. `extension Array`): dropped entirely.
-                continue
-            }
-            for inherited in ext.inheritedTypes {
-                // Attributed to the extension's module (not the extended type's) for coupling/cycles,
-                // since the conformance is declared by the extension.
-                resolvedRelationships.append(
-                    Relationship(
-                        kind: .conformance, source: targetId, target: inherited.name,
-                        origin: ext.location?.filePath)
-                )
-            }
-        }
-
-        return CodeArtifact(
-            metadata: metadata,
-            types: resolvedTypes,
-            relationships: resolvedRelationships,
-            freestandingFunctions: freestandingFunctions,
-            globalVariables: globalVariables
-        )
+        resolvingExtensions(counting: nil)
     }
 
     // MARK: - Generated-Code Filtering
