@@ -33,13 +33,7 @@ public struct Selector: Codable, Hashable, Sendable {
     /// fails, regardless of `module`. Unlike `module` (one glob), this pins an arbitrary, pre-picked
     /// group of modules, e.g. a package diagram scoped to exactly a dependency cycle's members.
     public var explicitModules: Set<String>?
-    /// Carve-outs: anything matching *any* of these is outside this selector, whatever the facets
-    /// above say. This is the "everything except" the including facets can't express, so a tight
-    /// budget can carry its named exceptions instead of being loosened to the worst case.
-    ///
-    /// Each entry is a full selector, so an exception can be as broad or narrow as the rule it
-    /// carves out of — and an entry with no facets excludes everything, since that is what a
-    /// facet-less selector matches.
+    /// Carve-outs: anything matching any of these is outside this selector, whatever the facets say.
     public var exclude: [Selector]?
 
     public init(
@@ -97,10 +91,7 @@ public struct Selector: Codable, Hashable, Sendable {
 
     /// Whether this selector matches a module by name. Only `explicitModules`/`module` are
     /// consulted; a selector with neither matches every module (used by whole-codebase budgets).
-    ///
-    /// An exclusion is only applied when it names modules itself: a type-facet carve-out such as
-    /// `{ typeGlob: "Legacy*" }` says nothing about modules, and since a facet-less selector matches
-    /// every module, honouring it here would exclude the whole codebase from a module budget.
+    /// An exclusion applies here only when it names modules, or a type-only one would exclude all.
     public func matchesModule(named name: String) -> Bool {
         if let exclude, exclude.contains(where: { $0.namesModules && $0.matchesModule(named: name) }) {
             return false
@@ -120,11 +111,8 @@ public struct Selector: Codable, Hashable, Sendable {
         return true
     }
 
-    /// Whether this selector constrains module names at all — the facets `matchesModule(named:)`
-    /// reads. Guards the name-only matchers against an exclusion that would match everything.
     private var namesModules: Bool { module != nil || explicitModules != nil }
 
-    /// Whether this selector constrains type names at all — the facets `matchesName(_:)` reads.
     private var namesTypes: Bool { typeGlob != nil || explicitIDs != nil }
 }
 

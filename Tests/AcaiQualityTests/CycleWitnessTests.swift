@@ -2,8 +2,6 @@ import Testing
 import AcaiCore
 @testable import AcaiQuality
 
-/// A module cycle used to be reported as member names only, which gave no hint of which type
-/// references formed it. Each hop now carries the referencing edge and where it is written.
 @Suite("Quality: Cycle witnesses")
 struct CycleWitnessTests {
 
@@ -92,7 +90,8 @@ struct CycleWitnessTests {
             relationships: [
                 Relationship(kind: .dependency, source: "Z", target: "Y"),
                 Relationship(kind: .dependency, source: "A", target: "B"),
-                Relationship(kind: .dependency, source: "B", target: "A")
+                Relationship(kind: .dependency, source: "B", target: "A"),
+                Relationship(kind: .dependency, source: "Z", target: "B")
             ]
         ).enriched()
         let cycle = try #require(finder(artifact).cycles(scope: .modules).first)
@@ -115,5 +114,35 @@ struct CycleWitnessTests {
             relationships: [Relationship(kind: .dependency, source: "A", target: "B")]
         ).enriched()
         #expect(finder(artifact).cycles(scope: .modules).isEmpty)
+    }
+
+    @Test func everyHopOfAThreeModuleCycleIsWitnessed() throws {
+        let artifact = CodeArtifact(
+            metadata: .init(sourceLanguage: .swift),
+            types: [type("A", module: "Core"), type("B", module: "Infra"), type("C", module: "UI")],
+            relationships: [
+                Relationship(kind: .dependency, source: "A", target: "C"),
+                Relationship(kind: .dependency, source: "C", target: "B"),
+                Relationship(kind: .dependency, source: "B", target: "A")
+            ]
+        ).enriched()
+        let cycle = try #require(finder(artifact).cycles(scope: .modules).first)
+        #expect(cycle.witnesses.map { "\($0.from)>\($0.to)" } == ["Core>UI", "Infra>Core", "UI>Infra"])
+    }
+
+    @Test func findingIdentityIgnoresWitnessesSoALineShiftKeepsASuppression() throws {
+        let original = try #require(finder(twoModuleCycle()).violations(scope: .modules).first)
+        var shifted = original
+        shifted.detail["witnesses"] = "Core → Infra via A → B (aggregation) at Sources/Core/A.swift:99"
+        #expect(original.findingIdentity == shifted.findingIdentity)
+        #expect(original.findingIdentity.contains("scope=modules"))
+    }
+
+    @Test func starterRulesListEachKnownDebtCyclesHops() {
+        let graph = GraphView(
+            artifact: twoModuleCycle(), languageResolver: LanguageConfigurationResolver(single: .test))
+        let yaml = StarterQualityRules(graph: graph).yaml
+        #expect(yaml.contains("#   known debt: Core → Infra → Core"))
+        #expect(yaml.contains("#     Core → Infra via A → B (aggregation) at Sources/Core/A.swift:12"))
     }
 }

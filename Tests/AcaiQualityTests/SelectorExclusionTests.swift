@@ -3,8 +3,6 @@ import Testing
 import AcaiCore
 @testable import AcaiQuality
 
-/// A `Selector` can only include, so a tight budget had to be loosened to its worst case to let a
-/// known exception through. `exclude` carves that exception out instead.
 @Suite("Quality: Selector exclusions")
 struct SelectorExclusionTests {
 

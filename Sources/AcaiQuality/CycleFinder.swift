@@ -14,21 +14,16 @@ public struct CycleFinder: Sendable {
 
     /// A strongly-connected component's members, sorted for determinism.
     public struct Cycle: Sendable, Equatable {
-        /// One hop of a module cycle, with the type reference that creates it — the evidence needed
-        /// to break the hop or to disprove it, which the member names alone don't carry.
+        /// One hop of a module cycle, with the type reference that creates it.
         public struct Witness: Sendable, Equatable {
-            /// The module the hop leaves, and the one it enters.
             public var from: String
             public var to: String
-            /// The referencing type and the type it references.
             public var sourceType: String
             public var targetType: String
             public var kind: Relationship.Kind
             /// `sourceType`'s declaration site.
             public var location: SourceLocation?
-            /// The file the reference is written in, when provenance puts it outside `sourceType`'s
-            /// own file — a cross-module extension references from its own module, which is what
-            /// decided this hop's `from`.
+            /// The file the reference is written in, when that is not `sourceType`'s own file.
             public var referenceFile: String?
 
             public var description: String {
@@ -37,8 +32,6 @@ public struct CycleFinder: Sendable {
                 return "\(from) → \(to) via \(sourceType) → \(targetType) (\(kind.rawValue))\(site)\(reference)"
             }
 
-            /// Total order, so a cycle's witnesses and the choice of witness per hop are both
-            /// deterministic: hop endpoints first, then the referencing edge.
             func precedes(_ other: Witness) -> Bool {
                 if from != other.from { return from < other.from }
                 if to != other.to { return to < other.to }
@@ -46,14 +39,16 @@ public struct CycleFinder: Sendable {
             }
 
             private var edgeKey: [String] {
-                [sourceType, targetType, kind.rawValue, location?.filePath ?? "", String(location?.line ?? 0)]
+                [
+                    sourceType, targetType, kind.rawValue, location?.filePath ?? "",
+                    String(location?.line ?? 0), referenceFile ?? ""
+                ]
             }
         }
 
         public var scope: Scope
         public var members: [String]
-        /// One witnessing edge per hop between members, for a `.modules` cycle. Empty at `.types`
-        /// scope, where the members *are* the referencing types.
+        /// One witnessing edge per hop between members; empty at `.types` scope.
         public var witnesses: [Witness]
 
         public init(scope: Scope, members: [String], witnesses: [Witness] = []) {
@@ -67,13 +62,11 @@ public struct CycleFinder: Sendable {
             (members + [members.first].compactMap { $0 }).joined(separator: " → ")
         }
 
-        /// The witnesses as one line, or `nil` when the cycle carries none.
         public var evidence: String? {
             guard !witnesses.isEmpty else { return nil }
             return witnesses.map(\.description).joined(separator: "; ")
         }
 
-        /// The cycle as commented YAML: the hop list a generated rules file records as known debt.
         public var knownDebtLines: [String] {
             ["#   known debt: \(description)"] + witnesses.map { "#     \($0.description)" }
         }
@@ -110,8 +103,7 @@ public struct CycleFinder: Sendable {
         }
     }
 
-    /// The `cycle` rule's breaches — one per cycle, carrying its witness edges so a reported cycle
-    /// can be acted on. Shared by the rule, `quality --explore` and the MCP tool so the three agree.
+    /// The `cycle` rule's breaches, one per cycle, shared by the rule, `quality --explore` and MCP.
     public func violations(scope: Scope) -> [Violation] {
         let label = scope == .modules ? "Module" : "Type"
         return cycles(scope: scope).map { cycle in
@@ -125,8 +117,7 @@ public struct CycleFinder: Sendable {
                 ruleKind: "cycle",
                 message: message,
                 subject: cycle.members.joined(separator: ","),
-                // A type cycle can point at the first member's declaration; a module cycle has no
-                // single site, so its witnesses carry the locations instead.
+                // A module cycle has no single site; its witnesses carry the locations.
                 source: scope == .types ? cycle.members.first.flatMap { graph.node(id: $0)?.location } : nil,
                 detail: detail
             )
@@ -169,8 +160,7 @@ public struct CycleFinder: Sendable {
     }
 }
 
-/// The module graph as it is built: adjacency for the cycle search, plus the edge chosen to witness
-/// each module hop (the first in `Witness.precedes` order, so the choice is stable).
+/// Module adjacency plus each hop's witness, the first in `Witness.precedes` order.
 private struct ModuleHopIndex {
     private struct Hop: Hashable {
         let from: String
@@ -190,7 +180,6 @@ private struct ModuleHopIndex {
         if witness.precedes(incumbent) { witnessByHop[hop] = witness }
     }
 
-    /// Every hop running between the given members, in witness order.
     func witnesses(within members: [String]) -> [CycleFinder.Cycle.Witness] {
         let members = Set(members)
         return witnessByHop.values
