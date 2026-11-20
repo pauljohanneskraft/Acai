@@ -5,10 +5,7 @@ import AcaiCore
 /// to the main sequence line (`A + I = 1`) — the modules farthest from the line, in either
 /// direction, are the ones worth a second look.
 ///
-/// A plain value built from already-computed metrics — `CodeMetrics.computeMetrics()` is a real,
-/// non-trivial walk of the artifact (LCOM, feature envy, fan-in/out, …), so callers compute it off
-/// the main actor and hand the resulting `[CodeMetrics.ModuleCoupling]` in here; in the app that is
-/// `ModuleCouplingChartLoader`, once per analysis identity.
+/// Built from metrics `ModuleCouplingChartLoader` computes off the main actor.
 struct ModuleCouplingChartData {
     /// One module's plotted point. `Zone` is the required non-color signal (alongside
     /// `Charts`' categorical `.symbol(by:)` shape and the ranked legend list): every point's zone is

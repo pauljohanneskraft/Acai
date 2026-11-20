@@ -6,7 +6,7 @@ import AcaiCore
 /// Instability chart, with Robert Martin's main-sequence line (`A + I = 1`) drawn across it. Not a
 /// movement canvas (no drag/undo/redo/Save-as-Freeform/Export — see `GeneratedDiagram+Freeform.swift`'s
 /// doc comment on why) — this is a chart over metrics `ModuleCouplingChartLoader` computes off the
-/// main actor, once per analysis identity, since this view is re-created on every parent update.
+/// main actor, once per analysis identity.
 ///
 /// Never encode meaning in color alone: each point's zone is additionally carried
 /// by `Charts`' categorical `.symbol(by:)` (a distinct marker shape per zone) and restated as text
@@ -30,13 +30,12 @@ struct ModuleCouplingChartView: View {
         self.codebase = codebase
     }
 
-    /// What the metrics are computed from: a store change that leaves it alone leaves the chart's
-    /// data alone too.
     private var chartIdentity: ModuleCouplingChartIdentity {
         ModuleCouplingChartIdentity(
             analysis: model.analysisToken(for: codebase.id),
             comparisonBaseRef: diagram.comparisonBaseRef,
-            comparisonGitRef: diagram.comparisonGitRef)
+            comparisonGitRef: diagram.comparisonGitRef,
+            showsComparisonArtifact: model.comparisonNewArtifact(for: diagram) != nil)
     }
 
     private var metricsPhase: AsyncOperationPhase {
@@ -107,8 +106,6 @@ struct ModuleCouplingChartView: View {
         }
     }
 
-    /// Nothing but the metrics' own progress until they arrive — a blank chart area would read as
-    /// "no modules", which is a real and differently-handled outcome.
     @ViewBuilder
     private var stateContent: some View {
         if let data = loader.data {

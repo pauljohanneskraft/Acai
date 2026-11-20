@@ -3,8 +3,6 @@ import Testing
 import AcaiCore
 @testable import AcaiApp
 
-/// Counts how often the chart's metrics are actually computed. Injected into the loader under test
-/// rather than held anywhere shared, so each test owns its own count.
 private final class CountingMetrics: ModuleCouplingMetrics, @unchecked Sendable {
     private let lock = NSLock()
     private var count = 0
@@ -23,19 +21,47 @@ private final class CountingMetrics: ModuleCouplingMetrics, @unchecked Sendable 
     }
 }
 
-/// `ModuleCouplingChartView` is re-created on every parent update, so the walk behind its chart has
-/// to be keyed on the analysis rather than on the view's lifetime.
+/// Holds the first computation until `release()`, so a test can act while it is in flight.
+private final class GatedMetrics: ModuleCouplingMetrics, @unchecked Sendable {
+    let started: AsyncStream<Void>
+    private let startedContinuation: AsyncStream<Void>.Continuation
+    private let gate = DispatchSemaphore(value: 0)
+    private let lock = NSLock()
+    private var calls = 0
+
+    init() {
+        (started, startedContinuation) = AsyncStream.makeStream()
+    }
+
+    func release() {
+        gate.signal()
+    }
+
+    func chartData(of artifact: CodeArtifact) -> ModuleCouplingChartData {
+        lock.lock()
+        let isFirst = calls == 0
+        calls += 1
+        lock.unlock()
+        if isFirst {
+            startedContinuation.yield()
+            gate.wait()
+        }
+        return ArtifactModuleCouplingMetrics().chartData(of: artifact)
+    }
+}
+
 @Suite("Module Coupling chart loader", .timeLimit(.minutes(1)))
 @MainActor
 struct ModuleCouplingChartLoaderTests {
 
-    private func artifact() -> CodeArtifact {
-        CodeArtifact(
-            metadata: .init(sourceLanguage: .swift, filePaths: ["Sources/Core/Foo.swift"]),
+    private func artifact(module: String = "Core") -> CodeArtifact {
+        let path = "Sources/\(module)/Foo.swift"
+        return CodeArtifact(
+            metadata: .init(sourceLanguage: .swift, filePaths: [path]),
             types: [
                 TypeDeclaration(
                     id: "Foo", name: "Foo", qualifiedName: "Foo", kind: .class, accessLevel: .public,
-                    location: .init(filePath: "Sources/Core/Foo.swift", line: 1, column: 1))
+                    location: .init(filePath: path, line: 1, column: 1))
             ])
     }
 
@@ -44,7 +70,12 @@ struct ModuleCouplingChartLoaderTests {
             analysis: ProjectBrowserViewModel.AnalysisToken(
                 lastIndexed: Date(timeIntervalSince1970: 0), configuration: nil, revision: revision),
             comparisonBaseRef: nil,
-            comparisonGitRef: comparisonGitRef)
+            comparisonGitRef: comparisonGitRef,
+            showsComparisonArtifact: comparisonGitRef != nil)
+    }
+
+    private func moduleIDs(of artifact: CodeArtifact) -> [String] {
+        ArtifactModuleCouplingMetrics().chartData(of: artifact).points.map(\.id)
     }
 
     @Test("Building the chart twice for the same analysis computes its metrics once")
@@ -95,13 +126,59 @@ struct ModuleCouplingChartLoaderTests {
         #expect(metrics.computations == 2)
     }
 
-    @Test("The loader reports it is computing only while it is")
-    func reportsComputingState() async {
-        let loader = ModuleCouplingChartLoader(metrics: CountingMetrics())
+    @Test("The comparison revision arriving under unchanged refs recomputes")
+    func loadedComparisonArtifactRecomputes() async {
+        let metrics = CountingMetrics()
+        let loader = ModuleCouplingChartLoader(metrics: metrics)
+        let pending = ModuleCouplingChartIdentity(
+            analysis: identity().analysis, comparisonBaseRef: nil, comparisonGitRef: "v1",
+            showsComparisonArtifact: false)
+        let loaded = ModuleCouplingChartIdentity(
+            analysis: identity().analysis, comparisonBaseRef: nil, comparisonGitRef: "v1",
+            showsComparisonArtifact: true)
+
+        await loader.load(identity: pending, of: artifact())
+        await loader.load(identity: loaded, of: artifact())
+
+        #expect(metrics.computations == 2)
+    }
+
+    @Test("Re-requesting an analysis whose first request was cancelled mid-walk still delivers it")
+    func cancelledRequestDoesNotStrandItsIdentity() async {
+        let metrics = GatedMetrics()
+        let loader = ModuleCouplingChartLoader(metrics: metrics)
+        let shared = artifact()
+        let sharedIdentity = identity()
+
+        let first = Task { await loader.load(identity: sharedIdentity, of: shared) }
+        var started = metrics.started.makeAsyncIterator()
+        await started.next()
+        first.cancel()
+        async let second: Void = loader.load(identity: sharedIdentity, of: shared)
+        metrics.release()
+        await second
+        await first.value
+
+        #expect(loader.data != nil)
         #expect(!loader.isComputing)
+    }
 
-        await loader.load(identity: identity(), of: artifact())
+    @Test("A superseded walk's result never replaces the current analysis's chart")
+    func supersededResultIsDiscarded() async {
+        let metrics = GatedMetrics()
+        let loader = ModuleCouplingChartLoader(metrics: metrics)
+        let old = artifact(module: "Old")
+        let new = artifact(module: "New")
+        #expect(moduleIDs(of: old) != moduleIDs(of: new))
 
+        let first = Task { await loader.load(identity: identity(revision: 1), of: old) }
+        var started = metrics.started.makeAsyncIterator()
+        await started.next()
+        await loader.load(identity: identity(revision: 2), of: new)
+        metrics.release()
+        await first.value
+
+        #expect(loader.data?.points.map(\.id) == moduleIDs(of: new))
         #expect(!loader.isComputing)
     }
 }
