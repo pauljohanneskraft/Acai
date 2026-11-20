@@ -52,7 +52,7 @@ struct DartTypeReferenceResolver {
             case "type_identifier", "identifier":
                 if name.isEmpty { name = child.text(in: context) }
             case "type_arguments":
-                genericArgs = child.namedChildren().compactMap { typeReference($0) }
+                genericArgs = typeArguments(child)
             default:
                 break
             }
@@ -83,39 +83,59 @@ struct DartTypeReferenceResolver {
         node.allChildren(withType: "type_parameter").map { typeParameter($0) }
     }
 
+    /// The grammar wraps the bound in `type_bound` in some positions and flattens it into siblings in others.
     private func typeParameter(_ node: Node) -> GenericParameter {
         var name = ""
-        var constraints: [GenericConstraint] = []
+        var boundChildren: [Node] = []
 
-        for child in node.children() {
+        for child in node.namedChildren() {
             guard let childType = child.nodeType else { continue }
-            switch childType {
-            case "type_identifier", "identifier":
-                if name.isEmpty { name = child.text(in: context) } else {
-                    constraints.append(GenericConstraint(
-                        kind: .superclass,
-                        type: TypeReference(name: child.text(in: context))
-                    ))
-                }
-            default:
-                break
+            if childType == "annotation" { continue }
+            if name.isEmpty, childType == "type_identifier" || childType == "identifier" {
+                name = child.text(in: context)
+                continue
             }
+            boundChildren += childType == "type_bound" ? child.namedChildren() : [child]
         }
-        return GenericParameter(name: name, constraints: constraints)
+
+        return GenericParameter(
+            name: name,
+            constraints: flattenedTypeReferences(boundChildren)
+                .map { GenericConstraint(kind: .superclass, type: $0) }
+        )
+    }
+
+    // MARK: - Type Aliases
+
+    /// A function-type target has no single type node to name, so it is recorded by its source text.
+    func aliasTarget(_ children: [Node]) -> [TypeReference] {
+        let isFunctionType = children.contains {
+            $0.nodeType == "function_type" || $0.nodeType == "formal_parameter_list"
+        }
+        guard isFunctionType else { return flattenedTypeReferences(children) }
+        let text = children.map { $0.text(in: context) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return text.isEmpty ? [] : [TypeReference(name: text)]
     }
 
     // MARK: - Superclass / Type Lists
 
     func superclassTypes(_ node: Node) -> [TypeReference] {
-        // When the grammar emits `type_identifier` and `type_arguments` as siblings (instead of
-        // wrapping them in `generic_type`), combine them into one TypeReference to avoid spurious
-        // edges to generic-argument types.
+        flattenedTypeReferences(node.namedChildren().filter { $0.nodeType != "mixins" })
+    }
+
+    func typeArguments(_ node: Node) -> [TypeReference] {
+        flattenedTypeReferences(node.namedChildren())
+    }
+
+    /// Joins the sibling `type_identifier` + `type_arguments` pairs the grammar emits into one reference each.
+    func flattenedTypeReferences(_ children: [Node]) -> [TypeReference] {
         var refs: [TypeReference] = []
         var pendingName: String?
 
-        for child in node.namedChildren() {
+        for child in children {
             guard let nodeType = child.nodeType else { continue }
-            if nodeType == "mixins" { continue }
 
             if nodeType == "type_identifier" || nodeType == "identifier" {
                 if let name = pendingName {
@@ -123,8 +143,7 @@ struct DartTypeReferenceResolver {
                 }
                 pendingName = child.text(in: context)
             } else if nodeType == "type_arguments", let name = pendingName {
-                let genericArgs = child.namedChildren().compactMap { typeReference($0) }
-                refs.append(TypeReference(name: name, genericArguments: genericArgs))
+                refs.append(TypeReference(name: name, genericArguments: typeArguments(child), isArray: name == "List"))
                 pendingName = nil
             } else {
                 if let name = pendingName {
@@ -217,9 +236,8 @@ struct DartTypeReferenceResolver {
             if info.type == nil { info.type = typeReference(child) }
         case "type_arguments":
             if let base = info.type {
-                let args = child.namedChildren().compactMap { typeReference($0) }
                 info.type = TypeReference(
-                    name: base.name, genericArguments: args,
+                    name: base.name, genericArguments: typeArguments(child),
                     isArray: base.name == "List"
                 )
             }

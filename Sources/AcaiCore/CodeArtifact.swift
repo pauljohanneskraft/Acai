@@ -164,54 +164,78 @@ extension CodeArtifact {
     }
 
     public func merging(with other: CodeArtifact) -> CodeArtifact {
-        CodeArtifact(
+        CodeArtifact(merging: [self, other]) ?? self
+    }
+
+    /// The number of array elements a merge of this artifact copies.
+    public var elementCount: Int {
+        metadata.filePaths.count + metadata.parseDiagnostics.count + metadata.discoveredRoots.count
+            + types.count + relationships.count + freestandingFunctions.count + globalVariables.count
+    }
+
+    /// Concatenates in one pass; `nil` for no fragments, and a single fragment is adopted without copying.
+    public init?(merging fragments: [CodeArtifact], countingInto counter: MergeElementCounter? = nil) {
+        guard let first = fragments.first else { return nil }
+        guard fragments.count > 1 else {
+            self = first
+            return
+        }
+
+        var accumulated = Accumulator(reservingFor: fragments)
+        for fragment in fragments {
+            accumulated.append(fragment)
+        }
+        counter?.record(accumulated.elementsCopied)
+
+        self.init(
             metadata: Metadata(
-                sourceLanguage: metadata.sourceLanguage,
-                filePaths: metadata.filePaths + other.metadata.filePaths,
-                toolVersion: metadata.toolVersion ?? other.metadata.toolVersion,
-                parseDiagnostics: metadata.parseDiagnostics + other.metadata.parseDiagnostics,
-                discoveredRoots: (metadata.discoveredRoots + other.metadata.discoveredRoots)
-                    .removingDuplicates { $0 }
+                sourceLanguage: first.metadata.sourceLanguage,
+                filePaths: accumulated.filePaths,
+                toolVersion: fragments.lazy.compactMap(\.metadata.toolVersion).first,
+                parseDiagnostics: accumulated.parseDiagnostics,
+                discoveredRoots: accumulated.discoveredRoots.removingDuplicates { $0 }
             ),
-            types: types + other.types,
-            relationships: relationships + other.relationships,
-            freestandingFunctions: freestandingFunctions + other.freestandingFunctions,
-            globalVariables: globalVariables + other.globalVariables
+            types: accumulated.types,
+            relationships: accumulated.relationships,
+            freestandingFunctions: accumulated.freestandingFunctions,
+            globalVariables: accumulated.globalVariables
         )
     }
 
-    public func resolvingExtensions() -> CodeArtifact {
-        var resolvedTypes = types.filter { $0.kind != .extension }
-        let extensions = types.filter { $0.kind == .extension }
-        // Drop any standalone extension edges; conformances are re-derived below so
-        // their source is the real target id (never a dangling `extension.*` node).
-        var resolvedRelationships = relationships.filter { $0.kind != .extension }
+    private struct Accumulator {
+        var filePaths: [String] = []
+        var parseDiagnostics: [ParseDiagnostic] = []
+        var discoveredRoots: [DiscoveredRoot] = []
+        var types: [TypeDeclaration] = []
+        var relationships: [Relationship] = []
+        var freestandingFunctions: [Member] = []
+        var globalVariables: [Member] = []
+        private(set) var elementsCopied = 0
 
-        for ext in extensions {
-            guard let targetName = ext.extensionOf,
-                  let targetId = Self.mergeExtension(ext, targetName: targetName, into: &resolvedTypes)
-            else {
-                // Extension of an external type (e.g. `extension Array`): dropped entirely.
-                continue
-            }
-            for inherited in ext.inheritedTypes {
-                // Attributed to the extension's module (not the extended type's) for coupling/cycles,
-                // since the conformance is declared by the extension.
-                resolvedRelationships.append(
-                    Relationship(
-                        kind: .conformance, source: targetId, target: inherited.name,
-                        origin: ext.location?.filePath)
-                )
-            }
+        init(reservingFor fragments: [CodeArtifact]) {
+            filePaths.reserveCapacity(fragments.reduce(0) { $0 + $1.metadata.filePaths.count })
+            parseDiagnostics.reserveCapacity(fragments.reduce(0) { $0 + $1.metadata.parseDiagnostics.count })
+            discoveredRoots.reserveCapacity(fragments.reduce(0) { $0 + $1.metadata.discoveredRoots.count })
+            types.reserveCapacity(fragments.reduce(0) { $0 + $1.types.count })
+            relationships.reserveCapacity(fragments.reduce(0) { $0 + $1.relationships.count })
+            freestandingFunctions.reserveCapacity(fragments.reduce(0) { $0 + $1.freestandingFunctions.count })
+            globalVariables.reserveCapacity(fragments.reduce(0) { $0 + $1.globalVariables.count })
         }
 
-        return CodeArtifact(
-            metadata: metadata,
-            types: resolvedTypes,
-            relationships: resolvedRelationships,
-            freestandingFunctions: freestandingFunctions,
-            globalVariables: globalVariables
-        )
+        mutating func append(_ fragment: CodeArtifact) {
+            filePaths.append(contentsOf: fragment.metadata.filePaths)
+            parseDiagnostics.append(contentsOf: fragment.metadata.parseDiagnostics)
+            discoveredRoots.append(contentsOf: fragment.metadata.discoveredRoots)
+            types.append(contentsOf: fragment.types)
+            relationships.append(contentsOf: fragment.relationships)
+            freestandingFunctions.append(contentsOf: fragment.freestandingFunctions)
+            globalVariables.append(contentsOf: fragment.globalVariables)
+            elementsCopied += fragment.elementCount
+        }
+    }
+
+    public func resolvingExtensions() -> CodeArtifact {
+        resolvingExtensions(counting: nil)
     }
 
     // MARK: - Generated-Code Filtering
