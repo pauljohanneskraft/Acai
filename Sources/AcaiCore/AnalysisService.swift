@@ -13,6 +13,8 @@ public struct AnalysisService: Sendable {
 
     public let projectDiscovery: ProjectDiscovery
 
+    var sharedParses: SharedParses?
+
     /// Caps how many files a spec parses at once. `nil` (the default) derives the cap from
     /// `ProcessInfo.processInfo.activeProcessorCount`; exposed so tests can force strictly serial
     /// parsing (`1`) for deterministic cancellation/ordering assertions.
@@ -159,7 +161,8 @@ public struct AnalysisService: Sendable {
 
         let batch = SourceFileBatchParser(
             codeParser: codeParser, rootURL: rootURL,
-            concurrencyLimit: fileParsingConcurrencyLimit, maximumFileBytes: maximumSourceFileBytes
+            concurrencyLimit: fileParsingConcurrencyLimit, maximumFileBytes: maximumSourceFileBytes,
+            sharedParses: sharedParses
         )
         let parsed = try await batch.parse(collected.files, reusing: fileCache)
         return ParsedSpec(

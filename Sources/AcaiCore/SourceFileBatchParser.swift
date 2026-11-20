@@ -21,6 +21,8 @@ struct SourceFileBatchParser {
 
     let maximumFileBytes: Int
 
+    let sharedParses: SharedParses?
+
     /// A `nil` cache skips fingerprinting and yields no cache entries.
     func parse(_ files: [URL], reusing cache: ParsedFileCache?) async throws -> Outcome {
         guard !files.isEmpty else { return .empty }
@@ -51,7 +53,7 @@ struct SourceFileBatchParser {
                 let file = files[index]
                 group.addTask {
                     try Task.checkCancellation()
-                    let outcome = self.parseFile(file)
+                    let outcome = await self.parseFile(file)
                     try Task.checkCancellation()
                     return (index, outcome)
                 }
@@ -66,7 +68,7 @@ struct SourceFileBatchParser {
 
     /// A read failure becomes a `.unreadable` diagnostic rather than failing the whole batch. The size
     /// check resolves the symlink first, since `attributesOfItem(atPath:)` reports a link's own size.
-    private func parseFile(_ file: URL) -> FileOutcome {
+    private func parseFile(_ file: URL) async -> FileOutcome {
         let relativePath = file.relativePath(from: rootURL)
         let resolvedPath = file.resolvingSymlinksInPath().path
         let attributes = try? FileManager.default.attributesOfItem(atPath: resolvedPath)
@@ -77,17 +79,23 @@ struct SourceFileBatchParser {
                 message: "\(size) bytes, over the \(maximumFileBytes)-byte per-file ceiling"
             ))
         }
+        let source: String
         do {
-            let source = try String(contentsOf: file, encoding: .utf8)
-            return .parsed(codeParser.parse(source: source, fileName: relativePath))
+            source = try String(contentsOf: file, encoding: .utf8)
         } catch {
-            return decodedLossily(file, relativePath: relativePath, strictFailure: error)
+            return await decodedLossily(file, relativePath: relativePath, strictFailure: error)
         }
+        return await .parsed(artifact(parsing: source, as: relativePath))
+    }
+
+    private func artifact(parsing source: String, as fileName: String) async -> CodeArtifact {
+        guard let sharedParses else { return codeParser.parse(source: source, fileName: fileName) }
+        return await sharedParses.artifact(parsing: source, as: fileName, with: codeParser)
     }
 
     private func decodedLossily(
         _ file: URL, relativePath: String, strictFailure: any Error
-    ) -> FileOutcome {
+    ) async -> FileOutcome {
         guard let data = try? Data(contentsOf: file) else {
             return .diagnostic(ParseDiagnostic(
                 location: SourceLocation(filePath: relativePath, line: 0, column: 0),
@@ -98,15 +106,15 @@ struct SourceFileBatchParser {
         // The failable initializer returns nil for invalid UTF-8; replacing those bytes is the point.
         // swiftlint:disable:next optional_data_string_conversion
         let decoded = String(decoding: data, as: UTF8.self)
-        var artifact = codeParser.parse(source: decoded, fileName: relativePath)
-        guard !decoded.utf8.elementsEqual(data) else { return .parsed(artifact) }
-        artifact.metadata.parseDiagnostics.append(ParseDiagnostic(
+        var parsed = await artifact(parsing: decoded, as: relativePath)
+        guard !decoded.utf8.elementsEqual(data) else { return .parsed(parsed) }
+        parsed.metadata.parseDiagnostics.append(ParseDiagnostic(
             location: SourceLocation(filePath: relativePath, line: 0, column: 0),
             kind: .lossyDecoding,
             message: "\(relativePath) is not valid UTF-8. Every invalid byte was replaced with "
                 + "U+FFFD, so an identifier spelled with one is not the one in the source."
         ))
-        return .parsed(artifact)
+        return .parsed(parsed)
     }
 
     // MARK: - Merging
