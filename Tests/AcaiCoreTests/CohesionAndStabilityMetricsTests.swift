@@ -48,6 +48,51 @@ struct CohesionAndStabilityMetricsTests {
         #expect(LcomAnalysis(type: declared).components == [["increment", "read"]])
     }
 
+    @Test func staticMembersLeaveCohesionUnchanged() {
+        // A `static` member cannot touch instance state, so counting it guaranteed a component of its
+        // own and inflated every type carrying a helper.
+        let instanceMembers: [Member] = [
+            Member(name: "value", kind: .property, accessLevel: .internal),
+            method("increment", writes: "value"),
+            method("read", reads: "value")
+        ]
+        let helpers: [Member] = [
+            Member(name: "describe", kind: .method, accessLevel: .internal, modifiers: [.static]),
+            Member(name: "make", kind: .method, accessLevel: .internal, modifiers: [.class])
+        ]
+        let withHelpers = LcomAnalysis(type: type("Counter", module: "App", members: instanceMembers + helpers))
+        #expect(withHelpers.componentCount == 1)
+        #expect(withHelpers.components == [["increment", "read"]])
+    }
+
+    @Test func computedPropertiesCountAsBehaviour() {
+        // A computed property's accessor is code reaching into the same field the methods use, so it
+        // joins their cluster rather than being invisible to cohesion.
+        let declared = type("Counter", module: "App", members: [
+            Member(name: "value", kind: .property, accessLevel: .internal),
+            Member(name: "doubled", kind: .property, accessLevel: .internal, isComputed: true,
+                   fieldReads: [FieldAccess(name: "value")]),
+            method("increment", writes: "value")
+        ])
+        #expect(LcomAnalysis(type: declared).components == [["doubled", "increment"]])
+    }
+
+    @Test func initialisersDoNotFuseUnrelatedClusters() {
+        // An initialiser populating every stored property would link them all, collapsing the metric
+        // to 1 for any type with a memberwise initialiser.
+        let declared = type("Service", module: "App", members: [
+            Member(name: "file", kind: .property, accessLevel: .internal),
+            Member(name: "socket", kind: .property, accessLevel: .internal),
+            Member(name: "init", kind: .initializer, accessLevel: .internal, assignments: [
+                VariableAssignment(targetName: "file", op: .assign, value: .init(kind: .expression, text: "0")),
+                VariableAssignment(targetName: "socket", op: .assign, value: .init(kind: .expression, text: "0"))
+            ]),
+            method("open", writes: "file"),
+            method("connect", writes: "socket")
+        ])
+        #expect(LcomAnalysis(type: declared).componentCount == 2)
+    }
+
     @Test func stableDependencyPrincipleFlagsDependencyOnLessStableModule() {
         func using(_ name: String, module: String, uses target: String?) -> TypeDeclaration {
             let members = target.map {

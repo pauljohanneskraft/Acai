@@ -201,7 +201,7 @@ public struct QualityEvaluator: Sendable {
         }
     }
 
-    /// For a low-cohesion (`lcom`) budget breach, appends the actual method clusters. A no-op for
+    /// For a low-cohesion (`lcom`) budget breach, appends the actual member clusters. A no-op for
     /// every other metric.
     private func enrichWithCohesionPartition(
         _ violation: Violation, budget: MetricBudget, typesByID: [String: TypeDeclaration]

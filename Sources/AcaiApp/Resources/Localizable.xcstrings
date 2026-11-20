@@ -12002,19 +12002,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Methoden"
+            "value" : "Gewichtete Methoden"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Methods"
+            "value" : "Weighted Methods"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Méthodes"
+            "value" : "Méthodes pondérées"
           }
         }
       }
@@ -12822,19 +12822,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Weighted Methods per Type (Methodenanzahl). Große Typen tragen viele Verantwortlichkeiten (Risiko geringer Kohäsion / SRP) und sind erstklassige Kandidaten zum Aufteilen."
+            "value" : "Gewichtete Methoden pro Typ (WMC): die zyklomatische Komplexität jeder Methode und jedes Initialisierers, summiert. Große Typen tragen viele Verantwortlichkeiten (Risiko geringer Kohäsion / SRP) und sind erstklassige Kandidaten zum Aufteilen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Weighted methods per type (method count). Large types carry many responsibilities (low cohesion / SRP risk) and are prime candidates for splitting."
+            "value" : "Weighted methods per type (WMC): the cyclomatic complexity of every method and initialiser, summed. Large types carry many responsibilities (low cohesion / SRP risk) and are prime candidates for splitting."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Méthodes pondérées par type (nombre de méthodes). Les grands types portent de nombreuses responsabilités (risque de faible cohésion / SRP) et sont des candidats de choix pour la scission."
+            "value" : "Méthodes pondérées par type (WMC) : la complexité cyclomatique de chaque méthode et de chaque initialiseur, additionnée. Les grands types portent de nombreuses responsabilités (risque de faible cohésion / SRP) et sont des candidats de choix pour la scission."
           }
         }
       }

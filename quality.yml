@@ -12,10 +12,14 @@ cycles:
 
 budgets:
   # Per-type OO budgets — catch responsibility bloat / over-central hubs.
+  # `weightedMethods` is the textbook WMC: the summed cyclomatic complexity of every method and
+  # initialiser, so this ceiling gates how much branching a class carries, not how many members it
+  # declares. Seeded at the current class-scoped maximum (ProjectBrowserViewModel, 149) so it ratchets
+  # against regression; use `numberOfMethods` instead for a plain declaration-count ceiling.
   - target: { kind: class }
     metric: weightedMethods
-    max: 25
-    message: "God class: too many methods — split responsibilities (SRP)."
+    max: 149
+    message: "God class: its methods carry too much branching — split responsibilities (SRP)."
   - metric: fanOut
     max: 25
     message: "Type depends on too many others — a responsibility-bloat / splitting candidate."
@@ -32,7 +36,10 @@ budgets:
   - metric: mutablePublicState      # Publicly settable stored properties — encapsulation leak.
     max: 35
     message: "Publicly mutable state — expose read-only and narrow the setter."
-  - metric: lcom                    # LCOM4 components among methods — high = unrelated jobs.
+  # LCOM4 components among the members carrying instance behaviour — high = unrelated jobs. Max seen
+  # is 23 (TypeDeclaration); the ceiling stays where it was until the extension-scope limitation
+  # behind most of that number is addressed, since it is the parser's blind spot and not real debt.
+  - metric: lcom
     max: 68
     message: "Low cohesion — the type's methods split into unrelated groups; consider extracting."
   - metric: featureEnvyMethods      # Methods more interested in another type than their own.
