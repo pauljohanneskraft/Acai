@@ -7,31 +7,32 @@ extension JSMemberExtractor {
 
     // MARK: - Class Body Pre-Pass Maps
 
-    /// `fieldName → typeName` from the class body's direct field declarations plus (TypeScript)
-    /// constructor parameter properties, so a same-type method call through a typed stored property
-    /// (`this.cache.process()`) resolves. Built before member extraction, so it can't itself depend
-    /// on the scope it feeds.
-    func propertyMap(fromBody bodyNode: Node) -> [String: String] {
-        var map: [String: String] = [:]
-
+    /// The class body's direct stored properties as the scope needs them: `types` is
+    /// `fieldName → typeName` so a same-type method call through a typed stored property
+    /// (`this.cache.process()`) resolves, and `names` is every non-static property name, typed or
+    /// not. The two differ in JavaScript, where no field carries a type: field-read capture filters
+    /// by name alone, so giving it only the typed subset loses every read in the language. Built
+    /// before member extraction, so it can't itself depend on the scope it feeds.
+    func propertyIndex(fromBody bodyNode: Node) -> (types: [String: String], names: Set<String>) {
+        var properties: [Member] = []
         for child in bodyNode.children() {
             guard let childType = child.nodeType else { continue }
 
             if childType == "field_definition" || childType == "public_field_definition" {
-                let member = fieldDefinition(child, references: ValueReferences())
-                if !member.modifiers.contains(.static), let typeName = member.type?.name {
-                    map[member.name] = typeName
-                }
+                properties.append(fieldDefinition(child, references: ValueReferences()))
             } else if childType == "method_definition", isTypeScript,
                       child.child(byFieldName: "name").map({ $0.text(in: context) }) == "constructor" {
-                for member in constructorParameterProperties(child) {
-                    if !member.name.isEmpty, let typeName = member.type?.name {
-                        map[member.name] = typeName
-                    }
-                }
+                properties.append(contentsOf: constructorParameterProperties(child))
             }
         }
-        return map
+
+        var types: [String: String] = [:]
+        var names: Set<String> = []
+        for property in properties where !property.modifiers.contains(.static) && !property.name.isEmpty {
+            names.insert(property.name)
+            if let typeName = property.type?.name { types[property.name] = typeName }
+        }
+        return (types, names)
     }
 
     /// A `methodName → returnTypeName` map from the class body's direct `method_definition` children

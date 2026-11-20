@@ -9,8 +9,10 @@ import AcaiLibrary
 /// parameter that lost its type, stayed green everywhere.
 ///
 /// Each feature is one hand-written expected shape and one idiomatic snippet per language. A language
-/// that genuinely cannot express the feature carries a `.waiver` with the reason; anything else has to
-/// normalise to the same shape. `ContractNormalizer` documents every difference it is allowed to erase.
+/// that spells one field of the feature differently carries an allowance in the expectation; only a
+/// language that genuinely cannot express the feature at all carries a `.waiver` with the reason.
+/// Anything else has to normalise to the same shape. `ContractNormalizer` documents every difference
+/// it is allowed to erase.
 @Suite("Language feature matrix")
 struct LanguageFeatureMatrixTests {
 
@@ -30,15 +32,18 @@ struct LanguageFeatureMatrixTests {
             return
         }
         let actual = try corpus.shape(feature: feature, language: language)
-        guard let expected = try? corpus.expectation(feature: feature) else {
+        guard let expectation = try? corpus.expectation(feature: feature) else {
             // Reported with the shape in hand, since authoring the expectation is the next step.
             throw ContractFeatureCorpus.Failure.missingExpectation(
                 feature: feature,
                 path: "Tests/AcaiContractTests/Features/\(feature).expected.json; "
                     + "\(language.stem) currently produces:\n\(actual.json)")
         }
+        let allowance = expectation.allowance(for: language)
+        let compared = allowance.actual(actual)
+        let expected = allowance.expected(expectation.shape)
         #expect(
-            actual == expected,
+            compared == expected,
             """
             \(feature) in \(language.stem) does not normalise to the expected shape.
 
@@ -46,7 +51,7 @@ struct LanguageFeatureMatrixTests {
             \(expected.json)
 
             actual:
-            \(actual.json)
+            \(compared.json)
             """
         )
     }
@@ -63,6 +68,49 @@ struct LanguageFeatureMatrixTests {
                 try corpus.waiver(feature: feature, language: language) == nil
             }
             #expect(!covered.isEmpty, "'\(feature)' is waived for every language, so it proves nothing")
+        }
+    }
+
+    /// A waiver's reason is the only prose in the corpus, and the Kotlin `static-member` waiver spent
+    /// its life pointing at a `companion-extension` feature that never existed. A reference that does
+    /// not resolve sends the next reader looking for coverage that is not there.
+    @Test("every feature a waiver cites exists")
+    func waiverReferencesResolve() throws {
+        let corpus = Self.corpus
+        let features = Set(corpus.features)
+        for feature in corpus.features {
+            for language in corpus.languages {
+                guard let reason = try corpus.waiver(feature: feature, language: language) else { continue }
+                for cited in corpus.citedFeatures(in: reason) where !features.contains(cited) {
+                    throw ContractFeatureCorpus.Failure.unknownFeatureReference(
+                        feature: feature, language: language.stem,
+                        path: "Tests/AcaiContractTests/Features/\(feature)/\(language.stem).waiver",
+                        reference: cited)
+                }
+            }
+        }
+    }
+
+    /// An allowance for a language that is waived, or for a stem no language uses, relaxes nothing —
+    /// it just reads as coverage the matrix does not actually have.
+    @Test("every allowance belongs to a language that provides a snippet")
+    func allowancesBelongToCoveredLanguages() throws {
+        let corpus = Self.corpus
+        let stems = Set(corpus.languages.map(\.stem))
+        for feature in corpus.features {
+            let expectation = try corpus.expectation(feature: feature)
+            for (stem, allowance) in expectation.languages {
+                #expect(stems.contains(stem), "'\(feature)' allows '\(stem)', which is not a language")
+                #expect(!allowance.isEmpty, "'\(feature)' gives '\(stem)' an empty allowance — delete it")
+                guard let language = corpus.languages.first(where: { $0.stem == stem }) else { continue }
+                let waiver = try corpus.waiver(feature: feature, language: language)
+                #expect(
+                    waiver == nil,
+                    """
+                    '\(feature)' both waives and allows '\(stem)' — an allowance only applies to a \
+                    language that provides a snippet
+                    """)
+            }
         }
     }
 }

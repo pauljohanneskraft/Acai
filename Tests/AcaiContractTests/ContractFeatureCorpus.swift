@@ -34,6 +34,7 @@ struct ContractFeatureCorpus {
         case missingSnippet(feature: String, language: String, expectedPath: String, waiverPath: String)
         case emptyWaiver(feature: String, language: String, path: String)
         case missingExpectation(feature: String, path: String)
+        case unknownFeatureReference(feature: String, language: String, path: String, reference: String)
 
         var description: String {
             switch self {
@@ -45,6 +46,10 @@ struct ContractFeatureCorpus {
                     + "language cannot express the feature."
             case .missingExpectation(let feature, let path):
                 return "'\(feature)' has no expected shape at \(path)."
+            case .unknownFeatureReference(let feature, let language, let path, let reference):
+                return "\(path) waives '\(feature)' for \(language) by pointing at '\(reference)', which is "
+                    + "not a feature directory. Cite a feature that exists, or — if the backticked text is not a "
+                    + "feature reference — write it without backticks."
             }
         }
     }
@@ -119,12 +124,27 @@ struct ContractFeatureCorpus {
         return (try String(contentsOf: url, encoding: .utf8), url.lastPathComponent)
     }
 
-    func expectation(feature: String) throws -> ContractShape {
+    func expectation(feature: String) throws -> ContractExpectation {
         let url = expectationURL(feature: feature)
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw Failure.missingExpectation(feature: feature, path: relativePath(of: url))
         }
-        return try JSONDecoder().decode(ContractShape.self, from: Data(contentsOf: url))
+        return try JSONDecoder().decode(ContractExpectation.self, from: Data(contentsOf: url))
+    }
+
+    /// The features a waiver points at. A waiver cites another feature by naming it in backticks —
+    /// the one spelling this corpus can tell apart from the ordinary hyphenated prose the reasons are
+    /// written in (`return-type`, `top-level`, `hand-written`), so it is the only form checked.
+    func citedFeatures(in waiver: String) -> [String] {
+        waiver.components(separatedBy: "`")
+            .enumerated()
+            .filter { !$0.offset.isMultiple(of: 2) }
+            .map(\.element)
+            .filter { token in
+                token.contains("-") && token.allSatisfy { character in
+                    character == "-" || character.isNumber || (character.isLetter && character.isLowercase)
+                }
+            }
     }
 
     /// The shape `language` produces for `feature`, through the same parse → enrich path the engine
