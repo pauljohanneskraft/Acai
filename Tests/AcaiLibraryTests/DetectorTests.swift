@@ -293,6 +293,40 @@ struct DetectorTests {
         }
     }
 
+    @Test func flutterCollectsBinAndToolBesideLib() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("lib/main.dart", in: root)
+            try write("bin/cli.dart", in: root)
+            try write("tool/build.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == ["lib", "bin", "tool"])
+        }
+    }
+
+    @Test func flutterSkipsAbsentBinOrTool() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("lib/main.dart", in: root)
+            try write("tool/build.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == ["lib", "tool"])
+        }
+    }
+
+    /// The root fallback already contains `bin/` and `tool/`, so listing them too would parse them twice.
+    @Test func flutterFallsBackToRootWithoutLib() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("bin/cli.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == [root.lastPathComponent])
+        }
+    }
+
     // MARK: - Python
 
     @Test func pythonDetectsManifestAndVerifiesSources() throws {

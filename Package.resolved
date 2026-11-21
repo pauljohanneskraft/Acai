@@ -1,5 +1,5 @@
 {
-  "originHash" : "2083e097bdbd4ba2c9afcec31c2b2a557ec5e93220bd3fcb16df237735f7a5b2",
+  "originHash" : "f41c2ed318df497f467417930ba505a20042c9a4fdbefb232c05564ccca58c9e",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -96,8 +96,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-syntax.git",
       "state" : {
-        "revision" : "0687f71944021d616d34d922343dcef086855920",
-        "version" : "600.0.1"
+        "revision" : "050f1a346fbbac0ca2cfb15a95274f7bd1cf0ccf",
+        "version" : "604.0.0"
       }
     },
     {
@@ -159,7 +159,6 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/UserNobody14/tree-sitter-dart",
       "state" : {
-        "branch" : "master",
         "revision" : "a9bdfa3db2fbc9b9f12c93450d04a671f33a5102"
       }
     },
