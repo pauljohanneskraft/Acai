@@ -242,6 +242,9 @@
       ],
       "callSites" : [
         {
+          "arguments" : [
+            null
+          ],
           "location" : {
             "column" : 23,
             "endLine" : 49,
