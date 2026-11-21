@@ -10,6 +10,9 @@
       ],
       "callSites" : [
         {
+          "arguments" : [
+            null
+          ],
           "location" : {
             "column" : 69,
             "endLine" : 31,
@@ -24,6 +27,9 @@
           }
         },
         {
+          "arguments" : [
+            null
+          ],
           "location" : {
             "column" : 99,
             "endLine" : 33,
@@ -38,6 +44,9 @@
           }
         },
         {
+          "arguments" : [
+            null
+          ],
           "location" : {
             "column" : 71,
             "endLine" : 35,
@@ -101,6 +110,10 @@
       ],
       "callSites" : [
         {
+          "arguments" : [
+            null,
+            null
+          ],
           "location" : {
             "column" : 37,
             "endLine" : 63,
@@ -115,6 +128,9 @@
           }
         },
         {
+          "arguments" : [
+            null
+          ],
           "isConstruction" : true,
           "location" : {
             "column" : 65,
@@ -130,6 +146,10 @@
           }
         },
         {
+          "arguments" : [
+            null,
+            null
+          ],
           "location" : {
             "column" : 9,
             "endLine" : 66,
@@ -894,6 +914,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+                null
+              ],
               "location" : {
                 "column" : 17,
                 "endLine" : 44,
@@ -962,6 +985,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+
+              ],
               "location" : {
                 "column" : 71,
                 "endLine" : 51,
