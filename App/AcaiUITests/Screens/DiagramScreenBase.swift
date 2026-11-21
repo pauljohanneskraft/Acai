@@ -153,7 +153,11 @@ class DiagramScreenBase {
         app.buttons.matching(NSPredicate(format: "identifier IN %@", [identifier, overflowIdentifier])).firstMatch
             .waitOrFail("toolbar button \(label), directly or in overflow", file: file, line: line)
         if button.exists {
-            button.tapWhenReady("toolbar button \(label)", file: file, line: line)
+            if let destination {
+                button.tap("toolbar button \(label)", until: destination, file: file, line: line)
+            } else {
+                button.tapWhenReady("toolbar button \(label)", file: file, line: line)
+            }
             return
         }
         app.buttons[overflowIdentifier].tapWhenReady("the toolbar's overflow menu", file: file, line: line)
@@ -228,8 +232,8 @@ class DiagramScreenBase {
     }
 
     func clearEmptyFilter(restoring node: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
-        emptyScopeActionButton.tapWhenReady("the empty canvas's Clear Filter button", file: file, line: line)
-        node.waitOrFail("a node after clearing the filter", file: file, line: line)
+        // Clearing an already-cleared filter changes nothing, so a dropped tap is safe to repeat.
+        emptyScopeActionButton.tap("the empty canvas's Clear Filter button", until: node, file: file, line: line)
         emptyScopeOverlay("filter")
             .waitForDisappearanceOrFail("the empty-scope overlay after clearing the filter", file: file, line: line)
     }

@@ -175,7 +175,8 @@ extension XCUIElement {
     }
 
     /// Taps, and taps again only while `destination` hasn't appeared. Only for idempotent navigation
-    /// (selecting a row, opening a sheet) — a retried create action makes a duplicate.
+    /// (selecting a row, opening a sheet) or a toggle whose `destination` is its open state — a retried
+    /// create action makes a duplicate. A loaded simulator can drop a tap aimed squarely at its target.
     ///
     /// Each wait keeps its own budget rather than sharing one deadline: a single slow query on a loaded
     /// CI simulator would otherwise consume the whole budget and fail a tap that was never attempted.
@@ -183,14 +184,32 @@ extension XCUIElement {
         _ description: String, until destination: XCUIElement, attempts: Int = 3,
         file: StaticString = #filePath, line: UInt = #line
     ) {
-        for _ in 0..<attempts {
+        for attempt in 0..<attempts {
             waitUntilReady(description, file: file, line: line)
             SystemBanners().dismiss(file: file, line: line)
+            // Re-checked after the waits above, so a late arrival is never tapped closed again.
+            if attempt > 0, destination.exists { return }
             tap()
             if destination.waitForExistence(timeout: .uiTransition / Double(attempts)) { return }
             if !exists { break }
         }
         destination.waitOrFail("the destination of tapping \(description)", file: file, line: line)
+    }
+
+    /// Taps, and again only while `self` is still there — for a control whose only effect is to
+    /// dismiss its own presentation (an alert's OK), so a repeat can never act twice.
+    func tapUntilGone(
+        _ description: String, attempts: Int = 3,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        waitUntilReady(description, file: file, line: line)
+        for _ in 0..<attempts {
+            SystemBanners().dismiss(file: file, line: line)
+            guard exists else { return }
+            tap()
+            if waitForNonExistence(timeout: .uiTransition / Double(attempts)) { return }
+        }
+        waitForDisappearanceOrFail(description, file: file, line: line)
     }
 
     /// `tap(_:until:)` for a gesture that only reveals (opening a context menu), never one that acts.
