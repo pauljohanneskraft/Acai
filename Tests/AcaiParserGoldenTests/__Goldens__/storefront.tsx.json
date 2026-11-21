@@ -1,0 +1,1028 @@
+{
+  "freestandingFunctions" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 69,
+            "endLine" : 31,
+            "filePath" : "storefront.tsx",
+            "line" : 31
+          },
+          "methodName" : "useState",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        },
+        {
+          "location" : {
+            "column" : 99,
+            "endLine" : 33,
+            "filePath" : "storefront.tsx",
+            "line" : 33
+          },
+          "methodName" : "setHovered",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        },
+        {
+          "location" : {
+            "column" : 71,
+            "endLine" : 35,
+            "filePath" : "storefront.tsx",
+            "line" : 35
+          },
+          "methodName" : "onRemove",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 15,
+        "endLine" : 38,
+        "filePath" : "storefront.tsx",
+        "line" : 30
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "CartLine",
+      "parameters" : [
+        {
+          "internalName" : "{ name, quantity, onRemove }",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "CartLineProps"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ]
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "assignments" : [
+
+      ],
+      "callSites" : [
+        {
+          "location" : {
+            "column" : 37,
+            "endLine" : 63,
+            "filePath" : "storefront.tsx",
+            "line" : 63
+          },
+          "methodName" : "useMemo",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        },
+        {
+          "isConstruction" : true,
+          "location" : {
+            "column" : 65,
+            "endLine" : 63,
+            "filePath" : "storefront.tsx",
+            "line" : 63
+          },
+          "methodName" : "constructor",
+          "receiver" : {
+            "type" : {
+              "_0" : "CartTotal"
+            }
+          }
+        },
+        {
+          "location" : {
+            "column" : 9,
+            "endLine" : 66,
+            "filePath" : "storefront.tsx",
+            "line" : 64
+          },
+          "methodName" : "useEffect",
+          "receiver" : {
+            "free" : {
+
+            }
+          }
+        }
+      ],
+      "fieldReads" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "isComputed" : false,
+      "kind" : "method",
+      "location" : {
+        "column" : 15,
+        "endLine" : 68,
+        "filePath" : "storefront.tsx",
+        "line" : 62
+      },
+      "modifiers" : [
+
+      ],
+      "name" : "useCartTotal",
+      "parameters" : [
+        {
+          "internalName" : "lines",
+          "isVariadic" : false,
+          "modifiers" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : true,
+            "isOptional" : false,
+            "name" : "CartLineProps"
+          }
+        }
+      ],
+      "referencedTypeNames" : [
+
+      ],
+      "type" : {
+        "genericArguments" : [
+
+        ],
+        "isArray" : false,
+        "isOptional" : false,
+        "name" : "number"
+      }
+    }
+  ],
+  "globalVariables" : [
+
+  ],
+  "metadata" : {
+    "discoveredRoots" : [
+
+    ],
+    "filePaths" : [
+      "storefront.tsx"
+    ],
+    "parseDiagnostics" : [
+
+    ],
+    "sourceLanguage" : "typeScript"
+  },
+  "relationships" : [
+    {
+      "kind" : "inheritance",
+      "source" : "Storefront",
+      "target" : "React.Component"
+    }
+  ],
+  "schemaVersion" : 1,
+  "types" : [
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "CartLineProps",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "interface",
+      "location" : {
+        "column" : 15,
+        "endLine" : 7,
+        "filePath" : "storefront.tsx",
+        "line" : 3
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 4,
+            "filePath" : "storefront.tsx",
+            "line" : 4
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "name",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "string"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 5,
+            "filePath" : "storefront.tsx",
+            "line" : 5
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "quantity",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "number"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 6,
+            "filePath" : "storefront.tsx",
+            "line" : 6
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "onRemove",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "(name: string) => void"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "CartLineProps",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "CartLineProps"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "StorefrontProps",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "interface",
+      "location" : {
+        "column" : 15,
+        "endLine" : 12,
+        "filePath" : "storefront.tsx",
+        "line" : 9
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 10,
+            "filePath" : "storefront.tsx",
+            "line" : 10
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "title",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "string"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 11,
+            "filePath" : "storefront.tsx",
+            "line" : 11
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "lines",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : true,
+            "isOptional" : false,
+            "name" : "CartLineProps"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "StorefrontProps",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "StorefrontProps"
+    },
+    {
+      "accessLevel" : "internal",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "StorefrontState",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "interface",
+      "location" : {
+        "column" : 1,
+        "endLine" : 16,
+        "filePath" : "storefront.tsx",
+        "line" : 14
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 15,
+            "filePath" : "storefront.tsx",
+            "line" : 15
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "expanded",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "boolean"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "StorefrontState",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "StorefrontState"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "CartTotal",
+      "inheritedTypes" : [
+
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 15,
+        "endLine" : 28,
+        "filePath" : "storefront.tsx",
+        "line" : 18
+      },
+      "members" : [
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 19,
+            "filePath" : "storefront.tsx",
+            "line" : 19
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "lines",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : true,
+            "isOptional" : false,
+            "name" : "CartLineProps"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+            {
+              "location" : {
+                "column" : 17,
+                "endLine" : 22,
+                "filePath" : "storefront.tsx",
+                "line" : 22
+              },
+              "op" : "assign",
+              "targetName" : "lines",
+              "value" : {
+                "kind" : "expression",
+                "text" : "lines"
+              }
+            }
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 27,
+                "endLine" : 22,
+                "filePath" : "storefront.tsx",
+                "line" : 22
+              },
+              "name" : "lines"
+            },
+            {
+              "location" : {
+                "column" : 43,
+                "endLine" : 22,
+                "filePath" : "storefront.tsx",
+                "line" : 22
+              },
+              "name" : "lines"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "initializer",
+          "location" : {
+            "column" : 9,
+            "endLine" : 23,
+            "filePath" : "storefront.tsx",
+            "line" : 21
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "constructor",
+          "parameters" : [
+            {
+              "internalName" : "lines",
+              "isVariadic" : false,
+              "modifiers" : [
+
+              ],
+              "type" : {
+                "genericArguments" : [
+
+                ],
+                "isArray" : true,
+                "isOptional" : false,
+                "name" : "CartLineProps"
+              }
+            }
+          ],
+          "referencedTypeNames" : [
+            "lines"
+          ]
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 41,
+                "endLine" : 26,
+                "filePath" : "storefront.tsx",
+                "line" : 26
+              },
+              "name" : "lines"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "endLine" : 27,
+            "filePath" : "storefront.tsx",
+            "line" : 25
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "quantity",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "length",
+            "lines"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "number"
+          }
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "CartTotal",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "CartTotal"
+    },
+    {
+      "accessLevel" : "public",
+      "annotations" : [
+
+      ],
+      "associatedTypes" : [
+
+      ],
+      "enumCases" : [
+
+      ],
+      "genericParameters" : [
+
+      ],
+      "id" : "Storefront",
+      "inheritedTypes" : [
+        {
+          "genericArguments" : [
+
+          ],
+          "isArray" : false,
+          "isOptional" : false,
+          "name" : "React.Component"
+        }
+      ],
+      "kind" : "class",
+      "location" : {
+        "column" : 15,
+        "endLine" : 60,
+        "filePath" : "storefront.tsx",
+        "line" : 40
+      },
+      "members" : [
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+
+          ],
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "initialValue" : {
+            "kind" : "expression",
+            "text" : "{ expanded: false }"
+          },
+          "isComputed" : false,
+          "kind" : "property",
+          "location" : {
+            "column" : 9,
+            "endLine" : 41,
+            "filePath" : "storefront.tsx",
+            "line" : 41
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "state",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "expanded"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "StorefrontState"
+          }
+        },
+        {
+          "accessLevel" : "private",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 17,
+                "endLine" : 44,
+                "filePath" : "storefront.tsx",
+                "line" : 44
+              },
+              "methodName" : "setState",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+            {
+              "location" : {
+                "column" : 81,
+                "endLine" : 44,
+                "filePath" : "storefront.tsx",
+                "line" : 44
+              },
+              "name" : "state"
+            }
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "endLine" : 45,
+            "filePath" : "storefront.tsx",
+            "line" : 43
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "toggle",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "expanded",
+            "setState",
+            "state"
+          ],
+          "type" : {
+            "genericArguments" : [
+
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "void"
+          }
+        },
+        {
+          "accessLevel" : "public",
+          "annotations" : [
+
+          ],
+          "assignments" : [
+
+          ],
+          "callSites" : [
+            {
+              "location" : {
+                "column" : 71,
+                "endLine" : 51,
+                "filePath" : "storefront.tsx",
+                "line" : 51
+              },
+              "methodName" : "toggle",
+              "receiver" : {
+                "selfDispatch" : {
+
+                }
+              }
+            }
+          ],
+          "cyclomaticComplexity" : 1,
+          "fieldReads" : [
+
+          ],
+          "genericParameters" : [
+
+          ],
+          "isComputed" : false,
+          "kind" : "method",
+          "location" : {
+            "column" : 9,
+            "endLine" : 59,
+            "filePath" : "storefront.tsx",
+            "line" : 47
+          },
+          "modifiers" : [
+
+          ],
+          "name" : "render",
+          "parameters" : [
+
+          ],
+          "referencedTypeNames" : [
+            "CartLine",
+            "h1",
+            "key",
+            "line",
+            "lines",
+            "map",
+            "name",
+            "onClick",
+            "props",
+            "section",
+            "title",
+            "toggle",
+            "ul"
+          ]
+        }
+      ],
+      "modifiers" : [
+
+      ],
+      "name" : "Storefront",
+      "nestedTypes" : [
+
+      ],
+      "qualifiedName" : "Storefront"
+    }
+  ]
+}

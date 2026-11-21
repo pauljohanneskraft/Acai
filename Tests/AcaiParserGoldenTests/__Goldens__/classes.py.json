@@ -55,6 +55,9 @@
       ],
       "callSites" : [
         {
+          "arguments" : [
+            null
+          ],
           "isConstruction" : true,
           "isSpeculative" : true,
           "location" : {
@@ -429,6 +432,10 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+                null,
+                null
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 31,
@@ -1131,6 +1138,10 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+                null,
+                null
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 31,
@@ -1190,6 +1201,10 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+                null,
+                null
+              ],
               "location" : {
                 "column" : 31,
                 "endLine" : 65,
