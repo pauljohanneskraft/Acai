@@ -71,9 +71,6 @@ struct LanguageFeatureMatrixTests {
         }
     }
 
-    /// A waiver's reason is the only prose in the corpus, and the Kotlin `static-member` waiver spent
-    /// its life pointing at a `companion-extension` feature that never existed. A reference that does
-    /// not resolve sends the next reader looking for coverage that is not there.
     @Test("every feature a waiver cites exists")
     func waiverReferencesResolve() throws {
         let corpus = Self.corpus
@@ -91,8 +88,6 @@ struct LanguageFeatureMatrixTests {
         }
     }
 
-    /// An allowance for a language that is waived, or for a stem no language uses, relaxes nothing —
-    /// it just reads as coverage the matrix does not actually have.
     @Test("every allowance belongs to a language that provides a snippet")
     func allowancesBelongToCoveredLanguages() throws {
         let corpus = Self.corpus

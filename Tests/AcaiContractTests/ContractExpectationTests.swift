@@ -1,9 +1,6 @@
 import Foundation
 import Testing
 
-/// The matrix exercises an allowance only through whatever the corpus happens to need, so the rules
-/// are pinned here directly — above all that an allowance narrows the comparison to one field and
-/// cannot swallow a missing member, a wrong role or a lost edge.
 @Suite("Contract expectation allowances")
 struct ContractExpectationTests {
 
@@ -97,12 +94,16 @@ struct ContractExpectationTests {
         #expect(allowance.actual(shape()) == shape())
     }
 
-    /// A waiver is the corpus's only prose, and the one place it may point at the corpus is a
-    /// backticked feature name — ordinary hyphenated English must not be mistaken for one.
-    @Test("only a backticked kebab-case token reads as a feature citation")
-    func citationsAreBackticked() {
+    @Test("a backticked or covered-by kebab-case token reads as a feature citation, prose does not")
+    func citationsAreRecognised() {
         let corpus = ContractFeatureCorpus()
         #expect(corpus.citedFeatures(in: "covered by `interface-conformance`.") == ["interface-conformance"])
+        #expect(
+            corpus.citedFeatures(
+                in: "Kotlin has no static member; the idiom is a companion object, which declares a nested type "
+                    + "holding the member rather than a static member on the class, and is covered by "
+                    + "companion-extension.")
+                == ["companion-extension"])
         #expect(corpus.citedFeatures(in: "carries no return-type annotation, so it is top-level.").isEmpty)
         #expect(corpus.citedFeatures(in: "`static` on a file-scope function means linkage.").isEmpty)
         #expect(corpus.citedFeatures(in: "`std::vector<Item>` is a `List<X>`.").isEmpty)

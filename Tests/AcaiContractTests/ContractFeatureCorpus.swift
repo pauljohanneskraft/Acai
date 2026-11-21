@@ -48,8 +48,8 @@ struct ContractFeatureCorpus {
                 return "'\(feature)' has no expected shape at \(path)."
             case .unknownFeatureReference(let feature, let language, let path, let reference):
                 return "\(path) waives '\(feature)' for \(language) by pointing at '\(reference)', which is "
-                    + "not a feature directory. Cite a feature that exists, or — if the backticked text is not a "
-                    + "feature reference — write it without backticks."
+                    + "not a feature directory. Cite a feature that exists, or reword the text so it no longer reads "
+                    + "as a citation."
             }
         }
     }
@@ -132,19 +132,21 @@ struct ContractFeatureCorpus {
         return try JSONDecoder().decode(ContractExpectation.self, from: Data(contentsOf: url))
     }
 
-    /// The features a waiver points at. A waiver cites another feature by naming it in backticks —
-    /// the one spelling this corpus can tell apart from the ordinary hyphenated prose the reasons are
-    /// written in (`return-type`, `top-level`, `hand-written`), so it is the only form checked.
-    func citedFeatures(in waiver: String) -> [String] {
-        waiver.components(separatedBy: "`")
+    /// A backticked kebab-case token, or whatever follows "covered by", reads as a feature citation.
+    func citedFeatures(in waiver: String) -> Set<String> {
+        let backticked = waiver.components(separatedBy: "`")
             .enumerated()
             .filter { !$0.offset.isMultiple(of: 2) }
             .map(\.element)
-            .filter { token in
-                token.contains("-") && token.allSatisfy { character in
-                    character == "-" || character.isNumber || (character.isLetter && character.isLowercase)
-                }
+        let coveredBy = waiver.components(separatedBy: "covered by ")
+            .dropFirst()
+            .compactMap { $0.split(whereSeparator: \.isWhitespace).first }
+            .map { String($0.trimmingCharacters(in: CharacterSet(charactersIn: "`.,;:"))) }
+        return Set((backticked + coveredBy).filter { token in
+            token.contains("-") && token.allSatisfy { character in
+                character == "-" || character.isNumber || (character.isLetter && character.isLowercase)
             }
+        })
     }
 
     /// The shape `language` produces for `feature`, through the same parse → enrich path the engine

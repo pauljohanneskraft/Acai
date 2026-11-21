@@ -7,12 +7,7 @@ extension JSMemberExtractor {
 
     // MARK: - Class Body Pre-Pass Maps
 
-    /// The class body's direct stored properties as the scope needs them: `types` is
-    /// `fieldName → typeName` so a same-type method call through a typed stored property
-    /// (`this.cache.process()`) resolves, and `names` is every non-static property name, typed or
-    /// not. The two differ in JavaScript, where no field carries a type: field-read capture filters
-    /// by name alone, so giving it only the typed subset loses every read in the language. Built
-    /// before member extraction, so it can't itself depend on the scope it feeds.
+    /// `names` includes untyped properties, which field-read capture needs and plain JavaScript has only.
     func propertyIndex(fromBody bodyNode: Node) -> (types: [String: String], names: Set<String>) {
         var properties: [Member] = []
         for child in bodyNode.children() {
