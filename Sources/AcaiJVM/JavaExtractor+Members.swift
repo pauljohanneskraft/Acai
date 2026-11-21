@@ -7,8 +7,7 @@ extension JavaExtractor {
 
     private static let fieldNodeTypes: Set<String> = ["field_declaration", "constant_declaration"]
 
-    /// An enum keeps its methods and fields in an `enum_body_declarations` child rather than directly
-    /// under its body, so the two scope pre-passes below look through it.
+    /// An enum keeps its methods and fields under an `enum_body_declarations` child.
     private func declarationChildren(ofBody node: Node) -> [Node] {
         let children = node.children()
         guard let nested = children.first(where: { $0.nodeType == "enum_body_declarations" }) else {
@@ -17,10 +16,8 @@ extension JavaExtractor {
         return children + nested.children()
     }
 
-    /// `fieldName → typeName` from the type's own members plus its declared fields, so a same-type
-    /// method call through a typed stored property (`this.cache.process()`) resolves. An interface
-    /// spells its fields `constant_declaration`. `existingMembers` lets a record's already-collected
-    /// component properties count too.
+    /// `fieldName → typeName`, so a call through a typed field (`this.cache.process()`) resolves.
+    /// `existingMembers` lets a record's already-collected component properties count too.
     private func propertyMap(existingMembers: [Member], fromBody node: Node) -> [String: String] {
         var knownProperties: [String: String] = [:]
         for member in existingMembers where member.kind == .property {
@@ -216,7 +213,7 @@ extension JavaExtractor {
                 extractNestedTypeFromChild(
                     child, nodeType: nodeType,
                     parentQualifiedName: context.parentQualifiedName
-                ),
+                ).map { context.memberDefaults.nestedType($0) },
                 to: &context.nestedTypes
             )
         case .enumConstant:
@@ -263,9 +260,6 @@ extension JavaExtractor {
         )
     }
 
-    /// Every body resolves its calls against the same scope — the type's own properties, the file's
-    /// declared type names and its unambiguous method return types — and tells its members which
-    /// modifiers the enclosing body implies.
     private mutating func extractBody(
         _ node: Node,
         context: inout BodyExtractionContext,

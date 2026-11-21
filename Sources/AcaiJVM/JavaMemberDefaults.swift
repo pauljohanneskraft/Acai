@@ -3,11 +3,8 @@ import AcaiTreeSitter
 
 // MARK: - JavaMemberDefaults
 
-/// The modifiers a Java member carries without spelling them, which depends on the body enclosing
-/// it. A class body implies nothing. An interface or annotation-type body makes every member
-/// `public`, a body-less method `abstract` and a field `static final`.
+/// The modifiers a Java member carries without spelling them, which depend on its enclosing body.
 struct JavaMemberDefaults: Sendable {
-    /// A class, record or enum body: every modifier is written out, so the parsed set stands.
     static let classBody = JavaMemberDefaults(isInterfaceBody: false)
     /// An `interface` or `@interface` body.
     static let interfaceBody = JavaMemberDefaults(isInterfaceBody: true)
@@ -26,9 +23,15 @@ struct JavaMemberDefaults: Sendable {
         return adding([.static, .final], to: info)
     }
 
-    /// Java has no `package-private` keyword, so that access level only ever means "no modifier was
-    /// written" — which inside an interface means `public`. An explicitly `private` member (a Java 9
-    /// private interface method) is left alone.
+    func nestedType(_ type: TypeDeclaration) -> TypeDeclaration {
+        guard isInterfaceBody else { return type }
+        var type = type
+        if type.accessLevel == .packagePrivate { type.accessLevel = .public }
+        if !type.modifiers.contains(.static) { type.modifiers.append(.static) }
+        return type
+    }
+
+    /// Java has no package-private keyword, so that level means "nothing written"; `private` stays.
     private func promotedToPublic(_ info: ModifierInfo) -> ModifierInfo {
         guard isInterfaceBody, info.accessLevel == .packagePrivate else { return info }
         var info = info

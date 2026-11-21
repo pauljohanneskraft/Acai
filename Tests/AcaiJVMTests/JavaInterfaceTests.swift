@@ -37,8 +37,6 @@ struct JavaInterfaceTests {
             .types.first { $0.name == "Priced" }?.members ?? []
     }
 
-    /// Nothing in an interface body spells `public`, yet everything in one is public. A body-less
-    /// method is implicitly abstract and a field implicitly `static final`.
     @Test func interfaceMembersAreImplicitlyPublic() {
         let members = members(ofInterfaceIn: """
         interface Priced {
@@ -68,7 +66,6 @@ struct JavaInterfaceTests {
         #expect(members.first { $0.name == "zero" }?.modifiers.contains(.abstract) == false)
     }
 
-    /// Java 9 allows an explicitly private interface method, which must not be promoted.
     @Test func explicitlyPrivateInterfaceMemberKeepsItsAccessLevel() {
         let members = members(ofInterfaceIn: """
         interface Priced {
@@ -78,7 +75,6 @@ struct JavaInterfaceTests {
         #expect(members.first { $0.name == "raw" }?.accessLevel == .private)
     }
 
-    /// An annotation type's elements are public and abstract for the same reason.
     @Test func annotationTypeElementsAreImplicitlyPublicAndAbstract() {
         let artifact = parser.parse(
             source: """
@@ -93,8 +89,6 @@ struct JavaInterfaceTests {
         #expect(value?.modifiers.contains(.abstract) == true)
     }
 
-    /// A class body resolves `Util.helper()` against the file's declared types; an interface body
-    /// built no scope at all, so a default method's calls went unresolved.
     @Test func defaultMethodResolvesACallToADeclaredType() {
         let artifact = parser.parse(
             source: """
@@ -113,9 +107,48 @@ struct JavaInterfaceTests {
         #expect(sites.contains { $0.methodName == "helper" && $0.receiverType == "Util" })
     }
 
-    /// An enum reaches the same scope by a longer route: its declarations hang off an
-    /// `enum_body_declarations` child, which was already extracted as a class body. Pinned so that
-    /// building the scope on the enum body itself is known not to have displaced it.
+    @Test func defaultMethodResolvesACallThroughAnInterfaceConstant() {
+        let artifact = parser.parse(
+            source: """
+            class Helper {
+                void run() {}
+            }
+
+            interface Priced {
+                Helper HELPER = new Helper();
+
+                default void price() { HELPER.run(); }
+            }
+            """,
+            fileName: "Priced.java"
+        )
+        let sites = artifact.types.first { $0.name == "Priced" }?
+            .members.first { $0.name == "price" }?.callSites ?? []
+        #expect(sites.contains { $0.methodName == "run" && $0.receiverType == "Helper" })
+    }
+
+    @Test func typeNestedInAnInterfaceIsImplicitlyPublicAndStatic() {
+        let artifact = parser.parse(
+            source: """
+            interface Outer {
+                class Inner {}
+            }
+
+            class Host {
+                class Inner {}
+            }
+            """,
+            fileName: "Outer.java"
+        )
+        let inInterface = artifact.types.first { $0.name == "Outer" }?.nestedTypes.first
+        #expect(inInterface?.accessLevel == .public)
+        #expect(inInterface?.modifiers.contains(.static) == true)
+
+        let inClass = artifact.types.first { $0.name == "Host" }?.nestedTypes.first
+        #expect(inClass?.accessLevel == .packagePrivate)
+        #expect(inClass?.modifiers.contains(.static) == false)
+    }
+
     @Test func enumMethodResolvesACallToADeclaredType() {
         let artifact = parser.parse(
             source: """
