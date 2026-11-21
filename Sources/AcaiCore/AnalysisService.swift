@@ -27,12 +27,16 @@ public struct AnalysisService: Sendable {
     /// parsing (`1`) for deterministic cancellation/ordering assertions.
     public let fileParsingConcurrencyLimit: Int?
 
+    public let typeFlattenCounter: TypeFlattenCounter?
+
     /// Per-file byte ceiling; a larger file is skipped with a `.skipped` diagnostic rather than
     /// read whole. Defaults to ``AcaiConstants/maximumSourceFileBytes``.
     public let maximumSourceFileBytes: Int
 
     /// Counts the directories one analysis lists from disk.
     public let directoryEnumerationCounter: OperationCounter?
+
+    public let mergeElementCounter: MergeElementCounter?
 
     public var registry: LanguageRegistry { LanguageRegistry(parsers: parsers) }
 
@@ -50,11 +54,14 @@ public struct AnalysisService: Sendable {
     public init(
         parsers: [any CodeParser],
         projectDiscovery: ProjectDiscovery? = nil,
+        typeFlattenCounter: TypeFlattenCounter? = nil,
         fileParsingConcurrencyLimit: Int? = nil,
         maximumSourceFileBytes: Int = AcaiConstants.standard.maximumSourceFileBytes,
-        directoryEnumerationCounter: OperationCounter? = nil
+        directoryEnumerationCounter: OperationCounter? = nil,
+        mergeElementCounter: MergeElementCounter? = nil
     ) {
         self.parsers = parsers
+        self.typeFlattenCounter = typeFlattenCounter
         self.projectDiscovery = projectDiscovery ?? ProjectDiscovery(
             detectors: [],
             fallback: FallbackDetector(parsers: parsers),
@@ -63,6 +70,7 @@ public struct AnalysisService: Sendable {
         self.fileParsingConcurrencyLimit = fileParsingConcurrencyLimit
         self.maximumSourceFileBytes = maximumSourceFileBytes
         self.directoryEnumerationCounter = directoryEnumerationCounter
+        self.mergeElementCounter = mergeElementCounter
     }
 
     // MARK: - Parser Registry
@@ -132,14 +140,9 @@ public struct AnalysisService: Sendable {
 
         // Only a name one module declares non-privately in several files collides; every spec is in.
         let collisions = CollidingTypeIDs(files: parsedSpecs.flatMap(\.files))
-        var combinedArtifact: CodeArtifact?
-        for parsed in parsedSpecs {
-            if let artifact = assemble(parsed.disambiguating(collisions)) {
-                combinedArtifact = combinedArtifact.map { $0.merging(with: artifact) } ?? artifact
-            }
-        }
+        let specArtifacts = parsedSpecs.compactMap { assemble($0.disambiguating(collisions)) }
 
-        guard let combined = combinedArtifact else {
+        guard let combined = CodeArtifact(merging: specArtifacts, countingInto: mergeElementCounter) else {
             throw ValidationError("No source files could be parsed in \(rootURL.path).")
         }
         // Runs on the final cross-spec-merged artifact; the rest of `enriched(using:)` runs
@@ -201,16 +204,14 @@ public struct AnalysisService: Sendable {
 
     /// Enriches by each file's own `metadata.sourceLanguage`, which may differ from the spec's, in first-seen order.
     private func assemble(_ parsed: ParsedSpec) -> CodeArtifact? {
-        var byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact] = [:]
+        var byLanguage: [CodeArtifact.SourceLanguage: [CodeArtifact]] = [:]
         var order: [CodeArtifact.SourceLanguage] = []
         for file in parsed.files {
             let language = file.metadata.sourceLanguage
-            if let existing = byLanguage[language] {
-                byLanguage[language] = existing.merging(with: file)
-            } else {
-                byLanguage[language] = file
+            if byLanguage[language] == nil {
                 order.append(language)
             }
+            byLanguage[language, default: []].append(file)
         }
         let enriched = enrichPerLanguage(
             (byLanguage: byLanguage, order: order), spec: parsed.spec, fallback: parsed.fallback
@@ -255,7 +256,7 @@ public struct AnalysisService: Sendable {
     /// (resolved from the registry; `fallback` covers a language the registry doesn't know). The spec's
     /// nominal language is emitted first so the merged artifact's top-level `sourceLanguage` matches it.
     private func enrichPerLanguage(
-        _ parsed: (byLanguage: [CodeArtifact.SourceLanguage: CodeArtifact], order: [CodeArtifact.SourceLanguage]),
+        _ parsed: (byLanguage: [CodeArtifact.SourceLanguage: [CodeArtifact]], order: [CodeArtifact.SourceLanguage]),
         spec: SourceSpec,
         fallback: LanguageConfiguration
     ) -> CodeArtifact? {
@@ -266,17 +267,22 @@ public struct AnalysisService: Sendable {
             order.insert(spec.language, at: 0)
         }
 
-        var result: CodeArtifact?
+        var enrichedGroups: [CodeArtifact] = []
+        enrichedGroups.reserveCapacity(order.count)
         for language in order {
-            guard let group = parsed.byLanguage[language] else { continue }
+            guard let files = parsed.byLanguage[language],
+                  let group = CodeArtifact(merging: files, countingInto: mergeElementCounter)
+            else { continue }
             let configuration = registry.configuration(for: language) ?? fallback
             // Stamp each type with its language before enrichment so provenance survives into the
             // merged artifact for later per-type classification.
-            let enriched = group.stampingSourceLanguage(language).enriched(configuration: configuration)
-            result = result.map { $0.merging(with: enriched) } ?? enriched
+            enrichedGroups.append(group.stampingSourceLanguage(language)
+                .enriched(using: LanguageConfigurationResolver(single: configuration), counting: typeFlattenCounter))
         }
 
-        guard var combined = result else { return nil }
+        guard var combined = CodeArtifact(merging: enrichedGroups, countingInto: mergeElementCounter) else {
+            return nil
+        }
         if combined.metadata.toolVersion == nil {
             combined.metadata.toolVersion = AcaiConstants.standard.toolVersion
         }

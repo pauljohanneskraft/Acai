@@ -151,6 +151,19 @@ struct DetectorTests {
         }
     }
 
+    @Test(arguments: [
+        ("only.cjs", CodeArtifact.SourceLanguage.javaScript), ("only.mts", .typeScript), ("only.cts", .typeScript)
+    ])
+    func nodeDetectsModuleExtensions(fileName: String, language: CodeArtifact.SourceLanguage) throws {
+        let detector = NodeDetector()
+        try withTempDir { root in
+            try write("package.json", in: root, contents: "{}")
+            try write("src/\(fileName)", in: root)
+            let specs = detector.discoverSourceSpecs(at: root, requestedLanguages: [])
+            #expect(specs.map(\.language) == [language])
+        }
+    }
+
     /// A monorepo declares its packages in `package.json`; each one contributes its own directories
     /// rather than the root being parsed wholesale.
     @Test func nodeReadsWorkspacePackages() throws {
@@ -277,6 +290,40 @@ struct DetectorTests {
             #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
                 == ["lib"])
             #expect(allClaim(detector.discoverSourceSpecs(at: root, requestedLanguages: []), root))
+        }
+    }
+
+    @Test func flutterCollectsBinAndToolBesideLib() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("lib/main.dart", in: root)
+            try write("bin/cli.dart", in: root)
+            try write("tool/build.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == ["lib", "bin", "tool"])
+        }
+    }
+
+    @Test func flutterSkipsAbsentBinOrTool() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("lib/main.dart", in: root)
+            try write("tool/build.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == ["lib", "tool"])
+        }
+    }
+
+    /// The root fallback already contains `bin/` and `tool/`, so listing them too would parse them twice.
+    @Test func flutterFallsBackToRootWithoutLib() throws {
+        let detector = FlutterDetector()
+        try withTempDir { root in
+            try write("pubspec.yaml", in: root, contents: "name: app")
+            try write("bin/cli.dart", in: root)
+            #expect(dirNames(detector.discoverSourceSpecs(at: root, requestedLanguages: []), for: .dart)
+                == [root.lastPathComponent])
         }
     }
 

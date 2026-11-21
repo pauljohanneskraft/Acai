@@ -1,7 +1,8 @@
 import Foundation
 import AcaiCore
 
-/// Detects Dart/Flutter projects (`pubspec.yaml`) and locates Dart source files under `lib/`,
+/// Detects Dart/Flutter projects (`pubspec.yaml`) and locates Dart source files under `lib/`, plus
+/// the `bin/` (command-line entry points) and `tool/` directories a package may carry beside it,
 /// falling back to the project root if `lib/` doesn't exist.
 public struct FlutterDetector: BuildSystemDetector {
     public init() {}
@@ -28,7 +29,8 @@ public struct FlutterDetector: BuildSystemDetector {
     ) -> DetectorClaim {
         guard LanguageRequest(requestedLanguages).wants(.dart) else { return DetectorClaim(specs: []) }
 
-        let sourceDirs = SourceDirectoryProbe(preferring: "lib").directories(in: root, reading: reads)
+        let sourceDirs = SourceDirectoryProbe(preferring: "lib", alsoIncluding: ["bin", "tool"])
+            .directories(in: root, reading: reads)
         guard SourceFilePresence(extensions: ["dart"]).exist(inAnyOf: sourceDirs, reading: reads) else {
             return DetectorClaim(specs: [])
         }

@@ -14,25 +14,27 @@ struct DeadCodeCandidateReferenceTests {
         TypeDeclaration(id: id, name: name, qualifiedName: id, kind: .class, accessLevel: .public)
     }
 
-    /// `DeadCodeScan.Candidate` has no public memberwise initializer (only `Decodable`'s
-    /// synthesized `init(from:)`), so build one through its own `Codable` conformance.
-    private func candidate(id: String) throws -> DeadCodeScan.Candidate {
-        try JSONDecoder().decode(DeadCodeScan.Candidate.self, from: Data("{\"id\":\"\(id)\"}".utf8))
+    @Test func aFreestandingFunctionResolvesToAnUntypedMethod() {
+        let candidate = DeadCodeScan.Candidate(
+            id: "helpers.swift:freeFunction()", typeName: nil, memberName: "freeFunction", location: nil)
+        #expect(candidate.codeElementReference(in: artifact(types: []))
+            == CodeElementReference.method(typeName: nil, methodName: "freeFunction"))
     }
 
-    @Test func bareFunctionIDWithNoDotResolvesToAnUntypedMethod() throws {
-        let reference = try candidate(id: "freeFunction").codeElementReference(in: artifact(types: []))
-        #expect(reference == CodeElementReference.method(typeName: nil, methodName: "freeFunction"))
-    }
-
-    @Test func typeDotMethodWhereTypeExistsResolvesWithTheTypeName() throws {
+    @Test func aMemberOfADeclaredTypeResolvesWithTheTypeName() {
+        let candidate = DeadCodeScan.Candidate(
+            id: "Foo.bar(Int)", typeName: "Foo", memberName: "bar", location: nil)
         let art = artifact(types: [type(id: "Foo", name: "Foo")])
-        let reference = try candidate(id: "Foo.bar").codeElementReference(in: art)
-        #expect(reference == CodeElementReference.method(typeName: "Foo", methodName: "bar"))
+        #expect(candidate.codeElementReference(in: art)
+            == CodeElementReference.method(typeName: "Foo", methodName: "bar"))
     }
 
-    @Test func typeDotMethodWhereTypeDoesNotResolveFallsBackToTheWholeIDAsMethodName() throws {
-        let reference = try candidate(id: "Missing.bar").codeElementReference(in: artifact(types: []))
-        #expect(reference == CodeElementReference.method(typeName: nil, methodName: "Missing.bar"))
+    /// A `typeName` naming no type in the artifact — a qualified id, for a simple name two modules
+    /// both declare — leaves the member unqualified rather than inventing a type to point at.
+    @Test func aTypeNameTheArtifactDoesNotDeclareLeavesTheMemberUnqualified() {
+        let candidate = DeadCodeScan.Candidate(
+            id: "ModuleA.Missing.bar()", typeName: "ModuleA.Missing", memberName: "bar", location: nil)
+        #expect(candidate.codeElementReference(in: artifact(types: []))
+            == CodeElementReference.method(typeName: nil, methodName: "bar"))
     }
 }
