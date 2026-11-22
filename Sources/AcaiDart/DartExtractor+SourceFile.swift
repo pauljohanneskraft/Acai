@@ -95,9 +95,10 @@ extension DartExtractor {
 
     private mutating func attachAsyncModifier(to functionIndex: Int?, ifBodyIsAsync node: Node) {
         guard let index = functionIndex, isAsyncFunctionBody(node) else { return }
-        declarations.freestandingFunctions[index].modifiers.append(.async)
-        declarations.freestandingFunctions[index].type = typeReferences.awaitedReturnType(
-            declarations.freestandingFunctions[index].type, isAsync: true)
+        var function = declarations.freestandingFunctions[index]
+        function.modifiers.append(.async)
+        function.type = typeReferences.awaitedReturnType(function.type, isAsync: true)
+        declarations.freestandingFunctions[index] = function
     }
 
     /// Handles a top-level child that is neither a directive, a global-variable piece, nor a
