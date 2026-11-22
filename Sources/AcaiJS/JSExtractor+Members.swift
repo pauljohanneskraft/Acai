@@ -234,7 +234,9 @@ extension JSExtractor {
             in: node.child(byFieldName: "body"), scope: CallSiteScope(knownTypeNames: declarations.declaredTypeNames))
         return Member(
             name: name, kind: .method, accessLevel: isExported ? .public : .internal,
-            modifiers: modifiers, type: returnType, parameters: params,
+            modifiers: modifiers,
+            type: typeReferences.awaitedReturnType(returnType, isAsync: modifiers.contains(.async)),
+            parameters: params,
             genericParameters: generics, location: nodeLoc, callSites: bodyCallSites,
             documentation: documentation.documentation(above: node, in: context))
     }

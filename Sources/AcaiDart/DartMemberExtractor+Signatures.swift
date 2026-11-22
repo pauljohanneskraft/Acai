@@ -135,6 +135,10 @@ extension DartMemberExtractor {
             if info.returnType == nil {
                 info.returnType = typeReferences.typeReference(child)
             }
+        case "type_arguments":
+            if let base = info.returnType {
+                info.returnType = typeReferences.applying(child, to: base)
+            }
         default:
             if info.returnType == nil, let ref = typeReferences.typeReference(child) {
                 info.returnType = ref
@@ -222,6 +226,8 @@ extension DartMemberExtractor {
                 name = child.text(in: context)
             case "type_identifier", "void_type":
                 returnType = typeReferences.typeReference(child)
+            case "type_arguments":
+                if let base = returnType { returnType = typeReferences.applying(child, to: base) }
             default:
                 break
             }
@@ -279,6 +285,8 @@ extension DartMemberExtractor {
             switch nodeType {
             case "type_identifier", "void_type":
                 if returnType == nil { returnType = typeReferences.typeReference(child) }
+            case "type_arguments":
+                if let base = returnType { returnType = typeReferences.applying(child, to: base) }
             case "binary_operator", "unary_prefix_operator", "unary_postfix_operator",
                  "tilde_operator", "minus_operator", "negation_operator":
                 operatorName = child.text(in: context).trimmingCharacters(in: .whitespacesAndNewlines)

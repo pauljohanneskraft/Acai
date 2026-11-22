@@ -22,6 +22,10 @@ struct JSTypeReferenceResolver {
         "public": .public, "private": .private, "protected": .protected
     ]
 
+    /// TypeScript requires an `async` member to annotate `Promise<T>`; the `.async` modifier carries
+    /// the asynchrony, so the annotation reports `T`.
+    private static let asyncReturn = AsyncReturnUnwrapper(wrapperNames: ["Promise"])
+
     // MARK: - Type Annotations (TypeScript)
 
     func extractTypeAnnotation(_ node: Node) -> TypeReference? {
@@ -42,6 +46,12 @@ struct JSTypeReferenceResolver {
             return extractTypeReference(returnType)
         }
         return extractTypeAnnotation(node)
+    }
+
+    /// The return type an `async` member reports: `Promise<T>` becomes `T`, a bare `Promise` and a
+    /// non-`Promise` annotation stay as written.
+    func awaitedReturnType(_ reference: TypeReference?, isAsync: Bool) -> TypeReference? {
+        isAsync ? Self.asyncReturn.unwrapped(reference) : reference
     }
 
     // MARK: - Type Reference Extraction

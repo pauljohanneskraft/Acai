@@ -9,6 +9,11 @@ import AcaiTreeSitter
 struct DartTypeReferenceResolver {
     let context: SourceFileContext
 
+    /// Dart's `async` body must be declared to return `Future<T>` (or `FutureOr<T>`); the `.async`
+    /// modifier carries the asynchrony, so the declaration reports `T`. `Stream`/`Iterable` are
+    /// deliberately absent: an `async*`/`sync*` generator really does return the sequence it names.
+    private static let asyncReturn = AsyncReturnUnwrapper(wrapperNames: ["Future", "FutureOr"])
+
     // MARK: - Type References
 
     func typeReference(_ node: Node) -> TypeReference? {
@@ -52,7 +57,7 @@ struct DartTypeReferenceResolver {
             case "type_identifier", "identifier":
                 if name.isEmpty { name = child.text(in: context) }
             case "type_arguments":
-                genericArgs = child.namedChildren().compactMap { typeReference($0) }
+                genericArgs = typeArguments(child)
             default:
                 break
             }
@@ -61,6 +66,42 @@ struct DartTypeReferenceResolver {
         guard !name.isEmpty else { return nil }
         let isArray = name == "List"
         return TypeReference(name: name, genericArguments: genericArgs, isArray: isArray)
+    }
+
+    /// The references a `type_arguments` list names. The grammar emits a generic argument's own
+    /// `type_arguments` and its `?` as *siblings* of the name they qualify rather than as its
+    /// children, so `Map<String, User>?` arrives as three flat nodes and each is folded onto the
+    /// reference it follows — otherwise `Future<Map<String, User>>` reads as two arguments.
+    func typeArguments(_ node: Node) -> [TypeReference] {
+        var refs: [TypeReference] = []
+        for child in node.namedChildren() {
+            guard let nodeType = child.nodeType else { continue }
+            switch nodeType {
+            case "nullable_type" where !refs.isEmpty:
+                refs[refs.count - 1].isOptional = true
+            case "type_arguments" where !refs.isEmpty:
+                refs[refs.count - 1] = applying(child, to: refs[refs.count - 1])
+            default:
+                if let ref = typeReference(child) { refs.append(ref) }
+            }
+        }
+        return refs
+    }
+
+    /// Folds a `type_arguments` sibling onto the type name that precedes it.
+    func applying(_ typeArgumentsNode: Node, to base: TypeReference) -> TypeReference {
+        TypeReference(
+            name: base.name,
+            genericArguments: typeArguments(typeArgumentsNode),
+            isOptional: base.isOptional,
+            isArray: base.name == "List"
+        )
+    }
+
+    /// The return type an `async` member reports: `Future<T>`/`FutureOr<T>` becomes `T`, and a
+    /// `Future` written without a type argument stays as declared.
+    func awaitedReturnType(_ reference: TypeReference?, isAsync: Bool) -> TypeReference? {
+        isAsync ? Self.asyncReturn.unwrapped(reference) : reference
     }
 
     // MARK: - Type Parameters (Generics)
@@ -123,8 +164,7 @@ struct DartTypeReferenceResolver {
                 }
                 pendingName = child.text(in: context)
             } else if nodeType == "type_arguments", let name = pendingName {
-                let genericArgs = child.namedChildren().compactMap { typeReference($0) }
-                refs.append(TypeReference(name: name, genericArguments: genericArgs))
+                refs.append(TypeReference(name: name, genericArguments: typeArguments(child)))
                 pendingName = nil
             } else {
                 if let name = pendingName {
@@ -216,13 +256,7 @@ struct DartTypeReferenceResolver {
         case "type_identifier", "generic_type", "function_type", "void_type":
             if info.type == nil { info.type = typeReference(child) }
         case "type_arguments":
-            if let base = info.type {
-                let args = child.namedChildren().compactMap { typeReference($0) }
-                info.type = TypeReference(
-                    name: base.name, genericArguments: args,
-                    isArray: base.name == "List"
-                )
-            }
+            if let base = info.type { info.type = applying(child, to: base) }
         case "nullable_type":
             info.isNullable = true
         case "final_builtin":

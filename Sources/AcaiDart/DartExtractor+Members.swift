@@ -146,6 +146,8 @@ extension DartExtractor {
         members[members.count - 1].assignments = assignments.assignments(in: node)
         if isAsyncFunctionBody(node) {
             members[members.count - 1].modifiers.append(.async)
+            members[members.count - 1].type = typeReferences.awaitedReturnType(
+                members[members.count - 1].type, isAsync: true)
         }
         pendingBodies.append((members.count - 1, node))
     }
