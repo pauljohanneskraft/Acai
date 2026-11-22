@@ -29,7 +29,10 @@ extension PythonCodeParser {
             // resolvable call sites.
             entryPointMarkers: EntryPointMarkers(
                 annotations: ["fixture", "pytestfixture"],
-                methodNames: ["main", "__init__", "setup_method", "teardown_method", "setup", "teardown"]),
+                // pytest and unittest find their hooks by name, not by conformance, so these stay
+                // name-based. `__init__` is not among them: construction already targets it, so a
+                // genuinely unconstructed type's initializer is a real finding.
+                methodNames: ["main", "setup_method", "teardown_method", "setup", "teardown"]),
             // A bare `Thing()` now resolves through `CallSiteScope.bareCall`'s constructor opt-in to
             // a call-site edge targeting the initializer's fixed `__init__` member. `__getitem__` is
             // extracted as a method and is scanned as one.

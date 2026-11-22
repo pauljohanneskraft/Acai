@@ -23,18 +23,36 @@ extension SwiftCodeParser {
             ],
             excludedDirectories: [".build", "DerivedData", "Pods", ".swiftpm"],
             // Swift Testing (`@Test`) and runtime-dispatched members (`@objc`, `@IBAction`) are invoked
-            // by frameworks, not resolvable call sites; `main` is the process entry point. The method
-            // names below witness protocols declared outside the analyzed sources (ArgumentParser's
-            // `ParsableCommand`, SwiftUI's `View`/`PreferenceKey`, AppKit/UIKit's view-representable
-            // protocols) that the engine's protocol-witness exemption can't see and would otherwise
-            // flag as uncalled.
+            // by frameworks, not resolvable call sites; `main` is the process entry point. The
+            // conformance markers below cover protocols declared outside the analysed sources
+            // (ArgumentParser's commands, SwiftUI's view/scene builders, AppKit/UIKit's
+            // representables) whose requirements the engine's witness exemption therefore can't see.
+            // They are matched against the declaring type's supertypes rather than by name alone, so
+            // an unrelated type's uncalled `run()` or `body` is still reported.
             entryPointMarkers: EntryPointMarkers(
                 annotations: ["test", "objc", "ibaction", "main"],
-                methodNames: [
-                    "main", "run", "validate", "body", "reduce",
-                    "makensview", "makeuiview", "makecoordinator",
-                    "updatensview", "updateuiview",
-                    "dismantlensview", "dismantleuiview"
+                methodNames: ["main"],
+                conformanceMembers: [
+                    "ParsableCommand": ["run", "validate"],
+                    "AsyncParsableCommand": ["run", "validate"],
+                    "ParsableArguments": ["validate"],
+                    "App": ["body"],
+                    "Scene": ["body"],
+                    "View": ["body"],
+                    "ViewModifier": ["body"],
+                    "Commands": ["body"],
+                    "Shape": ["path"],
+                    "PreferenceKey": ["reduce"],
+                    "NSViewRepresentable": [
+                        "makensview", "updatensview", "dismantlensview", "makecoordinator"],
+                    "UIViewRepresentable": [
+                        "makeuiview", "updateuiview", "dismantleuiview", "makecoordinator"],
+                    "NSViewControllerRepresentable": [
+                        "makensviewcontroller", "updatensviewcontroller",
+                        "dismantlensviewcontroller", "makecoordinator"],
+                    "UIViewControllerRepresentable": [
+                        "makeuiviewcontroller", "updateuiviewcontroller",
+                        "dismantleuiviewcontroller", "makecoordinator"]
                 ]),
             // `CallSiteCollector` records a caller edge for every construction and project-type subscript.
             deadCodeMemberKinds: [.method, .initializer, .subscript]
