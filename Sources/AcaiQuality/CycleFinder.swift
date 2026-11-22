@@ -14,12 +14,61 @@ public struct CycleFinder: Sendable {
 
     /// A strongly-connected component's members, sorted for determinism.
     public struct Cycle: Sendable, Equatable {
+        /// One hop of a module cycle, with the type reference that creates it.
+        public struct Witness: Sendable, Equatable {
+            public var from: String
+            public var to: String
+            public var sourceType: String
+            public var targetType: String
+            public var kind: Relationship.Kind
+            /// `sourceType`'s declaration site.
+            public var location: SourceLocation?
+            /// The file the reference is written in, when that is not `sourceType`'s own file.
+            public var referenceFile: String?
+
+            public var description: String {
+                let site = location.map { " at \($0.filePath):\($0.line)" } ?? ""
+                let reference = referenceFile.map { " (reference in \($0))" } ?? ""
+                return "\(from) → \(to) via \(sourceType) → \(targetType) (\(kind.rawValue))\(site)\(reference)"
+            }
+
+            func precedes(_ other: Witness) -> Bool {
+                if from != other.from { return from < other.from }
+                if to != other.to { return to < other.to }
+                return edgeKey.lexicographicallyPrecedes(other.edgeKey)
+            }
+
+            private var edgeKey: [String] {
+                [
+                    sourceType, targetType, kind.rawValue, location?.filePath ?? "",
+                    String(location?.line ?? 0), referenceFile ?? ""
+                ]
+            }
+        }
+
         public var scope: Scope
         public var members: [String]
+        /// One witnessing edge per hop between members; empty at `.types` scope.
+        public var witnesses: [Witness]
+
+        public init(scope: Scope, members: [String], witnesses: [Witness] = []) {
+            self.scope = scope
+            self.members = members
+            self.witnesses = witnesses
+        }
 
         /// `A → B → C → A`-style rendering of the cycle.
         public var description: String {
             (members + [members.first].compactMap { $0 }).joined(separator: " → ")
+        }
+
+        public var evidence: String? {
+            guard !witnesses.isEmpty else { return nil }
+            return witnesses.map(\.description).joined(separator: "; ")
+        }
+
+        public var knownDebtLines: [String] {
+            ["#   known debt: \(description)"] + witnesses.map { "#     \($0.description)" }
         }
     }
 
@@ -45,9 +94,33 @@ public struct CycleFinder: Sendable {
     public func cycles(scope: Scope) -> [Cycle] {
         switch scope {
         case .modules:
-            return components(adjacency: moduleAdjacency, scope: .modules)
+            let hops = moduleHops
+            return components(adjacency: hops.adjacency, scope: .modules).map { cycle in
+                Cycle(scope: .modules, members: cycle.members, witnesses: hops.witnesses(within: cycle.members))
+            }
         case .types:
             return components(adjacency: typeAdjacency, scope: .types)
+        }
+    }
+
+    /// The `cycle` rule's breaches, one per cycle, shared by the rule, `quality --explore` and MCP.
+    public func violations(scope: Scope) -> [Violation] {
+        let label = scope == .modules ? "Module" : "Type"
+        return cycles(scope: scope).map { cycle in
+            var detail = ["scope": scope.rawValue]
+            var message = "\(label) dependency cycle: \(cycle.description)."
+            if let evidence = cycle.evidence {
+                detail["witnesses"] = evidence
+                message += " Via: \(evidence)."
+            }
+            return Violation(
+                ruleKind: "cycle",
+                message: message,
+                subject: cycle.members.joined(separator: ","),
+                // A module cycle has no single site; its witnesses carry the locations.
+                source: scope == .types ? cycle.members.first.flatMap { graph.node(id: $0)?.location } : nil,
+                detail: detail
+            )
         }
     }
 
@@ -61,20 +134,56 @@ public struct CycleFinder: Sendable {
         return adjacency
     }
 
-    private var moduleAdjacency: [String: Set<String>] {
-        var adjacency: [String: Set<String>] = [:]
+    private var moduleHops: ModuleHopIndex {
+        var index = ModuleHopIndex()
         for edge in graph.relationships {
             guard let sourceModule = attribution.sourceModule(of: edge),
                   let targetModule = attribution.targetModule(of: edge),
                   sourceModule != targetModule else { continue }
-            adjacency[sourceModule, default: []].insert(targetModule)
+            let location = graph.node(id: edge.source)?.location
+            index.insert(Cycle.Witness(
+                from: sourceModule,
+                to: targetModule,
+                sourceType: edge.source,
+                targetType: edge.target,
+                kind: edge.kind,
+                location: location,
+                referenceFile: edge.origin == location?.filePath ? nil : edge.origin))
         }
-        return adjacency
+        return index
     }
 
     private func components(adjacency: [String: Set<String>], scope: Scope) -> [Cycle] {
         StronglyConnectedComponents(adjacency: adjacency).cycles
             .map { Cycle(scope: scope, members: $0.sorted()) }
             .sorted { $0.members.lexicographicallyPrecedes($1.members) }
+    }
+}
+
+/// Module adjacency plus each hop's witness, the first in `Witness.precedes` order.
+private struct ModuleHopIndex {
+    private struct Hop: Hashable {
+        let from: String
+        let to: String
+    }
+
+    private(set) var adjacency: [String: Set<String>] = [:]
+    private var witnessByHop: [Hop: CycleFinder.Cycle.Witness] = [:]
+
+    mutating func insert(_ witness: CycleFinder.Cycle.Witness) {
+        adjacency[witness.from, default: []].insert(witness.to)
+        let hop = Hop(from: witness.from, to: witness.to)
+        guard let incumbent = witnessByHop[hop] else {
+            witnessByHop[hop] = witness
+            return
+        }
+        if witness.precedes(incumbent) { witnessByHop[hop] = witness }
+    }
+
+    func witnesses(within members: [String]) -> [CycleFinder.Cycle.Witness] {
+        let members = Set(members)
+        return witnessByHop.values
+            .filter { members.contains($0.from) && members.contains($0.to) }
+            .sorted { $0.precedes($1) }
     }
 }

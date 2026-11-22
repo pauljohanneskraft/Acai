@@ -99,6 +99,24 @@ struct QualityCommandTests {
         #expect(rules.budgets.first?.metric == .distance)
     }
 
+    @Test func budgetExclusionsDecodeFromYAML() throws {
+        let rules = try QualityRules.load(yaml: """
+        budgets:
+          - target:
+              kind: class
+              exclude:
+                - { typeGlob: "DeclarationVisitor" }
+                - { module: "*Tests", kind: class }
+            metric: weightedMethods
+            max: 25
+        """)
+        let exclude = try #require(rules.budgets.first?.target.exclude)
+        #expect(exclude.count == 2)
+        #expect(exclude.first?.typeGlob == "DeclarationVisitor")
+        #expect(exclude.last?.module == "*Tests")
+        #expect(exclude.last?.kind == TypeKind.class)
+    }
+
     @Test func schemaMismatchSurfacesReadableCause() {
         // `budgets` must be a list; a scalar is a type mismatch the decoder can locate.
         #expect {
