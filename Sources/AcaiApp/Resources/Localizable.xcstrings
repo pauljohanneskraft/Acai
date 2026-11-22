@@ -11848,19 +11848,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "LCOM4-Kohäsion: In wie viele unzusammenhängende Gruppen die Methoden eines Typs zerfallen, wenn man sie über gemeinsame Felder oder Aufrufe verbindet. 1 ist kohäsiv; höhere Werte bedeuten mehrere unabhängige Aufgaben, die eigene Typen verdienen."
+            "value" : "LCOM4-Kohäsion: In wie viele unzusammenhängende Gruppen die Methoden und berechneten Properties eines Typs zerfallen, wenn man sie über gemeinsame Felder oder Aufrufe verbindet. 1 ist kohäsiv; höhere Werte bedeuten mehrere unabhängige Aufgaben, die eigene Typen verdienen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "LCOM4 cohesion: how many disconnected groups the type's methods fall into once linked by shared fields or calls. 1 is cohesive; higher means several unrelated jobs that want separate types."
+            "value" : "LCOM4 cohesion: how many disconnected groups the type's methods and computed properties fall into once linked by shared fields or calls. 1 is cohesive; higher means several unrelated jobs that want separate types."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cohésion LCOM4 : nombre de groupes déconnectés dans lesquels se répartissent les méthodes du type une fois reliées par des champs ou des appels partagés. 1 est cohésif ; une valeur plus élevée signale plusieurs tâches sans rapport qui mériteraient des types séparés."
+            "value" : "Cohésion LCOM4 : nombre de groupes déconnectés dans lesquels se répartissent les méthodes et properties calculées du type une fois reliées par des champs ou des appels partagés. 1 est cohésif ; une valeur plus élevée signale plusieurs tâches sans rapport qui mériteraient des types séparés."
           }
         }
       }

@@ -39,6 +39,27 @@ struct CohesionAndStabilityMetricsTests {
         #expect(analysis.components == [["close", "open"], ["connect", "disconnect"]])
     }
 
+    @Test func aCallLinksEveryOverloadOfTheCalledName() {
+        let declared = type("Store", module: "App", members: [
+            Member(name: "items", kind: .property, accessLevel: .internal),
+            Member(name: "load", kind: .method, accessLevel: .internal, callSites: [
+                CallSite(receiver: .selfDispatch, methodName: "load")
+            ]),
+            method("load", reads: "items")
+        ])
+        #expect(LcomAnalysis(type: declared).componentCount == 1)
+    }
+
+    @Test func readingAComputedPropertyLinksToIt() {
+        let declared = type("Store", module: "App", members: [
+            Member(name: "items", kind: .property, accessLevel: .internal),
+            Member(name: "visible", kind: .property, accessLevel: .internal, isComputed: true,
+                   fieldReads: [FieldAccess(name: "items")]),
+            method("render", reads: "visible")
+        ])
+        #expect(LcomAnalysis(type: declared).components == [["render", "visible"]])
+    }
+
     @Test func cohesiveTypeReportsASingleCluster() {
         let declared = type("Counter", module: "App", members: [
             Member(name: "value", kind: .property, accessLevel: .internal),
@@ -49,8 +70,6 @@ struct CohesionAndStabilityMetricsTests {
     }
 
     @Test func staticMembersLeaveCohesionUnchanged() {
-        // A `static` member cannot touch instance state, so counting it guaranteed a component of its
-        // own and inflated every type carrying a helper.
         let instanceMembers: [Member] = [
             Member(name: "value", kind: .property, accessLevel: .internal),
             method("increment", writes: "value"),
@@ -66,8 +85,6 @@ struct CohesionAndStabilityMetricsTests {
     }
 
     @Test func computedPropertiesCountAsBehaviour() {
-        // A computed property's accessor is code reaching into the same field the methods use, so it
-        // joins their cluster rather than being invisible to cohesion.
         let declared = type("Counter", module: "App", members: [
             Member(name: "value", kind: .property, accessLevel: .internal),
             Member(name: "doubled", kind: .property, accessLevel: .internal, isComputed: true,
@@ -78,8 +95,6 @@ struct CohesionAndStabilityMetricsTests {
     }
 
     @Test func initialisersDoNotFuseUnrelatedClusters() {
-        // An initialiser populating every stored property would link them all, collapsing the metric
-        // to 1 for any type with a memberwise initialiser.
         let declared = type("Service", module: "App", members: [
             Member(name: "file", kind: .property, accessLevel: .internal),
             Member(name: "socket", kind: .property, accessLevel: .internal),

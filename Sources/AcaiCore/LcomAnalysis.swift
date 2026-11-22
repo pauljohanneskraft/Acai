@@ -19,13 +19,7 @@ public struct LcomAnalysis {
         return partition(of: members).componentCount
     }
 
-    /// The members cohesion is measured over: instance behaviour only.
-    ///
-    /// A `static`/`class` member cannot touch instance state, so including one guaranteed a component
-    /// of its own and inflated every utility-bearing type. Computed properties and subscripts are
-    /// behaviour — their accessors are code reaching into the same fields methods do. Initialisers are
-    /// excluded because populating every stored property would link all of them, collapsing the metric
-    /// to `1` for any type with a memberwise initialiser.
+    /// Instance behaviour only; initialisers are left out because populating every field would link everything.
     private var cohesionMembers: [Member] {
         type.members.filter { member in
             guard !member.modifiers.contains(.static), !member.modifiers.contains(.class) else { return false }
@@ -82,13 +76,15 @@ public struct LcomAnalysis {
         }
     }
 
-    /// Union members where one calls the other (self/own-type receiver, matching a sibling method name).
+    /// Union members where one uses the other: a self call, or a read of a computed property. A call
+    /// names no overload, so it links every member sharing the called name.
     private func linkByMutualCall(_ methods: [Member], into components: inout DisjointSet) {
-        let indexByName = Dictionary(
-            methods.enumerated().map { ($1.name, $0) }, uniquingKeysWith: { first, _ in first })
+        let indicesByName = Dictionary(grouping: methods.indices, by: { methods[$0].name })
         for (index, method) in methods.enumerated() {
-            for call in method.callSites where callsSelf(call) {
-                if let target = indexByName[call.methodName], target != index { components.union(index, target) }
+            let used = method.callSites.filter(callsSelf).map(\.methodName)
+                + method.fieldReads.filter { $0.receiver == nil }.map(\.name)
+            for name in used {
+                for target in indicesByName[name] ?? [] { components.union(index, target) }
             }
         }
     }

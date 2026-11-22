@@ -34,11 +34,8 @@ public struct FieldReadResolver {
         return reads
     }
 
-    /// Pre-order, over every child rather than only the named ones, so the window advances one source
-    /// token at a time and holds the two tokens preceding whatever is being classified — which is what
-    /// lets one implementation serve grammars that spell a member access in quite different shapes.
-    /// A name is classified before its own tokens are pushed, since an identifier node is not always a
-    /// leaf (Kotlin's `simple_identifier` wraps its token).
+    /// Walks every child, not only named ones, so the window sees each source token; a name is
+    /// classified before its own tokens are pushed because it need not be a leaf (Kotlin).
     private func collect(
         from node: Node, knownProperties: Set<String>, receiver: inout ReceiverWindow,
         into reads: inout [FieldAccess]
@@ -57,10 +54,7 @@ public struct FieldReadResolver {
     }
 }
 
-/// The two source tokens preceding the one being classified, which is all it takes to tell an own-field
-/// read from a read through someone else's receiver: a member name is qualified when an access operator
-/// sits directly before it, and the receiver is the type's own instance only when the token before that
-/// operator names it.
+/// The two tokens before a name: it is an own-field read unless an access operator follows a non-`self` receiver.
 private struct ReceiverWindow {
     private let accessOperators: Set<String> = [".", "?.", "!.", "->", "::"]
     private let selfNames: Set<String> = ["self", "this"]

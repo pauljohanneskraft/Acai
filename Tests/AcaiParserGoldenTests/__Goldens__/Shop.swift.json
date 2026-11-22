@@ -622,15 +622,6 @@
                 "line" : 26
               },
               "name" : "name"
-            },
-            {
-              "location" : {
-                "column" : 21,
-                "endLine" : 26,
-                "filePath" : "Shop.swift",
-                "line" : 26
-              },
-              "name" : "name"
             }
           ],
           "genericParameters" : [
@@ -1098,15 +1089,6 @@
                 "line" : 48
               },
               "name" : "base"
-            },
-            {
-              "location" : {
-                "column" : 21,
-                "endLine" : 48,
-                "filePath" : "Shop.swift",
-                "line" : 48
-              },
-              "name" : "base"
             }
           ],
           "genericParameters" : [
@@ -1438,7 +1420,15 @@
 
           ],
           "fieldReads" : [
-
+            {
+              "location" : {
+                "column" : 24,
+                "endLine" : 75,
+                "filePath" : "Shop.swift",
+                "line" : 75
+              },
+              "name" : "base"
+            }
           ],
           "genericParameters" : [
 

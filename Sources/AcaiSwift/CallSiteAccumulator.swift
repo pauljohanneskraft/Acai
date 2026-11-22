@@ -8,6 +8,8 @@ struct CallSiteAccumulator {
     var pendingCallSites: [CallSite] = []
     var pendingAssignments: [VariableAssignment] = []
     var pendingFieldReads: [FieldAccess] = []
+    var pendingDeferredFieldReads: [FieldAccess] = []
+    var fieldReadScope = FieldReadScope()
     var propertyMap: [String: String] = [:]
     /// Separate from `propertyMap`: an array's element is only a valid receiver inside an iteration
     /// closure's implicit `$0`, never a direct call on the property itself.

@@ -19,7 +19,7 @@ struct CallSiteCollector {
     /// The language's primitive and collection type names, whose subscripts are never the project's.
     private let builtInTypeNames: Set<String>
 
-    private let sourceLocations: SourceLocationResolver
+    let sourceLocations: SourceLocationResolver
     private let values = SwiftValueClassifier()
 
     init(knownTypeNames: Set<String>, builtInTypeNames: Set<String>, sourceLocations: SourceLocationResolver) {
@@ -192,21 +192,6 @@ struct CallSiteCollector {
             targetReceiver: target.receiver,
             op: op,
             value: value,
-            location: sourceLocations.sourceLocation(of: node)
-        )
-    }
-
-    /// A read of a stored property, or `nil` when the identifier isn't one of the type's properties.
-    /// Bare identifiers and the member of a `self.x` access both surface as `DeclReferenceExprSyntax`,
-    /// so this records them with `receiver == nil`; consumers filter by name (issue #111).
-    func fieldRead(
-        from node: DeclReferenceExprSyntax, propertyMap: [String: String]
-    ) -> FieldAccess? {
-        let name = node.baseName.text
-        guard propertyMap[name] != nil, node.namesEnclosingInstanceMember else { return nil }
-        return FieldAccess(
-            name: name,
-            receiver: nil,
             location: sourceLocations.sourceLocation(of: node)
         )
     }
@@ -418,18 +403,5 @@ struct CallSiteCollector {
         }
         let name = declRef.baseName.text
         return isTypeName(name) ? name : nil
-    }
-}
-
-extension DeclReferenceExprSyntax {
-
-    /// Whether this identifier names a member of the *enclosing* instance: `x` and `self.x` do,
-    /// `other.x` does not, and neither does `.x` — an implicit member whose base the type system
-    /// supplies rather than one of this type's own.
-    var namesEnclosingInstanceMember: Bool {
-        guard let access = parent?.as(MemberAccessExprSyntax.self), access.declName.id == id
-        else { return true }
-        guard let base = access.base else { return false }
-        return base.as(DeclReferenceExprSyntax.self)?.baseName.tokenKind == .keyword(.self)
     }
 }

@@ -122,6 +122,13 @@ struct ParserConformanceTests {
             func get() -> Int { return value }
         }
         """, method: "get", field: "value"),
+        ReadFixture(name: "Swift (optional self)", parser: SwiftCodeParser(), fileName: "Box.swift", source: """
+        class Box {
+            var value: Int = 0
+            var reader: (() -> Int?)?
+            func get() { reader = { [weak self] in self?.value } }
+        }
+        """, method: "get", field: "value"),
         ReadFixture(name: "Java", parser: JavaCodeParser(), fileName: "Box.java", source: """
         class Box {
             int value;
@@ -162,9 +169,7 @@ struct ParserConformanceTests {
         """, method: "get", field: "value")
     ]
 
-    /// The mirror of ``readFixtures``: the same field name, read off a *parameter* instead of the
-    /// type's own instance. A grammar-light resolver that matched on the identifier text alone counted
-    /// these as own-field reads, inflating cohesion and feature envy for every type with an `equals`.
+    /// The mirror of ``readFixtures``: the same field name, read off a parameter rather than the type's own instance.
     static let foreignReadFixtures: [ReadFixture] = [
         ReadFixture(name: "Swift", parser: SwiftCodeParser(), fileName: "Box.swift", source: """
         class Box {

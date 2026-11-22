@@ -40,9 +40,7 @@ extension TypeDeclaration {
         return total == 0 ? 0 : Double(stored) / Double(total)
     }
 
-    /// Weighted methods per class (WMC): the sum of cyclomatic complexity over the type's methods and
-    /// initialisers. A member the parser gave no complexity for contributes `1` — the irreducible
-    /// complexity of a single path — so an unmeasured body never reads as free.
+    /// WMC over methods and initialisers; an unmeasured body counts as its single path.
     var weightedMethodComplexity: Int {
         members
             .filter { $0.kind == .method || $0.kind == .initializer }

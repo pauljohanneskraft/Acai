@@ -58,10 +58,14 @@ measured no body for as 1. ``CodeMetrics/TypeMetric/numberOfMethods`` keeps the 
 and is what ``CodeMetrics/TypeMetric/responseForClass`` starts from.
 
 ``CodeMetrics/TypeMetric/lackOfCohesion`` links members by shared property access — reads
-(``Member/fieldReads``) and writes (``Member/assignments``) — plus self-dispatched calls. It measures
-methods, computed properties and subscripts, since each is code reaching into the type's fields;
-`static`/`class` members cannot touch instance state and initialisers populate every field, so both
-would distort the count and are excluded.
+(``Member/fieldReads``) and writes (``Member/assignments``) — plus self-dispatched calls (to every
+overload of the called name) and reads of a computed property. It measures methods, computed
+properties and subscripts, since each is code reaching into the type's fields; `static`/`class`
+members cannot touch instance state and initialisers populate every field, so both would distort the
+count and are excluded. A parser that cannot see a type's properties from where a member is declared
+— inside an extension — records ``Member/deferredFieldReads`` instead, which
+``CodeArtifact/resolvingDeferredFieldReads()`` checks against the extension-merged type during
+enrichment.
 
 **Known limitation:** ``SourceLocation`` records only a start line, so true method *length* is not
 derivable — ``CodeMetrics/TypeMetric/linesOfCode`` measures a declaration's span, not a single member's.
