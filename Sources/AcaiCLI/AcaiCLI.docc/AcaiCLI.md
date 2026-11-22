@@ -135,6 +135,11 @@ A skipped file is not a silent one: it becomes a `skipped` parse diagnostic carr
 Both are counted by [`analyze --health`](#analyze), so a type you expected to find and can't is
 explained rather than simply absent.
 
+**Sources in another encoding are analysed, not dropped.** A file that isn't valid UTF-8 — Latin-1
+and CP1252 are common in older C, C++ and Java code — is read with each invalid byte replaced by
+U+FFFD, so its types are still extracted, and it carries a `lossyDecoding` diagnostic naming it: an
+identifier spelled with a replaced byte is not the one in the source.
+
 **Symbolic links are followed.** A workspace that symlinks a shared package into place — common in
 JavaScript monorepos and Bazel-style layouts — is analyzed rather than silently losing that
 directory. Each directory is entered at most once however many links alias it, so a link pointing at
@@ -163,6 +168,27 @@ copying it in place.
 | `--annotation <name>` | Annotation marker, e.g. `Entity`. |
 | `--min-members <n>` | Types with at least *n* members — finds god types. |
 | `--min-nesting <n>` | Types nested at least *n* deep. |
+
+In a rules file a selector additionally takes `exclude:` — a list of selectors carving types *out*
+of it. Anything matching any entry is outside the selector, whatever the including facets say, which
+is the "everything except" the facets above can't express: a budget can then stay tight and carry its
+accepted exceptions by name instead of being loosened to the worst case.
+
+```yaml
+budgets:
+  - target:
+      kind: class
+      exclude:
+        - { typeGlob: "DeclarationVisitor" }   # grammar surface, not responsibility bloat
+        - { module: "*Tests" }
+    metric: weightedMethods
+    max: 25
+```
+
+Each entry is a full selector, so its own facets are AND-combined as usual — `{ module: Legacy, kind: class }`
+carves out Legacy's classes, not all of Legacy. An entry with no facets carves out everything, since that
+is what a facet-less selector matches. A module-scoped metric reads only the module facets, so an
+exclusion that names no module (`{ typeGlob: "Foo" }`) is ignored there rather than exempting every module.
 
 ### Class-diagram flags
 
@@ -215,7 +241,10 @@ looking at without guessing from a decode failure; a file written before this fi
 
 `--health`'s diagnostics include `skipped` (a file over the size ceiling) and `invalidPattern` (a
 `.gitignore` line no rule could be read from) alongside the parser's own `error`, `missing`,
-`unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed).
+`unresolvedReference` and `unreadable` — see [What gets parsed](#What-gets-parsed). Two more kinds are
+reported but don't lower the score: `incompleteDiscovery` (a build manifest that couldn't be read or
+fully interpreted, so discovery fell back to probing the filesystem) and `lossyDecoding` (a source
+that isn't valid UTF-8, analysed with each invalid byte replaced by U+FFFD).
 
 The report also carries the scope the parse ran over, under `discoveredRoots`: one entry per project
 root discovery claimed, each with its `path` (relative to the analysed folder, `"."` for the folder
@@ -438,12 +467,14 @@ acai quality --source . --rules quality.yml --baseline last-release
 | Key | Shape |
 | --- | --- |
 | `forbidden` | list of `{from: Selector, to: Selector, kinds: [Kind]?, message: String?}` |
-| `cycles` | `{scope: modules \| types}` |
+| `cycles` | `{scope: modules \| types}` — a module cycle is reported with the witnessing edge for every hop |
 | `budgets` | list of `{target: Selector?, metric: <name>, max: Double?, min: Double?, message: String?}` |
 | `layers` | `{layers: [{name, selector}], allowSkip: Bool}` — ordered top to bottom, `allowSkip` defaults `true` |
 | `contracts` | list of `{into: Selector, only: Selector, kinds: [Kind]?, message: String?}` |
 | `movements` | list of `{target: Selector?, metric: <name>, minImprovement: Double?, message: String?}` — only evaluated with `--baseline` |
 | `includeGeneratedTypes` | `Bool`, default `false` |
+
+**Cycles come with their evidence.** A module cycle names one witnessing reference per hop — `source type → target type`, its relationship kind and the `file:line` to open — so `AcaiApp → AcaiGit → AcaiApp` can be broken or disproven without digging for the reference behind it. Witnesses appear in the violation message, in `detail.witnesses` for `--format json`, and in the `--explore` listing. Where an edge comes from an extension declared outside the referencing type's own file, the witness also names that file, because that provenance is what decided which module the hop leaves.
 
 **Movements — proving a change moved the measurements the right way.** Given `--baseline`, each `movements` entry states how much a metric must have improved (decreased) since then; omitting `minImprovement` (or `0`) means "must not get worse". Every *other* metric on the same target is also checked for a silent regression, so an improvement bought by a hidden cost elsewhere doesn't pass — scope `target` to what the change actually touched to keep the check focused there instead of the whole codebase.
 
@@ -608,9 +639,9 @@ key keeps its original name, so the output shape is unchanged by the rename.
 
 > Show the structural delta between two revisions of a codebase.
 
-Reports only what structurally changed — added/removed types, added/removed/changed relationships, and notable metric movement.
+Reports only what structurally changed — added/removed types, added/removed/changed relationships, added/removed/changed free functions and module-scope variables, and notable metric movement.
 
-Each side is a positional stored-analysis name or `.json` path, **or** a directory via `--source-old` / `--source-new`.
+Each side is a positional stored-analysis name or `.json` path, **or** a directory via `--source-old` / `--source-new`. Two sides given as directories are analysed concurrently, and a file both hold unchanged is parsed once.
 
 | Flag | Notes |
 | --- | --- |
@@ -631,10 +662,17 @@ acai diff old.json new.json --format json
 acai diff --source-old ./before --source-new ./after --diagram dot --output delta.dot
 ```
 
+Types are matched across the two revisions by **module plus qualified name**, not by artifact id. An id is re-scoped from `Module.Name` to `Path:Name` as soon as a second file declares the same name, and a file-private type is always path-scoped — so an untouched type stays unchanged when an unrelated file starts declaring its name, or when a private type's file is renamed. The file path enters the match only to separate two declarations of one qualified name inside one module. Relationship endpoints resolve through the same match, so neither does a re-scoped id produce a phantom relationship removal.
+
+**Free functions and module-scope variables** get their own sections, `Free function changes` and `Global variable changes`, each with `+` / `-` / `~` lines carrying the full signature. For a C or Python codebase this is most of the delta, since neither language hangs its top-level code off a type. Two declarations with identical signatures are one entry, so moving a free function between files reports nothing.
+
 Delta colouring: **added green, removed red, changed amber**, with `+` / `−` / `~` badges so status is never conveyed by colour alone. Class, package, coupling and call-graph deltas are coloured in both DOT and Mermaid; sequence and state deltas are coloured in DOT only, because Mermaid's syntax for those has no per-edge colour.
 
 `--format json` output (non-`--diagram`): `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` —
 `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).
+`ArtifactDiff` carries `addedFunctions` / `removedFunctions` / `changedFunctions` and
+`addedGlobals` / `removedGlobals` / `changedGlobals` alongside its type, relationship and metric
+lists; each `changed` entry is `{ name, before, after }` over the two signatures.
 
 ---
 

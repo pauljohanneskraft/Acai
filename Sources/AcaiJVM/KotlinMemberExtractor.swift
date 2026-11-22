@@ -32,14 +32,11 @@ struct KotlinMemberExtractor {
 
     func enumEntry(_ node: Node) -> EnumCase? {
         guard let nameNode = node.firstChild(withType: "simple_identifier") else { return nil }
-        let name = nameNode.text(in: context)
-        var rawValue: String?
-        if let valueArgs = node.firstChild(withType: "value_arguments") {
-            let argsText = valueArgs.text(in: context).trimmingCharacters(in: .whitespaces)
-            rawValue = (argsText.hasPrefix("(") && argsText.hasSuffix(")"))
-                ? String(argsText.dropFirst().dropLast()) : argsText
-        }
-        return EnumCase(name: name, rawValue: rawValue, location: node.location(in: context))
+        return EnumCase(
+            name: nameNode.text(in: context),
+            rawValue: node.firstChild(withType: "value_arguments")?.argumentListText(in: context),
+            location: node.location(in: context)
+        )
     }
 
     // MARK: - Function Declaration

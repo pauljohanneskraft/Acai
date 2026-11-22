@@ -35,7 +35,7 @@ public struct SwiftCodeParser: CodeParser {
         var artifact = visitor.buildArtifact()
         // Surface malformed input rather than silently returning a partial tree.
         if sourceFile.hasError {
-            artifact.metadata.parseDiagnostics = ParseDiagnosticsGenerator
+            artifact.metadata.parseDiagnostics += ParseDiagnosticsGenerator
                 .diagnostics(for: sourceFile)
                 .map { diagnostic in
                     let position = diagnostic.location(converter: converter)

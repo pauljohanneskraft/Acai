@@ -109,14 +109,18 @@ extension AcaiCommand {
         }
 
         mutating func run() async throws {
-            let oldArtifact = try await resolvedArtifact(ref: old, source: sourceOld)
-            let newArtifact = try await resolvedArtifact(ref: new, source: sourceNew)
+            let (oldArtifact, newArtifact) = try await DiffSides(
+                old: side(ref: old, source: sourceOld),
+                new: side(ref: new, source: sourceNew)
+            ).resolved()
 
             let rendered: String
             if let diagram {
                 rendered = try deltaDiagram(old: oldArtifact, new: newArtifact, format: diagram)
             } else {
-                let diff = ArtifactDiffer().diff(old: oldArtifact, new: newArtifact)
+                async let oldRevision = DiffRevision(oldArtifact)
+                async let newRevision = DiffRevision(newArtifact)
+                let diff = await ArtifactDiffer().diff(old: oldRevision, new: newRevision)
                 let health = HealthCheck(artifact: oldArtifact).summary
                     .combined(with: HealthCheck(artifact: newArtifact).summary)
                 rendered = try report(for: diff, health: health)
@@ -124,9 +128,8 @@ extension AcaiCommand {
             try rendered.writeOutput(to: output, label: "diff")
         }
 
-        private func resolvedArtifact(ref: String?, source: String?) async throws -> CodeArtifact {
-            let artifact = try await ArtifactSource.resolve(from: ref, source: source, language: language)
-            return generatedScope.applied(to: artifact)
+        private func side(ref: String?, source: String?) -> DiffSide {
+            DiffSide(ref: ref, source: source, language: language, generated: generatedScope.scope)
         }
 
         private func report(for diff: ArtifactDiff, health: HealthCheck.Summary) throws -> String {

@@ -31,22 +31,34 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
         IndicatorFiles(indicatorFiles).present(at: root)
     }
 
+    public func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        IndicatorFiles(indicatorFiles).present(at: root, reading: reads)
+    }
+
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
+        claim(at: root, requestedLanguages: requestedLanguages, reading: DirectoryReadCache()).specs
+    }
+
+    public func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage],
+        reading reads: DirectoryReadCache
+    ) -> DetectorClaim {
         let request = LanguageRequest(requestedLanguages)
         let nested = nestedRoots(at: root)
         var specs: [SourceSpec] = []
         // `.c` files signal C; any C++-only extension signals C++. A project with only `.h` headers
         // is reported as C — `CCodeParser` still routes individual C++ headers to the C++ grammar.
-        if request.wants(.c), cFiles.exist(in: root) {
+        if request.wants(.c), cFiles.exist(in: root, reading: reads) {
             specs.append(spec(.c, at: root, nested: nested))
         }
-        if request.wants(.cpp), cppFiles.exist(in: root) {
+        if request.wants(.cpp), cppFiles.exist(in: root, reading: reads) {
             specs.append(spec(.cpp, at: root, nested: nested))
         }
-        return specs
+        return DetectorClaim(specs: specs)
     }
 
     private func spec(
@@ -62,28 +74,50 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
 
     /// A declared directory without a listfile of its own is no root, so it stays part of this one.
     private func nestedRoots(at root: URL) -> NestedRoots {
-        let indicator = IndicatorFiles(indicatorFiles)
-        let rootPath = root.standardizedFileURL.path
-        let rootPrefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
         var nested = NestedRoots()
         for file in subdirectoryFiles {
-            guard let source = try? String(contentsOf: root.appending(path: file), encoding: .utf8)
-            else { continue }
-            for declaration in CMakeListsFile(source: source).subdirectories {
-                switch declaration.directory {
-                case .literal(let path):
-                    let directory = (path.hasPrefix("/") ? URL(filePath: path) : root.appending(path: path))
-                        .standardizedFileURL
-                    guard directory.path.hasPrefix(rootPrefix), indicator.present(at: directory) else { continue }
-                    nested.directories.append(directory)
-                case .computed(let argument):
-                    nested.diagnostics.append(
-                        computedDirectoryDiagnostic(argument, in: file, line: declaration.line))
-                }
+            let listfile = root.appending(path: file)
+            do {
+                let declarations = CMakeListsFile(
+                    source: try String(contentsOf: listfile, encoding: .utf8)).subdirectories
+                collect(declarations, declaredIn: file, at: root, into: &nested)
+            } catch {
+                guard FileManager.default.fileExists(atPath: listfile.path) else { continue }
+                nested.diagnostics.append(unreadableListfileDiagnostic(file, error: error))
             }
         }
         nested.directories = nested.directories.removingDuplicates { $0.path }
         return nested
+    }
+
+    private func collect(
+        _ declarations: [CMakeListsFile.Declaration], declaredIn file: String, at root: URL,
+        into nested: inout NestedRoots
+    ) {
+        let indicator = IndicatorFiles(indicatorFiles)
+        let rootPath = root.standardizedFileURL.path
+        let rootPrefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+        for declaration in declarations {
+            switch declaration.directory {
+            case .literal(let path):
+                let directory = (path.hasPrefix("/") ? URL(filePath: path) : root.appending(path: path))
+                    .standardizedFileURL
+                guard directory.path.hasPrefix(rootPrefix), indicator.present(at: directory) else { continue }
+                nested.directories.append(directory)
+            case .computed(let argument):
+                nested.diagnostics.append(
+                    computedDirectoryDiagnostic(argument, in: file, line: declaration.line))
+            }
+        }
+    }
+
+    private func unreadableListfileDiagnostic(_ file: String, error: any Error) -> ParseDiagnostic {
+        ParseDiagnostic(
+            location: SourceLocation(filePath: file, line: 1, column: 1),
+            kind: .incompleteDiscovery,
+            message: "\(file) could not be read (\(error.localizedDescription)), so any nested "
+                + "project root it declares was not reported."
+        )
     }
 
     private func computedDirectoryDiagnostic(_ argument: String, in file: String, line: Int) -> ParseDiagnostic {

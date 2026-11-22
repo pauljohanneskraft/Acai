@@ -60,6 +60,32 @@ struct DiffCommandTests {
         }
     }
 
+    @Test func runReportsFreeFunctionChanges() async throws {
+        try await CLITestSupport.withTempDirectory { dir in
+            let before = dir.appendingPathComponent("before", isDirectory: true)
+            let after = dir.appendingPathComponent("after", isDirectory: true)
+            try FileManager.default.createDirectory(at: before, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: after, withIntermediateDirectories: true)
+            try "func render() -> Bool { true }\nfunc dropped() {}\n"
+                .write(to: before.appendingPathComponent("m.swift"), atomically: true, encoding: .utf8)
+            try "func render() -> Int { 1 }\nfunc added() {}\n"
+                .write(to: after.appendingPathComponent("m.swift"), atomically: true, encoding: .utf8)
+
+            let outURL = dir.appendingPathComponent("out.txt")
+            var cmd = try parseDiff([
+                "--source-old", before.path, "--source-new", after.path,
+                "--language", "swift", "--output", outURL.path
+            ])
+            try await cmd.run()
+
+            let report = try String(contentsOf: outURL, encoding: .utf8)
+            #expect(report.contains("Free function changes:"))
+            #expect(report.contains("+ internal method added()"))
+            #expect(report.contains("- internal method dropped()"))
+            #expect(report.contains("~ internal method render(): Bool → internal method render(): Int"))
+        }
+    }
+
     @Test func healthFieldIsPerfectOnCleanParse() async throws {
         try await CLITestSupport.withTempDirectory { dir in
             let before = dir.appendingPathComponent("before", isDirectory: true)

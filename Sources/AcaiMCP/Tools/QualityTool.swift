@@ -87,14 +87,6 @@ struct QualityTool: AnalysisTool {
 
     private func cycleFindings(_ artifact: CodeArtifact, scope: CycleScope) -> [Violation] {
         let finder = CycleFinder(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
-        return scope.finderScopes.flatMap { cycleScope in
-            finder.cycles(scope: cycleScope).map { cycle in
-                Violation(
-                    ruleKind: "cycle",
-                    message: "\(cycleScope.rawValue) dependency cycle: \(cycle.description).",
-                    subject: cycle.members.joined(separator: ","),
-                    detail: ["scope": cycleScope.rawValue])
-            }
-        }
+        return scope.finderScopes.flatMap { finder.violations(scope: $0) }
     }
 }

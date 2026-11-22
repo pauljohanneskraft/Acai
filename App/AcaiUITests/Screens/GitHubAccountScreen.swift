@@ -19,6 +19,28 @@ final class GitHubAccountScreen {
     var signInWithTokenButton: XCUIElement { app.buttons["github.signInWithTokenButton"] }
     var signInWithDeviceFlowButton: XCUIElement { app.buttons["github.signInWithDeviceFlowButton"] }
     var signedInRow: XCUIElement { app.descendants(matching: .any)["github.signedInRow"] }
+    var signInError: XCUIElement { app.descendants(matching: .any)["github.signInError"] }
+
+    /// Signing in again with the same token rewrites the same account, the button is disabled while one
+    /// is in flight and gone once it lands, so a tap the simulator dropped is safe to repeat.
+    func submitToken(file: StaticString = #filePath, line: UInt = #line) {
+        let outcome = app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["github.signedInRow", "github.signInError"]
+        )).firstMatch
+        let attempts = 3
+        signInWithTokenButton.waitUntilEnabled("Sign In with Token, once a token is entered", file: file, line: line)
+        signInWithTokenButton.waitUntilReady("Sign In with Token", file: file, line: line)
+        for _ in 0..<attempts {
+            SystemBanners().dismiss(file: file, line: line)
+            guard !outcome.exists, signInWithTokenButton.exists, signInWithTokenButton.isEnabled else { break }
+            signInWithTokenButton.tap()
+            if outcome.waitForExistence(timeout: .uiTransition / Double(attempts)) { break }
+        }
+        outcome.waitOrFail("the outcome of signing in with a token", file: file, line: line)
+        if signInError.exists {
+            XCTFail("Signing in with a token failed: \(signInError.label)", file: file, line: line)
+        }
+    }
     var signOutButton: XCUIElement { app.buttons["github.signOutButton"] }
     /// `.firstMatch`: a `.confirmationDialog` action can surface as more than one accessibility node.
     var signOutConfirmButton: XCUIElement { app.buttons["github.signOut.confirmButton"].firstMatch }
@@ -71,7 +93,7 @@ final class GitHubAccountScreen {
     func signInWithToken(through browser: ProjectBrowserScreen, file: StaticString = #filePath, line: UInt = #line) {
         browser.openSettings(file: file, line: line)
         patField.typeWhenFocused("fixture-token", into: "the personal access token field", file: file, line: line)
-        signInWithTokenButton.tapWhenReady("Sign In with Token", file: file, line: line)
+        submitToken(file: file, line: line)
         signedInRow.waitOrFail("the signed-in account row", file: file, line: line)
         browser.closeSettings(file: file, line: line)
     }

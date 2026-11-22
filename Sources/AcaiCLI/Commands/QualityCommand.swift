@@ -103,16 +103,7 @@ extension AcaiCommand {
             let finder = CycleFinder(artifact: artifact, languageResolver: artifact.standardLanguageResolver)
             let scopes: [CycleFinder.Scope] = scope == .all ? [.modules, .types]
                 : [scope == .modules ? .modules : .types]
-            return scopes.flatMap { cycleScope in
-                finder.cycles(scope: cycleScope).map { cycle in
-                    Violation(
-                        ruleKind: "cycle",
-                        message: "\(cycleScope.rawValue) dependency cycle: \(cycle.description).",
-                        subject: cycle.members.joined(separator: ","),
-                        source: nil,
-                        detail: ["scope": cycleScope.rawValue])
-                }
-            }
+            return scopes.flatMap { finder.violations(scope: $0) }
         }
 
         private func render(report: QualityReport, drift: ArtifactDiff?, health: HealthCheck.Summary) throws -> String {

@@ -51,7 +51,7 @@ public struct TreeSitterGrammar: Sendable {
         }
         var artifact = extract(root)
         if root.hasError {
-            artifact.metadata.parseDiagnostics = ParseDiagnosticsCollector(
+            artifact.metadata.parseDiagnostics += ParseDiagnosticsCollector(
                 context: SourceFileContext(source: source, fileName: fileName)
             ).diagnostics(in: root)
         }

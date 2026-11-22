@@ -24,7 +24,6 @@ final class AppAddressJourneyTests: UIJourneyTestCase {
             .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", expected, expected))
             .firstMatch
             .waitOrFail("the alert's message naming the deleted diagram")
-        okButton.tapWhenReady("the alert's OK button")
-        okButton.waitForDisappearanceOrFail("the error alert")
+        okButton.tapUntilGone("the error alert's OK button")
     }
 }

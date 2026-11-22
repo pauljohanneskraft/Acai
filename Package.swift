@@ -175,12 +175,16 @@ let package = Package(
         .executable(name: "AcaiMCP", targets: ["AcaiMCP"]),
     ] + optionalProducts,
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
         .package(url: "https://github.com/tree-sitter/swift-tree-sitter", from: "0.9.0"),
         .package(url: "https://github.com/fwcd/tree-sitter-kotlin", from: "0.3.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-typescript", from: "0.21.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-java", from: "0.21.0"),
-        .package(url: "https://github.com/UserNobody14/tree-sitter-dart", branch: "master"),
+        // Pinned to a revision: the grammar publishes no tags.
+        .package(
+            url: "https://github.com/UserNobody14/tree-sitter-dart",
+            revision: "a9bdfa3db2fbc9b9f12c93450d04a671f33a5102"
+        ),
         // Pinned exactly: the grammar's `scanner.c` (vendored in the `CPythonScanner` target to
         // work around the grammar's broken SwiftPM manifest, which never compiles `scanner.c`) is
         // coupled to this version's `parser.c` external-token table and must match it exactly.
@@ -392,7 +396,15 @@ let package = Package(
         .testTarget(name: "AcaiJVMTests", dependencies: ["AcaiJVM", "AcaiCore"]),
         .testTarget(name: "AcaiDartTests", dependencies: ["AcaiDart", "AcaiCore"]),
         .testTarget(name: "AcaiPythonTests", dependencies: ["AcaiPython", "AcaiCore"]),
-        .testTarget(name: "AcaiCFamilyTests", dependencies: ["AcaiCFamily", "AcaiCore"]),
+        .testTarget(
+            name: "AcaiCFamilyTests",
+            dependencies: [
+                "AcaiCFamily",
+                "AcaiCore",
+                "AcaiTreeSitter",
+                .product(name: "TreeSitterC", package: "tree-sitter-c"),
+            ]
+        ),
         .testTarget(
             name: "AcaiDiagramTests",
             dependencies: ["AcaiDiagram", "AcaiCore", "AcaiQuality", "AcaiArtifactGenerator"]),

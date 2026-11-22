@@ -6,6 +6,7 @@ struct GradleModule {
 
     let directory: URL
     let excludedDirectories: Set<String>
+    let reads: DirectoryReadCache
 
     /// Every main source set's `kotlin` directory, every one of its `java` directories that holds
     /// Kotlin — Android's Gradle plugin compiles Kotlin straight out of `src/main/java` — and any
@@ -30,10 +31,10 @@ struct GradleModule {
     /// `commonMain`, `jvmMain`, `androidMain` or a custom one, so the targets are read off the tree
     /// rather than enumerated here. Test source sets are `…Test` and so are never among them.
     private var mainSourceSetRoots: [URL] {
-        let entries = (try? FileManager.default.contentsOfDirectory(
-            at: sourceRoot, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
-        return [sourceRoot.appending(path: "main")]
-            + entries.filter { $0.lastPathComponent.hasSuffix("Main") }.sorted { $0.path < $1.path }
+        [sourceRoot.appending(path: "main")]
+            + reads.visibleEntries(of: sourceRoot)
+                .filter { $0.lastPathComponent.hasSuffix("Main") }
+                .sorted { $0.path < $1.path }
     }
 
     private func conventionalSourceDirectories(named name: String) -> [URL] {
@@ -71,13 +72,13 @@ struct GradleModule {
     private var buildScriptSource: String? {
         ["build.gradle.kts", "build.gradle"]
             .lazy
-            .compactMap { try? String(contentsOf: directory.appending(path: $0), encoding: .utf8) }
+            .compactMap { reads.contents(of: directory.appending(path: $0)) }
             .first
     }
 
     private func holds(_ extensions: Set<String>, in directory: URL) -> Bool {
         SourceFilePresence(extensions: extensions, excludingDirectories: excludedDirectories)
-            .exist(in: directory)
+            .exist(in: directory, reading: reads)
     }
 
     private func existing(_ directories: [URL]) -> [URL] {

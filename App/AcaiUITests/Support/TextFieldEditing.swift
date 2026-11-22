@@ -33,9 +33,21 @@ extension XCUIElement {
                 label, label, optionTypes.map(\.rawValue)))
             .firstMatch
         option.waitOrFail("option '\(label)'", timeout: timeout, file: file, line: line)
-        SystemBanners().dismiss(file: file, line: line)
         // The option exists mid-presentation; `tap()` waits for the app to idle first, `isHittable` doesn't.
+        #if os(iOS)
+        // A loaded simulator can drop the tap and leave the menu open; picking the same option again is a
+        // no-op, and the re-check keeps a menu that closed late from being tapped through.
+        let attempts = 3
+        for attempt in 0..<attempts {
+            SystemBanners().dismiss(file: file, line: line)
+            if attempt > 0, !(option.exists && option.isHittable) { break }
+            option.tap()
+            if option.waitForNonExistence(timeout: .uiTransition / Double(attempts)) { break }
+        }
+        #else
+        SystemBanners().dismiss(file: file, line: line)
         option.tap()
+        #endif
         return option
     }
 }
