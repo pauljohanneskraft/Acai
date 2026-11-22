@@ -304,6 +304,18 @@ struct DeadCodeScanTests {
             location: SourceLocation(filePath: "Tool.swift", line: 1, column: 1))
         #expect(report([proto, tool]).candidates.map(\.id) == ["Tool.init()"])
     }
+}
+
+/// The dead-code scan's identity rules: which supertype a conformance actually names once enrichment
+/// has canonicalised it, and what that means for witnesses and conformance-based entry points.
+@Suite("Dead-code conformance identity")
+struct DeadCodeConformanceIdentityTests {
+
+    private func method(_ name: String, access: AccessLevel = .private) -> Member {
+        Member(
+            name: name, kind: .method, accessLevel: access,
+            location: SourceLocation(filePath: "S.swift", line: 1, column: 1))
+    }
 
     /// Enrichment rewrites a supertype reference to the protocol's canonical id, so a protocol whose
     /// id isn't its simple name — nested here, module-qualified in a real project — is reached only
