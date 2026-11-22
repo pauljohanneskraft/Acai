@@ -12,10 +12,11 @@ cycles:
 
 budgets:
   # Per-type OO budgets — catch responsibility bloat / over-central hubs.
+  # WMC (summed cyclomatic complexity), seeded at the class maximum (ProjectBrowserViewModel).
   - target: { kind: class }
     metric: weightedMethods
-    max: 25
-    message: "God class: too many methods — split responsibilities (SRP)."
+    max: 149
+    message: "God class: its methods carry too much branching — split responsibilities (SRP)."
   - metric: fanOut
     max: 25
     message: "Type depends on too many others — a responsibility-bloat / splitting candidate."
@@ -32,9 +33,9 @@ budgets:
   - metric: mutablePublicState      # Publicly settable stored properties — encapsulation leak.
     max: 35
     message: "Publicly mutable state — expose read-only and narrow the setter."
-  - metric: lcom                    # LCOM4 components among methods — high = unrelated jobs.
-    max: 68
-    message: "Low cohesion — the type's methods split into unrelated groups; consider extracting."
+  - metric: lcom                    # LCOM4 over instance behaviour; max is AnalysisTool (MCP).
+    max: 16
+    message: "Low cohesion — the type's members split into unrelated groups; consider extracting."
   - metric: featureEnvyMethods      # Methods more interested in another type than their own.
     max: 40
     message: "Feature envy — move the behaviour onto the type it keeps reaching into."

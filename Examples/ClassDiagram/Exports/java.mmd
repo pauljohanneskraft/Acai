@@ -31,9 +31,9 @@ classDiagram
     %% Anything the player knows how to play.
     class Java_medialibrary_Playable["Playable"] {
         <<interface>>
-        ~title() String
-        ~duration() double
-        ~play() void
+        +title() String*
+        +duration() double*
+        +play() void*
     }
     %% Drives playback over a library. Depends on {@link Library} and the {@link Playable} interface.
     class Java_medialibrary_Player["Player"] {

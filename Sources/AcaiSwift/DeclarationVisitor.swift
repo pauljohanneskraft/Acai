@@ -157,7 +157,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         }
         scope.resetCallSiteState(
             propertyMap: buildPropertyMap(), arrayElementPropertyMap: buildArrayElementPropertyMap(),
-            parameterClause: node.signature.parameterClause)
+            parameterClause: node.signature.parameterClause, fieldReadScope: fieldReadScope(of: node))
         return .visitChildren
     }
 
@@ -167,6 +167,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         var member = members.extractFunction(
             from: node, callSites: scope.callSiteState.pendingCallSites,
             assignments: scope.callSiteState.pendingAssignments, fieldReads: scope.callSiteState.pendingFieldReads)
+        member.deferredFieldReads = scope.callSiteState.pendingDeferredFieldReads.nonEmpty
         if let body = node.body {
             member.referencedTypeNames = scope.callSites.referencedTypes(in: body)
         }
@@ -197,14 +198,8 @@ final class DeclarationVisitor: SyntaxVisitor {
         var extractedMembers = attachingInitializerReferencedTypes(
             to: members.extractVariable(from: node), from: node)
         // A binding is either stored or computed, never both, so unconditional attachment is safe.
-        let propertySites = collectPropertyCallSites(from: node)
-        if !propertySites.isEmpty {
-            extractedMembers = extractedMembers.map { member in
-                var copy = member
-                copy.callSites = propertySites
-                return copy
-            }
-        }
+        let bodies = analysingPropertyBodies(of: node)
+        extractedMembers = extractedMembers.map(bodies.applied(to:))
         if typeStack.isEmpty {
             scope.recordTopLevelGlobalReceiverOrigins(from: node.bindings)
             declarations.globalVariables.append(contentsOf: extractedMembers)
@@ -227,7 +222,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         guard !isNested, !typeStack.isEmpty else { return .skipChildren }
         scope.resetCallSiteState(
             propertyMap: buildPropertyMap(), arrayElementPropertyMap: buildArrayElementPropertyMap(),
-            parameterClause: node.signature.parameterClause)
+            parameterClause: node.signature.parameterClause, fieldReadScope: fieldReadScope(of: node))
         return .visitChildren
     }
 
@@ -237,6 +232,7 @@ final class DeclarationVisitor: SyntaxVisitor {
         var member = members.extractInitializer(
             from: node, callSites: scope.callSiteState.pendingCallSites,
             assignments: scope.callSiteState.pendingAssignments, fieldReads: scope.callSiteState.pendingFieldReads)
+        member.deferredFieldReads = scope.callSiteState.pendingDeferredFieldReads.nonEmpty
         if let body = node.body {
             member.referencedTypeNames = scope.callSites.referencedTypes(in: body)
         }

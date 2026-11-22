@@ -40,6 +40,18 @@ extension TypeDeclaration {
         return total == 0 ? 0 : Double(stored) / Double(total)
     }
 
+    /// WMC over methods and initialisers; an unmeasured body counts as its single path.
+    var weightedMethodComplexity: Int {
+        members
+            .filter { $0.kind == .method || $0.kind == .initializer }
+            .reduce(0) { $0 + ($1.cyclomaticComplexity ?? 1) }
+    }
+
+    /// The plain count of declared methods, which ``weightedMethodComplexity`` weights by complexity.
+    var numberOfMethods: Int {
+        members.filter { $0.kind == .method }.count
+    }
+
     /// Refused-bequest candidates — a subclass that overrides much of what it inherits may not
     /// truly be a subtype.
     var overrideCount: Int {
