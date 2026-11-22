@@ -83,14 +83,24 @@ final class CallSiteTracker {
 
     func resetCallSiteState(
         propertyMap: [String: String], arrayElementPropertyMap: [String: String],
-        parameterClause: FunctionParameterClauseSyntax
+        parameterClause: FunctionParameterClauseSyntax, fieldReadScope: FieldReadScope
     ) {
         callSiteState = CallSiteAccumulator(
+            fieldReadScope: fieldReadScope,
             propertyMap: propertyMap,
             arrayElementPropertyMap: arrayElementPropertyMap,
             parameterMap: parameterMap(from: parameterClause),
             knownLocalNames: knownParameterNames(from: parameterClause)
         )
+    }
+
+    /// The field-read scope of a member declared in the innermost type, over the names `node` declares.
+    func fieldReadScope(
+        propertyMap: [String: String], declaredIn node: some SyntaxProtocol, isExtension: Bool
+    ) -> FieldReadScope {
+        FieldReadScope(
+            propertyMap: propertyMap, declaredNames: DeclaredNames(in: node).names,
+            methodNames: currentMethodNames, defersUnknownNames: isExtension)
     }
 
     func clearCallSiteState() {
@@ -141,6 +151,7 @@ final class CallSiteTracker {
     /// (`guard let self = self else { return }`) must resolve its RHS `self` against the outer scope,
     /// not the new local, hence the same deferral until `endConditionBinding()`.
     func beginConditionBinding(_ node: OptionalBindingConditionSyntax) {
+        record(callSites.fieldRead(from: node, in: callSiteState.fieldReadScope))
         pendingConditionBindingsStack.append(resolvingConditionBinding(from: node))
     }
 
@@ -200,21 +211,25 @@ final class CallSiteTracker {
 
     // MARK: - Property-accessor / initializer call sites
 
-    /// Call sites gathered from every accessor body of a type-level `var`/`let` declaration, so a
-    /// method reached only from a computed property (a SwiftUI `body`, a derived value) is not
-    /// mistaken for dead code.
-    func accessorCallSites(
-        from node: VariableDeclSyntax, propertyMap: [String: String], enclosingTypeName: String?
-    ) -> [CallSite] {
-        var sites: [CallSite] = []
+    /// Call sites and field reads gathered from every accessor body of a type-level `var`/`let`
+    /// declaration, so a method reached only from a computed property (a SwiftUI `body`, a derived
+    /// value) is not mistaken for dead code, and the property joins its fields' cohesion cluster.
+    func accessorAnalysis(
+        from node: VariableDeclSyntax, propertyMap: [String: String], enclosingTypeName: String?,
+        isExtension: Bool
+    ) -> PropertyBodyAnalysis {
+        var analysis = PropertyBodyAnalysis()
         for binding in node.bindings {
             guard let accessor = binding.accessorBlock else { continue }
+            let readScope = fieldReadScope(propertyMap: propertyMap, declaredIn: accessor, isExtension: isExtension)
             let walker = propertyCallSiteWalker(
-                propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
+                propertyMap: propertyMap, enclosingTypeName: enclosingTypeName, fieldReadScope: readScope)
             walker.walk(accessor)
-            sites.append(contentsOf: walker.collected)
+            analysis.callSites.append(contentsOf: walker.collected)
+            analysis.fieldReads.append(contentsOf: walker.fieldReads)
+            analysis.deferredFieldReads.append(contentsOf: walker.deferredFieldReads)
         }
-        return sites
+        return analysis
     }
 
     /// The initializer-expression analogue of `accessorCallSites` (`static let light = make(isDark:
@@ -235,11 +250,12 @@ final class CallSiteTracker {
     }
 
     private func propertyCallSiteWalker(
-        propertyMap: [String: String], enclosingTypeName: String?
+        propertyMap: [String: String], enclosingTypeName: String?, fieldReadScope: FieldReadScope? = nil
     ) -> AccessorCallSiteWalker {
         AccessorCallSiteWalker(
             collector: callSites, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName,
-            methodReturnTypes: currentMethodReturnTypes, methodNames: currentMethodNames)
+            methodReturnTypes: currentMethodReturnTypes, methodNames: currentMethodNames,
+            fieldReadScope: fieldReadScope)
     }
 
     // MARK: - Call-Site, Assignment & Field-Read Recording
@@ -317,10 +333,19 @@ final class CallSiteTracker {
         callSiteState.pendingAssignments.append(assignment)
     }
 
-    func recordFieldReadAndMethodReference(from node: DeclReferenceExprSyntax) {
-        if let read = callSites.fieldRead(from: node, propertyMap: callSiteState.propertyMap) {
-            callSiteState.pendingFieldReads.append(read)
+    private func record(_ read: FieldRead?) {
+        switch read {
+        case .resolved(let access):
+            callSiteState.pendingFieldReads.append(access)
+        case .deferred(let access):
+            callSiteState.pendingDeferredFieldReads.append(access)
+        case nil:
+            break
         }
+    }
+
+    func recordFieldReadAndMethodReference(from node: DeclReferenceExprSyntax) {
+        record(callSites.fieldRead(from: node, in: callSiteState.fieldReadScope))
         if callSites.isBareReferenceUse(node),
            let site = callSites.methodReference(
             from: node, propertyMap: callSiteState.propertyMap, methodNames: currentMethodNames) {

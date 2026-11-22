@@ -75,7 +75,7 @@ public struct StarterQualityRules {
             SeededBudget(metric: "fanIn", max: types.map(\.fanIn).max() ?? 0,
                          message: "Over-central hub type — keep it stable and well-tested."),
             SeededBudget(metric: "weightedMethods", max: types.map(\.weightedMethods).max() ?? 0,
-                         message: "God class: too many methods — split responsibilities (SRP).")
+                         message: "God class: its methods carry too much branching — split responsibilities (SRP).")
         ].filter { $0.max > 0 }
     }
 
