@@ -2,37 +2,20 @@ import Testing
 import AcaiCore
 import AcaiLibrary
 
-/// A deeply nested expression used to take the whole process down with `SIGBUS` (#524): parsing
-/// recurses once per nesting level, and a cooperative-pool thread's 512 KB stack held about 95
-/// levels of Swift and 1,000 of Java or C. The engine parses in-process, so the MCP server went
-/// with it.
-///
-/// Every case runs through `AnalysisService.analyzeProject`, the path the CLI, the app and the MCP
-/// server all take, so it covers both halves of the fix: the large-stack parse thread and the
-/// iterative Tree-sitter walks. A `@Test` body is already on the cooperative pool, which is the
-/// stack that used to overflow — calling a parser on a thread of the test's own choosing would
-/// prove nothing.
+/// Runs on the cooperative pool through `analyzeProject`, the 512 KB stack a deep parse overflows.
 @Suite("Deeply nested sources")
 struct DeepNestingTests {
 
-    /// The depth the issue settles on. Each shape stays on one line so the file is tens of KB
-    /// rather than megabytes — `maximumSourceFileBytes` is 2 MB, and a skipped file would pass this
-    /// suite without parsing anything.
+    /// Each shape stays on one line, since a file over `maximumSourceFileBytes` is skipped unparsed.
     static let depth = 5_000
 
-    /// One language's spelling of each nesting shape. Written per language rather than per
-    /// language × shape, so a language cannot be given one shape and quietly miss the others.
     struct Dialect: Sendable {
         let name: String
         let fileName: String
-        /// Wraps statements in whatever enclosing declaration the language requires.
         let file: @Sendable (String) -> String
-        /// Binds a name to `expression`, as one statement.
         let binding: @Sendable (String) -> String
-        /// One level of conditional around `inner`, or `nil` where the language's conditional needs
-        /// its own line and `depth` levels of indentation would blow the file-size ceiling.
+        /// `nil` where the conditional needs its own line and `depth` indents would exceed the size cap.
         let conditional: (@Sendable (String) -> String)?
-        /// A call whose result is called again, so `root` + `hop` × depth is one long chain.
         let chainRoot: String
         let chainHop: String
 
@@ -56,7 +39,6 @@ struct DeepNestingTests {
     struct Case: Sendable, CustomStringConvertible {
         let dialect: Dialect
         let shape: String
-        /// The statements at `depth` levels of nesting, before the enclosing declaration is added.
         let nested: @Sendable (Int) -> String
 
         var description: String { "\(dialect.name), \(shape)" }
@@ -107,8 +89,6 @@ struct DeepNestingTests {
             conditional: { "if (true) { \($0) }" },
             chainRoot: "value", chainHop: ".hop()"
         ),
-        // Python's `if` needs its own line, and 5,000 levels of indentation is a 12 MB file. The
-        // conditional *expression* nests the same way the statement would.
         Dialect(
             name: "Python", fileName: "deep.py",
             file: { "class Deep:\n    def run(self):\n        \($0)\n" },
@@ -134,17 +114,25 @@ struct DeepNestingTests {
 
     static let cases: [Case] = dialects.flatMap(\.cases)
 
-    /// Completing at all is the assertion: before the fix this killed the test process, which no
-    /// `#expect` can observe. The artifact is checked for the enclosing declaration too, so a parse
-    /// that bailed out and returned nothing cannot pass as a survivor.
+    /// A crash here takes the test process down; the declaration check rules out an empty parse.
     @Test("a 5,000-deep file analyses instead of crashing", arguments: cases)
     func analysesWithoutOverflowingTheStack(testCase: Case) async throws {
+        try await expectAnalyses(testCase, with: .standard)
+    }
+
+    /// Swift alone, as the only language whose deep parse outgrows a pool thread.
+    @Test("a 5,000-deep file analyses through shared parses", arguments: cases.filter { $0.dialect.name == "Swift" })
+    func analysesThroughSharedParses(testCase: Case) async throws {
+        try await expectAnalyses(testCase, with: AnalysisService.standard.sharing(SharedParses()))
+    }
+
+    private func expectAnalyses(_ testCase: Case, with service: AnalysisService) async throws {
         let source = testCase.source(depth: Self.depth)
         try #require(
             source.utf8.count < 2 * 1024 * 1024,
             Comment(rawValue: "\(testCase): \(source.utf8.count) bytes is over the per-file ceiling")
         )
-        try await SourceTreeFixture([testCase.dialect.fileName: source]).analysed { artifact in
+        try await SourceTreeFixture([testCase.dialect.fileName: source]).analysed(with: service) { artifact in
             #expect(
                 artifact.flattened().contains { $0.name == "Deep" }
                     || !artifact.freestandingFunctions.isEmpty,
@@ -153,11 +141,7 @@ struct DeepNestingTests {
         }
     }
 
-    /// Lowering SwiftParser's nesting limit was rejected because a partial parse must stay visible.
-    /// SwiftParser stops at 256 levels and returns a partial tree, so the file above its limit is
-    /// exactly the case that has to carry a diagnostic rather than look like a clean parse. The
-    /// Tree-sitter grammars have no such limit and parse the full depth, which is why this is
-    /// asserted for Swift alone.
+    /// SwiftParser stops at its nesting limit; Tree-sitter grammars parse the full depth.
     @Test func aPartialSwiftParseCarriesADiagnostic() async throws {
         let swift = try #require(Self.dialects.first { $0.name == "Swift" })
         let nested = String(repeating: "(", count: Self.depth) + "1" + String(repeating: ")", count: Self.depth)
@@ -167,12 +151,10 @@ struct DeepNestingTests {
         }
     }
 
-    /// The Swift manifest reader recurses the same way a source file does, and discovery calls it
-    /// synchronously, so it needs the large-stack thread too.
     @Test func aDeeplyNestedPackageManifestDoesNotCrash() async throws {
-        let nested = String(repeating: "(", count: Self.depth) + "1" + String(repeating: ")", count: Self.depth)
+        let chain = "value" + String(repeating: ".hop()", count: Self.depth)
         let fixture = SourceTreeFixture([
-            "Package.swift": "// swift-tools-version:6.0\nimport PackageDescription\nlet unused = \(nested)\n",
+            "Package.swift": "// swift-tools-version:6.0\nimport PackageDescription\nlet unused = \(chain)\n",
             "Sources/Deep/Deep.swift": "struct Deep {}"
         ])
         try await fixture.analysed { artifact in

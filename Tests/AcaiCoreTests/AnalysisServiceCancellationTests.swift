@@ -2,14 +2,7 @@ import Foundation
 import Testing
 import AcaiCore
 
-/// `SourceFileBatchParser` polls `Task.checkCancellation()` either side of every file.
-///
-/// The parse itself runs on a dedicated large-stack thread (#524), where `withUnsafeCurrentTask`
-/// finds no task, so a parser can no longer cancel the analysis from inside itself. The test
-/// cancels from outside instead — the way the app, the CLI and the MCP server cancel. It stays
-/// deterministic rather than racing a background cancel against wall-clock timing: the parser
-/// reports the moment it has parsed a known number of files and holds its own worker thread until
-/// the test has cancelled, so the next `checkCancellation()` is guaranteed to be the one that fires.
+/// Holds its parse thread once `cancelAfter` files are parsed, so the test's cancel lands before the next check.
 private final class CountingParser: CodeParser, @unchecked Sendable {
     var language: CodeArtifact.SourceLanguage { .init(rawValue: "fixture") }
     var fileExtensions: [String] { ["fx"] }
