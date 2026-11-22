@@ -14,6 +14,11 @@ public struct XcodeDetector: BuildSystemDetector {
         return entries.contains(where: isProjectBundle)
     }
 
+    public func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        guard !isProjectBundle(root.lastPathComponent) else { return false }
+        return reads.entries(of: root).contains { isProjectBundle($0.lastPathComponent) }
+    }
+
     private func isProjectBundle(_ name: String) -> Bool {
         name.hasSuffix(".xcodeproj") || name.hasSuffix(".xcworkspace")
     }

@@ -1,7 +1,7 @@
 public struct CodeArtifact: Codable, Equatable, Hashable, Sendable {
     /// The shape this build writes. Bump on any change a reader could misinterpret (a field made
     /// optional, a meaning changed under the same name, a new enum case an older reader defaults).
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     /// Which shape this artifact follows — not `metadata.toolVersion`, which says which binary wrote
     /// it: two tool versions can share a schema. Missing on disk (written before this field existed)

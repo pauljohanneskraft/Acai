@@ -105,7 +105,7 @@
       "target" : "Meters"
     }
   ],
-  "schemaVersion" : 1,
+  "schemaVersion" : 2,
   "types" : [
     {
       "accessLevel" : "public",
@@ -1658,7 +1658,8 @@
             "filePath" : "types.dart",
             "line" : 60
           },
-          "name" : "low"
+          "name" : "low",
+          "rawValue" : "1"
         },
         {
           "associatedValues" : [
@@ -1670,7 +1671,8 @@
             "filePath" : "types.dart",
             "line" : 61
           },
-          "name" : "high"
+          "name" : "high",
+          "rawValue" : "2"
         }
       ],
       "genericParameters" : [

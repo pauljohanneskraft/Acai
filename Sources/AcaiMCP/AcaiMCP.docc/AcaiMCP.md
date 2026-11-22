@@ -171,6 +171,15 @@ Check against a declarative rules file: forbidden dependencies, cycles, layering
 
 Cycle findings are appended only when `explore` is set *and* the rules file doesn't already own the cycle check. The rules-file schema is documented under [AcaiCLI](/documentation/acaicli/).
 
+A module cycle carries the reference behind every hop, so it can be acted on without reading files to find it. `detail.witnesses` holds them as `source type → target type (kind) at file:line`, one per hop, and the same text is appended to `message`:
+
+```json
+{ "ruleKind": "cycle", "subject": "AcaiApp,AcaiGit",
+  "message": "Module dependency cycle: AcaiApp → AcaiGit → AcaiApp. Via: …",
+  "detail": { "scope": "modules",
+              "witnesses": "AcaiApp → AcaiGit via GitPanel → GitRepository (aggregation) at Sources/AcaiApp/GitPanel.swift:18; AcaiGit → AcaiApp via GitRepository → GitPanel (dependency) at Sources/AcaiGit/GitRepository.swift:44" } }
+```
+
 > **This tool cannot gate CI.** It returns a verdict but never a non-zero exit status. Use `acai quality` on the CLI for that.
 
 Note it has no `includeGenerated` — generated-type filtering goes through the rules' own `includeGeneratedTypes` key instead.
@@ -254,7 +263,7 @@ Result shape: `{ "impact": <ImpactAnalysis.Report>, "health": <HealthCheck.Summa
 
 ### `acai_diff`
 
-Structural delta between two revisions — added/removed types, changed relationships, metric movement.
+Structural delta between two revisions — added/removed types, changed relationships, added/removed/changed free functions and module-scope variables, metric movement.
 
 | Property | Type | Notes |
 | --- | --- | --- |
@@ -266,7 +275,9 @@ Structural delta between two revisions — added/removed types, changed relation
 
 Note there's no `path` here. **Both sides must be real filesystem paths** — unlike the CLI, a bare stored-analysis name is not resolved. Produce baselines with `acai store` on the CLI and pass the resulting `.json` path. A baseline whose `schemaVersion` is newer than this build understands is rejected with the found and expected version numbers, rather than being misread.
 
-Result shape: `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` — `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed).
+Types are matched by **module plus qualified name**, not by artifact id — an id is re-scoped to the file path as soon as a second file declares the same name, and always for a file-private type, so a new same-named type or a renamed file leaves an untouched type unchanged. Relationship endpoints resolve through the same match. The file path separates two declarations of one qualified name inside one module and nothing else.
+
+Result shape: `{ "diff": <ArtifactDiff>, "health": <HealthCheck.Summary> }` — `health` combines both sides into the weaker-trust view (the lower score, diagnostic counts summed). Beyond the type, relationship and metric lists, `ArtifactDiff` carries `addedFunctions` / `removedFunctions` / `changedFunctions` and `addedGlobals` / `removedGlobals` / `changedGlobals`; a `changed` entry is `{ name, before, after }` over the two signatures. These are the only place a C or Python codebase's top-level code appears, since neither hangs it off a type.
 
 ### `acai_diagram`
 

@@ -41,7 +41,7 @@ public struct StarterQualityRules {
                 "# The module graph currently has cycles — break these, then enable the invariant below:",
                 "# cycles:",
                 "#   scope: modules"
-            ] + moduleCycles.map { "#   known debt: \($0.description)" } + [""]
+            ] + moduleCycles.flatMap(\.knownDebtLines) + [""]
         }
         return [
             "# Hard invariant: the module dependency graph must stay acyclic.",
@@ -54,8 +54,16 @@ public struct StarterQualityRules {
     private var budgetsSection: [String] {
         let budgets = seededBudgets
         guard !budgets.isEmpty else { return [] }
-        return ["# Per-type budgets, seeded from current maxima — tighten as you pay down debt.", "budgets:"]
-            + budgets.flatMap { $0.lines } + [""]
+        return [
+            "# Per-type budgets, seeded from current maxima — tighten as you pay down debt. A type whose",
+            "# value is essential complexity rather than debt belongs in the budget's `exclude` list, so the",
+            "# ceiling can come down for everything else:",
+            "#   - target:",
+            "#       exclude: [{ typeGlob: \"SomeVisitor\" }]",
+            "#     metric: fanOut",
+            "#     max: 25",
+            "budgets:"
+        ] + budgets.flatMap { $0.lines } + [""]
     }
 
     /// One budget per structural metric that has a positive current maximum.

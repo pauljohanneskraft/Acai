@@ -1,1 +1,1 @@
-JavaScript carries no parameter-type annotation, so a parameter names no type to depend on.
+JavaScript carries no parameter-type annotation, so a parameter names no type to depend on and the dependency edge this feature compares is never formed.

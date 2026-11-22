@@ -72,7 +72,7 @@ struct UnreadableFileDiagnosticTests {
         try await withTempDir { root in
             let parser = SourceFileBatchParser(
                 codeParser: StubParser(), rootURL: root, concurrencyLimit: 1,
-                maximumFileBytes: AcaiConstants.standard.maximumSourceFileBytes)
+                maximumFileBytes: AcaiConstants.standard.maximumSourceFileBytes, sharedParses: nil)
             let outcome = try await parser.parse([root.appendingPathComponent("gone.stub")], reusing: nil)
 
             #expect(outcome.files.isEmpty)
