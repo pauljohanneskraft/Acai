@@ -1,5 +1,8 @@
 {
   "types": [
     { "name": "Box", "kind": "class", "access": "+" }
-  ]
+  ],
+  "languages": {
+    "c": { "typeKinds": { "class": "struct" } }
+  }
 }

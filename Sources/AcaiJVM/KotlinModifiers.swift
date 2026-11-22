@@ -26,7 +26,7 @@ struct KotlinModifiers {
             "const": .const
         ],
         "function_modifier": [
-            "suspend": .suspend, "inline": .inline
+            "suspend": .async, "inline": .inline
         ],
         "inheritance_modifier": [
             "open": .open, "final": .final, "abstract": .abstract

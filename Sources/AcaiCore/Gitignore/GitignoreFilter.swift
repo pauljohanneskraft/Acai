@@ -33,20 +33,30 @@ public struct GitignoreFilter: Sendable {
         excludingDirectories: Set<String> = AcaiConstants.standard.defaultExcludedSourceDirectories,
         fileManager: FileManager = .default
     ) {
+        self.init(root: root, excludingDirectories: excludingDirectories, fileManager: fileManager, reads: nil)
+    }
+
+    init(
+        root: URL,
+        excludingDirectories: Set<String>,
+        fileManager: FileManager = .default,
+        reads: DirectoryReadCache?
+    ) {
         var files: [File] = []
         var diagnostics: [ParseDiagnostic] = []
-        DirectoryTreeWalk(excludedDirectories: excludingDirectories, fileManager: fileManager)
-            .walk(from: root) { directory, entries in
-                guard files.count < Self.maximumFiles else { return }
-                guard let source = entries.first(where: { $0.lastPathComponent == ".gitignore" }) else { return }
-                let read = Reading(file: source, relativePath: source.relativePath(from: root))
-                diagnostics.append(contentsOf: read.diagnostics)
-                guard !read.patterns.isEmpty else { return }
-                files.append(File(
-                    directory: directory.relativePath(from: root).split(separator: "/").map(String.init),
-                    patterns: read.patterns
-                ))
-            }
+        var walk = DirectoryTreeWalk(excludedDirectories: excludingDirectories, fileManager: fileManager)
+        walk.reads = reads
+        walk.walk(from: root) { directory, entries in
+            guard files.count < Self.maximumFiles else { return }
+            guard let source = entries.first(where: { $0.lastPathComponent == ".gitignore" }) else { return }
+            let read = Reading(file: source, relativePath: source.relativePath(from: root))
+            diagnostics.append(contentsOf: read.diagnostics)
+            guard !read.patterns.isEmpty else { return }
+            files.append(File(
+                directory: directory.relativePath(from: root).split(separator: "/").map(String.init),
+                patterns: read.patterns
+            ))
+        }
         // Shallowest first, so a nested `.gitignore` is evaluated last and therefore wins.
         self.files = files.sorted { $0.directory.count < $1.directory.count }
         self.diagnostics = diagnostics

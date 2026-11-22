@@ -9,5 +9,8 @@
         { "name": "shut", "role": "property", "access": "-", "type": "#primitive" }
       ]
     }
-  ]
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
 }

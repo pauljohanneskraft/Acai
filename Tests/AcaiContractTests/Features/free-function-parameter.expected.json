@@ -1,0 +1,11 @@
+{
+  "freeFunctions": [
+    {
+      "name": "scale", "role": "method", "access": "+", "type": "#primitive",
+      "parameters": ["factor: #primitive"]
+    }
+  ],
+  "languages": {
+    "javascript": { "unchecked": ["type"] }
+  }
+}

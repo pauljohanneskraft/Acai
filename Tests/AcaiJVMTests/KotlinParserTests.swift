@@ -93,6 +93,22 @@ struct KotlinParserTests {
         #expect(dir.kind == .enum)
         #expect(dir.enumCases.count == 4)
         #expect(dir.enumCases[0].name == "NORTH")
+        #expect(dir.enumCases.allSatisfy { $0.rawValue == nil })
+    }
+
+    @Test func enumEntryArgumentsBecomeTheRawValue() {
+        let source = """
+        enum class Category(val code: Int, val label: String) {
+            FOOD(1, "food"),
+            TOOL(2, "tool")
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Category.kt")
+        let category = artifact.types[0]
+        #expect(category.enumCases.count == 2)
+        #expect(category.enumCases[0].rawValue == "1, \"food\"")
+        #expect(category.enumCases[1].rawValue == "2, \"tool\"")
+        #expect(category.enumCases.allSatisfy { $0.associatedValues.isEmpty })
     }
 
     @Test func genericClass() {
@@ -155,6 +171,19 @@ struct KotlinParserTests {
         let artifact = parser.parse(source: source, fileName: "Greet.kt")
         #expect(artifact.freestandingFunctions.count == 1)
         #expect(artifact.freestandingFunctions[0].name == "greet")
+    }
+
+    @Test func suspendFunctionIsAsync() {
+        let source = """
+        class Loader {
+            suspend fun fetch(): Int = 0
+            fun load(): Int = 0
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "Loader.kt")
+        let loader = artifact.types[0]
+        #expect(loader.members.first { $0.name == "fetch" }?.modifiers.contains(.async) == true)
+        #expect(loader.members.first { $0.name == "load" }?.modifiers.contains(.async) == false)
     }
 
     @Test func moduleGlobals() {
