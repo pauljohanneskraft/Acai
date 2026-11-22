@@ -9,10 +9,13 @@ import Foundation
 /// in-process, so that would also take the MCP server with it.
 public struct LargeStackRunner: Sendable {
 
-    /// 16 MB: 32× a cooperative-pool thread, which holds the 5,000-level nesting the parsers are
-    /// tested against with room to spare. The stack is virtual address space, committed only as it
-    /// is touched, so an ordinary file costs nothing extra.
-    public static let standard = LargeStackRunner(stackSize: 16 * 1024 * 1024)
+    /// 64 MB: 128× a cooperative-pool thread. The deepest case the parsers are tested against, a
+    /// 5,000-level Swift call chain, was measured to need between 8 and 10 MB — and how much a
+    /// nesting level costs is set by the toolchain's frame layout, not by this package, so the
+    /// margin has to absorb a compiler change rather than merely clear today's figure. The stack is
+    /// virtual address space, committed only as it is touched, so an ordinary file costs nothing
+    /// extra.
+    public static let standard = LargeStackRunner(stackSize: 64 * 1024 * 1024)
 
     private let stackSize: Int
 
