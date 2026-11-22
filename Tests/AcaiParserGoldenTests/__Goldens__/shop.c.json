@@ -242,6 +242,9 @@
       ],
       "callSites" : [
         {
+          "arguments" : [
+            null
+          ],
           "location" : {
             "column" : 23,
             "endLine" : 49,
@@ -322,7 +325,7 @@
   "relationships" : [
 
   ],
-  "schemaVersion" : 1,
+  "schemaVersion" : 2,
   "types" : [
     {
       "accessLevel" : "public",

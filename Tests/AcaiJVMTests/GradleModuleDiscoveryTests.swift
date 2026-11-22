@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-import AcaiCore
+@testable import AcaiCore
 @testable import AcaiJVM
 
 /// Gradle's module set comes from `settings.gradle`, not from whatever carries a build file on disk:
@@ -317,6 +317,24 @@ struct GradleModuleDiscoveryTests {
             try write("src/main/kotlin/Sample.kt", in: root, contents: "class Sample")
 
             #expect(kotlinDirs(in: root) == ["src/main/kotlin"])
+        }
+    }
+
+    // MARK: - Shared reads
+
+    @Test func settingsAndBuildScriptsAreReadOncePerAnalysis() throws {
+        try withTempDir { root in
+            try write("settings.gradle.kts", in: root, contents: #"include(":app")"#)
+            try writeKotlinModule("app", in: root)
+            let fileReads = OperationCounter()
+            let reads = DirectoryReadCache(listingCounter: nil, fileReadCounter: fileReads)
+
+            for _ in 0..<2 {
+                let claim = JVMBuildSystemDetector.gradle.claim(at: root, requestedLanguages: [], reading: reads)
+                #expect(sourceDirs(claim.specs, for: .kotlin, relativeTo: root) == ["app/src/main/kotlin"])
+            }
+            // `settings.gradle.kts` and `app/build.gradle.kts`; no missing file is opened.
+            #expect(fileReads.count == 2)
         }
     }
 }

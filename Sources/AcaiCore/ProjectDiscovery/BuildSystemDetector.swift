@@ -80,10 +80,20 @@ public struct DetectorClaim {
 public protocol BuildSystemDetector: Sendable {
     func isPresent(at root: URL) -> Bool
 
+    /// Asked once per directory of the walk; the default ignores `reads` and calls ``isPresent(at:)``.
+    func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool
+
     /// Filtered to `requestedLanguages`, or all detected languages when the list is empty.
     func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
+    ) -> [SourceSpec]
+
+    /// What the fallback is asked through; the default ignores `reads`.
+    func discoverSourceSpecs(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage],
+        reading reads: DirectoryReadCache
     ) -> [SourceSpec]
 
     /// Languages this root deliberately leaves out, which the fallback must therefore not add back.
@@ -99,14 +109,41 @@ public protocol BuildSystemDetector: Sendable {
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> DetectorClaim
+
+    /// What discovery asks through; the default ignores `reads` and calls ``claim(at:requestedLanguages:)``.
+    func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage],
+        reading reads: DirectoryReadCache
+    ) -> DetectorClaim
 }
 
 extension BuildSystemDetector {
+    public func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        isPresent(at: root)
+    }
+
+    public func discoverSourceSpecs(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage],
+        reading reads: DirectoryReadCache
+    ) -> [SourceSpec] {
+        discoverSourceSpecs(at: root, requestedLanguages: requestedLanguages)
+    }
+
     public func withheldLanguages(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> Set<CodeArtifact.SourceLanguage> {
         []
+    }
+
+    public func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage],
+        reading reads: DirectoryReadCache
+    ) -> DetectorClaim {
+        claim(at: root, requestedLanguages: requestedLanguages)
     }
 
     public func claim(

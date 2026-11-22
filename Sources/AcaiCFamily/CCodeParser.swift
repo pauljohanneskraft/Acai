@@ -42,7 +42,8 @@ struct CFamilyGrammar {
     }
 
     func parse(source: String, fileName: String) -> CodeArtifact {
-        grammar.parse(source: source, fileName: fileName) { root in
+        let source = CPlusPlusLinkageGuards(source: source).neutralized
+        return grammar.parse(source: source, fileName: fileName) { root in
             var extractor = CFamilyExtractor(source: source, fileName: fileName, dialect: dialect, root: root)
             return extractor.extract(from: root)
         }

@@ -29,7 +29,7 @@ struct DeadCodeScanConsequenceTests {
         """, fileName: "Worker.java")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled"))
+        #expect(report.candidates.map(\.id).contains("Uncalled.Uncalled()"))
         #expect(!report.candidates.map(\.id).contains("Called.Called"))
     }
 
@@ -48,7 +48,7 @@ struct DeadCodeScanConsequenceTests {
         """, fileName: "Worker.kt")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Uncalled.init"))
+        #expect(report.candidates.map(\.id).contains("Uncalled.init(Int)"))
         #expect(!report.candidates.map(\.id).contains("Called.init"))
     }
 
@@ -71,7 +71,7 @@ struct DeadCodeScanConsequenceTests {
         """, fileName: "worker.dart")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled"))
+        #expect(report.candidates.map(\.id).contains("_Uncalled._Uncalled()"))
         #expect(!report.candidates.map(\.id).contains("_Called._Called"))
     }
 
@@ -96,7 +96,7 @@ struct DeadCodeScanConsequenceTests {
         """, fileName: "Worker.ts")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Uncalled.constructor"))
+        #expect(report.candidates.map(\.id).contains("Uncalled.constructor()"))
         #expect(!report.candidates.map(\.id).contains("Called.constructor"))
     }
 
@@ -116,7 +116,7 @@ struct DeadCodeScanConsequenceTests {
         """, fileName: "worker.dart")
         let report = DeadCodeScan(
             artifact: artifact, languages: artifact.standardLanguageResolver).report
-        #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed"))
+        #expect(report.candidates.map(\.id).contains("Widget._uncalledNamed()"))
         #expect(!report.candidates.map(\.id).contains("Widget._calledNamed"))
     }
 }

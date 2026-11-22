@@ -5,8 +5,8 @@ import AcaiCore
 /// Read-only analysis view: every module plotted as a point on an Abstractness-vs-
 /// Instability chart, with Robert Martin's main-sequence line (`A + I = 1`) drawn across it. Not a
 /// movement canvas (no drag/undo/redo/Save-as-Freeform/Export — see `GeneratedDiagram+Freeform.swift`'s
-/// doc comment on why) — this is a chart over already-computed metrics, built once and never
-/// recomputed on every render.
+/// doc comment on why) — this is a chart over metrics `ModuleCouplingChartLoader` computes off the
+/// main actor, once per analysis identity.
 ///
 /// Never encode meaning in color alone: each point's zone is additionally carried
 /// by `Charts`' categorical `.symbol(by:)` (a distinct marker shape per zone) and restated as text
@@ -14,9 +14,10 @@ import AcaiCore
 struct ModuleCouplingChartView: View {
     let diagram: GeneratedDiagram
     let codebase: Codebase
-    private let data: ModuleCouplingChartData
+    private let artifact: CodeArtifact
 
     @EnvironmentObject private var model: ProjectBrowserViewModel
+    @State private var loader = ModuleCouplingChartLoader()
     @State private var showSidebar = false
     @State private var reindexPhase: AsyncOperationPhase = .idle
     #if os(iOS)
@@ -25,11 +26,23 @@ struct ModuleCouplingChartView: View {
 
     init(diagram: GeneratedDiagram, artifact: CodeArtifact, codebase: Codebase) {
         self.diagram = diagram
+        self.artifact = artifact
         self.codebase = codebase
-        let modules = ModuleMap(artifact: artifact)
-        self.data = ModuleCouplingChartData(
-            modules: artifact.computeMetrics(modules: modules).modules,
-            fallbackGroup: modules.resolver.fallbackGroup)
+    }
+
+    private var chartIdentity: ModuleCouplingChartIdentity {
+        ModuleCouplingChartIdentity(
+            analysis: model.analysisToken(for: codebase.id),
+            comparisonBaseRef: diagram.comparisonBaseRef,
+            comparisonGitRef: diagram.comparisonGitRef,
+            showsComparisonArtifact: model.comparisonNewArtifact(for: diagram) != nil)
+    }
+
+    private var metricsPhase: AsyncOperationPhase {
+        guard loader.data != nil, !loader.isComputing else {
+            return .loading(.app("View.ModuleCouplingChartView.ComputingMetrics"))
+        }
+        return .loaded
     }
 
     private var isCompactWidth: Bool {
@@ -47,6 +60,7 @@ struct ModuleCouplingChartView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar { toolbarContent }
+            .task(id: chartIdentity) { await loader.load(identity: chartIdentity, of: artifact) }
     }
 
     @ViewBuilder
@@ -86,6 +100,7 @@ struct ModuleCouplingChartView: View {
     /// Outside the empty state, which a successful reindex replaces.
     private var chartContent: some View {
         VStack(spacing: .zero) {
+            AsyncOperationStatusView(identifierPrefix: "moduleCoupling.metrics", phase: metricsPhase)
             AsyncOperationStatusView(identifierPrefix: "moduleCoupling.reindex", phase: reindexPhase)
             stateContent
         }
@@ -93,12 +108,16 @@ struct ModuleCouplingChartView: View {
 
     @ViewBuilder
     private var stateContent: some View {
-        if let reason = data.emptyReason {
-            emptyState(reason)
+        if let data = loader.data {
+            if let reason = data.emptyReason {
+                emptyState(reason)
+            } else {
+                chart(data)
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         } else {
-            chart
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -155,7 +174,7 @@ struct ModuleCouplingChartView: View {
         }
     }
 
-    private var chart: some View {
+    private func chart(_ data: ModuleCouplingChartData) -> some View {
         Chart {
             ForEach(mainSequenceLine, id: \.self.instability) { point in
                 LineMark(
@@ -222,7 +241,7 @@ struct ModuleCouplingChartView: View {
     // MARK: - Legend / sidebar
 
     private var legendList: some View {
-        List(data.rankedByDistance) { point in
+        List(loader.data?.rankedByDistance ?? []) { point in
             VStack(alignment: .leading, spacing: .spacingXS) {
                 HStack {
                     Image(systemName: point.zone.symbolName)

@@ -206,6 +206,7 @@ struct GitHubAccountSection: View {
         }
         if let errorMessage {
             Text(verbatim: errorMessage).font(.caption).foregroundStyle(.red)
+                .accessibilityIdentifier("github.signInError")
         }
     }
 

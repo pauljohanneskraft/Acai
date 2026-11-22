@@ -63,19 +63,27 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
     /// Recorded on the chance its receiver is a project type; not counted at all when it resolves to no member.
     public var isSpeculative: Bool
 
+    /// One entry per argument, holding its label if spelled; `nil` when no argument list was recorded.
+    public var arguments: [String?]?
+
     public init(
         receiver: CallReceiver,
         methodName: String,
         location: SourceLocation? = nil,
         isConstruction: Bool = false,
-        isSpeculative: Bool = false
+        isSpeculative: Bool = false,
+        arguments: [String?]? = nil
     ) {
         self.receiver = receiver
         self.methodName = methodName
         self.location = location
         self.isConstruction = isConstruction
         self.isSpeculative = isSpeculative
+        self.arguments = arguments
     }
+
+    /// How many arguments the call passes, or `nil` when the parser didn't record the argument list.
+    public var argumentCount: Int? { arguments?.count }
 
     public var receiverType: String? {
         if case .type(let name) = receiver { return name }
@@ -83,7 +91,7 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case receiver, methodName, location, isConstruction, isSpeculative
+        case receiver, methodName, location, isConstruction, isSpeculative, arguments
     }
 
     public init(from decoder: any Decoder) throws {
@@ -93,6 +101,7 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
         location = try container.decodeIfPresent(SourceLocation.self, forKey: .location)
         isConstruction = try container.decodeIfPresent(Bool.self, forKey: .isConstruction) ?? false
         isSpeculative = try container.decodeIfPresent(Bool.self, forKey: .isSpeculative) ?? false
+        arguments = try container.decodeIfPresent([String?].self, forKey: .arguments)
     }
 
     /// Writes the flags only when set, keeping an ordinary call's encoding minimal.
@@ -107,5 +116,6 @@ public struct CallSite: Codable, Equatable, Hashable, Sendable {
         if isSpeculative {
             try container.encode(isSpeculative, forKey: .isSpeculative)
         }
+        try container.encodeIfPresent(arguments, forKey: .arguments)
     }
 }

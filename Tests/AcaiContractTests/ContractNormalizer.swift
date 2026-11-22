@@ -35,15 +35,22 @@ import AcaiCore
 ///    override as `@override` *and* Kotlin/Swift/C++ as a keyword; Python spells abstract and static
 ///    as `@abstractmethod`/`@staticmethod`. The modifier is the shared fact, so the duplicate
 ///    annotation goes. An annotation with no matching modifier is always kept.
-/// 9. **`suspend` reads as `async`.** Kotlin's keyword for a suspending function is the same
-///    construct Swift, Python and JavaScript spell `async`; the closed `Modifier` enum keeps both
-///    spellings, and only the matrix has to see them as one.
-/// 10. **A private member's single leading underscore is dropped.** Dart and Python have no `private`
-///    keyword; the underscore is it, so the same member is `shut` in Swift and `_shut` there. Applied
-///    only where the parser already reports the member as private.
-/// 11. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
+/// 9. **A private member's leading privacy marker is dropped.** Dart, Python and JavaScript have no
+///    `private` keyword; the marker in the name is it, so the same member is `shut` in Swift and
+///    `_shut`, `__shut` or `#shut` there. Applied only where the parser already reports the member as
+///    private.
+/// 10. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
 ///    and Python must declare `__init__` before it is used, so declaration order is not a shared
 ///    property — but parameter order is.
+/// 11. **An enum case's constant rides with its name, and the plumbing carrying it is dropped.** A
+///    case takes its constant as `= 1` (Swift, TypeScript, Python, C, C++) or as a constructor
+///    argument, `pop(1)` (Java, Kotlin, Dart), so either way the case reads `pop = 1`. What differs
+///    is the overhead each spelling forces: Swift has to declare the raw-value type, and Java and
+///    Dart a constructor to receive the argument plus a property to hold it. So on an `enumeration`
+///    a `#primitive` supertype is dropped — its only meaning is naming the raw-value type — as is
+///    the conformance edge onto it, and, where a case really carries a constant, the constructor
+///    plus any stored property one of its parameters feeds. A method, a computed property, a
+///    non-primitive supertype, and a constructor on an enum whose cases carry no constant are kept.
 struct ContractNormalizer {
     let configuration: LanguageConfiguration
 
@@ -57,9 +64,12 @@ struct ContractNormalizer {
             types: artifact.types.map { declaration(of: $0) }.sorted { $0.name < $1.name },
             freeFunctions: artifact.freestandingFunctions.map(signature(of:)).sorted(by: signatureOrder),
             globals: artifact.globalVariables.map(signature(of:)).sorted(by: signatureOrder),
-            relationships: artifact.relationships.map(edge(of:)).sorted { lhs, rhs in
-                (lhs.kind, lhs.source, lhs.target) < (rhs.kind, rhs.source, rhs.target)
-            }
+            relationships: artifact.relationships
+                .filter { !isRawValueConformance($0) }
+                .map(edge(of:))
+                .sorted { lhs, rhs in
+                    (lhs.kind, lhs.source, lhs.target) < (rhs.kind, rhs.source, rhs.target)
+                }
         )
     }
 
@@ -76,9 +86,9 @@ struct ContractNormalizer {
             modifiers: type.modifiers.filter { !implied.contains($0) }.map(\.rawValue).sorted(),
             generics: type.genericParameters.map(generic(of:)),
             annotations: annotationNames(type.annotations, restating: type.modifiers),
-            supertypes: type.inheritedTypes.map { typeName(of: $0) }.sorted(),
-            members: type.members.map(signature(of:)).sorted(by: signatureOrder),
-            enumCases: type.enumCases.map(\.name).sorted(),
+            supertypes: supertypes(of: type),
+            members: members(of: type).map(signature(of:)).sorted(by: signatureOrder),
+            enumCases: type.enumCases.map(enumCase(of:)).sorted(),
             nested: type.nestedTypes
                 .map { declaration(of: $0, isNested: true) }
                 .sorted { $0.name < $1.name },
@@ -97,7 +107,7 @@ struct ContractNormalizer {
             access: member.accessLevel.umlSymbol,
             modifiers: member.modifiers
                 .filter { $0 != .open }
-                .map { ($0 == .suspend ? Modifier.async : $0).rawValue }
+                .map(\.rawValue)
                 .sorted(),
             annotations: annotationNames(member.annotations, restating: member.modifiers),
             type: member.type.map { typeName(of: $0) },
@@ -108,6 +118,38 @@ struct ContractNormalizer {
             }.sorted(),
             documentation: member.documentation
         )
+    }
+
+    /// Rule 11: `pop = 1` and `pop(1)` both read `pop = 1`.
+    private func enumCase(of enumCase: EnumCase) -> String {
+        guard let rawValue = enumCase.rawValue else { return enumCase.name }
+        return "\(enumCase.name) = \(rawValue)"
+    }
+
+    /// Rule 11: only Swift names the raw-value type, as `enum Genre: Int`.
+    private func supertypes(of type: TypeDeclaration) -> [String] {
+        let names = type.inheritedTypes.map { typeName(of: $0) }.sorted()
+        guard type.kind == .enum else { return names }
+        return names.filter { $0 != Self.primitiveToken }
+    }
+
+    /// Rule 11: drops the constructor and stored properties that `pop(1)` needs and `= 1` does not.
+    private func members(of type: TypeDeclaration) -> [Member] {
+        guard type.kind == .enum, type.enumCases.contains(where: { $0.rawValue != nil }) else {
+            return type.members
+        }
+        let received = Set(
+            type.members.filter { $0.kind == .initializer }.flatMap { $0.parameters.map(\.internalName) })
+        return type.members.filter { member in
+            guard member.kind != .initializer else { return false }
+            let isStored = member.kind == .property && !member.isComputed
+            return !(isStored && received.contains(member.name))
+        }
+    }
+
+    /// Rule 11: a conformance onto a primitive can only be Swift's raw-value declaration.
+    private func isRawValueConformance(_ relationship: Relationship) -> Bool {
+        relationship.kind == .conformance && classify(relationship.target) == Self.primitiveToken
     }
 
     private func generic(of parameter: GenericParameter) -> String {
@@ -134,12 +176,13 @@ struct ContractNormalizer {
         }
     }
 
-    /// Rule 10: Dart and Python have no `private` keyword — a leading underscore *is* the marker
-    /// (Dart's `_x`, Python's name-mangled `__x`), so the same member is `shut` in Swift and `_shut` or
-    /// `__shut` there. Applied only where the parser already reports the member as private.
+    /// Rule 9: Dart, Python and JavaScript have no `private` keyword — a leading marker *is* it
+    /// (Dart's `_x`, Python's name-mangled `__x`, JavaScript's `#x`), so the same member is `shut` in
+    /// Swift and `_shut`, `__shut` or `#shut` there. Applied only where the parser already reports the
+    /// member as private.
     private func privacyMarkerStripped(_ name: String, isPrivate: Bool) -> String {
         guard isPrivate else { return name }
-        return String(name.drop(while: { $0 == "_" }))
+        return String(name.drop(while: { $0 == "_" || $0 == "#" }))
     }
 
     /// `defaultValue` is deliberately absent: no diagram, metric or diff reads it, so requiring every

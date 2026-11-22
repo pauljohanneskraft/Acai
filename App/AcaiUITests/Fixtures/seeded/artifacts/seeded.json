@@ -54,7 +54,7 @@
       "targetLabel" : "1"
     }
   ],
-  "schemaVersion" : 1,
+  "schemaVersion" : 2,
   "types" : [
     {
       "accessLevel" : "public",
@@ -384,6 +384,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 26,
@@ -446,6 +449,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+
+              ],
               "location" : {
                 "column" : 9,
                 "endLine" : 5,
@@ -542,6 +548,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+
+              ],
               "isConstruction" : true,
               "location" : {
                 "column" : 26,
@@ -604,6 +613,9 @@
           ],
           "callSites" : [
             {
+              "arguments" : [
+
+              ],
               "location" : {
                 "column" : 9,
                 "endLine" : 5,

@@ -10,6 +10,10 @@ public struct SwiftPackageManagerDetector: BuildSystemDetector {
         IndicatorFiles([manifestName]).present(at: root)
     }
 
+    public func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        IndicatorFiles([manifestName]).present(at: root, reading: reads)
+    }
+
     /// Reads the manifest's declared target layout where it can, and probes the filesystem where it
     /// can't — recording why, since a probed layout may parse files the package excludes or miss a
     /// target that lives outside `Sources/`.

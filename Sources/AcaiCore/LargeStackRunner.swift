@@ -58,3 +58,12 @@ public struct LargeStackRunner: Sendable {
         var value: Value?
     }
 }
+
+extension CodeParser {
+
+    /// Every parse goes through here, so a deeply nested file cannot overflow the 512 KB stack of
+    /// the cooperative-pool thread that asked for it.
+    func parsedOnALargeStack(source: String, fileName: String) async -> CodeArtifact {
+        await LargeStackRunner.standard.run { self.parse(source: source, fileName: fileName) }
+    }
+}
