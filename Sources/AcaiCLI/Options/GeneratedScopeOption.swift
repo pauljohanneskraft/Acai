@@ -10,6 +10,15 @@ struct GeneratedScopeOption: ParsableArguments {
           help: "Include machine-generated types in the analysis (default: they are excluded).")
     var includeGenerated = false
 
+    /// The filter as a `Sendable` value, so concurrent work can carry it without the option group.
+    var scope: GeneratedScope { GeneratedScope(includeGenerated: includeGenerated) }
+
+    func applied(to artifact: CodeArtifact) -> CodeArtifact { scope.applied(to: artifact) }
+}
+
+struct GeneratedScope: Sendable {
+    let includeGenerated: Bool
+
     func applied(to artifact: CodeArtifact) -> CodeArtifact {
         includeGenerated
             ? artifact
