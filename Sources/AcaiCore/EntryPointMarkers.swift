@@ -10,19 +10,34 @@ public struct EntryPointMarkers: Sendable, Equatable, Hashable, Codable {
     /// Normalized annotation markers (`@Test` → `test`) that make a member an entry point: test
     /// entry points, framework-lifecycle callbacks, DI-invoked methods.
     public var annotations: Set<String>
-    /// Lowercased method names that are framework/runtime entry points regardless of any caller
-    /// (e.g. `main`, a Flutter `build`).
+    /// Lowercased method names that are framework/runtime entry points regardless of the type they
+    /// are declared on (`main`, a pytest hook). Reserve this for conventions a framework matches by
+    /// name; a member a framework protocol *requires* belongs in `conformanceMembers`, so an
+    /// unrelated type's same-named method is still reported.
     public var methodNames: Set<String>
+    /// Supertype name → the lowercased member names that supertype requires of its subtypes. A
+    /// member matches only when its own type inherits from or conforms to that supertype, so
+    /// SwiftUI's `body` exempts a `View`'s and not an unrelated type's. Keyed on the name the
+    /// source writes, which is how a protocol declared outside the analysed sources arrives.
+    public var conformanceMembers: [String: Set<String>]
 
-    public init(annotations: Set<String> = [], methodNames: Set<String> = []) {
+    public init(
+        annotations: Set<String> = [],
+        methodNames: Set<String> = [],
+        conformanceMembers: [String: Set<String>] = [:]
+    ) {
         self.annotations = annotations
         self.methodNames = methodNames
+        self.conformanceMembers = conformanceMembers
     }
 
-    /// Whether `member` is marked as an entry point by one of this language's annotation or
-    /// name markers. Annotation markers are compared by their normalized `annotationName`.
-    public func marks(_ member: Member) -> Bool {
-        if methodNames.contains(member.name.lowercased()) { return true }
-        return member.annotations.contains { annotations.contains($0.annotationName) }
+    /// Whether `member` is marked as an entry point by one of this language's markers: a normalized
+    /// annotation, a name-based marker, or a `conformanceMembers` entry for one of `supertypes` —
+    /// the transitive supertype names of the type declaring `member`.
+    public func marks(_ member: Member, inheritingFrom supertypes: Set<String>) -> Bool {
+        let name = member.name.lowercased()
+        if methodNames.contains(name) { return true }
+        if member.annotations.contains(where: { annotations.contains($0.annotationName) }) { return true }
+        return supertypes.contains { conformanceMembers[$0]?.contains(name) ?? false }
     }
 }
