@@ -16,6 +16,10 @@ public struct NodeDetector: BuildSystemDetector {
         IndicatorFiles([manifestName]).present(at: root)
     }
 
+    public func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        IndicatorFiles([manifestName]).present(at: root, reading: reads)
+    }
+
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]

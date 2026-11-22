@@ -31,22 +31,34 @@ public struct CFamilyBuildSystemDetector: BuildSystemDetector {
         IndicatorFiles(indicatorFiles).present(at: root)
     }
 
+    public func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        IndicatorFiles(indicatorFiles).present(at: root, reading: reads)
+    }
+
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]
     ) -> [SourceSpec] {
+        claim(at: root, requestedLanguages: requestedLanguages, reading: DirectoryReadCache()).specs
+    }
+
+    public func claim(
+        at root: URL,
+        requestedLanguages: [CodeArtifact.SourceLanguage],
+        reading reads: DirectoryReadCache
+    ) -> DetectorClaim {
         let request = LanguageRequest(requestedLanguages)
         let nested = nestedRoots(at: root)
         var specs: [SourceSpec] = []
         // `.c` files signal C; any C++-only extension signals C++. A project with only `.h` headers
         // is reported as C — `CCodeParser` still routes individual C++ headers to the C++ grammar.
-        if request.wants(.c), cFiles.exist(in: root) {
+        if request.wants(.c), cFiles.exist(in: root, reading: reads) {
             specs.append(spec(.c, at: root, nested: nested))
         }
-        if request.wants(.cpp), cppFiles.exist(in: root) {
+        if request.wants(.cpp), cppFiles.exist(in: root, reading: reads) {
             specs.append(spec(.cpp, at: root, nested: nested))
         }
-        return specs
+        return DetectorClaim(specs: specs)
     }
 
     private func spec(
