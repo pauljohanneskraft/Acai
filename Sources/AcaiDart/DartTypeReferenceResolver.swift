@@ -72,12 +72,15 @@ struct DartTypeReferenceResolver {
     /// `type_arguments` and its `?` as *siblings* of the name they qualify rather than as its
     /// children, so `Map<String, User>?` arrives as three flat nodes and each is folded onto the
     /// reference it follows — otherwise `Future<Map<String, User>>` reads as two arguments.
+    ///
+    /// A childless `nullable_type` is that bare `?` marker; one that does wrap a type is left to
+    /// ``typeReference(_:)``, which reads the wrapping form.
     func typeArguments(_ node: Node) -> [TypeReference] {
         var refs: [TypeReference] = []
         for child in node.namedChildren() {
             guard let nodeType = child.nodeType else { continue }
             switch nodeType {
-            case "nullable_type" where !refs.isEmpty:
+            case "nullable_type" where !refs.isEmpty && child.namedChildren().isEmpty:
                 refs[refs.count - 1].isOptional = true
             case "type_arguments" where !refs.isEmpty:
                 refs[refs.count - 1] = applying(child, to: refs[refs.count - 1])
