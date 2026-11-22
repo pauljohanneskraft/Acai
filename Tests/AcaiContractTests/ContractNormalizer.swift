@@ -35,16 +35,14 @@ import AcaiCore
 ///    override as `@override` *and* Kotlin/Swift/C++ as a keyword; Python spells abstract and static
 ///    as `@abstractmethod`/`@staticmethod`. The modifier is the shared fact, so the duplicate
 ///    annotation goes. An annotation with no matching modifier is always kept.
-/// 9. **`suspend` reads as `async`.** Kotlin's keyword for a suspending function is the same
-///    construct Swift, Python and JavaScript spell `async`; the closed `Modifier` enum keeps both
-///    spellings, and only the matrix has to see them as one.
-/// 10. **A private member's single leading underscore is dropped.** Dart and Python have no `private`
-///    keyword; the underscore is it, so the same member is `shut` in Swift and `_shut` there. Applied
-///    only where the parser already reports the member as private.
-/// 11. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
+/// 9. **A private member's leading privacy marker is dropped.** Dart, Python and JavaScript have no
+///    `private` keyword; the marker in the name is it, so the same member is `shut` in Swift and
+///    `_shut`, `__shut` or `#shut` there. Applied only where the parser already reports the member as
+///    private.
+/// 10. **Declarations and edges are sorted**; parameters are not. C++ groups members by access section
 ///    and Python must declare `__init__` before it is used, so declaration order is not a shared
 ///    property — but parameter order is.
-/// 12. **An enum case's constant rides with its name, and the plumbing carrying it is dropped.** A
+/// 11. **An enum case's constant rides with its name, and the plumbing carrying it is dropped.** A
 ///    case takes its constant as `= 1` (Swift, TypeScript, Python, C, C++) or as a constructor
 ///    argument, `pop(1)` (Java, Kotlin, Dart), so either way the case reads `pop = 1`. What differs
 ///    is the overhead each spelling forces: Swift has to declare the raw-value type, and Java and
@@ -122,20 +120,20 @@ struct ContractNormalizer {
         )
     }
 
-    /// Rule 12: `pop = 1` and `pop(1)` both read `pop = 1`.
+    /// Rule 11: `pop = 1` and `pop(1)` both read `pop = 1`.
     private func enumCase(of enumCase: EnumCase) -> String {
         guard let rawValue = enumCase.rawValue else { return enumCase.name }
         return "\(enumCase.name) = \(rawValue)"
     }
 
-    /// Rule 12: only Swift names the raw-value type, as `enum Genre: Int`.
+    /// Rule 11: only Swift names the raw-value type, as `enum Genre: Int`.
     private func supertypes(of type: TypeDeclaration) -> [String] {
         let names = type.inheritedTypes.map { typeName(of: $0) }.sorted()
         guard type.kind == .enum else { return names }
         return names.filter { $0 != Self.primitiveToken }
     }
 
-    /// Rule 12: drops the constructor and stored properties that `pop(1)` needs and `= 1` does not.
+    /// Rule 11: drops the constructor and stored properties that `pop(1)` needs and `= 1` does not.
     private func members(of type: TypeDeclaration) -> [Member] {
         guard type.kind == .enum, type.enumCases.contains(where: { $0.rawValue != nil }) else {
             return type.members
@@ -149,7 +147,7 @@ struct ContractNormalizer {
         }
     }
 
-    /// Rule 12: a conformance onto a primitive can only be Swift's raw-value declaration.
+    /// Rule 11: a conformance onto a primitive can only be Swift's raw-value declaration.
     private func isRawValueConformance(_ relationship: Relationship) -> Bool {
         relationship.kind == .conformance && classify(relationship.target) == Self.primitiveToken
     }
@@ -178,7 +176,7 @@ struct ContractNormalizer {
         }
     }
 
-    /// Rule 10: Dart, Python and JavaScript have no `private` keyword — a leading marker *is* it
+    /// Rule 9: Dart, Python and JavaScript have no `private` keyword — a leading marker *is* it
     /// (Dart's `_x`, Python's name-mangled `__x`, JavaScript's `#x`), so the same member is `shut` in
     /// Swift and `_shut`, `__shut` or `#shut` there. Applied only where the parser already reports the
     /// member as private.
