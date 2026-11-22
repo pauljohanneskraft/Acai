@@ -497,7 +497,22 @@
           ],
           "type" : {
             "genericArguments" : [
+              {
+                "genericArguments" : [
 
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "String"
+              },
+              {
+                "genericArguments" : [
+
+                ],
+                "isArray" : false,
+                "isOptional" : true,
+                "name" : "Object"
+              }
             ],
             "isArray" : false,
             "isOptional" : false,
@@ -729,7 +744,14 @@
           ],
           "type" : {
             "genericArguments" : [
+              {
+                "genericArguments" : [
 
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
             ],
             "isArray" : false,
             "isOptional" : false,
@@ -928,19 +950,18 @@
               },
               {
                 "genericArguments" : [
+                  {
+                    "genericArguments" : [
 
+                    ],
+                    "isArray" : false,
+                    "isOptional" : false,
+                    "name" : "T"
+                  }
                 ],
-                "isArray" : false,
+                "isArray" : true,
                 "isOptional" : false,
                 "name" : "List"
-              },
-              {
-                "genericArguments" : [
-
-                ],
-                "isArray" : false,
-                "isOptional" : false,
-                "name" : "T"
               }
             ],
             "isArray" : false,
@@ -1026,19 +1047,18 @@
                   },
                   {
                     "genericArguments" : [
+                      {
+                        "genericArguments" : [
 
+                        ],
+                        "isArray" : false,
+                        "isOptional" : false,
+                        "name" : "T"
+                      }
                     ],
-                    "isArray" : false,
+                    "isArray" : true,
                     "isOptional" : false,
                     "name" : "List"
-                  },
-                  {
-                    "genericArguments" : [
-
-                    ],
-                    "isArray" : false,
-                    "isOptional" : false,
-                    "name" : "T"
                   }
                 ],
                 "isArray" : false,
@@ -2011,7 +2031,14 @@
           ],
           "type" : {
             "genericArguments" : [
+              {
+                "genericArguments" : [
 
+                ],
+                "isArray" : false,
+                "isOptional" : false,
+                "name" : "T"
+              }
             ],
             "isArray" : false,
             "isOptional" : false,
