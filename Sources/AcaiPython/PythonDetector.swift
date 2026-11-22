@@ -10,6 +10,11 @@ public struct PythonDetector: BuildSystemDetector {
         IndicatorFiles(["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"]).present(at: root)
     }
 
+    public func isPresent(at root: URL, reading reads: DirectoryReadCache) -> Bool {
+        IndicatorFiles(["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"])
+            .present(at: root, reading: reads)
+    }
+
     public func discoverSourceSpecs(
         at root: URL,
         requestedLanguages: [CodeArtifact.SourceLanguage]

@@ -258,14 +258,12 @@ extension JavaExtractor {
         guard let nameNode = node.child(byFieldName: "name") else { return nil }
         let name = nameNode.text(in: context)
         guard !name.isEmpty else { return nil }
-        let nodeLoc = node.location(in: context)
 
-        var arguments: [Parameter] = []
-        if let argsNode = node.child(byFieldName: "arguments") {
-            arguments = parameterExtractor.argumentsAsParameters(argsNode)
-        }
-
-        return EnumCase(name: name, associatedValues: arguments, location: nodeLoc)
+        return EnumCase(
+            name: name,
+            rawValue: node.child(byFieldName: "arguments")?.argumentListText(in: context),
+            location: node.location(in: context)
+        )
     }
 
     // MARK: - Method Declaration

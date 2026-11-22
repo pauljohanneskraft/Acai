@@ -37,14 +37,21 @@ extension FileManager {
         return result.sorted { $0.path < $1.path }
     }
 
-    /// Which of `extensions` at least one file under `directory` has. Answers "are there sources
-    /// here?" without collecting them. Unlike `fileURLs`, this walks the whole subtree regardless of
-    /// how early every requested extension is seen: `DirectoryTreeWalk.walk`'s visitor closure has no
-    /// way to signal "stop early".
+    /// Which of `extensions` at least one file under `directory` has, stopping once all are seen.
     public func fileExtensionsPresent(
         in directory: URL,
         among extensions: Set<String>,
         excludingDirectories excludedDirectories: Set<String> = AcaiConstants.standard.defaultExcludedSourceDirectories
+    ) -> Set<String> {
+        fileExtensionsPresent(in: directory, among: extensions, excludingDirectories: excludedDirectories, reading: nil)
+    }
+
+    func fileExtensionsPresent(
+        in directory: URL,
+        among extensions: Set<String>,
+        excludingDirectories excludedDirectories: Set<String>,
+        reading reads: DirectoryReadCache?,
+        stoppingAtFirst: Bool = false
     ) -> Set<String> {
         guard !extensions.isEmpty else { return [] }
         if (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == false {
@@ -53,12 +60,11 @@ extension FileManager {
         }
         var found: Set<String> = []
         var walk = DirectoryTreeWalk(excludedDirectories: excludedDirectories, fileManager: self)
-        walk.walk(from: directory) { _, files in
-            for file in files {
-                let fileExtension = file.pathExtension.lowercased()
-                if extensions.contains(fileExtension) {
-                    found.insert(fileExtension)
-                }
+        walk.reads = reads
+        let isDone = { stoppingAtFirst ? !found.isEmpty : found.count == extensions.count }
+        walk.walkListed(from: directory, until: isDone) { _, files in
+            for file in files where extensions.contains(file.pathExtension) {
+                found.insert(file.pathExtension)
             }
         }
         return found
