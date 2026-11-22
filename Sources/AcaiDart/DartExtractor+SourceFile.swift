@@ -19,6 +19,8 @@ extension DartExtractor {
             return extractExtensionDeclaration(child)
         case "extension_type_declaration":
             return extractExtensionTypeDeclaration(child)
+        case "type_alias":
+            return extractTypeAlias(child)
         default:
             return nil
         }

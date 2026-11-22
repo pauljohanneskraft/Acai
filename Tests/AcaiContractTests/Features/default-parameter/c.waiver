@@ -1,1 +1,1 @@
-C has no class and no default parameter value.
+C has no default parameter value; every argument is passed at every call site.

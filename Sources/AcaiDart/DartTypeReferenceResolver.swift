@@ -68,30 +68,9 @@ struct DartTypeReferenceResolver {
         return TypeReference(name: name, genericArguments: genericArgs, isArray: isArray)
     }
 
-    /// The references a `type_arguments` list names. The grammar emits a generic argument's own
-    /// `type_arguments` and its `?` as *siblings* of the name they qualify rather than as its
-    /// children, so `Map<String, User>?` arrives as three flat nodes and each is folded onto the
-    /// reference it follows — otherwise `Future<Map<String, User>>` reads as two arguments.
-    ///
-    /// A childless `nullable_type` is that bare `?` marker; one that does wrap a type is left to
-    /// ``typeReference(_:)``, which reads the wrapping form.
-    func typeArguments(_ node: Node) -> [TypeReference] {
-        var refs: [TypeReference] = []
-        for child in node.namedChildren() {
-            guard let nodeType = child.nodeType else { continue }
-            switch nodeType {
-            case "nullable_type" where !refs.isEmpty && child.namedChildren().isEmpty:
-                refs[refs.count - 1].isOptional = true
-            case "type_arguments" where !refs.isEmpty:
-                refs[refs.count - 1] = applying(child, to: refs[refs.count - 1])
-            default:
-                if let ref = typeReference(child) { refs.append(ref) }
-            }
-        }
-        return refs
-    }
-
-    /// Folds a `type_arguments` sibling onto the type name that precedes it.
+    /// Folds a `type_arguments` sibling onto the type name that precedes it, for the readers that
+    /// walk a declaration's children one at a time rather than through
+    /// ``flattenedTypeReferences(_:)``.
     func applying(_ typeArgumentsNode: Node, to base: TypeReference) -> TypeReference {
         TypeReference(
             name: base.name,
@@ -127,47 +106,79 @@ struct DartTypeReferenceResolver {
         node.allChildren(withType: "type_parameter").map { typeParameter($0) }
     }
 
+    /// The grammar wraps the bound in `type_bound` in some positions and flattens it into siblings in others.
     private func typeParameter(_ node: Node) -> GenericParameter {
         var name = ""
-        var constraints: [GenericConstraint] = []
+        var boundChildren: [Node] = []
 
-        for child in node.children() {
+        for child in node.namedChildren() {
             guard let childType = child.nodeType else { continue }
-            switch childType {
-            case "type_identifier", "identifier":
-                if name.isEmpty { name = child.text(in: context) } else {
-                    constraints.append(GenericConstraint(
-                        kind: .superclass,
-                        type: TypeReference(name: child.text(in: context))
-                    ))
-                }
-            default:
-                break
+            if childType == "annotation" { continue }
+            if name.isEmpty, childType == "type_identifier" || childType == "identifier" {
+                name = child.text(in: context)
+                continue
             }
+            boundChildren += childType == "type_bound" ? child.namedChildren() : [child]
         }
-        return GenericParameter(name: name, constraints: constraints)
+
+        return GenericParameter(
+            name: name,
+            constraints: flattenedTypeReferences(boundChildren)
+                .map { GenericConstraint(kind: .superclass, type: $0) }
+        )
+    }
+
+    // MARK: - Type Aliases
+
+    /// A function-type target has no single type node to name, so it is recorded by its source text.
+    func aliasTarget(_ children: [Node]) -> [TypeReference] {
+        let isFunctionType = children.contains {
+            $0.nodeType == "function_type" || $0.nodeType == "formal_parameter_list"
+        }
+        guard isFunctionType else { return flattenedTypeReferences(children) }
+        let text = children.map { $0.text(in: context) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return text.isEmpty ? [] : [TypeReference(name: text)]
     }
 
     // MARK: - Superclass / Type Lists
 
     func superclassTypes(_ node: Node) -> [TypeReference] {
-        // When the grammar emits `type_identifier` and `type_arguments` as siblings (instead of
-        // wrapping them in `generic_type`), combine them into one TypeReference to avoid spurious
-        // edges to generic-argument types.
+        flattenedTypeReferences(node.namedChildren().filter { $0.nodeType != "mixins" })
+    }
+
+    func typeArguments(_ node: Node) -> [TypeReference] {
+        flattenedTypeReferences(node.namedChildren())
+    }
+
+    /// Joins the sibling `type_identifier` + `type_arguments` pairs the grammar emits into one reference each.
+    ///
+    /// A `?` is emitted as a sibling too, as a childless `nullable_type`, so it is folded onto the
+    /// reference it follows — otherwise `Map<String, Object?>` reports a non-optional `Object`. A
+    /// `nullable_type` that does wrap a type is left to ``typeReference(_:)``, which reads that form.
+    func flattenedTypeReferences(_ children: [Node]) -> [TypeReference] {
         var refs: [TypeReference] = []
         var pendingName: String?
 
-        for child in node.namedChildren() {
+        for child in children {
             guard let nodeType = child.nodeType else { continue }
-            if nodeType == "mixins" { continue }
 
-            if nodeType == "type_identifier" || nodeType == "identifier" {
+            if nodeType == "nullable_type", child.namedChildren().isEmpty,
+               pendingName != nil || !refs.isEmpty {
+                if let name = pendingName {
+                    refs.append(TypeReference(name: name, isOptional: true))
+                    pendingName = nil
+                } else {
+                    refs[refs.count - 1].isOptional = true
+                }
+            } else if nodeType == "type_identifier" || nodeType == "identifier" {
                 if let name = pendingName {
                     refs.append(TypeReference(name: name))
                 }
                 pendingName = child.text(in: context)
             } else if nodeType == "type_arguments", let name = pendingName {
-                refs.append(TypeReference(name: name, genericArguments: typeArguments(child)))
+                refs.append(TypeReference(name: name, genericArguments: typeArguments(child), isArray: name == "List"))
                 pendingName = nil
             } else {
                 if let name = pendingName {
