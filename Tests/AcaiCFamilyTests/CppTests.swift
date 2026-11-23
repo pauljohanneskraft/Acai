@@ -193,4 +193,29 @@ struct CppTests {
             enriched.relationships.contains { $0.kind == .dependency && $0.target == "Genre" },
             "a constructor parameter's declared type is a dependency")
     }
+
+    @Test func typedefRestatingItsTagYieldsOnlyTheRecord() {
+        let source = """
+        typedef struct Node Node;
+        struct Node { int value; Node *next; };
+        typedef class Widget Widget;
+        class Widget { int size; };
+        """
+        let artifact = parser.parse(source: source, fileName: "node.hpp")
+        #expect(artifact.types.map(\.name).sorted() == ["Node", "Widget"])
+        #expect(artifact.types.allSatisfy { $0.kind != .typeAlias })
+        #expect(HealthCheck(artifact: artifact.enriched(configuration: parser.configuration)).report.score == 1)
+    }
+
+    @Test func typedefOfANestedTagRestatingItsLastComponentIsDropped() {
+        let source = """
+        namespace net {
+        struct Socket { int fd; };
+        }
+        typedef struct net::Socket Socket;
+        """
+        let artifact = parser.parse(source: source, fileName: "socket.hpp")
+        #expect(artifact.types.map(\.name) == ["Socket"])
+        #expect(artifact.types.first?.kind == .struct)
+    }
 }

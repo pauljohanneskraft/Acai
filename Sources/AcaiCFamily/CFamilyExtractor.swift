@@ -17,6 +17,10 @@ struct CFamilyExtractor {
         "case_statement", "catch_clause"
     ]
 
+    static let recordSpecifierKinds: Set<String> = [
+        "struct_specifier", "union_specifier", "enum_specifier", "class_specifier"
+    ]
+
     let context: SourceFileContext
     let dialect: CFamilyDialect
     let typeReferences: CFamilyTypeReferenceResolver
@@ -307,6 +311,7 @@ extension CFamilyExtractor {
         let declarator = typeReferences.parseDeclarator(node.child(byFieldName: "declarator"))
         let aliasName = typeReferences.lastComponent(of: declarator.name)
         guard !aliasName.isEmpty, let typeNode = node.child(byFieldName: "type") else { return }
+        if restatesTag(of: typeNode, as: aliasName, declaredBy: node) { return }
 
         switch typeNode.nodeType {
         case "struct_specifier", "union_specifier", "class_specifier":
@@ -331,5 +336,15 @@ extension CFamilyExtractor {
             inheritedTypes: underlying.map { [$0] } ?? [],
             namespace: declarations.currentNamespace, location: node.location(in: context)
         ))
+    }
+
+    /// Whether a bodyless `typedef struct Node Node;` only repeats the tag the record already
+    /// carries, in which case the record is the type and the alias is not a second one.
+    private func restatesTag(of typeNode: Node, as aliasName: String, declaredBy node: Node) -> Bool {
+        guard node.child(byFieldName: "declarator")?.nodeType == "type_identifier",
+              Self.recordSpecifierKinds.contains(typeNode.nodeType ?? ""),
+              typeNode.child(byFieldName: "body") == nil,
+              let tag = typeNode.child(byFieldName: "name") else { return false }
+        return typeReferences.lastComponent(of: tag.text(in: context)) == aliasName
     }
 }
