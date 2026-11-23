@@ -110,8 +110,7 @@ struct CTests {
         let health = HealthCheck(artifact: enriched).report
         #expect(health.diagnostics.isEmpty)
         #expect(health.score == 1)
-        // `Node *next` names the struct itself; with the alias gone it resolves instead of being
-        // reported ambiguous. A type is not coupled to itself, so no edge is inferred from it.
+        // The self-reference resolves; a type is not coupled to itself, so no edge is inferred.
         let resolver = TypeIdentityResolver(types: enriched.types)
         #expect(resolver.resolve("Node") == .resolved(TypeID("Node")))
     }
