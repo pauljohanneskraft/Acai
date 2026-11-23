@@ -32,10 +32,13 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
     /// Statically-observable writes inside this member's body, in source order. Populated for
     /// assignments whose target is a plain identifier or explicit `self`/`this` member access.
     public var assignments: [VariableAssignment]
-    /// Statically-observable reads of stored properties inside this member's body: a bare identifier
-    /// or explicit `self`/`this` access to a known stored property (`receiver == nil`), plus
+    /// Statically-observable reads of properties inside this member's body: a bare identifier or
+    /// explicit `self`/`this` access to a known property (`receiver == nil`), plus
     /// `Type.field` static reads. Best-effort; feeds ``LcomAnalysis``/`FeatureEnvy`.
     public var fieldReads: [FieldAccess] = []
+    /// Own-member candidates the parser could not check, kept until extensions merge: see
+    /// ``CodeArtifact/resolvingDeferredFieldReads()``.
+    public var deferredFieldReads: [FieldAccess]?
     /// For stored properties: the declaration initializer's classified value, when captured.
     public var initialValue: VariableAssignment.Value?
     /// Bare type names referenced inside this member's body or initializer — constructions
@@ -65,6 +68,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         callSites: [CallSite] = [],
         assignments: [VariableAssignment] = [],
         fieldReads: [FieldAccess] = [],
+        deferredFieldReads: [FieldAccess]? = nil,
         initialValue: VariableAssignment.Value? = nil,
         referencedTypeNames: [String] = [],
         cyclomaticComplexity: Int? = nil,
@@ -84,6 +88,7 @@ public struct Member: Codable, Equatable, Hashable, Sendable {
         self.callSites = callSites
         self.assignments = assignments
         self.fieldReads = fieldReads
+        self.deferredFieldReads = deferredFieldReads
         self.initialValue = initialValue
         self.referencedTypeNames = referencedTypeNames
         self.cyclomaticComplexity = cyclomaticComplexity

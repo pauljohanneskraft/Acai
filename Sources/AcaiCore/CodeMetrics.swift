@@ -65,10 +65,13 @@ public struct CodeMetrics: Codable, Equatable, Sendable {
         public var depthOfInheritance: Int
         /// Number of children (direct in-codebase subtypes/conformers).
         public var numberOfChildren: Int
-        /// Weighted methods per class (method count).
+        /// Weighted methods per class (WMC): the sum of cyclomatic complexity over the type's methods
+        /// and initialisers, counting an unmeasured body as 1. `numberOfMethods` is the plain count.
         public var weightedMethods: Int
+        /// The plain count of declared methods, which `weightedMethods` weights by complexity.
+        public var numberOfMethods: Int
         /// Highest cyclomatic complexity of any single method (0 when none measured) — surfaces the one
-        /// gnarly method `weightedMethods` hides.
+        /// gnarly method `weightedMethods` sums away.
         public var maxCyclomaticComplexity: Int
         /// Stored/computed property count — the data half of the anemic-vs-behaviour balance.
         public var numberOfProperties: Int
@@ -185,7 +188,8 @@ extension CodeArtifact {
                 module: modules.module(forFilePath: type.location?.filePath ?? ""),
                 depthOfInheritance: shape.depth(of: type.id),
                 numberOfChildren: shape.children(of: type.id),
-                weightedMethods: type.members.filter { $0.kind == .method }.count,
+                weightedMethods: type.weightedMethodComplexity,
+                numberOfMethods: type.numberOfMethods,
                 maxCyclomaticComplexity: type.members.compactMap(\.cyclomaticComplexity).max() ?? 0,
                 numberOfProperties: type.members.filter { $0.kind == .property }.count,
                 fanIn: fanIn[type.id]?.count ?? 0,

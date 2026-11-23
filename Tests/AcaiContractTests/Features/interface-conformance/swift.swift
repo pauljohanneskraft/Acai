@@ -1,3 +1,5 @@
-public protocol Playable {}
+public protocol Playable {
+    func play() -> Bool
+}
 
 public class Song: Playable {}

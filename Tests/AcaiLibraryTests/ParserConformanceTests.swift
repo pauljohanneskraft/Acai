@@ -122,6 +122,13 @@ struct ParserConformanceTests {
             func get() -> Int { return value }
         }
         """, method: "get", field: "value"),
+        ReadFixture(name: "Swift (optional self)", parser: SwiftCodeParser(), fileName: "Box.swift", source: """
+        class Box {
+            var value: Int = 0
+            var reader: (() -> Int?)?
+            func get() { reader = { [weak self] in self?.value } }
+        }
+        """, method: "get", field: "value"),
         ReadFixture(name: "Java", parser: JavaCodeParser(), fileName: "Box.java", source: """
         class Box {
             int value;
@@ -161,6 +168,65 @@ struct ParserConformanceTests {
         };
         """, method: "get", field: "value")
     ]
+
+    /// The mirror of ``readFixtures``: the same field name, read off a parameter rather than the type's own instance.
+    static let foreignReadFixtures: [ReadFixture] = [
+        ReadFixture(name: "Swift", parser: SwiftCodeParser(), fileName: "Box.swift", source: """
+        class Box {
+            var value: Int = 0
+            func matches(_ other: Box) -> Bool { return other.value == 1 }
+        }
+        """, method: "matches", field: "value"),
+        ReadFixture(name: "Java", parser: JavaCodeParser(), fileName: "Box.java", source: """
+        class Box {
+            int value;
+            boolean matches(Box other) { return other.value == 1; }
+        }
+        """, method: "matches", field: "value"),
+        ReadFixture(name: "Kotlin", parser: KotlinCodeParser(), fileName: "Box.kt", source: """
+        class Box {
+            var value: Int = 0
+            fun matches(other: Box): Boolean { return other.value == 1 }
+        }
+        """, method: "matches", field: "value"),
+        ReadFixture(name: "TypeScript", parser: JSCodeParser(), fileName: "box.ts", source: """
+        class Box {
+            value: number = 0
+            matches(other: Box): boolean { return other.value === 1 }
+        }
+        """, method: "matches", field: "value"),
+        ReadFixture(name: "Python", parser: PythonCodeParser(), fileName: "box.py", source: """
+        class Box:
+            def __init__(self):
+                self.value = 0
+            def matches(self, other):
+                return other.value == 1
+        """, method: "matches", field: "value"),
+        ReadFixture(name: "Dart", parser: DartCodeParser(), fileName: "box.dart", source: """
+        class Box {
+            int value = 0;
+            bool matches(Box other) { return other.value == 1; }
+        }
+        """, method: "matches", field: "value"),
+        ReadFixture(name: "C++", parser: CppCodeParser(), fileName: "box.cpp", source: """
+        class Box {
+        public:
+            int value;
+            bool matches(Box other) { return other.value == 1; }
+        };
+        """, method: "matches", field: "value")
+    ]
+
+    @Test(arguments: foreignReadFixtures)
+    func parserIgnoresReadsThroughAForeignReceiver(_ fixture: ReadFixture) {
+        let parsed = fixture.parser.parse(source: fixture.source, fileName: fixture.fileName)
+        let method = parsed.flattened().flatMap(\.members).first { $0.name == fixture.method }
+        #expect(method != nil, "\(fixture.name): method '\(fixture.method)' not found")
+        let readNames = method?.fieldReads.map(\.name) ?? []
+        #expect(
+            method?.fieldReads.contains { $0.name == fixture.field && $0.receiver == nil } != true,
+            "\(fixture.name): '\(fixture.field)' is the parameter's field, not this type's; got \(readNames)")
+    }
 
     @Test(arguments: readFixtures)
     func parserCapturesOwnFieldReads(_ fixture: ReadFixture) {

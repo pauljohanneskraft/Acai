@@ -39,6 +39,27 @@ struct CohesionAndStabilityMetricsTests {
         #expect(analysis.components == [["close", "open"], ["connect", "disconnect"]])
     }
 
+    @Test func aCallLinksEveryOverloadOfTheCalledName() {
+        let declared = type("Store", module: "App", members: [
+            Member(name: "items", kind: .property, accessLevel: .internal),
+            Member(name: "load", kind: .method, accessLevel: .internal, callSites: [
+                CallSite(receiver: .selfDispatch, methodName: "load")
+            ]),
+            method("load", reads: "items")
+        ])
+        #expect(LcomAnalysis(type: declared).componentCount == 1)
+    }
+
+    @Test func readingAComputedPropertyLinksToIt() {
+        let declared = type("Store", module: "App", members: [
+            Member(name: "items", kind: .property, accessLevel: .internal),
+            Member(name: "visible", kind: .property, accessLevel: .internal, isComputed: true,
+                   fieldReads: [FieldAccess(name: "items")]),
+            method("render", reads: "visible")
+        ])
+        #expect(LcomAnalysis(type: declared).components == [["render", "visible"]])
+    }
+
     @Test func cohesiveTypeReportsASingleCluster() {
         let declared = type("Counter", module: "App", members: [
             Member(name: "value", kind: .property, accessLevel: .internal),
@@ -46,6 +67,45 @@ struct CohesionAndStabilityMetricsTests {
             method("read", reads: "value")
         ])
         #expect(LcomAnalysis(type: declared).components == [["increment", "read"]])
+    }
+
+    @Test func staticMembersLeaveCohesionUnchanged() {
+        let instanceMembers: [Member] = [
+            Member(name: "value", kind: .property, accessLevel: .internal),
+            method("increment", writes: "value"),
+            method("read", reads: "value")
+        ]
+        let helpers: [Member] = [
+            Member(name: "describe", kind: .method, accessLevel: .internal, modifiers: [.static]),
+            Member(name: "make", kind: .method, accessLevel: .internal, modifiers: [.class])
+        ]
+        let withHelpers = LcomAnalysis(type: type("Counter", module: "App", members: instanceMembers + helpers))
+        #expect(withHelpers.componentCount == 1)
+        #expect(withHelpers.components == [["increment", "read"]])
+    }
+
+    @Test func computedPropertiesCountAsBehaviour() {
+        let declared = type("Counter", module: "App", members: [
+            Member(name: "value", kind: .property, accessLevel: .internal),
+            Member(name: "doubled", kind: .property, accessLevel: .internal, isComputed: true,
+                   fieldReads: [FieldAccess(name: "value")]),
+            method("increment", writes: "value")
+        ])
+        #expect(LcomAnalysis(type: declared).components == [["doubled", "increment"]])
+    }
+
+    @Test func initialisersDoNotFuseUnrelatedClusters() {
+        let declared = type("Service", module: "App", members: [
+            Member(name: "file", kind: .property, accessLevel: .internal),
+            Member(name: "socket", kind: .property, accessLevel: .internal),
+            Member(name: "init", kind: .initializer, accessLevel: .internal, assignments: [
+                VariableAssignment(targetName: "file", op: .assign, value: .init(kind: .expression, text: "0")),
+                VariableAssignment(targetName: "socket", op: .assign, value: .init(kind: .expression, text: "0"))
+            ]),
+            method("open", writes: "file"),
+            method("connect", writes: "socket")
+        ])
+        #expect(LcomAnalysis(type: declared).componentCount == 2)
     }
 
     @Test func stableDependencyPrincipleFlagsDependencyOnLessStableModule() {
