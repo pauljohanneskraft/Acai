@@ -21,7 +21,9 @@ public struct CCodeParser: CodeParser {
     public init() {}
 
     public func parse(source: String, fileName: String) -> CodeArtifact {
-        guard fileName.hasSuffix(".h") else { return cGrammar.parse(source: source, fileName: fileName) }
+        guard fileName.lowercased().hasSuffix(".h") else {
+            return cGrammar.parse(source: source, fileName: fileName)
+        }
         let header = CFamilyHeaderClassifier(source: source)
         if header.looksLikeObjectiveC {
             return CodeArtifact(metadata: .init(sourceLanguage: language, filePaths: [fileName]))

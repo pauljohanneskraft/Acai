@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import AcaiCFamily
 @testable import AcaiCore
@@ -39,6 +40,43 @@ struct HeaderRoutingTests {
         let vector = artifact.types.first { $0.name == "Vector3" }
         #expect(vector?.kind == .class)
         #expect(vector?.namespace == "geometry")
+    }
+
+    @Test func anUppercaseHeaderExtensionRoutesLikeItsLowercaseOne() throws {
+        let source = """
+        namespace geometry {
+            class Vector3 {
+            public:
+                float length() const;
+            private:
+                float x_, y_, z_;
+            };
+        }
+        """
+        let upper = parser.parse(source: source, fileName: "Vector3.H")
+        #expect(upper.metadata.sourceLanguage == .cpp)
+        #expect(upper.types.first { $0.name == "Vector3" }?.kind == .class)
+
+        let lower = parser.parse(source: source, fileName: "Vector3.h")
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let upperJSON = String(decoding: try encoder.encode(upper), as: UTF8.self)
+        let lowerJSON = String(decoding: try encoder.encode(lower), as: UTF8.self)
+        #expect(upperJSON.replacingOccurrences(of: "Vector3.H", with: "Vector3.h") == lowerJSON)
+    }
+
+    @Test func plainCHeaderWithAnUppercaseExtensionStillReportsC() {
+        let source = """
+        struct Vec3 {
+            float x;
+            float y;
+        };
+
+        void normalize(struct Vec3 *v);
+        """
+        let artifact = parser.parse(source: source, fileName: "vec3.H")
+        #expect(artifact.metadata.sourceLanguage == .c)
+        #expect(artifact.types.first?.name == "Vec3")
     }
 
     @Test func commentMentioningClassStaysC() {
