@@ -111,9 +111,7 @@ struct InfiniteCanvas<Content: View>: View {
 
     // MARK: - Auto-Pan Configuration
 
-    /// Called every body evaluation to keep the auto-pan controller in sync. The tick handler is
-    /// handed over only while a drag is auto-panning: holding it any longer would retain this view
-    /// through the `@State` storage the controller itself lives in.
+    /// Runs every body evaluation; the tick handler retains this view, so it is held only while a drag auto-pans.
     private func configureAutoPan(viewportSize: CGSize) {
         autoPanController.scale = scale
         autoPanController.offset = offset

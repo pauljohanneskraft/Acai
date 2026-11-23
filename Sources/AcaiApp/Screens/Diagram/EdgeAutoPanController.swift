@@ -25,8 +25,7 @@ final class EdgeAutoPanController: @unchecked Sendable {
 
     // MARK: - Output
 
-    /// Held only while a pan is running, so the handler — which captures the canvas view — is
-    /// released by `stop()` and cannot outlive the drag.
+    /// Cleared by `stop()`, since the handler captures the canvas view that owns this controller.
     private var onPanTick: ((_ canvasDelta: CGSize) -> Void)?
 
     // MARK: - Configuration
@@ -41,8 +40,7 @@ final class EdgeAutoPanController: @unchecked Sendable {
 
     // MARK: - Lifecycle
 
-    /// Takes the tick handler for the duration of the pan. Calling it again while running swaps in
-    /// a handler capturing the current view state without restarting the timer.
+    /// Calling it again while running swaps the handler without restarting the timer.
     func start(onPanTick: @escaping (_ canvasDelta: CGSize) -> Void) {
         self.onPanTick = onPanTick
         guard timer == nil else { return }
@@ -71,8 +69,7 @@ final class EdgeAutoPanController: @unchecked Sendable {
         onPanTick?(canvasDelta)
     }
 
-    /// Advances the pan by one frame, returning the incremental canvas delta, or `nil` when the
-    /// drag sits away from every edge or a Reduce Motion step has yet to elapse.
+    /// `nil` when the drag is away from every edge or a Reduce Motion step has yet to elapse.
     func nextPanDelta() -> CGSize? {
         let screenX = canvasLocation.x * scale + offset.x
         let screenY = canvasLocation.y * scale + offset.y

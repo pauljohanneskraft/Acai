@@ -48,6 +48,7 @@ struct EdgeAutoPanControllerTests {
     }
 
     @Test("Stopping a pan releases the canvas state the tick handler captured")
+    @MainActor
     func stoppingReleasesTheCapturedCanvas() {
         weak var leaked: EdgeAutoPanController?
 
@@ -74,9 +75,7 @@ struct EdgeAutoPanControllerTests {
     }
 }
 
-/// Stands in for the SwiftUI `@State` storage a canvas keeps its controller in: the handler the
-/// canvas installs writes back through state that owns the controller, so a handler outliving the
-/// pan is a retain cycle.
+/// Stands in for the `@State` storage that owns a canvas's controller and that its tick handler writes to.
 private final class CanvasStorage {
     let controller = EdgeAutoPanController()
     var offset: CGSize = .zero
