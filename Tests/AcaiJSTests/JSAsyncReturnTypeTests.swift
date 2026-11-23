@@ -2,9 +2,6 @@ import Testing
 @testable import AcaiJS
 @testable import AcaiCore
 
-/// TypeScript has to annotate `Promise<T>` on an `async` member, where Swift and Kotlin write the
-/// payload and mark the asynchrony with a keyword. The `.async` modifier is the shared fact, so the
-/// recorded type is the payload — otherwise every dependency edge points at `Promise`.
 @Suite("TypeScript async return types")
 struct JSAsyncReturnTypeTests {
     let parser = JSCodeParser(isTypeScript: true)
@@ -48,8 +45,6 @@ struct JSAsyncReturnTypeTests {
         #expect(flush?.type?.name == "void")
     }
 
-    /// `Promise<User[]>` is an async member returning a collection: the payload keeps the arrayness
-    /// that drives `*` multiplicity.
     @Test func arrayPayloadKeepsItsArrayness() {
         let all = member(
             """
@@ -62,8 +57,6 @@ struct JSAsyncReturnTypeTests {
         #expect(all?.type?.isArray == true)
     }
 
-    /// The issue's second half: a member that merely *returns* a promise without being `async` has
-    /// `Promise` as its real return type, and keeps it.
     @Test func nonAsyncMethodReturningAPromiseKeepsTheWrapper() {
         let deferred = member(
             """
@@ -77,8 +70,6 @@ struct JSAsyncReturnTypeTests {
         #expect(deferred?.type?.genericArguments.map(\.name) == ["User"])
     }
 
-    /// An interface requirement cannot be `async` — the keyword describes a body — so its
-    /// `Promise<T>` is the declared return type and stays.
     @Test func interfaceRequirementKeepsItsPromise() {
         let fetch = parser
             .parse(source: "interface Api { fetch(): Promise<User> }", fileName: "api.ts")
@@ -86,7 +77,6 @@ struct JSAsyncReturnTypeTests {
         #expect(fetch?.type?.name == "Promise")
     }
 
-    /// A bare `Promise` names no payload, so there is nothing to report in its place.
     @Test func bareUnparameterizedPromiseIsLeftAsDeclared() {
         let fetch = member(
             """
@@ -105,8 +95,6 @@ struct JSAsyncReturnTypeTests {
         #expect(artifact.freestandingFunctions.first?.type == TypeReference(name: "User"))
     }
 
-    /// An async generator returns an `AsyncGenerator`/`AsyncIterable`, not a promise of one element,
-    /// so the declared type is the sequence and is reported as written.
     @Test func asyncGeneratorKeepsItsSequenceType() {
         let stream = member(
             """

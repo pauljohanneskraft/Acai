@@ -2,12 +2,6 @@ import Testing
 @testable import AcaiDart
 @testable import AcaiCore
 
-/// Dart has to declare `Future<T>` on an `async` body, where Swift and Kotlin write the payload and
-/// mark the asynchrony with a keyword. The `.async` modifier is the shared fact, so the recorded
-/// type is the payload.
-///
-/// Reaching the payload at all first needs Dart's return types to carry their generic arguments: the
-/// grammar emits `Future` and `<int>` as siblings, which the signature readers used to drop.
 @Suite("Dart async return types")
 struct DartAsyncReturnTypeTests {
     let parser = DartCodeParser()
@@ -62,8 +56,6 @@ struct DartAsyncReturnTypeTests {
         #expect(flush?.type?.name == "void")
     }
 
-    /// Dart writes a nullable generic argument's `?` as a sibling of the name it qualifies, so the
-    /// payload's optionality is only preserved if that sibling is folded in.
     @Test func nullablePayloadStaysOptional() {
         let find = member(
             """
@@ -76,7 +68,6 @@ struct DartAsyncReturnTypeTests {
         #expect(find?.type?.isOptional == true)
     }
 
-    /// A `List<T>` payload keeps the arrayness that drives `*` multiplicity.
     @Test func listPayloadKeepsItsArrayness() {
         let all = member(
             """
@@ -90,7 +81,6 @@ struct DartAsyncReturnTypeTests {
         #expect(all?.type?.genericArguments.map(\.name) == ["User"])
     }
 
-    /// A method that hands back a future without an `async` body really does return `Future`.
     @Test func nonAsyncMethodReturningAFutureKeepsTheWrapper() {
         let deferred = member(
             """
@@ -104,8 +94,6 @@ struct DartAsyncReturnTypeTests {
         #expect(deferred?.type?.genericArguments.map(\.name) == ["User"])
     }
 
-    /// An `async*` generator returns the `Stream` it declares, and a `sync*` one its `Iterable`:
-    /// neither is a future of one element, so neither is unwrapped.
     @Test func generatorBodiesKeepTheirSequenceTypes() {
         let source = """
         class Loader {
@@ -117,7 +105,6 @@ struct DartAsyncReturnTypeTests {
         #expect(member(source, named: "each")?.type?.name == "Iterable")
     }
 
-    /// A `Future` with no type argument names no payload, so it is reported as declared.
     @Test func bareUnparameterizedFutureIsLeftAsDeclared() {
         let fetch = member(
             """
@@ -129,8 +116,6 @@ struct DartAsyncReturnTypeTests {
         #expect(fetch?.type?.name == "Future")
     }
 
-    /// An async getter is the same seam as an async method — its return type is read by a different
-    /// signature reader, which had the same dropped-arguments bug.
     @Test func asyncGetterReportsItsPayload() {
         let current = member(
             """

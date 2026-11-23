@@ -9,9 +9,7 @@ import AcaiTreeSitter
 struct DartTypeReferenceResolver {
     let context: SourceFileContext
 
-    /// Dart's `async` body must be declared to return `Future<T>` (or `FutureOr<T>`); the `.async`
-    /// modifier carries the asynchrony, so the declaration reports `T`. `Stream`/`Iterable` are
-    /// deliberately absent: an `async*`/`sync*` generator really does return the sequence it names.
+    /// `Stream`/`Iterable` are absent: an `async*`/`sync*` generator does return the sequence it names.
     private static let asyncReturn = AsyncReturnUnwrapper(wrapperNames: ["Future", "FutureOr"])
 
     // MARK: - Type References
@@ -68,9 +66,7 @@ struct DartTypeReferenceResolver {
         return TypeReference(name: name, genericArguments: genericArgs, isArray: isArray)
     }
 
-    /// Folds a `type_arguments` sibling onto the type name that precedes it, for the readers that
-    /// walk a declaration's children one at a time rather than through
-    /// ``flattenedTypeReferences(_:)``.
+    /// Folds a `type_arguments` sibling onto the type name that precedes it.
     func applying(_ typeArgumentsNode: Node, to base: TypeReference) -> TypeReference {
         TypeReference(
             name: base.name,
@@ -80,8 +76,6 @@ struct DartTypeReferenceResolver {
         )
     }
 
-    /// The return type an `async` member reports: `Future<T>`/`FutureOr<T>` becomes `T`, and a
-    /// `Future` written without a type argument stays as declared.
     func awaitedReturnType(_ reference: TypeReference?, isAsync: Bool) -> TypeReference? {
         isAsync ? Self.asyncReturn.unwrapped(reference) : reference
     }
@@ -153,10 +147,7 @@ struct DartTypeReferenceResolver {
     }
 
     /// Joins the sibling `type_identifier` + `type_arguments` pairs the grammar emits into one reference each.
-    ///
-    /// A `?` is emitted as a sibling too, as a childless `nullable_type`, so it is folded onto the
-    /// reference it follows — otherwise `Map<String, Object?>` reports a non-optional `Object`. A
-    /// `nullable_type` that does wrap a type is left to ``typeReference(_:)``, which reads that form.
+    /// A bare `?` sibling (a childless `nullable_type`) marks the reference it follows optional.
     func flattenedTypeReferences(_ children: [Node]) -> [TypeReference] {
         var refs: [TypeReference] = []
         var pendingName: String?
