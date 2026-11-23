@@ -60,8 +60,8 @@ struct HeaderRoutingTests {
         let lower = parser.parse(source: source, fileName: "Vector3.h")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        let upperJSON = String(decoding: try encoder.encode(upper), as: UTF8.self)
-        let lowerJSON = String(decoding: try encoder.encode(lower), as: UTF8.self)
+        let upperJSON = try #require(String(bytes: encoder.encode(upper), encoding: .utf8))
+        let lowerJSON = try #require(String(bytes: encoder.encode(lower), encoding: .utf8))
         #expect(upperJSON.replacingOccurrences(of: "Vector3.H", with: "Vector3.h") == lowerJSON)
     }
 
