@@ -85,7 +85,7 @@
         ],
         "isArray" : false,
         "isOptional" : false,
-        "name" : "Future"
+        "name" : "void"
       }
     },
     {
@@ -125,7 +125,14 @@
       ],
       "type" : {
         "genericArguments" : [
+          {
+            "genericArguments" : [
 
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
         ],
         "isArray" : false,
         "isOptional" : false,
@@ -169,7 +176,14 @@
       ],
       "type" : {
         "genericArguments" : [
+          {
+            "genericArguments" : [
 
+            ],
+            "isArray" : false,
+            "isOptional" : false,
+            "name" : "int"
+          }
         ],
         "isArray" : false,
         "isOptional" : false,

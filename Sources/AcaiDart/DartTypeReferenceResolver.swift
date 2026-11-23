@@ -9,6 +9,9 @@ import AcaiTreeSitter
 struct DartTypeReferenceResolver {
     let context: SourceFileContext
 
+    /// `Stream`/`Iterable` are absent: an `async*`/`sync*` generator does return the sequence it names.
+    private static let asyncReturn = AsyncReturnUnwrapper(wrapperNames: ["Future", "FutureOr"])
+
     // MARK: - Type References
 
     func typeReference(_ node: Node) -> TypeReference? {
@@ -61,6 +64,20 @@ struct DartTypeReferenceResolver {
         guard !name.isEmpty else { return nil }
         let isArray = name == "List"
         return TypeReference(name: name, genericArguments: genericArgs, isArray: isArray)
+    }
+
+    /// Folds a `type_arguments` sibling onto the type name that precedes it.
+    func applying(_ typeArgumentsNode: Node, to base: TypeReference) -> TypeReference {
+        TypeReference(
+            name: base.name,
+            genericArguments: typeArguments(typeArgumentsNode),
+            isOptional: base.isOptional,
+            isArray: base.name == "List"
+        )
+    }
+
+    func awaitedReturnType(_ reference: TypeReference?, isAsync: Bool) -> TypeReference? {
+        isAsync ? Self.asyncReturn.unwrapped(reference) : reference
     }
 
     // MARK: - Type Parameters (Generics)
@@ -130,6 +147,7 @@ struct DartTypeReferenceResolver {
     }
 
     /// Joins the sibling `type_identifier` + `type_arguments` pairs the grammar emits into one reference each.
+    /// A bare `?` sibling (a childless `nullable_type`) marks the reference it follows optional.
     func flattenedTypeReferences(_ children: [Node]) -> [TypeReference] {
         var refs: [TypeReference] = []
         var pendingName: String?
@@ -137,7 +155,15 @@ struct DartTypeReferenceResolver {
         for child in children {
             guard let nodeType = child.nodeType else { continue }
 
-            if nodeType == "type_identifier" || nodeType == "identifier" {
+            if nodeType == "nullable_type", child.namedChildren().isEmpty,
+               pendingName != nil || !refs.isEmpty {
+                if let name = pendingName {
+                    refs.append(TypeReference(name: name, isOptional: true))
+                    pendingName = nil
+                } else {
+                    refs[refs.count - 1].isOptional = true
+                }
+            } else if nodeType == "type_identifier" || nodeType == "identifier" {
                 if let name = pendingName {
                     refs.append(TypeReference(name: name))
                 }
@@ -235,12 +261,7 @@ struct DartTypeReferenceResolver {
         case "type_identifier", "generic_type", "function_type", "void_type":
             if info.type == nil { info.type = typeReference(child) }
         case "type_arguments":
-            if let base = info.type {
-                info.type = TypeReference(
-                    name: base.name, genericArguments: typeArguments(child),
-                    isArray: base.name == "List"
-                )
-            }
+            if let base = info.type { info.type = applying(child, to: base) }
         case "nullable_type":
             info.isNullable = true
         case "final_builtin":

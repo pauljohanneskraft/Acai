@@ -112,6 +112,16 @@ struct DartOtherTests {
         #expect(operatorMethod != nil)
     }
 
+    @Test func genericOperatorReturnTypeKeepsItsArguments() {
+        let source = """
+        class Vector<T> {
+            Vector<T> operator +(Vector<T> other) => this;
+        }
+        """
+        let plus = parser.parse(source: source, fileName: "Vector.dart").types.first?.members.first { $0.name == "+" }
+        #expect(plus?.type == TypeReference(name: "Vector", genericArguments: [TypeReference(name: "T")]))
+    }
+
     @Test func nullableTypes() {
         let source = """
         class Config {

@@ -72,7 +72,7 @@ struct JSMemberExtractor {
             // JavaScript; only a `#name` or an explicit `private`/`protected` narrows it.
             accessLevel: sig.accessLevel ?? .public,
             modifiers: sig.modifiers,
-            type: returnType,
+            type: typeReferences.awaitedReturnType(returnType, isAsync: sig.modifiers.contains(.async)),
             parameters: parameters,
             genericParameters: generics,
             isComputed: sig.isComputed,

@@ -22,6 +22,8 @@ struct JSTypeReferenceResolver {
         "public": .public, "private": .private, "protected": .protected
     ]
 
+    private static let asyncReturn = AsyncReturnUnwrapper(wrapperNames: ["Promise"])
+
     // MARK: - Type Annotations (TypeScript)
 
     func extractTypeAnnotation(_ node: Node) -> TypeReference? {
@@ -42,6 +44,10 @@ struct JSTypeReferenceResolver {
             return extractTypeReference(returnType)
         }
         return extractTypeAnnotation(node)
+    }
+
+    func awaitedReturnType(_ reference: TypeReference?, isAsync: Bool) -> TypeReference? {
+        isAsync ? Self.asyncReturn.unwrapped(reference) : reference
     }
 
     // MARK: - Type Reference Extraction

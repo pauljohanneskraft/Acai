@@ -143,11 +143,13 @@ extension DartExtractor {
         pendingBodies: inout [(index: Int, body: Node)]
     ) {
         guard previousChildAddedMember, !members.isEmpty else { return }
-        members[members.count - 1].assignments = assignments.assignments(in: node)
+        let index = members.count - 1
+        members[index].assignments = assignments.assignments(in: node)
         if isAsyncFunctionBody(node) {
-            members[members.count - 1].modifiers.append(.async)
+            members[index].modifiers.append(.async)
+            members[index].type = typeReferences.awaitedReturnType(members[index].type, isAsync: true)
         }
-        pendingBodies.append((members.count - 1, node))
+        pendingBodies.append((index, node))
     }
 
     /// Documents whatever this one body child produced: a member, several (one `declaration` can
