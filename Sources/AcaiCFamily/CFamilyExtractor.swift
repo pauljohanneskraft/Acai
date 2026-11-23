@@ -17,7 +17,7 @@ struct CFamilyExtractor {
         "case_statement", "catch_clause"
     ]
 
-    static let recordSpecifierKinds: Set<String> = [
+    private static let recordSpecifierKinds: Set<String> = [
         "struct_specifier", "union_specifier", "enum_specifier", "class_specifier"
     ]
 
@@ -45,9 +45,8 @@ struct CFamilyExtractor {
         let context = SourceFileContext(source: source, fileName: fileName)
         let typeReferences = CFamilyTypeReferenceResolver(context: context)
 
-        let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: [
-            "struct_specifier", "union_specifier", "enum_specifier", "class_specifier"
-        ]).names(in: root) { $0.child(byFieldName: "name").map { $0.text(in: context) } }
+        let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: Self.recordSpecifierKinds)
+            .names(in: root) { $0.child(byFieldName: "name").map { $0.text(in: context) } }
 
         // Collects the simple name behind every `function_declarator` in the file (free functions,
         // prototypes, and member functions alike).
@@ -338,8 +337,7 @@ extension CFamilyExtractor {
         ))
     }
 
-    /// Whether a bodyless `typedef struct Node Node;` only repeats the tag the record already
-    /// carries, in which case the record is the type and the alias is not a second one.
+    /// Whether a bodyless `typedef struct Node Node;` only restates the tag its record already carries.
     private func restatesTag(of typeNode: Node, as aliasName: String, declaredBy node: Node) -> Bool {
         guard node.child(byFieldName: "declarator")?.nodeType == "type_identifier",
               Self.recordSpecifierKinds.contains(typeNode.nodeType ?? ""),
