@@ -5,15 +5,27 @@ extension XCUIElement {
     /// `typeText` alone would just append to an already-populated field.
     func clearAndTypeText(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
         focus("the text field", file: file, line: line)
-        // An empty field reports its placeholder as its value, so comparing the two is what tells
-        // "has text" from "has a prompt" — otherwise every field pays a burst of deletes it doesn't need.
-        if let currentValue = value as? String, !currentValue.isEmpty, currentValue != placeholderValue {
-            // A plain `tap()` lands mid-string, so backspacing from there can leave a tail behind. Move
-            // the cursor to the trailing edge first, then delete comfortably more than the length.
-            coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
-            typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count + 10))
-        }
+        clearEnteredText(file: file, line: line)
         typeText(text)
+    }
+
+    /// An empty field reports its placeholder as its value, so the two have to be compared.
+    private var enteredText: String? {
+        guard let text = value as? String, !text.isEmpty, text != placeholderValue else { return nil }
+        return text
+    }
+
+    /// A trailing-edge tap lands mid-string once the value fills the field, leaving a tail the typed
+    /// text is then inserted into; each pass faces a narrower remainder until the tap clears its end.
+    private func clearEnteredText(attempts: Int = 3, file: StaticString, line: UInt) {
+        for _ in 0..<attempts {
+            guard let current = enteredText else { return }
+            coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+            typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 10))
+        }
+        if let remaining = enteredText {
+            XCTFail("the text field still held '\(remaining)' after clearing", file: file, line: line)
+        }
     }
 
     /// Picks an option from a `Picker`-rendered popup/menu (`self`) by its literal text. Matches
