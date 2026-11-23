@@ -76,7 +76,7 @@ extension CodebaseDetailView {
             by: \.fanIn, descriptor: .app("View.CodebaseDetailView.Hotspot"), types: metrics.types)
         typeMetricCard(
             MetricVisual(title: .app("View.CodebaseDetailView.Methods"), icon: "function", family: .oo,
-                         blurb: Self.weightedMethodsBlurb, threshold: MetricThreshold(amber: 20, red: 40)),
+                         blurb: Self.weightedMethodsBlurb, threshold: MetricThreshold(amber: 50, red: 100)),
             by: \.weightedMethods, descriptor: .app("View.CodebaseDetailView.Largest"), types: metrics.types)
     }
 

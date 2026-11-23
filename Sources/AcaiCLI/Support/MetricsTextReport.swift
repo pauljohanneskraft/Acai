@@ -4,6 +4,7 @@ enum MetricsSortKey: String, CaseIterable {
     case fanOut
     case fanIn
     case weightedMethods
+    case numberOfMethods
     case depthOfInheritance
     case numberOfChildren
     case responseForClass
@@ -30,6 +31,7 @@ enum MetricsSortKey: String, CaseIterable {
         .fanOut: { Double($0.fanOut) },
         .fanIn: { Double($0.fanIn) },
         .weightedMethods: { Double($0.weightedMethods) },
+        .numberOfMethods: { Double($0.numberOfMethods) },
         .depthOfInheritance: { Double($0.depthOfInheritance) },
         .numberOfChildren: { Double($0.numberOfChildren) },
         .responseForClass: { Double($0.responseForClass) },
@@ -89,16 +91,18 @@ struct MetricsTextReport {
         return top.map { Array(ranked.prefix($0)) } ?? ranked
     }
 
-    /// Classic OO metrics per type: fan-out/in, weighted methods, DIT, NOC.
+    /// Classic OO metrics per type: fan-out/in, weighted methods (`wmc`), method count (`nom`), DIT, NOC.
     private func typeTable() -> String {
         let header = "TYPE".paddedTrailing(to: 34) + "MODULE".paddedTrailing(to: 16)
             + "out".paddedLeading(to: 5) + "in".paddedLeading(to: 5) + "wmc".paddedLeading(to: 5)
-            + "dit".paddedLeading(to: 5) + "noc".paddedLeading(to: 5) + "loc".paddedLeading(to: 7)
+            + "nom".paddedLeading(to: 5) + "dit".paddedLeading(to: 5) + "noc".paddedLeading(to: 5)
+            + "loc".paddedLeading(to: 7)
         let limited = rankedTypes
         let rows = limited.map { metric in
             metric.name.paddedTrailing(to: 34) + metric.module.paddedTrailing(to: 16)
                 + String(metric.fanOut).paddedLeading(to: 5) + String(metric.fanIn).paddedLeading(to: 5)
                 + String(metric.weightedMethods).paddedLeading(to: 5)
+                + String(metric.numberOfMethods).paddedLeading(to: 5)
                 + String(metric.depthOfInheritance).paddedLeading(to: 5)
                 + String(metric.numberOfChildren).paddedLeading(to: 5)
                 + String(metric.linesOfCode).paddedLeading(to: 7)

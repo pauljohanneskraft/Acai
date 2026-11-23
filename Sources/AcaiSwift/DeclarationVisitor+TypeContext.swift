@@ -78,15 +78,22 @@ extension DeclarationVisitor {
     }
 
     /// Call sites from `node`'s computed-accessor bodies and stored-property initializer expression,
-    /// or an empty array outside a type body — a top-level global's initializer is walked separately
-    /// by the visitor's own top-level `FunctionCallExprSyntax` handling.
-    func collectPropertyCallSites(from node: VariableDeclSyntax) -> [CallSite] {
-        guard !typeStack.isEmpty else { return [] }
+    /// plus the accessors' field reads; empty outside a type body — a top-level global's initializer
+    /// is walked separately by the visitor's own top-level `FunctionCallExprSyntax` handling.
+    func analysingPropertyBodies(of node: VariableDeclSyntax) -> PropertyBodyAnalysis {
+        guard let currentType = typeStack.last else { return PropertyBodyAnalysis() }
         let propertyMap = buildPropertyMap()
-        let enclosingTypeName = typeStack.last?.name
-        return scope.accessorCallSites(
-            from: node, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
-            + scope.initializerCallSites(
-                from: node, propertyMap: propertyMap, enclosingTypeName: enclosingTypeName)
+        var analysis = scope.accessorAnalysis(
+            from: node, propertyMap: propertyMap, enclosingTypeName: currentType.name,
+            isExtension: currentType.kind == .extension)
+        analysis.callSites += scope.initializerCallSites(
+            from: node, propertyMap: propertyMap, enclosingTypeName: currentType.name)
+        return analysis
+    }
+
+    /// The field-read scope of a function or initializer declared in the innermost type.
+    func fieldReadScope(of node: some SyntaxProtocol) -> FieldReadScope {
+        scope.fieldReadScope(
+            propertyMap: buildPropertyMap(), declaredIn: node, isExtension: typeStack.last?.kind == .extension)
     }
 }

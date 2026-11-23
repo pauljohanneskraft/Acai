@@ -28,17 +28,12 @@ public struct AssignmentResolver {
     public func assignments(in body: Node?) -> [VariableAssignment] {
         guard let body else { return [] }
         var assignments: [VariableAssignment] = []
-        collect(body, into: &assignments)
+        body.walkNamedPreorder { node in
+            if let assignment = syntax.resolveAssignment(node) {
+                assignments.append(assignment)
+            }
+        }
         return assignments
-    }
-
-    private func collect(_ node: Node, into assignments: inout [VariableAssignment]) {
-        if let assignment = syntax.resolveAssignment(node) {
-            assignments.append(assignment)
-        }
-        for child in node.namedChildren() {
-            collect(child, into: &assignments)
-        }
     }
 }
 

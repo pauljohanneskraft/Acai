@@ -57,13 +57,9 @@ extension Node {
     /// unordered result makes two parses of the same file compare unequal.
     public func referencedTypeNames(in context: SourceFileContext) -> [String] {
         var names: Set<String> = []
-        var stack: [Node] = [self]
-        while let node = stack.popLast() {
+        walkPreorder { node in
             if node.nodeType?.hasSuffix("identifier") == true {
                 names.insert(node.text(in: context))
-            }
-            for index in 0..<node.childCount {
-                node.child(at: index).map { stack.append($0) }
             }
         }
         return names.sorted()

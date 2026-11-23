@@ -1,3 +1,5 @@
-abstract interface class Playable {}
+abstract interface class Playable {
+  bool play();
+}
 
 class Song implements Playable {}

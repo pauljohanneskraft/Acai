@@ -149,7 +149,7 @@ struct CFamilyTypeReferenceResolver {
     private static let optionalTemplateNames: Set<String> = ["optional", "std::optional"]
 
     private func templateArguments(under node: Node) -> [TypeReference] {
-        guard let list = firstDescendant(of: node, nodeType: "template_argument_list") else { return [] }
+        guard let list = node.firstDescendant(withType: "template_argument_list") else { return [] }
         var arguments: [TypeReference] = []
         for arg in list.namedChildren() {
             // A template argument is usually a `type_descriptor` wrapping the type, but the grammar
@@ -162,14 +162,6 @@ struct CFamilyTypeReferenceResolver {
             }
         }
         return arguments
-    }
-
-    private func firstDescendant(of node: Node, nodeType: String) -> Node? {
-        for child in node.namedChildren() {
-            if child.nodeType == nodeType { return child }
-            if let found = firstDescendant(of: child, nodeType: nodeType) { return found }
-        }
-        return nil
     }
 
     // MARK: - Template parameters

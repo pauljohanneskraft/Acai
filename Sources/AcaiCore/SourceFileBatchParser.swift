@@ -89,7 +89,9 @@ struct SourceFileBatchParser {
     }
 
     private func artifact(parsing source: String, as fileName: String) async -> CodeArtifact {
-        guard let sharedParses else { return codeParser.parse(source: source, fileName: fileName) }
+        guard let sharedParses else {
+            return await codeParser.parsedOnALargeStack(source: source, fileName: fileName)
+        }
         return await sharedParses.artifact(parsing: source, as: fileName, with: codeParser)
     }
 
