@@ -22,7 +22,7 @@ extension Node {
         return SourceLocation(
             filePath: context.fileName,
             line: Int(point.row) + 1,
-            column: Int(point.column) + 1,
+            column: point.utf16Column + 1,
             endLine: Int(pointRange.upperBound.row) + 1
         )
     }
@@ -64,4 +64,10 @@ extension Node {
         }
         return names.sorted()
     }
+}
+
+extension Point {
+
+    /// `column` counts bytes of the UTF-16LE source fed to the grammar, so two bytes are one unit.
+    fileprivate var utf16Column: Int { Int(column) / 2 }
 }
