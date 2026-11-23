@@ -21,7 +21,9 @@ struct SourceTreeFixture {
     }
 
     /// Writes the tree, analyses it exactly as the app and CLI do, and hands over the artifact.
-    func analysed(by body: (CodeArtifact) async throws -> Void) async throws {
+    func analysed(
+        with service: AnalysisService = .standard, by body: (CodeArtifact) async throws -> Void
+    ) async throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
             .appendingPathComponent("source-tree-\(UUID().uuidString)", isDirectory: true)
             .standardizedFileURL
@@ -33,6 +35,6 @@ struct SourceTreeFixture {
                 at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             try contents.write(to: file, atomically: true, encoding: .utf8)
         }
-        try await body(try await AnalysisService.standard.analyzeProject(at: root, allowedLanguages: []))
+        try await body(try await service.analyzeProject(at: root, allowedLanguages: []))
     }
 }

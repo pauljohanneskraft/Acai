@@ -30,27 +30,17 @@ public struct FieldReadResolver {
         guard let body, !knownProperties.isEmpty else { return [] }
         var reads: [FieldAccess] = []
         var receiver = ReceiverWindow()
-        collect(from: body, knownProperties: knownProperties, receiver: &receiver, into: &reads)
-        return reads
-    }
-
-    /// Walks every child, not only named ones, so the window sees each source token; a name is
-    /// classified before its own tokens are pushed because it need not be a leaf (Kotlin).
-    private func collect(
-        from node: Node, knownProperties: Set<String>, receiver: inout ReceiverWindow,
-        into reads: inout [FieldAccess]
-    ) {
-        if let nodeType = node.nodeType, identifierTypes.contains(nodeType) {
-            let name = node.text(in: context)
-            if knownProperties.contains(name), receiver.isOwn {
-                reads.append(FieldAccess(name: name, receiver: nil, location: node.location(in: context)))
+        body.walkPreorder { node in
+            if let nodeType = node.nodeType, identifierTypes.contains(nodeType) {
+                let name = node.text(in: context)
+                if knownProperties.contains(name), receiver.isOwn {
+                    reads.append(FieldAccess(name: name, receiver: nil, location: node.location(in: context)))
+                }
             }
+            // Every token feeds the window; a name is classified before its own tokens, as it need not be a leaf.
+            if node.childCount == 0 { receiver.push(node.text(in: context)) }
         }
-        let children = node.children()
-        guard !children.isEmpty else { return receiver.push(node.text(in: context)) }
-        for child in children {
-            collect(from: child, knownProperties: knownProperties, receiver: &receiver, into: &reads)
-        }
+        return reads
     }
 }
 
