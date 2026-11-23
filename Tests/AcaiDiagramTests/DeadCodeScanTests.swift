@@ -306,8 +306,6 @@ struct DeadCodeScanTests {
     }
 }
 
-/// The dead-code scan's identity rules: which supertype a conformance actually names once enrichment
-/// has canonicalised it, and what that means for witnesses and conformance-based entry points.
 @Suite("Dead-code conformance identity")
 struct DeadCodeConformanceIdentityTests {
 
@@ -317,9 +315,7 @@ struct DeadCodeConformanceIdentityTests {
             location: SourceLocation(filePath: "S.swift", line: 1, column: 1))
     }
 
-    /// Enrichment rewrites a supertype reference to the protocol's canonical id, so a protocol whose
-    /// id isn't its simple name — nested here, module-qualified in a real project — is reached only
-    /// by an index that resolves identity. Keyed on the simple name, this witness was reported dead.
+    /// Enrichment rewrites the supertype to the nested protocol's canonical id, which the index must resolve.
     @Test func aNestedProtocolsWitnessIsLive() {
         let runnable = TypeDeclaration(
             id: "Host.Runnable", name: "Runnable", qualifiedName: "Host.Runnable", kind: .protocol,
@@ -341,8 +337,6 @@ struct DeadCodeConformanceIdentityTests {
         #expect(report.candidates.map(\.memberName) == ["orphan"])
     }
 
-    /// A conformance marker spares the member only on a conforming type. Both types declare `run`;
-    /// only the command's is an entry point, where the name-based list spared both.
     @Test func aConformanceMarkerSparesOnlyTheConformingTypesMember() {
         let markers = EntryPointMarkers(conformanceMembers: ["ParsableCommand": ["run"]])
         let command = TypeDeclaration(
@@ -360,8 +354,6 @@ struct DeadCodeConformanceIdentityTests {
         #expect(report.candidates.map(\.id) == ["Scheduler.run()"])
     }
 
-    /// Conformance is inherited: a type reaches a framework protocol through an in-artifact supertype
-    /// that declares it, so the marker still applies one step removed.
     @Test func aConformanceMarkerFollowsAnInArtifactSupertype() {
         let markers = EntryPointMarkers(conformanceMembers: ["ParsableCommand": ["run"]])
         let base = TypeDeclaration(

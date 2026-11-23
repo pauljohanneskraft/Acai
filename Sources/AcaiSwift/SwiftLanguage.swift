@@ -22,13 +22,7 @@ extension SwiftCodeParser {
                 "Array", "Dictionary", "Set", "Sequence", "Collection"
             ],
             excludedDirectories: [".build", "DerivedData", "Pods", ".swiftpm"],
-            // Swift Testing (`@Test`) and runtime-dispatched members (`@objc`, `@IBAction`) are invoked
-            // by frameworks, not resolvable call sites; `main` is the process entry point. The
-            // conformance markers below cover protocols declared outside the analysed sources
-            // (ArgumentParser's commands, SwiftUI's view/scene builders, AppKit/UIKit's
-            // representables) whose requirements the engine's witness exemption therefore can't see.
-            // They are matched against the declaring type's supertypes rather than by name alone, so
-            // an unrelated type's uncalled `run()` or `body` is still reported.
+            // Conformance markers stand in for requirements of protocols declared outside the analysed sources.
             entryPointMarkers: EntryPointMarkers(
                 annotations: ["test", "objc", "ibaction", "main"],
                 methodNames: ["main"],

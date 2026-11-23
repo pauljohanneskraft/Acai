@@ -27,11 +27,7 @@ extension DartCodeParser {
                 ]
             ),
             excludedDirectories: [".dart_tool", "build"],
-            // Flutter widget lifecycle methods are called by the framework, not resolvable call sites.
-            // `main` is the process entry point in any Dart program; the rest are Flutter's widget
-            // lifecycle, which the framework calls on a subclass of the widget base classes below.
-            // Matching them against the declaring type's supertypes rather than by name keeps an
-            // uncalled `dispose()` on an ordinary class reportable.
+            // Flutter calls its widget lifecycle only on subclasses of these base classes.
             entryPointMarkers: EntryPointMarkers(
                 methodNames: ["main"],
                 conformanceMembers: [
