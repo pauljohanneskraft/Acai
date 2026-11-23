@@ -195,7 +195,7 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-c", from: "0.24.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-cpp", from: "0.23.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
-        .package(url: "https://github.com/jpsim/Yams", from: "5.0.0"),
+        .package(url: "https://github.com/jpsim/Yams", from: "6.2.2"),
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
         // The official Swift MCP SDK — the JSON-RPC/stdio transport behind the `AcaiMCP` entry point.
         .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.12.1"),
