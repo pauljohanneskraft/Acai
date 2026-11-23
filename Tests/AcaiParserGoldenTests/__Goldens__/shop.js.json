@@ -110,7 +110,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 13,
+        "column" : 7,
         "endLine" : 59,
         "filePath" : "shop.js",
         "line" : 59
@@ -195,7 +195,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 2,
             "filePath" : "shop.js",
             "line" : 2
@@ -261,7 +261,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 7,
                 "filePath" : "shop.js",
                 "line" : 7
@@ -287,7 +287,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 8,
             "filePath" : "shop.js",
             "line" : 6
@@ -330,7 +330,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 12,
             "filePath" : "shop.js",
             "line" : 10
@@ -397,7 +397,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 18,
                 "filePath" : "shop.js",
                 "line" : 18
@@ -411,7 +411,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 19,
                 "filePath" : "shop.js",
                 "line" : 19
@@ -425,7 +425,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 20,
                 "filePath" : "shop.js",
                 "line" : 20
@@ -445,7 +445,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 43,
+                "column" : 22,
                 "endLine" : 18,
                 "filePath" : "shop.js",
                 "line" : 18
@@ -468,7 +468,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 21,
             "filePath" : "shop.js",
             "line" : 16
@@ -522,7 +522,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 26,
             "filePath" : "shop.js",
             "line" : 23
@@ -556,7 +556,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 45,
+                "column" : 23,
                 "endLine" : 29,
                 "filePath" : "shop.js",
                 "line" : 29
@@ -573,7 +573,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 30,
                 "filePath" : "shop.js",
                 "line" : 30
@@ -596,7 +596,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 32,
             "filePath" : "shop.js",
             "line" : 28
@@ -623,7 +623,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 87,
+                "column" : 44,
                 "endLine" : 40,
                 "filePath" : "shop.js",
                 "line" : 40
@@ -637,7 +637,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 41,
                 "filePath" : "shop.js",
                 "line" : 41
@@ -663,7 +663,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 44,
             "filePath" : "shop.js",
             "line" : 34

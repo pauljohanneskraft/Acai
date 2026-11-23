@@ -20,7 +20,7 @@
       "isComputed" : false,
       "kind" : "method",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 77,
         "filePath" : "shop.ts",
         "line" : 75
@@ -84,7 +84,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 27,
+        "column" : 14,
         "endLine" : 79,
         "filePath" : "shop.ts",
         "line" : 79
@@ -155,7 +155,7 @@
       ],
       "kind" : "interface",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 3,
         "filePath" : "shop.ts",
         "line" : 1
@@ -181,7 +181,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 2,
             "filePath" : "shop.ts",
             "line" : 2
@@ -248,7 +248,7 @@
       ],
       "kind" : "enum",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 8,
         "filePath" : "shop.ts",
         "line" : 5
@@ -292,7 +292,7 @@
       ],
       "kind" : "typeAlias",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 13,
         "filePath" : "shop.ts",
         "line" : 10
@@ -329,7 +329,7 @@
       ],
       "kind" : "class",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 17,
         "filePath" : "shop.ts",
         "line" : 15
@@ -356,7 +356,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 16,
             "filePath" : "shop.ts",
             "line" : 16
@@ -431,7 +431,7 @@
       ],
       "kind" : "class",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 31,
         "filePath" : "shop.ts",
         "line" : 19
@@ -457,7 +457,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 20,
             "filePath" : "shop.ts",
             "line" : 20
@@ -489,7 +489,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 23,
                 "filePath" : "shop.ts",
                 "line" : 23
@@ -509,7 +509,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 23,
                 "filePath" : "shop.ts",
                 "line" : 23
@@ -518,7 +518,7 @@
             },
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 23,
                 "filePath" : "shop.ts",
                 "line" : 23
@@ -532,7 +532,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 24,
             "filePath" : "shop.ts",
             "line" : 22
@@ -582,7 +582,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 26,
             "filePath" : "shop.ts",
             "line" : 26
@@ -621,7 +621,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 29,
                 "filePath" : "shop.ts",
                 "line" : 29
@@ -635,7 +635,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 30,
             "filePath" : "shop.ts",
             "line" : 28
@@ -696,7 +696,7 @@
       ],
       "kind" : "class",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 73,
         "filePath" : "shop.ts",
         "line" : 33
@@ -717,7 +717,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 57,
+                "column" : 29,
                 "endLine" : 34,
                 "filePath" : "shop.ts",
                 "line" : 34
@@ -743,7 +743,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 34,
             "filePath" : "shop.ts",
             "line" : 34
@@ -791,7 +791,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 35,
             "filePath" : "shop.ts",
             "line" : 35
@@ -839,7 +839,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 36,
             "filePath" : "shop.ts",
             "line" : 36
@@ -887,7 +887,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 37,
             "filePath" : "shop.ts",
             "line" : 37
@@ -970,7 +970,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 41,
             "filePath" : "shop.ts",
             "line" : 39
@@ -1029,7 +1029,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 44,
                 "filePath" : "shop.ts",
                 "line" : 44
@@ -1046,7 +1046,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 44,
                 "filePath" : "shop.ts",
                 "line" : 44
@@ -1055,7 +1055,7 @@
             },
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 45,
                 "filePath" : "shop.ts",
                 "line" : 45
@@ -1064,7 +1064,7 @@
             },
             {
               "location" : {
-                "column" : 65,
+                "column" : 33,
                 "endLine" : 45,
                 "filePath" : "shop.ts",
                 "line" : 45
@@ -1078,7 +1078,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 46,
             "filePath" : "shop.ts",
             "line" : 43
@@ -1120,7 +1120,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 45,
+                "column" : 23,
                 "endLine" : 49,
                 "filePath" : "shop.ts",
                 "line" : 49
@@ -1137,7 +1137,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 50,
                 "filePath" : "shop.ts",
                 "line" : 50
@@ -1160,7 +1160,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 52,
             "filePath" : "shop.ts",
             "line" : 48
@@ -1195,7 +1195,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 87,
+                "column" : 44,
                 "endLine" : 60,
                 "filePath" : "shop.ts",
                 "line" : 60
@@ -1209,7 +1209,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 61,
                 "filePath" : "shop.ts",
                 "line" : 61
@@ -1229,7 +1229,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 35,
+                "column" : 18,
                 "endLine" : 61,
                 "filePath" : "shop.ts",
                 "line" : 61
@@ -1243,7 +1243,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 64,
             "filePath" : "shop.ts",
             "line" : 54
@@ -1301,7 +1301,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 67,
                 "filePath" : "shop.ts",
                 "line" : 67
@@ -1315,7 +1315,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 68,
             "filePath" : "shop.ts",
             "line" : 66
@@ -1365,7 +1365,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 72,
             "filePath" : "shop.ts",
             "line" : 70

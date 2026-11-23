@@ -36,7 +36,7 @@
 
           ],
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 4,
             "filePath" : "members.dart",
             "line" : 4
@@ -48,7 +48,7 @@
 
           ],
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 5,
             "filePath" : "members.dart",
             "line" : 5
@@ -60,7 +60,7 @@
 
           ],
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 6,
             "filePath" : "members.dart",
             "line" : 6
@@ -104,7 +104,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 8,
             "filePath" : "members.dart",
             "line" : 8
@@ -150,7 +150,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 10,
             "filePath" : "members.dart",
             "line" : 10
@@ -233,7 +233,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 14,
             "filePath" : "members.dart",
             "line" : 14
@@ -277,7 +277,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 15,
             "filePath" : "members.dart",
             "line" : 15
@@ -325,7 +325,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 27,
+            "column" : 14,
             "endLine" : 16,
             "filePath" : "members.dart",
             "line" : 16
@@ -370,7 +370,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 17,
             "filePath" : "members.dart",
             "line" : 17
@@ -442,7 +442,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 31,
+            "column" : 16,
             "endLine" : 21,
             "filePath" : "members.dart",
             "line" : 21
@@ -486,7 +486,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 37,
+            "column" : 19,
             "endLine" : 21,
             "filePath" : "members.dart",
             "line" : 21
@@ -534,7 +534,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 13,
+            "column" : 7,
             "endLine" : 23,
             "filePath" : "members.dart",
             "line" : 23
@@ -579,7 +579,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 24,
             "filePath" : "members.dart",
             "line" : 24
@@ -684,7 +684,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 13,
+            "column" : 7,
             "endLine" : 28,
             "filePath" : "members.dart",
             "line" : 28
@@ -729,7 +729,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 13,
+            "column" : 7,
             "endLine" : 29,
             "filePath" : "members.dart",
             "line" : 29
@@ -777,7 +777,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 39,
+            "column" : 20,
             "endLine" : 30,
             "filePath" : "members.dart",
             "line" : 30
@@ -823,7 +823,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 41,
+            "column" : 21,
             "endLine" : 31,
             "filePath" : "members.dart",
             "line" : 31
@@ -873,7 +873,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 19,
+            "column" : 10,
             "endLine" : 32,
             "filePath" : "members.dart",
             "line" : 32
@@ -916,7 +916,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 29,
+                "column" : 15,
                 "endLine" : 33,
                 "filePath" : "members.dart",
                 "line" : 33
@@ -942,7 +942,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 29,
+            "column" : 15,
             "endLine" : 33,
             "filePath" : "members.dart",
             "line" : 33
@@ -982,7 +982,7 @@
 
               ],
               "location" : {
-                "column" : 29,
+                "column" : 15,
                 "endLine" : 34,
                 "filePath" : "members.dart",
                 "line" : 34
@@ -1008,7 +1008,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 29,
+            "column" : 15,
             "endLine" : 34,
             "filePath" : "members.dart",
             "line" : 34
@@ -1058,7 +1058,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 25,
+            "column" : 13,
             "endLine" : 35,
             "filePath" : "members.dart",
             "line" : 35
@@ -1110,7 +1110,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 21,
+            "column" : 11,
             "endLine" : 36,
             "filePath" : "members.dart",
             "line" : 36
@@ -1148,7 +1148,7 @@
                 null
               ],
               "location" : {
-                "column" : 49,
+                "column" : 25,
                 "endLine" : 38,
                 "filePath" : "members.dart",
                 "line" : 38
@@ -1165,7 +1165,7 @@
 
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 39,
                 "filePath" : "members.dart",
                 "line" : 39
@@ -1188,7 +1188,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 38,
             "filePath" : "members.dart",
             "line" : 38
@@ -1238,7 +1238,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 42,
             "filePath" : "members.dart",
             "line" : 42
@@ -1275,7 +1275,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 50,
             "filePath" : "members.dart",
             "line" : 50
@@ -1329,7 +1329,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 55,
+                "column" : 28,
                 "endLine" : 52,
                 "filePath" : "members.dart",
                 "line" : 52
@@ -1352,7 +1352,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 52,
             "filePath" : "members.dart",
             "line" : 52
@@ -1391,7 +1391,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 39,
+                "column" : 20,
                 "endLine" : 54,
                 "filePath" : "members.dart",
                 "line" : 54
@@ -1405,7 +1405,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 54,
             "filePath" : "members.dart",
             "line" : 54
@@ -1437,7 +1437,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 57,
                 "filePath" : "members.dart",
                 "line" : 57
@@ -1457,7 +1457,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 57,
                 "filePath" : "members.dart",
                 "line" : 57
@@ -1471,7 +1471,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 56,
             "filePath" : "members.dart",
             "line" : 56
@@ -1511,7 +1511,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 45,
+                "column" : 23,
                 "endLine" : 60,
                 "filePath" : "members.dart",
                 "line" : 60
@@ -1520,7 +1520,7 @@
             },
             {
               "location" : {
-                "column" : 73,
+                "column" : 37,
                 "endLine" : 60,
                 "filePath" : "members.dart",
                 "line" : 60
@@ -1529,7 +1529,7 @@
             },
             {
               "location" : {
-                "column" : 93,
+                "column" : 47,
                 "endLine" : 60,
                 "filePath" : "members.dart",
                 "line" : 60
@@ -1543,7 +1543,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 60,
             "filePath" : "members.dart",
             "line" : 60
@@ -1576,7 +1576,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 63,
                 "filePath" : "members.dart",
                 "line" : 63
@@ -1590,7 +1590,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 65,
                 "filePath" : "members.dart",
                 "line" : 65
@@ -1605,7 +1605,7 @@
             },
             {
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 67,
                 "filePath" : "members.dart",
                 "line" : 67
@@ -1625,7 +1625,7 @@
                 null
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 64,
                 "filePath" : "members.dart",
                 "line" : 64
@@ -1642,7 +1642,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 63,
                 "filePath" : "members.dart",
                 "line" : 63
@@ -1651,7 +1651,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 64,
                 "filePath" : "members.dart",
                 "line" : 64
@@ -1660,7 +1660,7 @@
             },
             {
               "location" : {
-                "column" : 33,
+                "column" : 17,
                 "endLine" : 64,
                 "filePath" : "members.dart",
                 "line" : 64
@@ -1669,7 +1669,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 65,
                 "filePath" : "members.dart",
                 "line" : 65
@@ -1678,7 +1678,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 66,
                 "filePath" : "members.dart",
                 "line" : 66
@@ -1687,7 +1687,7 @@
             },
             {
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 67,
                 "filePath" : "members.dart",
                 "line" : 67
@@ -1701,7 +1701,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 62,
             "filePath" : "members.dart",
             "line" : 62
@@ -1740,7 +1740,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 72,
                 "filePath" : "members.dart",
                 "line" : 72
@@ -1754,7 +1754,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 73,
                 "filePath" : "members.dart",
                 "line" : 73
@@ -1768,7 +1768,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 74,
                 "filePath" : "members.dart",
                 "line" : 74
@@ -1782,7 +1782,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 75,
                 "filePath" : "members.dart",
                 "line" : 75
@@ -1802,7 +1802,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 72,
                 "filePath" : "members.dart",
                 "line" : 72
@@ -1811,7 +1811,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 73,
                 "filePath" : "members.dart",
                 "line" : 73
@@ -1820,7 +1820,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 74,
                 "filePath" : "members.dart",
                 "line" : 74
@@ -1829,7 +1829,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 75,
                 "filePath" : "members.dart",
                 "line" : 75
@@ -1843,7 +1843,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 71,
             "filePath" : "members.dart",
             "line" : 71
@@ -1882,7 +1882,7 @@
                 null
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 79,
                 "filePath" : "members.dart",
                 "line" : 79
@@ -1899,7 +1899,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 23,
+                "column" : 12,
                 "endLine" : 80,
                 "filePath" : "members.dart",
                 "line" : 80
@@ -1913,7 +1913,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 78,
             "filePath" : "members.dart",
             "line" : 78
@@ -1949,7 +1949,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 84,
                 "filePath" : "members.dart",
                 "line" : 84
@@ -1963,7 +1963,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 85,
                 "filePath" : "members.dart",
                 "line" : 85
@@ -1978,7 +1978,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 86,
                 "filePath" : "members.dart",
                 "line" : 86
@@ -1997,7 +1997,7 @@
 
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 88,
                 "filePath" : "members.dart",
                 "line" : 88
@@ -2014,7 +2014,7 @@
                 null
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 89,
                 "filePath" : "members.dart",
                 "line" : 89
@@ -2031,7 +2031,7 @@
 
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 91,
                 "filePath" : "members.dart",
                 "line" : 91
@@ -2048,7 +2048,7 @@
 
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 93,
                 "filePath" : "members.dart",
                 "line" : 93
@@ -2065,7 +2065,7 @@
 
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 97,
                 "filePath" : "members.dart",
                 "line" : 97
@@ -2082,7 +2082,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 84,
                 "filePath" : "members.dart",
                 "line" : 84
@@ -2091,7 +2091,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 85,
                 "filePath" : "members.dart",
                 "line" : 85
@@ -2100,7 +2100,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 86,
                 "filePath" : "members.dart",
                 "line" : 86
@@ -2109,7 +2109,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 87,
                 "filePath" : "members.dart",
                 "line" : 87
@@ -2123,7 +2123,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 83,
             "filePath" : "members.dart",
             "line" : 83
@@ -2180,7 +2180,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 35,
+                "column" : 18,
                 "endLine" : 100,
                 "filePath" : "members.dart",
                 "line" : 100
@@ -2197,7 +2197,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 57,
+                "column" : 29,
                 "endLine" : 100,
                 "filePath" : "members.dart",
                 "line" : 100
@@ -2211,7 +2211,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 100,
             "filePath" : "members.dart",
             "line" : 100
@@ -2257,7 +2257,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 103,
             "filePath" : "members.dart",
             "line" : 103
@@ -2295,7 +2295,7 @@
 
               ],
               "location" : {
-                "column" : 29,
+                "column" : 15,
                 "endLine" : 106,
                 "filePath" : "members.dart",
                 "line" : 106
@@ -2318,7 +2318,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 106,
             "filePath" : "members.dart",
             "line" : 106
@@ -2357,7 +2357,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 73,
+                "column" : 37,
                 "endLine" : 108,
                 "filePath" : "members.dart",
                 "line" : 108
@@ -2374,7 +2374,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 95,
+                "column" : 48,
                 "endLine" : 108,
                 "filePath" : "members.dart",
                 "line" : 108
@@ -2388,7 +2388,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 108,
             "filePath" : "members.dart",
             "line" : 108
@@ -2443,7 +2443,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 145,
+                "column" : 73,
                 "endLine" : 110,
                 "filePath" : "members.dart",
                 "line" : 110
@@ -2457,7 +2457,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 110,
             "filePath" : "members.dart",
             "line" : 110
@@ -2512,7 +2512,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 47,
+                "column" : 24,
                 "endLine" : 112,
                 "filePath" : "members.dart",
                 "line" : 112
@@ -2529,7 +2529,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 71,
+                "column" : 36,
                 "endLine" : 112,
                 "filePath" : "members.dart",
                 "line" : 112
@@ -2543,7 +2543,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 112,
             "filePath" : "members.dart",
             "line" : 112
@@ -2589,7 +2589,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 114,
             "filePath" : "members.dart",
             "line" : 114
@@ -2633,7 +2633,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 23,
+            "column" : 12,
             "endLine" : 116,
             "filePath" : "members.dart",
             "line" : 116
@@ -2665,7 +2665,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 63,
+                "column" : 32,
                 "endLine" : 119,
                 "filePath" : "members.dart",
                 "line" : 119
@@ -2679,7 +2679,7 @@
             },
             {
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 139,
                 "filePath" : "members.dart",
                 "line" : 139
@@ -2698,7 +2698,7 @@
                 null
               ],
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 120,
                 "filePath" : "members.dart",
                 "line" : 120
@@ -2715,7 +2715,7 @@
 
               ],
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 123,
                 "filePath" : "members.dart",
                 "line" : 123
@@ -2732,7 +2732,7 @@
 
               ],
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 126,
                 "filePath" : "members.dart",
                 "line" : 126
@@ -2749,7 +2749,7 @@
 
               ],
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 137,
                 "filePath" : "members.dart",
                 "line" : 137
@@ -2766,7 +2766,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 23,
+                "column" : 12,
                 "endLine" : 122,
                 "filePath" : "members.dart",
                 "line" : 122
@@ -2775,7 +2775,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 127,
                 "filePath" : "members.dart",
                 "line" : 127
@@ -2784,7 +2784,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 128,
                 "filePath" : "members.dart",
                 "line" : 128
@@ -2793,7 +2793,7 @@
             },
             {
               "location" : {
-                "column" : 13,
+                "column" : 7,
                 "endLine" : 139,
                 "filePath" : "members.dart",
                 "line" : 139
@@ -2802,7 +2802,7 @@
             },
             {
               "location" : {
-                "column" : 83,
+                "column" : 42,
                 "endLine" : 141,
                 "filePath" : "members.dart",
                 "line" : 141
@@ -2816,7 +2816,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 118,
             "filePath" : "members.dart",
             "line" : 118

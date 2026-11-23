@@ -14,7 +14,7 @@
             null
           ],
           "location" : {
-            "column" : 69,
+            "column" : 35,
             "endLine" : 31,
             "filePath" : "storefront.tsx",
             "line" : 31
@@ -31,7 +31,7 @@
             null
           ],
           "location" : {
-            "column" : 99,
+            "column" : 50,
             "endLine" : 33,
             "filePath" : "storefront.tsx",
             "line" : 33
@@ -48,7 +48,7 @@
             null
           ],
           "location" : {
-            "column" : 71,
+            "column" : 36,
             "endLine" : 35,
             "filePath" : "storefront.tsx",
             "line" : 35
@@ -70,7 +70,7 @@
       "isComputed" : false,
       "kind" : "method",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 38,
         "filePath" : "storefront.tsx",
         "line" : 30
@@ -115,7 +115,7 @@
             null
           ],
           "location" : {
-            "column" : 37,
+            "column" : 19,
             "endLine" : 63,
             "filePath" : "storefront.tsx",
             "line" : 63
@@ -133,7 +133,7 @@
           ],
           "isConstruction" : true,
           "location" : {
-            "column" : 65,
+            "column" : 33,
             "endLine" : 63,
             "filePath" : "storefront.tsx",
             "line" : 63
@@ -151,7 +151,7 @@
             null
           ],
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 66,
             "filePath" : "storefront.tsx",
             "line" : 64
@@ -173,7 +173,7 @@
       "isComputed" : false,
       "kind" : "method",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 68,
         "filePath" : "storefront.tsx",
         "line" : 62
@@ -256,7 +256,7 @@
       ],
       "kind" : "interface",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 7,
         "filePath" : "storefront.tsx",
         "line" : 3
@@ -282,7 +282,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 4,
             "filePath" : "storefront.tsx",
             "line" : 4
@@ -326,7 +326,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 5,
             "filePath" : "storefront.tsx",
             "line" : 5
@@ -370,7 +370,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 6,
             "filePath" : "storefront.tsx",
             "line" : 6
@@ -424,7 +424,7 @@
       ],
       "kind" : "interface",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 12,
         "filePath" : "storefront.tsx",
         "line" : 9
@@ -450,7 +450,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 10,
             "filePath" : "storefront.tsx",
             "line" : 10
@@ -494,7 +494,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 11,
             "filePath" : "storefront.tsx",
             "line" : 11
@@ -574,7 +574,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 15,
             "filePath" : "storefront.tsx",
             "line" : 15
@@ -628,7 +628,7 @@
       ],
       "kind" : "class",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 28,
         "filePath" : "storefront.tsx",
         "line" : 18
@@ -654,7 +654,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 19,
             "filePath" : "storefront.tsx",
             "line" : 19
@@ -686,7 +686,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 22,
                 "filePath" : "storefront.tsx",
                 "line" : 22
@@ -706,7 +706,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 22,
                 "filePath" : "storefront.tsx",
                 "line" : 22
@@ -715,7 +715,7 @@
             },
             {
               "location" : {
-                "column" : 43,
+                "column" : 22,
                 "endLine" : 22,
                 "filePath" : "storefront.tsx",
                 "line" : 22
@@ -729,7 +729,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 23,
             "filePath" : "storefront.tsx",
             "line" : 21
@@ -774,7 +774,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 26,
                 "filePath" : "storefront.tsx",
                 "line" : 26
@@ -788,7 +788,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 27,
             "filePath" : "storefront.tsx",
             "line" : 25
@@ -850,7 +850,7 @@
       ],
       "kind" : "class",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 60,
         "filePath" : "storefront.tsx",
         "line" : 40
@@ -880,7 +880,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 41,
             "filePath" : "storefront.tsx",
             "line" : 41
@@ -918,7 +918,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 44,
                 "filePath" : "storefront.tsx",
                 "line" : 44
@@ -935,7 +935,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 81,
+                "column" : 41,
                 "endLine" : 44,
                 "filePath" : "storefront.tsx",
                 "line" : 44
@@ -949,7 +949,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 45,
             "filePath" : "storefront.tsx",
             "line" : 43
@@ -989,7 +989,7 @@
 
               ],
               "location" : {
-                "column" : 71,
+                "column" : 36,
                 "endLine" : 51,
                 "filePath" : "storefront.tsx",
                 "line" : 51
@@ -1012,7 +1012,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 59,
             "filePath" : "storefront.tsx",
             "line" : 47

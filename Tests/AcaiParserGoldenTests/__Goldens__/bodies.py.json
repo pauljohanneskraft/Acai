@@ -69,7 +69,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 9,
             "filePath" : "bodies.py",
             "line" : 8
@@ -163,7 +163,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 15,
             "filePath" : "bodies.py",
             "line" : 15
@@ -195,7 +195,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 15,
                 "filePath" : "bodies.py",
                 "line" : 15
@@ -215,7 +215,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 15,
                 "filePath" : "bodies.py",
                 "line" : 15
@@ -232,7 +232,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 15,
                 "filePath" : "bodies.py",
                 "line" : 15
@@ -246,7 +246,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 15,
             "filePath" : "bodies.py",
             "line" : 14
@@ -285,7 +285,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 18,
             "filePath" : "bodies.py",
             "line" : 17
@@ -344,7 +344,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 21,
             "filePath" : "bodies.py",
             "line" : 20
@@ -424,7 +424,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 27,
             "filePath" : "bodies.py",
             "line" : 27
@@ -448,7 +448,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 27,
                 "filePath" : "bodies.py",
                 "line" : 27
@@ -468,7 +468,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 27,
                 "filePath" : "bodies.py",
                 "line" : 27
@@ -482,7 +482,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 27,
             "filePath" : "bodies.py",
             "line" : 26
@@ -514,7 +514,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 30,
                 "filePath" : "bodies.py",
                 "line" : 30
@@ -528,7 +528,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 30,
             "filePath" : "bodies.py",
             "line" : 29
@@ -599,7 +599,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 33,
                 "filePath" : "bodies.py",
                 "line" : 33
@@ -613,7 +613,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 33,
             "filePath" : "bodies.py",
             "line" : 32
@@ -705,7 +705,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 31,
+                "column" : 16,
                 "endLine" : 39,
                 "filePath" : "bodies.py",
                 "line" : 39
@@ -728,7 +728,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 39,
             "filePath" : "bodies.py",
             "line" : 38
@@ -767,7 +767,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 31,
+                "column" : 16,
                 "endLine" : 42,
                 "filePath" : "bodies.py",
                 "line" : 42
@@ -790,7 +790,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 42,
             "filePath" : "bodies.py",
             "line" : 41
@@ -870,7 +870,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 48,
             "filePath" : "bodies.py",
             "line" : 48
@@ -906,7 +906,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 49,
             "filePath" : "bodies.py",
             "line" : 49
@@ -950,7 +950,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 50,
             "filePath" : "bodies.py",
             "line" : 50
@@ -994,7 +994,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 51,
             "filePath" : "bodies.py",
             "line" : 51
@@ -1030,7 +1030,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 52,
             "filePath" : "bodies.py",
             "line" : 52
@@ -1066,7 +1066,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 53,
             "filePath" : "bodies.py",
             "line" : 53
@@ -1102,7 +1102,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 54,
             "filePath" : "bodies.py",
             "line" : 54
@@ -1138,7 +1138,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 55,
             "filePath" : "bodies.py",
             "line" : 55
@@ -1162,7 +1162,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 48,
                 "filePath" : "bodies.py",
                 "line" : 48
@@ -1176,7 +1176,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 49,
                 "filePath" : "bodies.py",
                 "line" : 49
@@ -1190,7 +1190,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 50,
                 "filePath" : "bodies.py",
                 "line" : 50
@@ -1204,7 +1204,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 51,
                 "filePath" : "bodies.py",
                 "line" : 51
@@ -1218,7 +1218,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 52,
                 "filePath" : "bodies.py",
                 "line" : 52
@@ -1232,7 +1232,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 53,
                 "filePath" : "bodies.py",
                 "line" : 53
@@ -1246,7 +1246,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 54,
                 "filePath" : "bodies.py",
                 "line" : 54
@@ -1260,7 +1260,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 55,
                 "filePath" : "bodies.py",
                 "line" : 55
@@ -1280,7 +1280,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 43,
+                "column" : 22,
                 "endLine" : 49,
                 "filePath" : "bodies.py",
                 "line" : 49
@@ -1298,7 +1298,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 53,
+                "column" : 27,
                 "endLine" : 50,
                 "filePath" : "bodies.py",
                 "line" : 50
@@ -1315,7 +1315,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 48,
                 "filePath" : "bodies.py",
                 "line" : 48
@@ -1324,7 +1324,7 @@
             },
             {
               "location" : {
-                "column" : 45,
+                "column" : 23,
                 "endLine" : 48,
                 "filePath" : "bodies.py",
                 "line" : 48
@@ -1333,7 +1333,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 49,
                 "filePath" : "bodies.py",
                 "line" : 49
@@ -1342,7 +1342,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 50,
                 "filePath" : "bodies.py",
                 "line" : 50
@@ -1351,7 +1351,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 51,
                 "filePath" : "bodies.py",
                 "line" : 51
@@ -1360,7 +1360,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 52,
                 "filePath" : "bodies.py",
                 "line" : 52
@@ -1369,7 +1369,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 53,
                 "filePath" : "bodies.py",
                 "line" : 53
@@ -1378,7 +1378,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 54,
                 "filePath" : "bodies.py",
                 "line" : 54
@@ -1387,7 +1387,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 55,
                 "filePath" : "bodies.py",
                 "line" : 55
@@ -1401,7 +1401,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 55,
             "filePath" : "bodies.py",
             "line" : 47
@@ -1449,7 +1449,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 60,
                 "filePath" : "bodies.py",
                 "line" : 60
@@ -1463,7 +1463,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 61,
                 "filePath" : "bodies.py",
                 "line" : 61
@@ -1477,7 +1477,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 62,
                 "filePath" : "bodies.py",
                 "line" : 62
@@ -1491,7 +1491,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 63,
                 "filePath" : "bodies.py",
                 "line" : 63
@@ -1511,7 +1511,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 59,
                 "filePath" : "bodies.py",
                 "line" : 59
@@ -1528,7 +1528,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 58,
                 "filePath" : "bodies.py",
                 "line" : 58
@@ -1537,7 +1537,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 59,
                 "filePath" : "bodies.py",
                 "line" : 59
@@ -1546,7 +1546,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 60,
                 "filePath" : "bodies.py",
                 "line" : 60
@@ -1555,7 +1555,7 @@
             },
             {
               "location" : {
-                "column" : 57,
+                "column" : 29,
                 "endLine" : 60,
                 "filePath" : "bodies.py",
                 "line" : 60
@@ -1564,7 +1564,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 61,
                 "filePath" : "bodies.py",
                 "line" : 61
@@ -1573,7 +1573,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 62,
                 "filePath" : "bodies.py",
                 "line" : 62
@@ -1582,7 +1582,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 63,
                 "filePath" : "bodies.py",
                 "line" : 63
@@ -1596,7 +1596,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 63,
             "filePath" : "bodies.py",
             "line" : 57
@@ -1641,7 +1641,7 @@
 
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 66,
                 "filePath" : "bodies.py",
                 "line" : 66
@@ -1658,7 +1658,7 @@
 
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 67,
                 "filePath" : "bodies.py",
                 "line" : 67
@@ -1681,7 +1681,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 67,
             "filePath" : "bodies.py",
             "line" : 65
@@ -1728,7 +1728,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 70,
             "filePath" : "bodies.py",
             "line" : 69
@@ -1766,7 +1766,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 73,
                 "filePath" : "bodies.py",
                 "line" : 73
@@ -1789,7 +1789,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 73,
             "filePath" : "bodies.py",
             "line" : 72
@@ -1842,7 +1842,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 76,
                 "filePath" : "bodies.py",
                 "line" : 76
@@ -1868,7 +1868,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 76,
             "filePath" : "bodies.py",
             "line" : 75
@@ -1916,7 +1916,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 79,
                 "filePath" : "bodies.py",
                 "line" : 79
@@ -1936,7 +1936,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 33,
+                "column" : 17,
                 "endLine" : 79,
                 "filePath" : "bodies.py",
                 "line" : 79
@@ -1954,7 +1954,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 80,
                 "filePath" : "bodies.py",
                 "line" : 80
@@ -1977,7 +1977,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 80,
             "filePath" : "bodies.py",
             "line" : 78
@@ -2011,7 +2011,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 83,
                 "filePath" : "bodies.py",
                 "line" : 83
@@ -2030,7 +2030,7 @@
 
               ],
               "location" : {
-                "column" : 49,
+                "column" : 25,
                 "endLine" : 83,
                 "filePath" : "bodies.py",
                 "line" : 83
@@ -2047,7 +2047,7 @@
 
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 84,
                 "filePath" : "bodies.py",
                 "line" : 84
@@ -2064,7 +2064,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 59,
+                "column" : 30,
                 "endLine" : 83,
                 "filePath" : "bodies.py",
                 "line" : 83
@@ -2078,7 +2078,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 84,
             "filePath" : "bodies.py",
             "line" : 82
@@ -2115,7 +2115,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 87,
                 "filePath" : "bodies.py",
                 "line" : 87
@@ -2134,7 +2134,7 @@
 
               ],
               "location" : {
-                "column" : 39,
+                "column" : 20,
                 "endLine" : 87,
                 "filePath" : "bodies.py",
                 "line" : 87
@@ -2152,7 +2152,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 88,
                 "filePath" : "bodies.py",
                 "line" : 88
@@ -2175,7 +2175,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 88,
             "filePath" : "bodies.py",
             "line" : 86
@@ -2217,7 +2217,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 31,
+                "column" : 16,
                 "endLine" : 91,
                 "filePath" : "bodies.py",
                 "line" : 91
@@ -2240,7 +2240,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 91,
             "filePath" : "bodies.py",
             "line" : 90
@@ -2279,7 +2279,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 94,
                 "filePath" : "bodies.py",
                 "line" : 94
@@ -2297,7 +2297,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 95,
                 "filePath" : "bodies.py",
                 "line" : 95
@@ -2320,7 +2320,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 95,
             "filePath" : "bodies.py",
             "line" : 93
@@ -2368,7 +2368,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 98,
             "filePath" : "bodies.py",
             "line" : 97
@@ -2413,7 +2413,7 @@
 
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 101,
                 "filePath" : "bodies.py",
                 "line" : 101
@@ -2436,7 +2436,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 101,
             "filePath" : "bodies.py",
             "line" : 100
@@ -2469,7 +2469,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 104,
                 "filePath" : "bodies.py",
                 "line" : 104
@@ -2483,7 +2483,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 106,
                 "filePath" : "bodies.py",
                 "line" : 106
@@ -2497,7 +2497,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 108,
                 "filePath" : "bodies.py",
                 "line" : 108
@@ -2511,7 +2511,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 110,
                 "filePath" : "bodies.py",
                 "line" : 110
@@ -2525,7 +2525,7 @@
             },
             {
               "location" : {
-                "column" : 33,
+                "column" : 17,
                 "endLine" : 113,
                 "filePath" : "bodies.py",
                 "line" : 113
@@ -2539,7 +2539,7 @@
             },
             {
               "location" : {
-                "column" : 33,
+                "column" : 17,
                 "endLine" : 115,
                 "filePath" : "bodies.py",
                 "line" : 115
@@ -2553,7 +2553,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 117,
                 "filePath" : "bodies.py",
                 "line" : 117
@@ -2567,7 +2567,7 @@
             },
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 119,
                 "filePath" : "bodies.py",
                 "line" : 119
@@ -2586,7 +2586,7 @@
                 null
               ],
               "location" : {
-                "column" : 43,
+                "column" : 22,
                 "endLine" : 111,
                 "filePath" : "bodies.py",
                 "line" : 111
@@ -2609,7 +2609,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 120,
             "filePath" : "bodies.py",
             "line" : 103
@@ -2665,7 +2665,7 @@
                 null
               ],
               "location" : {
-                "column" : 33,
+                "column" : 17,
                 "endLine" : 123,
                 "filePath" : "bodies.py",
                 "line" : 123
@@ -2688,7 +2688,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 123,
             "filePath" : "bodies.py",
             "line" : 122
@@ -2750,7 +2750,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 126,
             "filePath" : "bodies.py",
             "line" : 125
@@ -2787,7 +2787,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 47,
+                "column" : 24,
                 "endLine" : 129,
                 "filePath" : "bodies.py",
                 "line" : 129
@@ -2796,7 +2796,7 @@
             },
             {
               "location" : {
-                "column" : 71,
+                "column" : 36,
                 "endLine" : 129,
                 "filePath" : "bodies.py",
                 "line" : 129
@@ -2805,7 +2805,7 @@
             },
             {
               "location" : {
-                "column" : 101,
+                "column" : 51,
                 "endLine" : 129,
                 "filePath" : "bodies.py",
                 "line" : 129
@@ -2819,7 +2819,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 129,
             "filePath" : "bodies.py",
             "line" : 128
@@ -2902,7 +2902,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 135,
             "filePath" : "bodies.py",
             "line" : 135
@@ -2946,7 +2946,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 136,
             "filePath" : "bodies.py",
             "line" : 136
@@ -2970,7 +2970,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 135,
                 "filePath" : "bodies.py",
                 "line" : 135
@@ -2984,7 +2984,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 136,
                 "filePath" : "bodies.py",
                 "line" : 136
@@ -3004,7 +3004,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 49,
+                "column" : 25,
                 "endLine" : 135,
                 "filePath" : "bodies.py",
                 "line" : 135
@@ -3021,7 +3021,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 135,
                 "filePath" : "bodies.py",
                 "line" : 135
@@ -3030,7 +3030,7 @@
             },
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 136,
                 "filePath" : "bodies.py",
                 "line" : 136
@@ -3044,7 +3044,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 136,
             "filePath" : "bodies.py",
             "line" : 134
@@ -3078,7 +3078,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 139,
                 "filePath" : "bodies.py",
                 "line" : 139
@@ -3095,7 +3095,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 139,
                 "filePath" : "bodies.py",
                 "line" : 139
@@ -3109,7 +3109,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 139,
             "filePath" : "bodies.py",
             "line" : 138
