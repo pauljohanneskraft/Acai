@@ -14,6 +14,7 @@ extension CodeArtifact {
         using resolver: LanguageConfigurationResolver, counting counter: TypeFlattenCounter?
     ) -> CodeArtifact {
         resolvingExtensions(counting: counter)
+            .resolvingDeferredFieldReads()
             .resolvingRelationshipNames(counting: counter)
             .reclassifyingRelationshipKinds(counting: counter)
             .inferringStructuralEdges(using: resolver, counting: counter)

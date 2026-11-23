@@ -7,10 +7,10 @@ import SwiftParser
 /// A manifest that computes any of that — a path built from a variable, targets assembled by a
 /// helper or behind an `#if` — leaves ``incompleteReason`` set. Reading half a manifest is worse
 /// than not reading it: a target silently missing its sources looks exactly like a small package.
-struct SwiftPackageManifest {
+struct SwiftPackageManifest: Sendable {
 
-    struct Target: Equatable {
-        enum Kind {
+    struct Target: Equatable, Sendable {
+        enum Kind: Sendable {
             case regular
             case test
 

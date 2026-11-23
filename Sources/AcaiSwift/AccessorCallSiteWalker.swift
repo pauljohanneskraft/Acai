@@ -15,12 +15,16 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
     /// The enclosing type's own method names, so a bare method-reference-as-value (`Button(action:
     /// chooseFile)`) resolves the same way it does in a plain function body.
     private let methodNames: Set<String>
+    /// `nil` for a walk that records no field reads, such as a stored property's initializer.
+    private let fieldReadScope: FieldReadScope?
     private(set) var collected: [CallSite] = []
+    private(set) var fieldReads: [FieldAccess] = []
+    private(set) var deferredFieldReads: [FieldAccess] = []
 
     init(
         collector: CallSiteCollector, propertyMap: [String: String],
         enclosingTypeName: String?, methodReturnTypes: [String: String] = [:],
-        methodNames: Set<String> = []
+        methodNames: Set<String> = [], fieldReadScope: FieldReadScope? = nil
     ) {
         self.collector = collector
         self.receiverMap = propertyMap
@@ -28,6 +32,7 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
         self.enclosingTypeName = enclosingTypeName
         self.methodReturnTypes = methodReturnTypes
         self.methodNames = methodNames
+        self.fieldReadScope = fieldReadScope
         super.init(viewMode: .sourceAccurate)
     }
 
@@ -63,7 +68,24 @@ final class AccessorCallSiteWalker: SyntaxVisitor {
         return .visitChildren
     }
 
+    override func visit(_ node: OptionalBindingConditionSyntax) -> SyntaxVisitorContinueKind {
+        record(fieldReadScope.flatMap { collector.fieldRead(from: node, in: $0) })
+        return .visitChildren
+    }
+
+    private func record(_ read: FieldRead?) {
+        switch read {
+        case .resolved(let access):
+            fieldReads.append(access)
+        case .deferred(let access):
+            deferredFieldReads.append(access)
+        case nil:
+            break
+        }
+    }
+
     override func visit(_ node: DeclReferenceExprSyntax) -> SyntaxVisitorContinueKind {
+        record(fieldReadScope.flatMap { collector.fieldRead(from: node, in: $0) })
         guard collector.isBareReferenceUse(node),
               let site = collector.methodReference(
                 from: node, propertyMap: receiverMap, methodNames: methodNames)

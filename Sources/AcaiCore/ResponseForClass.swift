@@ -2,7 +2,7 @@
 /// distinct methods it can invoke. High RFC means a lot can happen in reaction to a message to the
 /// type, which raises testing and comprehension cost.
 ///
-/// Approximated from already-parsed data: the weighted-method count (methods the type declares) plus
+/// Approximated from already-parsed data: the number of methods the type declares plus
 /// the number of *distinct* call targets (`receiver` + `method` name) observed across the type's member
 /// bodies. Dynamic dispatch the parser can't resolve is simply absent, so this is a lower bound.
 struct ResponseForClass {
@@ -13,7 +13,7 @@ struct ResponseForClass {
     }
 
     var count: Int {
-        let methods = type.members.filter { $0.kind == .method }.count
+        let methods = type.numberOfMethods
         var targets: Set<String> = []
         for member in type.members {
             for call in member.callSites {

@@ -37,7 +37,8 @@ public struct AtlasStatistics {
             typeLine("Inheritance Depth") { Double($0.depthOfInheritance) },
             typeLine("Fan-out") { Double($0.fanOut) },
             typeLine("Fan-in") { Double($0.fanIn) },
-            typeLine("Methods") { Double($0.weightedMethods) }
+            typeLine("Methods") { Double($0.numberOfMethods) },
+            typeLine("Weighted Methods (WMC)") { Double($0.weightedMethods) }
         ]
     }
 

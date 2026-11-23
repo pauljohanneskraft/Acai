@@ -17,7 +17,7 @@ public final class SharedParses: @unchecked Sendable {
         let key = Key(language: parser.language, fileName: fileName, source: source)
         let parse = lock.withLock {
             if let inFlight = parses[key] { return inFlight }
-            let parse = Task { parser.parse(source: source, fileName: fileName) }
+            let parse = Task { await parser.parsedOnALargeStack(source: source, fileName: fileName) }
             parses[key] = parse
             return parse
         }

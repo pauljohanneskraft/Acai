@@ -2,11 +2,7 @@ import Foundation
 import Testing
 import AcaiCore
 
-/// `AnalysisService.parseFiles` polls `Task.checkCancellation()` between files. Cancels the
-/// enclosing `Task` from *inside* `parse(source:fileName:)` itself once a known number of files
-/// have gone through it, rather than racing real wall-clock timing against a background cancel —
-/// deterministic proof that the parse loop actually stops rather than merely having its eventual
-/// result discarded by a caller.
+/// Holds its parse thread once `cancelAfter` files are parsed, so the test's cancel lands before the next check.
 private final class CountingParser: CodeParser, @unchecked Sendable {
     var language: CodeArtifact.SourceLanguage { .init(rawValue: "fixture") }
     var fileExtensions: [String] { ["fx"] }
@@ -14,6 +10,11 @@ private final class CountingParser: CodeParser, @unchecked Sendable {
 
     private let lock = NSLock()
     private var count = 0
+    private var limitWaiter: CheckedContinuation<Void, Never>?
+    private var limitReached = false
+    /// Waited on the parse's own thread, never a cooperative-pool one.
+    private let release = DispatchSemaphore(value: 0)
+
     let cancelAfter: Int
 
     init(cancelAfter: Int) {
@@ -30,11 +31,37 @@ private final class CountingParser: CodeParser, @unchecked Sendable {
         lock.lock()
         count += 1
         let reachedLimit = count == cancelAfter
+        var waiter: CheckedContinuation<Void, Never>?
+        if reachedLimit {
+            limitReached = true
+            waiter = limitWaiter
+            limitWaiter = nil
+        }
         lock.unlock()
         if reachedLimit {
-            withUnsafeCurrentTask { $0?.cancel() }
+            waiter?.resume()
+            release.wait()
         }
         return CodeArtifact(metadata: .init(sourceLanguage: language, filePaths: [fileName]), types: [])
+    }
+
+    /// Suspends until `cancelAfter` files have gone through ``parse(source:fileName:)``.
+    func waitUntilLimitReached() async {
+        await withCheckedContinuation { continuation in
+            lock.lock()
+            guard !limitReached else {
+                lock.unlock()
+                continuation.resume()
+                return
+            }
+            limitWaiter = continuation
+            lock.unlock()
+        }
+    }
+
+    /// Lets the held parse return, so the loop reaches its next cancellation check.
+    func releaseHeldParse() {
+        release.signal()
     }
 }
 
@@ -64,6 +91,10 @@ struct AnalysisServiceCancellationTests {
         let task = Task {
             try await service.analyzeProject(at: root, allowedLanguages: [])
         }
+
+        await parser.waitUntilLimitReached()
+        task.cancel()
+        parser.releaseHeldParse()
 
         await #expect(throws: (any Error).self) {
             try await task.value
