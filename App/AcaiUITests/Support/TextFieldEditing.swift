@@ -15,8 +15,7 @@ extension XCUIElement {
         return text
     }
 
-    /// A trailing-edge tap lands mid-string once the value fills the field, leaving a tail the typed
-    /// text is then inserted into; each pass faces a narrower remainder until the tap clears its end.
+    /// Each pass faces a narrower remainder, so a trailing-edge tap that landed mid-string clears it.
     private func clearEnteredText(attempts: Int = 3, file: StaticString, line: UInt) {
         for _ in 0..<attempts {
             guard let current = enteredText else { return }
