@@ -62,7 +62,7 @@ public struct DeadCodeScan: Sendable {
         let graph = CallGraphBuilder(scope: scope).build(from: artifact)
         let targeted = Set(graph.edges.map(\.to))
         let allTypes = Array(artifact.flattened())
-        let witnesses = ProtocolWitnessIndex(types: allTypes)
+        let conformances = ConformanceIndex(artifact: artifact, types: allTypes)
         let nodeIdentity = CallGraphNodeIdentity(types: allTypes)
 
         var candidates: [Candidate] = []
@@ -74,15 +74,13 @@ public struct DeadCodeScan: Sendable {
             let configuration = languages.configuration(for: type)
             let markers = configuration.entryPointMarkers
             scannedKinds.formUnion(configuration.deadCodeMemberKinds)
-            // Protocol requirements this type satisfies — reached through the conformance, so never
-            // dead even without a direct call edge (the witness analogue of `override`).
-            let requirements = witnesses.requirements(for: type)
+            let supertypes = conformances.supertypes(of: type)
             for member in type.members where configuration.deadCodeMemberKinds.contains(member.kind) {
                 let id = nodeIdentity.nodeID(for: member, in: type)
                 guard !targeted.contains(id),
-                      !isEntryPoint(
-                        member, inContract: isContract,
-                        requirements: requirements, markers: markers) else { continue }
+                      !conformances.isWitness(member, among: type.members, owedVia: supertypes),
+                      !isEntryPoint(member, inContract: isContract, supertypes: supertypes.names, markers: markers)
+                else { continue }
                 candidates.append(Candidate(
                     id: id, typeName: nodeIdentity.nodeName(for: type), memberName: member.name,
                     location: member.location))
@@ -92,9 +90,8 @@ public struct DeadCodeScan: Sendable {
         if !artifact.freestandingFunctions.isEmpty { scannedKinds.insert(.method) }
         for function in artifact.freestandingFunctions where function.kind == .method {
             guard !targeted.contains(nodeIdentity.nodeID(forFreeFunction: function)),
-                  !isEntryPoint(
-                    function, inContract: false,
-                    requirements: [], markers: freestandingMarkers) else { continue }
+                  !isEntryPoint(function, inContract: false, supertypes: [], markers: freestandingMarkers)
+            else { continue }
             candidates.append(Candidate(
                 id: nodeIdentity.nodeID(forFreeFunction: function), typeName: nil,
                 memberName: function.name, location: function.location))
@@ -108,64 +105,94 @@ public struct DeadCodeScan: Sendable {
     }
 
     /// A member is reachable-by-contract when it is public API, an abstract requirement (a body-less
-    /// contract implemented by subtypes and reached polymorphically), overrides a supertype member, is
-    /// the witness for a protocol requirement its type conforms to, or is flagged by its language's
-    /// entry-point `markers`.
+    /// contract implemented by subtypes and reached polymorphically), overrides a supertype member, or
+    /// is flagged by its language's entry-point `markers`.
     private func isEntryPoint(
-        _ member: Member, inContract: Bool,
-        requirements: Set<ProtocolWitnessIndex.Requirement>, markers: EntryPointMarkers
+        _ member: Member, inContract: Bool, supertypes: Set<String>, markers: EntryPointMarkers
     ) -> Bool {
         if inContract { return true }
         if member.isVisible(atLeast: .public) { return true }
         if member.modifiers.contains(.abstract) { return true }
         if member.modifiers.contains(.override) { return true }
-        let signature = ProtocolWitnessIndex.Requirement(kind: member.kind, name: member.name)
-        if requirements.contains(signature) { return true }
-        return markers.marks(member)
+        return markers.marks(member, inheritingFrom: supertypes)
     }
 }
 
-/// Resolves, per conforming type, the member requirements of every in-artifact protocol it conforms
-/// to — transitively through protocol inheritance. A member matching one is a *witness*: a caller
-/// reaches it through the conformance, so it is never dead even when no direct call edge targets it.
-/// Protocols defined outside the analysed sources can't be inspected, so their witnesses stay
-/// best-effort (surfaced as the usual coverage caveat).
-private struct ProtocolWitnessIndex {
-    /// Keyed on kind as well as name: an initializer requirement is witnessed by an initializer, so a
-    /// method that happens to share the name isn't mistaken for it. So a function-typed *property*
-    /// requirement implemented as a method is not witnessed by that method; it only matters for a
-    /// language whose contract members may be private.
+/// Supertypes and in-artifact protocol requirements keyed by resolved ``TypeID``, as enrichment canonicalises them.
+private struct ConformanceIndex {
+    /// `names` feed the language's conformance markers; `ids` look up in-artifact requirements.
+    struct Supertypes {
+        var names: Set<String> = []
+        var ids: Set<TypeID> = []
+    }
+
+    /// Keyed on kind too, so an initializer requirement isn't witnessed by a same-named method.
     struct Requirement: Hashable {
         let kind: MemberKind
         let name: String
-    }
+        let labels: [String?]
 
-    /// Interface-like type name → its own requirements.
-    private let requirementsByProtocol: [String: Set<Requirement>]
-    /// Interface-like type name → the names of the protocols it refines.
-    private let refinementsByProtocol: [String: [String]]
-
-    init(types: [TypeDeclaration]) {
-        var requirements: [String: Set<Requirement>] = [:]
-        var refinements: [String: [String]] = [:]
-        for type in types where type.kind.isInterfaceLike {
-            requirements[type.name] = Set(type.members.map { Requirement(kind: $0.kind, name: $0.name) })
-            refinements[type.name] = type.inheritedTypes.map(\.name)
+        init(_ member: Member) {
+            kind = member.kind
+            name = member.name
+            labels = member.witnessLabels
         }
-        requirementsByProtocol = requirements
-        refinementsByProtocol = refinements
     }
 
-    func requirements(for type: TypeDeclaration) -> Set<Requirement> {
-        var result: Set<Requirement> = []
-        var pending = type.inheritedTypes.map(\.name)
-        var seen: Set<String> = []
+    private let resolver: TypeIdentityResolver
+    private let requirementsByProtocol: [TypeID: Set<Requirement>]
+    private let supertypesByType: [TypeID: [String]]
+    /// Lets a marker naming a bare `View` match a supertype the artifact declares as `MyUI.View`.
+    private let simpleNames: [TypeID: String]
+
+    /// The resolver is built from `artifact`'s top-level types; `types` is the flattened list the scan walks.
+    init(artifact: CodeArtifact, types: [TypeDeclaration]) {
+        let resolver = TypeIdentityResolver(types: artifact.types)
+        var requirements: [TypeID: Set<Requirement>] = [:]
+        var supertypes: [TypeID: [String]] = [:]
+        var simpleNames: [TypeID: String] = [:]
+        for type in types {
+            let id = TypeID(type.id)
+            simpleNames[id] = type.name
+            supertypes[id] = type.inheritedTypes.map {
+                resolver.canonicalName(for: $0.name, referencingModule: type.idScope.module)
+            }
+            guard type.kind.isInterfaceLike else { continue }
+            requirements[id] = Set(type.members.map { Requirement($0) })
+        }
+        self.resolver = resolver
+        requirementsByProtocol = requirements
+        supertypesByType = supertypes
+        self.simpleNames = simpleNames
+    }
+
+    /// Walks class supertypes too, since a subclass inherits the conformances its superclass declares.
+    func supertypes(of type: TypeDeclaration) -> Supertypes {
+        var result = Supertypes()
+        var pending = supertypesByType[TypeID(type.id)] ?? []
         while let name = pending.popLast() {
-            guard requirementsByProtocol[name] != nil, seen.insert(name).inserted else { continue }
-            result.formUnion(requirementsByProtocol[name] ?? [])
-            pending.append(contentsOf: refinementsByProtocol[name] ?? [])
+            guard result.names.insert(name).inserted, let id = resolver.resolvedID(for: name),
+                  result.ids.insert(id).inserted else { continue }
+            if let simple = simpleNames[id] { result.names.insert(simple) }
+            pending.append(contentsOf: supertypesByType[id] ?? [])
         }
         return result
+    }
+
+    /// Matches by labels so a same-named overload stays reportable, by name when no sibling matches.
+    func isWitness(_ member: Member, among siblings: [Member], owedVia supertypes: Supertypes) -> Bool {
+        let signature = Requirement(member)
+        let owed = supertypes.ids.flatMap { requirementsByProtocol[$0] ?? [] }
+            .filter { $0.kind == signature.kind && $0.name == signature.name }
+        return owed.contains { requirement in
+            requirement == signature || !siblings.contains { Requirement($0) == requirement }
+        }
+    }
+}
+
+private extension Member {
+    var witnessLabels: [String?] {
+        parameters.map { $0.externalName.flatMap { $0.isEmpty || $0 == "_" ? nil : $0 } }
     }
 }
 

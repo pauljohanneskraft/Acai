@@ -306,6 +306,76 @@ struct DeadCodeScanTests {
     }
 }
 
+@Suite("Dead-code conformance identity")
+struct DeadCodeConformanceIdentityTests {
+
+    private func method(_ name: String, access: AccessLevel = .private) -> Member {
+        Member(
+            name: name, kind: .method, accessLevel: access,
+            location: SourceLocation(filePath: "S.swift", line: 1, column: 1))
+    }
+
+    /// Enrichment rewrites the supertype to the nested protocol's canonical id, which the index must resolve.
+    @Test func aNestedProtocolsWitnessIsLive() {
+        let runnable = TypeDeclaration(
+            id: "Host.Runnable", name: "Runnable", qualifiedName: "Host.Runnable", kind: .protocol,
+            accessLevel: .public, members: [method("start", access: .public)],
+            location: SourceLocation(filePath: "Host.swift", line: 2, column: 1))
+        let host = TypeDeclaration(
+            id: "Host", name: "Host", qualifiedName: "Host", kind: .struct, accessLevel: .public,
+            nestedTypes: [runnable],
+            location: SourceLocation(filePath: "Host.swift", line: 1, column: 1))
+        let tool = TypeDeclaration(
+            id: "Tool", name: "Tool", qualifiedName: "Tool", kind: .struct, accessLevel: .internal,
+            inheritedTypes: [TypeReference(name: "Host.Runnable")],
+            members: [method("start"), method("orphan")],
+            location: SourceLocation(filePath: "Tool.swift", line: 1, column: 1))
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [host, tool])
+        let report = DeadCodeScan(
+            artifact: artifact.enriched(configuration: LanguageConfiguration()),
+            languages: LanguageConfigurationResolver(single: LanguageConfiguration())).report
+        #expect(report.candidates.map(\.memberName) == ["orphan"])
+    }
+
+    @Test func aConformanceMarkerSparesOnlyTheConformingTypesMember() {
+        let markers = EntryPointMarkers(conformanceMembers: ["ParsableCommand": ["run"]])
+        let command = TypeDeclaration(
+            id: "Build", name: "Build", qualifiedName: "Build", kind: .struct, accessLevel: .internal,
+            inheritedTypes: [TypeReference(name: "ParsableCommand")], members: [method("run")],
+            location: SourceLocation(filePath: "Build.swift", line: 1, column: 1))
+        let scheduler = TypeDeclaration(
+            id: "Scheduler", name: "Scheduler", qualifiedName: "Scheduler", kind: .class,
+            accessLevel: .internal, members: [method("run")],
+            location: SourceLocation(filePath: "Scheduler.swift", line: 1, column: 1))
+        let report = DeadCodeScan(
+            artifact: CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [command, scheduler]),
+            languages: LanguageConfigurationResolver(
+                single: LanguageConfiguration(entryPointMarkers: markers))).report
+        #expect(report.candidates.map(\.id) == ["Scheduler.run()"])
+    }
+
+    @Test func aConformanceMarkerFollowsAnInArtifactSupertype() {
+        let markers = EntryPointMarkers(conformanceMembers: ["ParsableCommand": ["run"]])
+        let base = TypeDeclaration(
+            id: "App.Subcommand", name: "Subcommand", qualifiedName: "App.Subcommand", kind: .protocol,
+            accessLevel: .public, inheritedTypes: [TypeReference(name: "ParsableCommand")],
+            location: SourceLocation(filePath: "App.swift", line: 2, column: 1))
+        let app = TypeDeclaration(
+            id: "App", name: "App", qualifiedName: "App", kind: .struct, accessLevel: .public,
+            nestedTypes: [base], location: SourceLocation(filePath: "App.swift", line: 1, column: 1))
+        let build = TypeDeclaration(
+            id: "Build", name: "Build", qualifiedName: "Build", kind: .struct, accessLevel: .internal,
+            inheritedTypes: [TypeReference(name: "App.Subcommand")], members: [method("run")],
+            location: SourceLocation(filePath: "Build.swift", line: 1, column: 1))
+        let artifact = CodeArtifact(metadata: .init(sourceLanguage: .swift), types: [app, build])
+        let report = DeadCodeScan(
+            artifact: artifact.enriched(configuration: LanguageConfiguration()),
+            languages: LanguageConfigurationResolver(
+                single: LanguageConfiguration(entryPointMarkers: markers))).report
+        #expect(report.candidates.isEmpty)
+    }
+}
+
 private struct SubscriptScanningParser: CodeParser {
     let language = CodeArtifact.SourceLanguage(rawValue: "subscriptScanning")
     let fileExtensions: [String] = []

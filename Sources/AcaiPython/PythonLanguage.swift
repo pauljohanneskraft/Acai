@@ -25,11 +25,10 @@ extension PythonCodeParser {
                 "__pycache__", ".venv", "venv", "env", ".tox", ".mypy_cache",
                 ".pytest_cache", ".eggs", "build", "dist", "site-packages", ".git"
             ],
-            // pytest fixtures and dunder hooks are invoked by the runtime/test framework, not by
-            // resolvable call sites.
+            // pytest and unittest find fixtures by decorator and hooks by name, not by conformance.
             entryPointMarkers: EntryPointMarkers(
                 annotations: ["fixture", "pytestfixture"],
-                methodNames: ["main", "__init__", "setup_method", "teardown_method", "setup", "teardown"]),
+                methodNames: ["main", "setup_method", "teardown_method", "setup", "teardown"]),
             // A bare `Thing()` now resolves through `CallSiteScope.bareCall`'s constructor opt-in to
             // a call-site edge targeting the initializer's fixed `__init__` member. `__getitem__` is
             // extracted as a method and is scanned as one.

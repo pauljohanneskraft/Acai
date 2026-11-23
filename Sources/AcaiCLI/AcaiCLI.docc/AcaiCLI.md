@@ -579,7 +579,10 @@ and omitted entirely where a declaration carries none.
 > Call-graph analysis: metrics, method cycles, or dead-code candidates.
 
 `deadcode` reports members that no resolved call edge targets and that aren't reachable by contract —
-public API, an override, a protocol requirement, or one of the language's entry-point markers. It scans
+public API, an override, a protocol requirement, or one of the language's entry-point markers. A
+framework callback such as SwiftUI's `body` or ArgumentParser's `run` is exempt only on a type that
+inherits from the framework supertype requiring it, so an unrelated type's uncalled `run()` is still
+reported, as is an uncalled overload that merely shares a protocol requirement's name. It scans
 methods in every language; a language's initializers and subscripts are scanned only where its parser
 records calls to them, since a kind whose callers are never recorded has no edge to be found by and
 would report every declaration of it as uncalled. The report names the kinds it actually scanned: a

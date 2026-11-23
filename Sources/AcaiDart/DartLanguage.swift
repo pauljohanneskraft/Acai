@@ -27,11 +27,16 @@ extension DartCodeParser {
                 ]
             ),
             excludedDirectories: [".dart_tool", "build"],
-            // Flutter widget lifecycle methods are called by the framework, not resolvable call sites.
+            // Flutter calls its widget lifecycle only on subclasses of these base classes.
             entryPointMarkers: EntryPointMarkers(
-                methodNames: [
-                    "main", "build", "createstate", "initstate", "dispose",
-                    "didchangedependencies", "didupdatewidget"
+                methodNames: ["main"],
+                conformanceMembers: [
+                    "StatelessWidget": ["build"],
+                    "StatefulWidget": ["createstate"],
+                    "State": [
+                        "build", "initstate", "dispose",
+                        "didchangedependencies", "didupdatewidget"
+                    ]
                 ]),
             // `Thing()` now resolves through `CallSiteScope.bareCall`'s constructor opt-in, and
             // `Thing.named()` already resolved like any other `TypeName.method()` static call — both

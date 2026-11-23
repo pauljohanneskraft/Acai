@@ -143,6 +143,9 @@ Adding language `<Lang>` (e.g. `Rust`) means, in order:
    - `extension <Lang>CodeParser { public var configuration: LanguageConfiguration { … } }` listing
      this language's `primitiveTypeNames`, `collectionTypeNames`, any framework `annotationStereotypes`,
      an optional `generatedCodeFilter`, and `excludedDirectories` (build-output/dependency dirs).
+     Framework callbacks go in `entryPointMarkers`: a member a framework supertype requires goes under
+     `conformanceMembers` keyed on that supertype, so only a conforming type's member is exempt;
+     `methodNames` is only for conventions matched by name alone (`main`, a test hook).
      `configuration` is required — there is no empty default; state it explicitly.
 
 7. **Build-system detector (optional)** — if the language has a recognisable project layout, add a
