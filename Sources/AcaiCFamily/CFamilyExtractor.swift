@@ -17,6 +17,10 @@ struct CFamilyExtractor {
         "case_statement", "catch_clause"
     ]
 
+    private static let recordSpecifierKinds: Set<String> = [
+        "struct_specifier", "union_specifier", "enum_specifier", "class_specifier"
+    ]
+
     let context: SourceFileContext
     let dialect: CFamilyDialect
     let typeReferences: CFamilyTypeReferenceResolver
@@ -41,9 +45,8 @@ struct CFamilyExtractor {
         let context = SourceFileContext(source: source, fileName: fileName)
         let typeReferences = CFamilyTypeReferenceResolver(context: context)
 
-        let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: [
-            "struct_specifier", "union_specifier", "enum_specifier", "class_specifier"
-        ]).names(in: root) { $0.child(byFieldName: "name").map { $0.text(in: context) } }
+        let declaredTypeNames = TypeNamePrepass(declarationNodeTypes: Self.recordSpecifierKinds)
+            .names(in: root) { $0.child(byFieldName: "name").map { $0.text(in: context) } }
 
         // Collects the simple name behind every `function_declarator` in the file (free functions,
         // prototypes, and member functions alike).
@@ -307,6 +310,7 @@ extension CFamilyExtractor {
         let declarator = typeReferences.parseDeclarator(node.child(byFieldName: "declarator"))
         let aliasName = typeReferences.lastComponent(of: declarator.name)
         guard !aliasName.isEmpty, let typeNode = node.child(byFieldName: "type") else { return }
+        if restatesTag(of: typeNode, as: aliasName, declaredBy: node) { return }
 
         switch typeNode.nodeType {
         case "struct_specifier", "union_specifier", "class_specifier":
@@ -331,5 +335,21 @@ extension CFamilyExtractor {
             inheritedTypes: underlying.map { [$0] } ?? [],
             namespace: declarations.currentNamespace, location: node.location(in: context)
         ))
+    }
+
+    /// Whether a bodyless `typedef struct Node Node;` would declare the id its record already carries.
+    private func restatesTag(of typeNode: Node, as aliasName: String, declaredBy node: Node) -> Bool {
+        guard node.child(byFieldName: "declarator")?.nodeType == "type_identifier",
+              Self.recordSpecifierKinds.contains(typeNode.nodeType ?? ""),
+              typeNode.child(byFieldName: "body") == nil,
+              let tag = typeNode.child(byFieldName: "name") else { return false }
+        return identifier(forTag: tag.text(in: context)) == declarations.qualifiedName(aliasName)
+    }
+
+    /// The id a record declared under this tag carries: `::Node` is file scope, `net::Socket` is `net.Socket`.
+    private func identifier(forTag tag: String) -> String {
+        let rooted = tag.hasPrefix("::")
+        let path = (rooted ? String(tag.dropFirst(2)) : tag).replacingOccurrences(of: "::", with: ".")
+        return rooted ? path : declarations.qualifiedName(path)
     }
 }

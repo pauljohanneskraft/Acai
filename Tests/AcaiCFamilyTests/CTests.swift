@@ -96,4 +96,68 @@ struct CTests {
         let publicApi = artifact.freestandingFunctions.first { $0.name == "publicApi" }
         #expect(publicApi?.accessLevel == .public)
     }
+
+    @Test func typedefRestatingItsStructTagYieldsOnlyTheStruct() {
+        let source = """
+        typedef struct Node Node;
+        struct Node { int value; Node *next; };
+        """
+        let artifact = parser.parse(source: source, fileName: "node.h")
+        #expect(artifact.types.map(\.name) == ["Node"])
+        #expect(artifact.types.first?.kind == .struct)
+
+        let enriched = artifact.enriched(configuration: parser.configuration)
+        let health = HealthCheck(artifact: enriched).report
+        #expect(health.diagnostics.isEmpty)
+        #expect(health.score == 1)
+        // The self-reference resolves; a type is not coupled to itself, so no edge is inferred.
+        let resolver = TypeIdentityResolver(types: enriched.types)
+        #expect(resolver.resolve("Node") == .resolved(TypeID("Node")))
+    }
+
+    @Test func typedefRestatingItsStructTagIsDroppedWhenTheStructComesFirst() {
+        let source = """
+        struct Node { int value; };
+        typedef struct Node Node;
+        """
+        let artifact = parser.parse(source: source, fileName: "node.h")
+        #expect(artifact.types.map(\.name) == ["Node"])
+        #expect(artifact.types.first?.kind == .struct)
+    }
+
+    @Test func typedefRestatingAnEnumOrUnionTagIsDropped() {
+        let source = """
+        typedef enum Color Color;
+        enum Color { RED, GREEN };
+        typedef union Payload Payload;
+        union Payload { int i; double d; };
+        """
+        let artifact = parser.parse(source: source, fileName: "tags.h")
+        #expect(artifact.types.map(\.name).sorted() == ["Color", "Payload"])
+        #expect(artifact.types.allSatisfy { $0.kind != .typeAlias })
+    }
+
+    @Test func typedefUnderADifferentNameStaysAnAlias() {
+        let source = """
+        struct Node { int value; };
+        typedef struct Node Other;
+        typedef struct Node *NodeRef;
+        """
+        let artifact = parser.parse(source: source, fileName: "node.h")
+        let aliases = artifact.types.filter { $0.kind == .typeAlias }
+        #expect(aliases.map(\.name).sorted() == ["NodeRef", "Other"])
+        #expect(aliases.allSatisfy { $0.inheritedTypes.map(\.name) == ["Node"] })
+    }
+
+    @Test func typedefOfAPointerToItsOwnTagStaysAnAlias() {
+        let source = """
+        struct Node { int value; };
+        typedef struct Node *Node;
+        """
+        let artifact = parser.parse(source: source, fileName: "node.h")
+        #expect(artifact.types.map(\.kind) == [.struct, .typeAlias])
+        let alias = artifact.types.first { $0.kind == .typeAlias }
+        #expect(alias?.name == "Node")
+        #expect(alias?.inheritedTypes.map(\.name) == ["Node"])
+    }
 }

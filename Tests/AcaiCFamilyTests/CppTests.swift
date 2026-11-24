@@ -193,4 +193,48 @@ struct CppTests {
             enriched.relationships.contains { $0.kind == .dependency && $0.target == "Genre" },
             "a constructor parameter's declared type is a dependency")
     }
+
+    @Test func typedefRestatingItsTagYieldsOnlyTheRecord() {
+        let source = """
+        typedef struct Node Node;
+        struct Node { int value; Node *next; };
+        typedef class Widget Widget;
+        class Widget { int size; };
+        """
+        let artifact = parser.parse(source: source, fileName: "node.hpp")
+        #expect(artifact.types.map(\.name).sorted() == ["Node", "Widget"])
+        #expect(artifact.types.allSatisfy { $0.kind != .typeAlias })
+        #expect(HealthCheck(artifact: artifact.enriched(configuration: parser.configuration)).report.score == 1)
+    }
+
+    @Test func typedefOfANestedTagUnderItsLastComponentStaysAnAlias() {
+        let source = """
+        namespace net { struct Socket { int fd; }; }
+        namespace ipc { struct Socket { int pid; }; }
+        typedef struct net::Socket Socket;
+        struct Server { Socket *listener; };
+        """
+        let artifact = parser.parse(source: source, fileName: "socket.hpp")
+        let alias = artifact.types.first { $0.id == "Socket" }
+        #expect(alias?.kind == .typeAlias)
+        #expect(alias?.inheritedTypes.map(\.name) == ["net::Socket"])
+
+        let enriched = artifact.enriched(configuration: parser.configuration)
+        #expect(HealthCheck(artifact: enriched).report.diagnostics.isEmpty)
+        #expect(enriched.relationships.contains {
+            $0.source == "Server" && $0.kind == .composition && $0.target == "Socket"
+        })
+    }
+
+    @Test func typedefRestatingItsTagInsideTheSameNamespaceIsDropped() {
+        let source = """
+        namespace net {
+        typedef struct Socket Socket;
+        struct Socket { int fd; };
+        }
+        """
+        let artifact = parser.parse(source: source, fileName: "socket.hpp")
+        #expect(artifact.types.map(\.id) == ["net.Socket"])
+        #expect(artifact.types.first?.kind == .struct)
+    }
 }
