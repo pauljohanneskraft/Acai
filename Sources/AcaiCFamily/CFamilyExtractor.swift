@@ -346,8 +346,7 @@ extension CFamilyExtractor {
         return identifier(forTag: tag.text(in: context)) == declarations.qualifiedName(aliasName)
     }
 
-    /// The id a record carries under this tag: `::Node` names the file scope, any other qualifier
-    /// nests below the enclosing namespace, and a bare tag is qualified like the typedef itself.
+    /// The id a record declared under this tag carries: `::Node` is file scope, `net::Socket` is `net.Socket`.
     private func identifier(forTag tag: String) -> String {
         let rooted = tag.hasPrefix("::")
         let path = (rooted ? String(tag.dropFirst(2)) : tag).replacingOccurrences(of: "::", with: ".")
