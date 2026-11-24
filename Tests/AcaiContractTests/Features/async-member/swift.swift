@@ -1,3 +1,3 @@
-public class Loader {
-    public func fetch() async -> Int { 0 }
+public class Playlist {
+    public func shuffled() async -> Playlist { self }
 }

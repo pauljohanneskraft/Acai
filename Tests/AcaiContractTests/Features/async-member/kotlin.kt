@@ -1,3 +1,3 @@
-class Loader {
-    public suspend fun fetch(): Int = 0
+class Playlist {
+    public suspend fun shuffled(): Playlist = this
 }

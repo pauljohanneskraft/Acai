@@ -1,5 +1,5 @@
-export class Loader {
-    public async fetch(): Promise<number> {
-        return 0
+export class Playlist {
+    public async shuffled(): Promise<Playlist> {
+        return this
     }
 }

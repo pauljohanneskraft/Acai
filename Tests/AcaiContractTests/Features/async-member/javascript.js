@@ -1,3 +1,3 @@
-export class Loader {
-    async fetch() { return 0 }
+export class Playlist {
+    async shuffled() { return this }
 }

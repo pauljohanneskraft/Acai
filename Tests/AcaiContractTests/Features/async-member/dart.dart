@@ -1,5 +1,5 @@
-class Loader {
-  Future<int> fetch() async {
-    return 0;
+class Playlist {
+  Future<Playlist> shuffled() async {
+    return this;
   }
 }
