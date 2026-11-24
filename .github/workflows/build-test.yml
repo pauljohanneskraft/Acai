@@ -470,7 +470,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           JOURNEYS: ${{ needs.changes.outputs.journeys }}
         run: |
-          jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=latest&per_page=100")
+          # The API can lag a few seconds behind the last job's end.
+          for _ in $(seq 24); do
+            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=latest&per_page=100")
+            if jq -e '[.jobs[] | select(.name != "CI Result")] | all(.conclusion != null)' <<< "$jobs" > /dev/null; then
+              break
+            fi
+            sleep 5
+          done
           bad=$(jq -r --arg journeys "$JOURNEYS" '.jobs[]
             | select(.name != "CI Result" and .conclusion != "success")
             | select((.conclusion == "skipped" and $journeys != "true") | not)
