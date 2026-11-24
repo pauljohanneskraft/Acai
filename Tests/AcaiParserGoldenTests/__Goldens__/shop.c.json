@@ -66,7 +66,7 @@
       "assignments" : [
         {
           "location" : {
-            "column" : 79,
+            "column" : 40,
             "endLine" : 34,
             "filePath" : "shop.c",
             "line" : 34
@@ -80,7 +80,7 @@
         },
         {
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 35,
             "filePath" : "shop.c",
             "line" : 35
@@ -246,7 +246,7 @@
             null
           ],
           "location" : {
-            "column" : 23,
+            "column" : 12,
             "endLine" : 49,
             "filePath" : "shop.c",
             "line" : 49
@@ -341,7 +341,7 @@
 
           ],
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 4,
             "filePath" : "shop.c",
             "line" : 4
@@ -353,7 +353,7 @@
 
           ],
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 5,
             "filePath" : "shop.c",
             "line" : 5
@@ -370,7 +370,7 @@
       ],
       "kind" : "enum",
       "location" : {
-        "column" : 17,
+        "column" : 9,
         "endLine" : 6,
         "filePath" : "shop.c",
         "line" : 3
@@ -407,7 +407,7 @@
       ],
       "kind" : "struct",
       "location" : {
-        "column" : 17,
+        "column" : 9,
         "endLine" : 11,
         "filePath" : "shop.c",
         "line" : 8
@@ -433,7 +433,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 9,
             "filePath" : "shop.c",
             "line" : 9
@@ -477,7 +477,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 10,
             "filePath" : "shop.c",
             "line" : 10
@@ -557,7 +557,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 14,
             "filePath" : "shop.c",
             "line" : 14
@@ -637,7 +637,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 18,
             "filePath" : "shop.c",
             "line" : 18
@@ -681,7 +681,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 19,
             "filePath" : "shop.c",
             "line" : 19
@@ -725,7 +725,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 20,
             "filePath" : "shop.c",
             "line" : 20
@@ -769,7 +769,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 21,
             "filePath" : "shop.c",
             "line" : 21

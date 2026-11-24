@@ -318,7 +318,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 21,
+        "column" : 11,
         "endLine" : 6,
         "filePath" : "globals.dart",
         "line" : 6
@@ -367,7 +367,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 27,
+        "column" : 14,
         "endLine" : 7,
         "filePath" : "globals.dart",
         "line" : 7
@@ -412,7 +412,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 25,
+        "column" : 13,
         "endLine" : 8,
         "filePath" : "globals.dart",
         "line" : 8
@@ -460,7 +460,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 9,
+        "column" : 5,
         "endLine" : 9,
         "filePath" : "globals.dart",
         "line" : 9
@@ -501,7 +501,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 10,
         "filePath" : "globals.dart",
         "line" : 10
@@ -550,7 +550,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 41,
+        "column" : 21,
         "endLine" : 10,
         "filePath" : "globals.dart",
         "line" : 10
@@ -595,7 +595,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 29,
+        "column" : 15,
         "endLine" : 11,
         "filePath" : "globals.dart",
         "line" : 11
@@ -650,7 +650,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 35,
+        "column" : 18,
         "endLine" : 12,
         "filePath" : "globals.dart",
         "line" : 12
@@ -714,7 +714,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 31,
+        "column" : 16,
         "endLine" : 13,
         "filePath" : "globals.dart",
         "line" : 13
@@ -764,7 +764,7 @@
       "isComputed" : false,
       "kind" : "property",
       "location" : {
-        "column" : 31,
+        "column" : 16,
         "endLine" : 14,
         "filePath" : "globals.dart",
         "line" : 14
@@ -858,7 +858,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 13,
+            "column" : 7,
             "endLine" : 17,
             "filePath" : "globals.dart",
             "line" : 17

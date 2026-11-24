@@ -15,7 +15,7 @@
           ],
           "isConstruction" : true,
           "location" : {
-            "column" : 23,
+            "column" : 12,
             "endLine" : 24,
             "filePath" : "module.py",
             "line" : 24
@@ -91,7 +91,7 @@
             null
           ],
           "location" : {
-            "column" : 23,
+            "column" : 12,
             "endLine" : 28,
             "filePath" : "module.py",
             "line" : 28
@@ -184,7 +184,7 @@
             null
           ],
           "location" : {
-            "column" : 23,
+            "column" : 12,
             "endLine" : 32,
             "filePath" : "module.py",
             "line" : 32
@@ -401,7 +401,7 @@
             null
           ],
           "location" : {
-            "column" : 31,
+            "column" : 16,
             "endLine" : 53,
             "filePath" : "module.py",
             "line" : 53
@@ -418,7 +418,7 @@
             null
           ],
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 54,
             "filePath" : "module.py",
             "line" : 54
@@ -780,7 +780,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 17,
+            "column" : 9,
             "endLine" : 17,
             "filePath" : "module.py",
             "line" : 17
@@ -804,7 +804,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 17,
                 "filePath" : "module.py",
                 "line" : 17
@@ -824,7 +824,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 27,
+                "column" : 14,
                 "endLine" : 17,
                 "filePath" : "module.py",
                 "line" : 17
@@ -833,7 +833,7 @@
             },
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 17,
                 "filePath" : "module.py",
                 "line" : 17
@@ -847,7 +847,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 17,
             "filePath" : "module.py",
             "line" : 16
@@ -893,7 +893,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 20,
                 "filePath" : "module.py",
                 "line" : 20
@@ -907,7 +907,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 20,
             "filePath" : "module.py",
             "line" : 19

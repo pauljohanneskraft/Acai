@@ -14,7 +14,7 @@
             null
           ],
           "location" : {
-            "column" : 69,
+            "column" : 35,
             "endLine" : 14,
             "filePath" : "storefront.jsx",
             "line" : 14
@@ -31,7 +31,7 @@
             null
           ],
           "location" : {
-            "column" : 99,
+            "column" : 50,
             "endLine" : 16,
             "filePath" : "storefront.jsx",
             "line" : 16
@@ -48,7 +48,7 @@
             null
           ],
           "location" : {
-            "column" : 71,
+            "column" : 36,
             "endLine" : 18,
             "filePath" : "storefront.jsx",
             "line" : 18
@@ -70,7 +70,7 @@
       "isComputed" : false,
       "kind" : "method",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 21,
         "filePath" : "storefront.jsx",
         "line" : 13
@@ -137,7 +137,7 @@
       ],
       "kind" : "class",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 11,
         "filePath" : "storefront.jsx",
         "line" : 3
@@ -151,7 +151,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 5,
                 "filePath" : "storefront.jsx",
                 "line" : 5
@@ -177,7 +177,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 6,
             "filePath" : "storefront.jsx",
             "line" : 4
@@ -220,7 +220,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 10,
             "filePath" : "storefront.jsx",
             "line" : 8
@@ -274,7 +274,7 @@
       ],
       "kind" : "class",
       "location" : {
-        "column" : 15,
+        "column" : 8,
         "endLine" : 46,
         "filePath" : "storefront.jsx",
         "line" : 23
@@ -288,7 +288,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 26,
                 "filePath" : "storefront.jsx",
                 "line" : 26
@@ -302,7 +302,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 27,
                 "filePath" : "storefront.jsx",
                 "line" : 27
@@ -322,7 +322,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 43,
+                "column" : 22,
                 "endLine" : 27,
                 "filePath" : "storefront.jsx",
                 "line" : 27
@@ -345,7 +345,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 28,
             "filePath" : "storefront.jsx",
             "line" : 24
@@ -386,7 +386,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 31,
                 "filePath" : "storefront.jsx",
                 "line" : 31
@@ -409,7 +409,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 32,
             "filePath" : "storefront.jsx",
             "line" : 30
@@ -441,7 +441,7 @@
 
               ],
               "location" : {
-                "column" : 71,
+                "column" : 36,
                 "endLine" : 37,
                 "filePath" : "storefront.jsx",
                 "line" : 37
@@ -464,7 +464,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 45,
             "filePath" : "storefront.jsx",
             "line" : 34

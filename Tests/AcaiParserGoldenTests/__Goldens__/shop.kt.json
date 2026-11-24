@@ -14,7 +14,7 @@
 
           ],
           "location" : {
-            "column" : 99,
+            "column" : 50,
             "endLine" : 66,
             "filePath" : "shop.kt",
             "line" : 66
@@ -199,7 +199,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 4,
             "filePath" : "shop.kt",
             "line" : 4
@@ -369,7 +369,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 8,
             "filePath" : "shop.kt",
             "line" : 8
@@ -409,7 +409,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 69,
+                "column" : 35,
                 "endLine" : 9,
                 "filePath" : "shop.kt",
                 "line" : 9
@@ -423,7 +423,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 9,
             "filePath" : "shop.kt",
             "line" : 9
@@ -472,7 +472,7 @@
 
           ],
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 13,
             "filePath" : "shop.kt",
             "line" : 13
@@ -485,7 +485,7 @@
 
           ],
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 14,
             "filePath" : "shop.kt",
             "line" : 14
@@ -848,7 +848,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 21,
             "filePath" : "shop.kt",
             "line" : 21
@@ -887,7 +887,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 65,
+                "column" : 33,
                 "endLine" : 22,
                 "filePath" : "shop.kt",
                 "line" : 22
@@ -913,7 +913,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 22,
             "filePath" : "shop.kt",
             "line" : 22
@@ -951,7 +951,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 34,
                 "filePath" : "shop.kt",
                 "line" : 34
@@ -968,7 +968,7 @@
                 null
               ],
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 35,
                 "filePath" : "shop.kt",
                 "line" : 35
@@ -988,7 +988,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 34,
                 "filePath" : "shop.kt",
                 "line" : 34
@@ -997,7 +997,7 @@
             },
             {
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 35,
                 "filePath" : "shop.kt",
                 "line" : 35
@@ -1006,7 +1006,7 @@
             },
             {
               "location" : {
-                "column" : 31,
+                "column" : 16,
                 "endLine" : 36,
                 "filePath" : "shop.kt",
                 "line" : 36
@@ -1015,7 +1015,7 @@
             },
             {
               "location" : {
-                "column" : 45,
+                "column" : 23,
                 "endLine" : 36,
                 "filePath" : "shop.kt",
                 "line" : 36
@@ -1029,7 +1029,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 37,
             "filePath" : "shop.kt",
             "line" : 33
@@ -1074,7 +1074,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 41,
+                "column" : 21,
                 "endLine" : 40,
                 "filePath" : "shop.kt",
                 "line" : 40
@@ -1091,7 +1091,7 @@
 
               ],
               "location" : {
-                "column" : 53,
+                "column" : 27,
                 "endLine" : 40,
                 "filePath" : "shop.kt",
                 "line" : 40
@@ -1114,7 +1114,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 42,
             "filePath" : "shop.kt",
             "line" : 39
@@ -1150,7 +1150,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 51,
                 "filePath" : "shop.kt",
                 "line" : 51
@@ -1170,7 +1170,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 25,
+                "column" : 13,
                 "endLine" : 51,
                 "filePath" : "shop.kt",
                 "line" : 51
@@ -1184,7 +1184,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 54,
             "filePath" : "shop.kt",
             "line" : 44
@@ -1255,7 +1255,7 @@
           ],
           "kind" : "class",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 27,
             "filePath" : "shop.kt",
             "line" : 24
@@ -1285,7 +1285,7 @@
               "isComputed" : false,
               "kind" : "property",
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 25,
                 "filePath" : "shop.kt",
                 "line" : 25
@@ -1325,7 +1325,7 @@
                   ],
                   "isConstruction" : true,
                   "location" : {
-                    "column" : 63,
+                    "column" : 32,
                     "endLine" : 26,
                     "filePath" : "shop.kt",
                     "line" : 26
@@ -1342,7 +1342,7 @@
               "fieldReads" : [
                 {
                   "location" : {
-                    "column" : 79,
+                    "column" : 40,
                     "endLine" : 26,
                     "filePath" : "shop.kt",
                     "line" : 26
@@ -1356,7 +1356,7 @@
               "isComputed" : false,
               "kind" : "method",
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 26,
                 "filePath" : "shop.kt",
                 "line" : 26
@@ -1412,7 +1412,7 @@
           ],
           "kind" : "object",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 31,
             "filePath" : "shop.kt",
             "line" : 29
@@ -1434,7 +1434,7 @@
                   ],
                   "isConstruction" : true,
                   "location" : {
-                    "column" : 63,
+                    "column" : 32,
                     "endLine" : 30,
                     "filePath" : "shop.kt",
                     "line" : 30
@@ -1457,7 +1457,7 @@
               "isComputed" : false,
               "kind" : "method",
               "location" : {
-                "column" : 17,
+                "column" : 9,
                 "endLine" : 30,
                 "filePath" : "shop.kt",
                 "line" : 30
@@ -1536,7 +1536,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 43,
+                "column" : 22,
                 "endLine" : 58,
                 "filePath" : "shop.kt",
                 "line" : 58
@@ -1562,7 +1562,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 58,
             "filePath" : "shop.kt",
             "line" : 58
@@ -1607,7 +1607,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 59,
             "filePath" : "shop.kt",
             "line" : 59
@@ -1695,7 +1695,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 9,
+            "column" : 5,
             "endLine" : 63,
             "filePath" : "shop.kt",
             "line" : 63

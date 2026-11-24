@@ -153,7 +153,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 4,
             "filePath" : "types.dart",
             "line" : 4
@@ -241,7 +241,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 25,
+            "column" : 13,
             "endLine" : 8,
             "filePath" : "types.dart",
             "line" : 8
@@ -273,7 +273,7 @@
           "assignments" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 11,
                 "filePath" : "types.dart",
                 "line" : 11
@@ -293,7 +293,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 11,
                 "filePath" : "types.dart",
                 "line" : 11
@@ -307,7 +307,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 10,
             "filePath" : "types.dart",
             "line" : 10
@@ -398,7 +398,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 16,
             "filePath" : "types.dart",
             "line" : 16
@@ -480,7 +480,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 20,
             "filePath" : "types.dart",
             "line" : 20
@@ -591,7 +591,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 33,
+            "column" : 17,
             "endLine" : 24,
             "filePath" : "types.dart",
             "line" : 24
@@ -642,7 +642,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 25,
             "filePath" : "types.dart",
             "line" : 25
@@ -694,7 +694,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 59,
+                "column" : 30,
                 "endLine" : 27,
                 "filePath" : "types.dart",
                 "line" : 27
@@ -711,7 +711,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 79,
+                "column" : 40,
                 "endLine" : 27,
                 "filePath" : "types.dart",
                 "line" : 27
@@ -725,7 +725,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 27,
             "filePath" : "types.dart",
             "line" : 27
@@ -902,7 +902,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 25,
+            "column" : 13,
             "endLine" : 31,
             "filePath" : "types.dart",
             "line" : 31
@@ -946,7 +946,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 61,
+            "column" : 31,
             "endLine" : 32,
             "filePath" : "types.dart",
             "line" : 32
@@ -1012,7 +1012,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 34,
             "filePath" : "types.dart",
             "line" : 34
@@ -1108,7 +1108,7 @@
                 null
               ],
               "location" : {
-                "column" : 73,
+                "column" : 37,
                 "endLine" : 37,
                 "filePath" : "types.dart",
                 "line" : 37
@@ -1125,7 +1125,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 79,
+                "column" : 40,
                 "endLine" : 37,
                 "filePath" : "types.dart",
                 "line" : 37
@@ -1139,7 +1139,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 37,
             "filePath" : "types.dart",
             "line" : 37
@@ -1281,7 +1281,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 31,
+            "column" : 16,
             "endLine" : 43,
             "filePath" : "types.dart",
             "line" : 43
@@ -1325,7 +1325,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 44,
             "filePath" : "types.dart",
             "line" : 44
@@ -1427,7 +1427,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 31,
+            "column" : 16,
             "endLine" : 48,
             "filePath" : "types.dart",
             "line" : 48
@@ -1471,7 +1471,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 49,
             "filePath" : "types.dart",
             "line" : 49
@@ -1582,7 +1582,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 54,
             "filePath" : "types.dart",
             "line" : 54
@@ -1626,7 +1626,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 56,
             "filePath" : "types.dart",
             "line" : 56
@@ -1675,7 +1675,7 @@
 
           ],
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 60,
             "filePath" : "types.dart",
             "line" : 60
@@ -1688,7 +1688,7 @@
 
           ],
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 61,
             "filePath" : "types.dart",
             "line" : 61
@@ -1755,7 +1755,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 25,
+            "column" : 13,
             "endLine" : 63,
             "filePath" : "types.dart",
             "line" : 63
@@ -1799,7 +1799,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 64,
             "filePath" : "types.dart",
             "line" : 64
@@ -1836,7 +1836,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 71,
+                "column" : 36,
                 "endLine" : 67,
                 "filePath" : "types.dart",
                 "line" : 67
@@ -1850,7 +1850,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 67,
             "filePath" : "types.dart",
             "line" : 67
@@ -1948,7 +1948,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 71,
             "filePath" : "types.dart",
             "line" : 71
@@ -1987,7 +1987,7 @@
                 null
               ],
               "location" : {
-                "column" : 45,
+                "column" : 23,
                 "endLine" : 73,
                 "filePath" : "types.dart",
                 "line" : 73
@@ -2004,7 +2004,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 65,
+                "column" : 33,
                 "endLine" : 73,
                 "filePath" : "types.dart",
                 "line" : 73
@@ -2018,7 +2018,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 73,
             "filePath" : "types.dart",
             "line" : 73
@@ -2102,7 +2102,7 @@
 
               ],
               "location" : {
-                "column" : 43,
+                "column" : 22,
                 "endLine" : 77,
                 "filePath" : "types.dart",
                 "line" : 77
@@ -2125,7 +2125,7 @@
           "isComputed" : true,
           "kind" : "property",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 77,
             "filePath" : "types.dart",
             "line" : 77
@@ -2216,7 +2216,7 @@
               ],
               "isConstruction" : true,
               "location" : {
-                "column" : 69,
+                "column" : 35,
                 "endLine" : 81,
                 "filePath" : "types.dart",
                 "line" : 81
@@ -2239,7 +2239,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 81,
             "filePath" : "types.dart",
             "line" : 81
@@ -2300,7 +2300,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 84,
             "filePath" : "types.dart",
             "line" : 84
@@ -2569,7 +2569,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 25,
+            "column" : 13,
             "endLine" : 92,
             "filePath" : "types.dart",
             "line" : 92
@@ -2613,7 +2613,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 39,
+            "column" : 20,
             "endLine" : 93,
             "filePath" : "types.dart",
             "line" : 93
@@ -2657,7 +2657,7 @@
           "isComputed" : false,
           "kind" : "property",
           "location" : {
-            "column" : 29,
+            "column" : 15,
             "endLine" : 94,
             "filePath" : "types.dart",
             "line" : 94
@@ -2701,7 +2701,7 @@
           "isComputed" : false,
           "kind" : "initializer",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 95,
             "filePath" : "types.dart",
             "line" : 95
@@ -2745,7 +2745,7 @@
 
               ],
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 100,
                 "filePath" : "types.dart",
                 "line" : 100
@@ -2762,7 +2762,7 @@
           "fieldReads" : [
             {
               "location" : {
-                "column" : 39,
+                "column" : 20,
                 "endLine" : 98,
                 "filePath" : "types.dart",
                 "line" : 98
@@ -2771,7 +2771,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 99,
                 "filePath" : "types.dart",
                 "line" : 99
@@ -2780,7 +2780,7 @@
             },
             {
               "location" : {
-                "column" : 9,
+                "column" : 5,
                 "endLine" : 100,
                 "filePath" : "types.dart",
                 "line" : 100
@@ -2794,7 +2794,7 @@
           "isComputed" : false,
           "kind" : "method",
           "location" : {
-            "column" : 5,
+            "column" : 3,
             "endLine" : 97,
             "filePath" : "types.dart",
             "line" : 97
