@@ -468,6 +468,7 @@ acai quality --source . --rules quality.yml --baseline last-release
 
 | Key | Shape |
 | --- | --- |
+| `version` | `Int`, the rules-file format version. Current: `1`. Omitted, the file reads as `1`. |
 | `forbidden` | list of `{from: Selector, to: Selector, kinds: [Kind]?, message: String?}` |
 | `cycles` | `{scope: modules \| types}` — a module cycle is reported with the witnessing edge for every hop |
 | `budgets` | list of `{target: Selector?, metric: <name>, max: Double?, min: Double?, message: String?}` |
@@ -503,6 +504,8 @@ budgets:
 Each breach carries a fix hint — `maxParameters` suggests a parameter object, `lcom` suggests splitting the type.
 
 **Built-in defaults** (used when `--rules` is omitted): `maxParameters ≤ 5`, `dataClassScore ≤ 0.8`, `nestingDepth ≤ 2`, `lcom ≤ 1`, `featureEnvyMethods ≤ 2`, `maxCyclomaticComplexity ≤ 10`. `mutablePublicState` is deliberately left out — it's idiomatic in value types and would flood struct-heavy code.
+
+**The format version.** `version` names the rules-file format, so an incompatible change to it can be detected rather than silently mis-read. The current version is `1`, and a file that omits the key is read as version `1` — a rules file is hand-written, so an absent marker means "whatever this `acai` speaks". A file declaring a *newer* version is rejected outright, naming both the file's version and the one this build supports, in `acai`, the MCP server and the app alike; it is not read partially, because the keys an older build would ignore may be the ones carrying the intent. `acai rules` writes the current `version` into the file it generates, as does the app's rules editor.
 
 This repository gates itself with its own [`quality.yml`](https://github.com/pauljohanneskraft/Acai/blob/main/quality.yml).
 

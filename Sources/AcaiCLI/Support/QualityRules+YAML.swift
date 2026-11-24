@@ -9,6 +9,8 @@ extension QualityRules {
     static func load(yaml: String) throws -> QualityRules {
         do {
             return try YAMLDecoder().decode(QualityRules.self, from: yaml)
+        } catch let error as UnsupportedRulesVersion {
+            throw ValidationError(error.description)
         } catch let error as DecodingError {
             throw ValidationError("Invalid rules file: \(error.readableDescription)")
         } catch {

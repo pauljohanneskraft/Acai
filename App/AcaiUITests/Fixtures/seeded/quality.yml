@@ -3,6 +3,8 @@
 # Guarantees the seeded "SampleSwiftPackage" codebase always shows at least one Quality Check
 # finding, so a journey can exercise ViolationRowView's "View Source" action without needing a
 # bespoke, non-seeded fixture just to trip a real violation.
+version: 1
+
 budgets:
   - metric: weightedMethods
     max: 0
