@@ -462,9 +462,28 @@ jobs:
     needs: [changes, lint, build-test-ios, build-test-macos, build-test-linux, ui-test-ios, ui-test-macos]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      actions: read
     steps:
-      - name: Require every job to have passed or been skipped
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      # Reads the jobs themselves: `needs.*.result` hides a job that never got a runner.
+      - name: Require every job to have passed, or to be a journey this change skips
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOURNEYS: ${{ needs.changes.outputs.journeys }}
         run: |
-          echo "✗ A required job failed or was cancelled." >&2
-          exit 1
+          # The API can lag a few seconds behind the last job's end.
+          for _ in $(seq 24); do
+            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=latest&per_page=100")
+            if jq -e '[.jobs[] | select(.name != "CI Result")] | all(.conclusion != null)' <<< "$jobs" > /dev/null; then
+              break
+            fi
+            sleep 5
+          done
+          bad=$(jq -r --arg journeys "$JOURNEYS" '.jobs[]
+            | select(.name != "CI Result" and .conclusion != "success")
+            | select((.conclusion == "skipped" and $journeys != "true") | not)
+            | "\(.name): \(.conclusion)"' <<< "$jobs")
+          if [ -n "$bad" ]; then
+            printf '✗ Not passed:\n%s\n' "$bad" >&2
+            exit 1
+          fi
