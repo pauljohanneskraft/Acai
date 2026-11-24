@@ -88,6 +88,19 @@ public struct UnsupportedRulesVersion: Error, LocalizedError, CustomStringConver
         self.supported = supported
     }
 
+    /// Recovers the refusal from the `DecodingError` a YAML decoder rewraps a thrown error in.
+    public init?(unwrapping error: any Error) {
+        if let refusal = error as? UnsupportedRulesVersion {
+            self = refusal
+            return
+        }
+        guard case .dataCorrupted(let context)? = error as? DecodingError,
+              let underlying = context.underlyingError,
+              let refusal = UnsupportedRulesVersion(unwrapping: underlying)
+        else { return nil }
+        self = refusal
+    }
+
     public var description: String {
         "Rules file format version \(found) is newer than the supported version \(supported)."
             + " Update Acai to read this file."
