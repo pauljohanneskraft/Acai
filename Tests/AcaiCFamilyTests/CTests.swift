@@ -148,4 +148,16 @@ struct CTests {
         #expect(aliases.map(\.name).sorted() == ["NodeRef", "Other"])
         #expect(aliases.allSatisfy { $0.inheritedTypes.map(\.name) == ["Node"] })
     }
+
+    @Test func typedefOfAPointerToItsOwnTagStaysAnAlias() {
+        let source = """
+        struct Node { int value; };
+        typedef struct Node *Node;
+        """
+        let artifact = parser.parse(source: source, fileName: "node.h")
+        #expect(artifact.types.map(\.kind) == [.struct, .typeAlias])
+        let alias = artifact.types.first { $0.kind == .typeAlias }
+        #expect(alias?.name == "Node")
+        #expect(alias?.inheritedTypes.map(\.name) == ["Node"])
+    }
 }

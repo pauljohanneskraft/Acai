@@ -337,12 +337,20 @@ extension CFamilyExtractor {
         ))
     }
 
-    /// Whether a bodyless `typedef struct Node Node;` only restates the tag its record already carries.
+    /// Whether a bodyless `typedef struct Node Node;` would declare the id its record already carries.
     private func restatesTag(of typeNode: Node, as aliasName: String, declaredBy node: Node) -> Bool {
         guard node.child(byFieldName: "declarator")?.nodeType == "type_identifier",
               Self.recordSpecifierKinds.contains(typeNode.nodeType ?? ""),
               typeNode.child(byFieldName: "body") == nil,
               let tag = typeNode.child(byFieldName: "name") else { return false }
-        return typeReferences.lastComponent(of: tag.text(in: context)) == aliasName
+        return identifier(forTag: tag.text(in: context)) == declarations.qualifiedName(aliasName)
+    }
+
+    /// The id a record carries under this tag: `::Node` names the file scope, any other qualifier
+    /// nests below the enclosing namespace, and a bare tag is qualified like the typedef itself.
+    private func identifier(forTag tag: String) -> String {
+        let rooted = tag.hasPrefix("::")
+        let path = (rooted ? String(tag.dropFirst(2)) : tag).replacingOccurrences(of: "::", with: ".")
+        return rooted ? path : declarations.qualifiedName(path)
     }
 }
