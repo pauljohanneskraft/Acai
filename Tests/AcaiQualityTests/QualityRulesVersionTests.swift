@@ -10,9 +10,9 @@ struct QualityRulesVersionTests {
         try JSONDecoder().decode(QualityRules.self, from: Data(json.utf8))
     }
 
-    @Test func aFileWithoutTheKeyReadsAsTheCurrentVersion() throws {
+    @Test func aFileWithoutTheKeyReadsAsVersionOne() throws {
         let rules = try decode("{}")
-        #expect(rules.version == QualityRules.currentVersion)
+        #expect(rules.version == 1)
     }
 
     @Test func theCurrentVersionIsAccepted() throws {

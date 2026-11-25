@@ -12,7 +12,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
     /// The rules-file format this build writes and understands.
     public static let currentVersion = 1
 
-    /// Absent from a file this reads as `currentVersion`: a rules file is hand-written, not app state.
+    /// Absent from a file this reads as a fixed `1`, never `currentVersion`: a rules file is hand-written.
     public var version: Int
     public var forbidden: [DependencyRule]
     public var cycles: CycleRule?
@@ -52,7 +52,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
     /// not a decoding error).
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? QualityRules.currentVersion
+        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
         guard version <= QualityRules.currentVersion else {
             throw UnsupportedRulesVersion(found: version, supported: QualityRules.currentVersion)
         }
@@ -103,7 +103,7 @@ public struct UnsupportedRulesVersion: Error, LocalizedError, CustomStringConver
 
     public var description: String {
         "Rules file format version \(found) is newer than the supported version \(supported)."
-            + " Update Acai to read this file."
+            + " Update Açaí to read this file."
     }
 
     public var errorDescription: String? { description }

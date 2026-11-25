@@ -6,9 +6,9 @@ import AcaiQuality
 @Suite("CLI: rules file version")
 struct QualityRulesVersionTests {
 
-    @Test func aFileWithoutTheKeyLoadsAsTheCurrentVersion() throws {
+    @Test func aFileWithoutTheKeyLoadsAsVersionOne() throws {
         let rules = try QualityRules.load(yaml: "cycles:\n  scope: modules\n")
-        #expect(rules.version == QualityRules.currentVersion)
+        #expect(rules.version == 1)
         #expect(rules.cycles?.scope == .modules)
     }
 

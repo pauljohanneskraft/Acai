@@ -35,12 +35,12 @@ struct ManagedQualityRulesVersionTests {
         }
     }
 
-    @Test("A referenced file omitting the key reads as the current version")
-    func referencedFileWithoutTheKeyReadsAsCurrent() throws {
+    @Test("A referenced file omitting the key reads as version 1")
+    func referencedFileWithoutTheKeyReadsAsVersionOne() throws {
         try withTempStoreDir { dir in
             let url = try write("cycles:\n  scope: modules\n", in: dir)
             let rules = try QualityCheckConfiguration(rulesPath: url.path).loadRules()
-            #expect(rules.version == QualityRules.currentVersion)
+            #expect(rules.version == 1)
         }
     }
 
