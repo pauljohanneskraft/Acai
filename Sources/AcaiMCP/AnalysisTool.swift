@@ -55,6 +55,9 @@ extension AnalysisTool {
             let yaml = try String(contentsOf: URL(fileURLWithPath: rulesPath), encoding: .utf8)
             return try YAMLDecoder().decode(QualityRules.self, from: yaml)
         } catch {
+            if let refusal = UnsupportedRulesVersion(unwrapping: error) {
+                throw MCPError.invalidParams("Could not read quality rules from \(rulesPath): \(refusal)")
+            }
             throw MCPError.invalidParams(
                 "Could not read quality rules from \(rulesPath): \(error.localizedDescription)")
         }

@@ -18,11 +18,13 @@ struct RulesCommandTests {
             let yaml = try String(contentsOf: output, encoding: .utf8)
             #expect(yaml.contains("cycles:"))
             #expect(yaml.contains("budgets:"))
+            #expect(yaml.contains("version: \(QualityRules.currentVersion)"))
 
             // The active sections must re-parse — a draft the checker can immediately consume.
             let reloaded = try QualityRules.load(contentsOf: output.path)
             #expect(reloaded.cycles?.scope == .modules)
             #expect(!reloaded.budgets.isEmpty)
+            #expect(reloaded.version == QualityRules.currentVersion)
         }
     }
 }

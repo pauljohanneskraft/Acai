@@ -1,4 +1,5 @@
 import AcaiCore
+import Foundation
 
 /// A declarative description of the intended architecture and code quality, validated against the
 /// relationship graph and metrics to turn design intent into an executable contract. Decoded from a
@@ -8,6 +9,11 @@ import AcaiCore
 /// smells), ordered layers, stereotype contracts, and — given a `--baseline` — expected metric
 /// movements.
 public struct QualityRules: Codable, Equatable, Sendable {
+    /// The rules-file format this build writes and understands.
+    public static let currentVersion = 1
+
+    /// Absent from a file this reads as a fixed `1`, never `currentVersion`: a rules file is hand-written.
+    public var version: Int
     public var forbidden: [DependencyRule]
     public var cycles: CycleRule?
     public var budgets: [MetricBudget]
@@ -23,6 +29,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
     public var includeGeneratedTypes: Bool
 
     public init(
+        version: Int = QualityRules.currentVersion,
         forbidden: [DependencyRule] = [],
         cycles: CycleRule? = nil,
         budgets: [MetricBudget] = [],
@@ -31,6 +38,7 @@ public struct QualityRules: Codable, Equatable, Sendable {
         movements: [MetricMovement] = [],
         includeGeneratedTypes: Bool = false
     ) {
+        self.version = version
         self.forbidden = forbidden
         self.cycles = cycles
         self.budgets = budgets
@@ -44,6 +52,10 @@ public struct QualityRules: Codable, Equatable, Sendable {
     /// not a decoding error).
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        guard version <= QualityRules.currentVersion else {
+            throw UnsupportedRulesVersion(found: version, supported: QualityRules.currentVersion)
+        }
         forbidden = try container.decodeIfPresent([DependencyRule].self, forKey: .forbidden) ?? []
         cycles = try container.decodeIfPresent(CycleRule.self, forKey: .cycles)
         budgets = try container.decodeIfPresent([MetricBudget].self, forKey: .budgets) ?? []
@@ -64,4 +76,35 @@ public struct QualityRules: Codable, Equatable, Sendable {
     /// `acai quality` still flags god classes, feature envy, long parameter lists, low cohesion, and
     /// the like out of the box.
     public static let defaultQuality = QualityRules(budgets: MetricBudget.defaultSmellBudgets)
+}
+
+/// A rules file written by a newer `acai` than the one reading it.
+public struct UnsupportedRulesVersion: Error, LocalizedError, CustomStringConvertible, Equatable, Sendable {
+    public let found: Int
+    public let supported: Int
+
+    public init(found: Int, supported: Int) {
+        self.found = found
+        self.supported = supported
+    }
+
+    /// Recovers the refusal from the `DecodingError` a YAML decoder rewraps a thrown error in.
+    public init?(unwrapping error: any Error) {
+        if let refusal = error as? UnsupportedRulesVersion {
+            self = refusal
+            return
+        }
+        guard case .dataCorrupted(let context)? = error as? DecodingError,
+              let underlying = context.underlyingError,
+              let refusal = UnsupportedRulesVersion(unwrapping: underlying)
+        else { return nil }
+        self = refusal
+    }
+
+    public var description: String {
+        "Rules file format version \(found) is newer than the supported version \(supported)."
+            + " Update Açaí to read this file."
+    }
+
+    public var errorDescription: String? { description }
 }

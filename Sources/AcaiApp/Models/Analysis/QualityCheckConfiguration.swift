@@ -13,7 +13,12 @@ struct QualityCheckConfiguration: Codable, Hashable, Sendable {
     func loadRules() throws -> QualityRules {
         try ScopedResourceAccess(path: rulesPath, bookmark: securityScopedBookmark).withResolvedURL { url in
             let yaml = try String(contentsOf: url, encoding: .utf8)
-            return try YAMLDecoder().decode(QualityRules.self, from: yaml)
+            do {
+                return try YAMLDecoder().decode(QualityRules.self, from: yaml)
+            } catch {
+                if let refusal = UnsupportedRulesVersion(unwrapping: error) { throw refusal }
+                throw error
+            }
         }
     }
 }

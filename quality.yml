@@ -5,6 +5,9 @@
 # that flag responsibility bloat and code smells. Tighten budgets as debt is paid down so they
 # ratchet against regression. Omit --rules for the built-in curated smell budgets.
 
+# Rules-file format version — an older `acai` refuses a file it cannot fully read.
+version: 1
+
 # Hard invariant: the module dependency graph must stay acyclic. (Type-level cycles: `acai quality
 # --explore --scope types`.) Holds today — keep it that way.
 cycles:

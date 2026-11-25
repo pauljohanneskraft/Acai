@@ -29,6 +29,9 @@ public struct StarterQualityRules {
             "# A DRAFT: review and tighten every threshold before committing. Budgets are seeded from the",
             "# current worst-case value (no headroom) so the file blocks regression immediately; ratchet",
             "# them down as debt is paid off.",
+            "",
+            "# Rules-file format version — an older `acai` refuses a file it cannot fully read.",
+            "version: \(QualityRules.currentVersion)",
             ""
         ]
     }
