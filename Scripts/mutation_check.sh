@@ -19,6 +19,18 @@ MODULES="$MODULES AcaiDart AcaiPython AcaiCFamily CPythonScanner"
 TIME_LIMIT="${MUTATION_CHECK_TIME_LIMIT:-1200}"
 STARTED=$(date +%s)
 
+# coreutils' `timeout`, which macOS does not ship. Without it the budget is only checked between
+# hunks, so a single build or test run can overrun it.
+TIMEOUT=$(command -v timeout || command -v gtimeout || true)
+
+bounded() {
+    if [ -n "$TIMEOUT" ]; then
+        "$TIMEOUT" "$@"
+    else
+        "${@:2}"
+    fi
+}
+
 if [ "${1:-}" = "--paths" ]; then
     tr ' ' '\n' <<< "$MODULES" | sed 's|^|Sources/|'
     exit 0
@@ -138,22 +150,30 @@ while IFS=$'\t' read -r PATCH FILE LOCATION; do
         FILTERS+=(--filter "$SUITE")
     done
     STATUS=0
-    timeout "$REMAINING" swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests \
+    bounded "$REMAINING" swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests \
         > "$WORK/build.log" 2>&1 || STATUS=$?
     REMAINING=$((TIME_LIMIT - ($(date +%s) - STARTED)))
     if [ "$STATUS" -eq 124 ] || [ "$REMAINING" -le 0 ]; then
         UNREACHED+=("$FILE:$LOCATION")
         echo "  — out of time"
+    elif [ "$STATUS" -ge 128 ]; then
+        SKIPPED+=("$FILE:$LOCATION — the build was killed by signal $((STATUS - 128))")
+        echo "  — inconclusive"
     elif [ "$STATUS" -ne 0 ]; then
         SKIPPED+=("$FILE:$LOCATION — does not compile on its own")
         echo "  — not applicable"
     else
         STATUS=0
-        timeout "$REMAINING" swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
+        bounded "$REMAINING" swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
             --skip-build "${FILTERS[@]}" > "$WORK/test.log" 2>&1 || STATUS=$?
         if [ "$STATUS" -eq 124 ]; then
             UNREACHED+=("$FILE:$LOCATION")
             echo "  — out of time"
+        elif [ "$STATUS" -ge 128 ]; then
+            # A run the kernel killed says nothing either way, and reading it as caught would hide a
+            # survivor.
+            SKIPPED+=("$FILE:$LOCATION — the test run was killed by signal $((STATUS - 128))")
+            echo "  — inconclusive"
         elif [ "$STATUS" -eq 0 ]; then
             SURVIVING+=("$FILE:$LOCATION")
             echo "  ✗ surviving — every suite still passed"
