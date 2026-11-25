@@ -221,6 +221,11 @@ SwiftPM); **render snapshot tests** (does a flat component still look right, lig
 **journey tests** (does a real flow work end to end in the real app process, and does a full screen
 still look right); and **guardrail tests** (does a surface meet the bar every surface owes).
 
+**Check that a test can fail.** `Scripts/mutation_check.sh origin/main` reverts each hunk your
+branch touches under the engine or a language plugin, one at a time in its own worktree, and names
+the ones whose suites still pass. It reports and never blocks — a pure refactor legitimately
+survives — but a surviving hunk in a bug fix means the test does not reach the fix.
+
 **Prefer automation over driving the app by hand.** An agent clicking through a simulator from
 screenshots is slow and fails silently when it misreads one; a journey checks the same behaviour
 unattended with a deterministic result. A missing screen accessor, fixture path or injection seam is

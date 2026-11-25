@@ -6,6 +6,13 @@
 set -euo pipefail
 
 CHECK="$(cd "$(dirname "$0")" && pwd)/mutation_check.sh"
+
+# A caller filtering changed paths on this list must see the module the fixture below mutates.
+if ! "$CHECK" --paths | grep -qx "Sources/AcaiCore"; then
+    echo "✗ --paths does not list Sources/AcaiCore." >&2
+    exit 1
+fi
+
 FIXTURE=$(mktemp -d)
 trap 'rm -rf "$FIXTURE"' EXIT
 

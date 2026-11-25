@@ -6,20 +6,27 @@
 #
 #   Scripts/mutation_check.sh origin/main
 #
+# `--paths` instead of a base prints the paths it covers, one per line, so a caller deciding whether
+# to run it filters on the same list.
+#
 # MUTATION_CHECK_TIME_LIMIT bounds the whole run (default 1200 seconds); hunks it does not reach are
 # named in the report. With GITHUB_STEP_SUMMARY set, the report is appended there too.
 set -euo pipefail
-
-if [ $# -ne 1 ]; then
-    echo "usage: Scripts/mutation_check.sh <base>" >&2
-    exit 2
-fi
 
 # The engine and its language plugins. A silent test gap anywhere else is another check's business.
 MODULES="AcaiCore AcaiDiagram AcaiTreeSitter AcaiSwift AcaiJS AcaiJVM"
 MODULES="$MODULES AcaiDart AcaiPython AcaiCFamily CPythonScanner"
 TIME_LIMIT="${MUTATION_CHECK_TIME_LIMIT:-1200}"
 STARTED=$(date +%s)
+
+if [ "${1:-}" = "--paths" ]; then
+    tr ' ' '\n' <<< "$MODULES" | sed 's|^|Sources/|'
+    exit 0
+fi
+if [ $# -ne 1 ]; then
+    echo "usage: Scripts/mutation_check.sh <base> | --paths" >&2
+    exit 2
+fi
 
 cd "$(git rev-parse --show-toplevel)"
 if ! BASE=$(git rev-parse --verify --quiet "$1^{commit}"); then
