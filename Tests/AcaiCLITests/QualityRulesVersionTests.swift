@@ -35,12 +35,16 @@ struct QualityRulesVersionTests {
     }
 
     @Test func aNewerVersionIsRefusedEvenWhenTheRestOfTheFileIsValid() {
-        #expect(throws: (any Error).self) {
+        let newer = QualityRules.currentVersion + 1
+        #expect {
             _ = try QualityRules.load(yaml: """
-            version: \(QualityRules.currentVersion + 1)
+            version: \(newer)
             cycles:
               scope: modules
             """)
+        } throws: { error in
+            let refusal = UnsupportedRulesVersion(found: newer, supported: QualityRules.currentVersion)
+            return "\(error)" == refusal.description
         }
     }
 }
