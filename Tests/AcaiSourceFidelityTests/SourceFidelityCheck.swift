@@ -138,10 +138,14 @@ struct SourceFidelityCheck {
     private func accepts(_ following: Character?, of reference: TypeReference) -> Bool {
         guard let following else { return true }
         switch following {
-        case "?": return reference.isOptional
-        case "<": return !reference.genericArguments.isEmpty
-        case "[": return reference.isArray || !reference.genericArguments.isEmpty
-        default: return !following.continuesType || difference.unmodelledTypeSuffixes[following] != nil
+        case "?":
+            return reference.isOptional
+        case "<":
+            return !reference.genericArguments.isEmpty
+        case "[":
+            return reference.isArray || !reference.genericArguments.isEmpty
+        default:
+            return !following.continuesType || difference.unmodelledTypeSuffixes[following] != nil
         }
     }
 
