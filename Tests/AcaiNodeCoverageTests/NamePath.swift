@@ -13,6 +13,13 @@ struct NamePath: Sendable {
         /// Follows the field while a child is still bound to it, which is how a C declarator chain
         /// (`pointer_declarator` → `function_declarator` → `identifier`) nests.
         case chain(String)
+        /// The first direct child of any of these kinds, for a grammar that flattens a declaration
+        /// and its initializer into one node — a Dart `initialized_identifier` is named by its first
+        /// `identifier`, the ones after it belonging to the initializer expression.
+        case first([String])
+        /// The last direct child of any of these kinds, which is how a Dart named constructor
+        /// (`Counter.unlimited`) carries its own name after the type's.
+        case last([String])
     }
 
     let steps: [Step]
@@ -41,6 +48,10 @@ struct NamePath: Sendable {
                 return sites.flatMap { $0.children().filter { $0.nodeType == kind } }
             case .chain(let field):
                 return sites.compactMap { $0.followingChain(of: field) }
+            case .first(let kinds):
+                return sites.compactMap { $0.children().first { kinds.contains($0.nodeType ?? "") } }
+            case .last(let kinds):
+                return sites.compactMap { $0.children().last { kinds.contains($0.nodeType ?? "") } }
             }
         }
     }
