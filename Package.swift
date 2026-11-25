@@ -451,9 +451,8 @@ let package = Package(
         // Cross-platform (no AcaiRender dependency); the PNG checks live in AcaiRenderTests.
         .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"]),
 
-        // MARK: The repository's own shell scripts, driven as subprocesses. No module under test, so
-        // no dependencies; left out of `App/project.yml`'s iOS test scheme, where `Process` has no
-        // meaning.
+        // MARK: The repository's own shell scripts, driven as subprocesses: no module under test, so
+        // no dependencies, and no place in `App/project.yml`'s iOS test scheme.
         .testTarget(name: "AcaiScriptsTests")
     ] + optionalTargets
 )
