@@ -105,8 +105,12 @@ fi
 
 # Which suites cover a module: every test target that reaches it through the package graph, so a
 # newly registered language needs no entry here.
-DUMP="$WORK/package.json"
-swift package --package-path "$TREE" --scratch-path "$SCRATCH" dump-package > "$DUMP"
+DESCRIPTION="$WORK/package.txt"
+swift package --package-path "$TREE" --scratch-path "$SCRATCH" describe --type text > "$DESCRIPTION"
+if ! grep -q '^    Type: test$' "$DESCRIPTION"; then
+    echo "✗ No test target in what \`swift package describe\` reported, so no hunk can be judged." >&2
+    exit 1
+fi
 
 echo "▸ Building HEAD to compare against"
 if ! swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests > "$WORK/baseline.log" 2>&1; then
@@ -129,12 +133,31 @@ while IFS=$'\t' read -r PATCH FILE LOCATION <&3; do
     fi
 
     MODULE=$(cut -d/ -f2 <<< "$FILE")
-    SUITES=$(jq -r --arg module "$MODULE" '
-        ([.targets[] | {key: .name, value: [.dependencies[] | (.byName // .target) | select(. != null) | .[0]]}]
-            | from_entries) as $deps
-        | def closure($name): [$name] + ((($deps[$name] // []) | map(closure(.)) | add) // []);
-          [.targets[] | select(.type == "test") | .name | select(closure(.) | index($module))] | .[]
-    ' "$DUMP")
+    SUITES=$(awk -v module="$MODULE" '
+        /^    Name: / { target = $2; if (!(target in kind)) order[++targets] = target; mode = ""; next }
+        /^    Type: / { kind[target] = $2; mode = ""; next }
+        /^    Target dependencies:$/ { mode = "deps"; next }
+        /^    [A-Za-z].*:/ { mode = ""; next }
+        mode == "deps" && /^        [A-Za-z_]/ { deps[target] = deps[target] " " $1 }
+        END {
+            for (i = 1; i <= targets; i++) {
+                if (kind[order[i]] != "test") continue
+                split("", seen)
+                split("", queue)
+                queue[1] = order[i]
+                head = 1
+                tail = 1
+                while (head <= tail) {
+                    name = queue[head++]
+                    if (name == module) { print order[i]; break }
+                    if (name in seen) continue
+                    seen[name] = 1
+                    found = split(deps[name], parts, " ")
+                    for (j = 1; j <= found; j++) queue[++tail] = parts[j]
+                }
+            }
+        }
+    ' "$DESCRIPTION")
     if [ -z "$SUITES" ]; then
         SKIPPED+=("$FILE:$LOCATION — no test target reaches $MODULE")
         continue
