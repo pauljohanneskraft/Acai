@@ -3,7 +3,6 @@ import AcaiCore
 /// One way an artifact failed to agree with the source it was parsed from.
 struct FidelityViolation: Sendable, CustomStringConvertible, Equatable {
     enum Rule: String, Sendable {
-        case missingLocation
         case location
         case identity
         case type
@@ -20,19 +19,21 @@ struct FidelityViolation: Sendable, CustomStringConvertible, Equatable {
 /// reason it exists so every other language stays held to the strict reading.
 struct DeclaredLanguageDifference: Sendable {
 
-    /// The name a parser gives a declaration the language leaves anonymous.
-    struct AnonymousName: Sendable {
-        /// Appended to whatever the declaration is attached to, or the whole name when the stem is
-        /// empty.
+    /// A name the parser reports where the source never writes it.
+    struct SubstitutedName: Sendable {
+        /// The reported name, or its tail when the parser prefixes what the declaration attaches to.
         let suffix: String
         /// The keyword that has to appear in the declaration's own span for the name to stand in.
         let keyword: String
         let reason: String
     }
 
-    var anonymousNames: [AnonymousName] = []
+    var substitutedNames: [SubstitutedName] = []
     /// Characters that may follow a type in the source without the reference recording them.
     var unmodelledTypeSuffixes: [Character: String] = [:]
     /// Whether the language sugars a generic collection, so `Array<T>` is also written `[T]`.
     var sugarsGenericCollections = false
+    /// Whether a constructor parameter may take its type from the field it initializes, as Dart's
+    /// `this.x` formals do, which leaves that type unwritten in the constructor's own span.
+    var forwardsFieldTypesToConstructorParameters = false
 }

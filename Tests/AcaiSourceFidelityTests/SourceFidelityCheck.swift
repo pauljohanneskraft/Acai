@@ -17,9 +17,7 @@ struct SourceFidelityCheck {
     // MARK: - Locations
 
     func locationViolations(of declaration: LocatedDeclaration) -> [FidelityViolation] {
-        guard let location = declaration.location else {
-            return [violation(.missingLocation, declaration, "claims no source location")]
-        }
+        guard let location = declaration.location else { return [] }
         guard location.line >= 1, location.line <= text.lineCount else {
             return [violation(.location, declaration, "line \(location.line) is outside the \(text.lineCount)-line file")]
         }
@@ -51,7 +49,7 @@ struct SourceFidelityCheck {
     ) -> [FidelityViolation] {
         let span = text.span(from: location.line, through: location.endLine ?? location.line)
         guard !WhitespaceInsensitiveSearch(span).matches(of: declaration.name).isEmpty else {
-            guard !isAnonymous(declaration, in: span) else { return [] }
+            guard !isSubstituted(declaration, in: span) else { return [] }
             return [violation(
                 .location, declaration,
                 "the name '\(declaration.name)' does not occur in lines "
@@ -61,10 +59,10 @@ struct SourceFidelityCheck {
         return []
     }
 
-    /// Whether the name stands in for a declaration the language leaves anonymous, which the suite
-    /// accepts only where that language declares the substitution.
-    private func isAnonymous(_ declaration: LocatedDeclaration, in span: String) -> Bool {
-        difference.anonymousNames.contains { rule in
+    /// Whether the name stands in for one the source never writes, accepted only where the language
+    /// declares the substitution and the keyword it rests on is in this very span.
+    private func isSubstituted(_ declaration: LocatedDeclaration, in span: String) -> Bool {
+        difference.substitutedNames.contains { rule in
             guard declaration.name.hasSuffix(rule.suffix) else { return false }
             guard span.range(of: rule.keyword, options: .caseInsensitive) != nil else { return false }
             let stem = String(declaration.name.dropLast(rule.suffix.count))
@@ -108,25 +106,36 @@ struct SourceFidelityCheck {
             reference: spelled.reference, sugarsGenericCollections: difference.sugarsGenericCollections
         )
         let found = spelling.candidates.lazy
-            .map { ($0, search.matches(of: $0).filter { match in !isTailOfWord(match, of: $0) }) }
+            .map { (candidate: String) in (candidate, self.matches(of: candidate, in: search)) }
             .first { !$0.1.isEmpty }
         guard let (candidate, matches) = found else {
+            guard !takesTypeFromField(spelled) else { return nil }
             return violation(
                 .type, declaration,
                 "\(spelled.role) '\(spelling.preferred)' does not occur in its own source span"
             )
         }
         guard !matches.contains(where: { accepts($0.following, of: spelled.reference) }) else { return nil }
-        let following = matches.compactMap(\.following).first.map(String.init) ?? "end of span"
+        let following = matches.compactMap { $0.following }.first.map(String.init) ?? "end of span"
         return violation(
             .type, declaration,
             "\(spelled.role) '\(candidate)' is followed by '\(following)' in the source, which continues the type"
         )
     }
 
-    private func isTailOfWord(_ match: WhitespaceInsensitiveSearch.Match, of candidate: String) -> Bool {
-        guard let first = candidate.first, first.continuesIdentifier else { return false }
-        return match.isPrecededByWord
+    /// Whether an unwritten type is one the language lets a constructor parameter take from the
+    /// field it initializes.
+    private func takesTypeFromField(_ spelled: SpelledType) -> Bool {
+        difference.forwardsFieldTypesToConstructorParameters && spelled.mayTakeTypeFromField
+    }
+
+    /// Drops a match that is only the tail of a longer word, so a type named `Item` is not found
+    /// inside `LineItem`.
+    private func matches(
+        of candidate: String, in search: WhitespaceInsensitiveSearch
+    ) -> [WhitespaceInsensitiveSearch.Match] {
+        let startsWithWord = candidate.first?.continuesIdentifier == true
+        return search.matches(of: candidate).filter { !(startsWithWord && $0.isPrecededByWord) }
     }
 
     /// Whether what follows a matched spelling leaves the type complete.

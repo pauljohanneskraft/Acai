@@ -4,6 +4,9 @@ import AcaiCore
 struct SpelledType: Sendable {
     let role: String
     let reference: TypeReference
+    /// Whether this is a constructor parameter that could be taking its type from a field of the
+    /// same name, rather than writing one.
+    var mayTakeTypeFromField = false
 }
 
 /// One declaration the checks hold to its own source: the name that has to appear inside its span,
@@ -37,7 +40,7 @@ struct ArtifactDeclarations {
 
     private func declarations(of type: TypeDeclaration) -> [LocatedDeclaration] {
         [LocatedDeclaration(label: "type \(type.id)", name: type.name, location: type.location)]
-            + type.members.map { declaration(of: $0, in: type.name) }
+            + type.members.map { declaration(of: $0, in: type) }
             + type.enumCases.map { enumCase in
                 LocatedDeclaration(
                     label: "case \(type.name).\(enumCase.name)",
@@ -48,22 +51,32 @@ struct ArtifactDeclarations {
             + type.nestedTypes.flatMap { declarations(of: $0) }
     }
 
-    private func declaration(of member: Member, in typeName: String?) -> LocatedDeclaration {
-        let owner = typeName.map { "\($0)." } ?? ""
+    private func declaration(of member: Member, in type: TypeDeclaration?) -> LocatedDeclaration {
+        let owner = type.map { "\($0.name)." } ?? ""
         return LocatedDeclaration(
             label: "member \(owner)\(member.name)",
             name: member.name,
             location: member.location,
-            spelledTypes: spelledTypes(of: member)
+            spelledTypes: spelledTypes(of: member, in: type)
         )
     }
 
-    private func spelledTypes(of member: Member) -> [SpelledType] {
+    private func spelledTypes(of member: Member, in type: TypeDeclaration?) -> [SpelledType] {
         let own = member.type.map { [SpelledType(role: "type", reference: $0)] } ?? []
         return own + member.parameters.compactMap { parameter in
             parameter.type.map {
-                SpelledType(role: "parameter '\(parameter.internalName)'", reference: $0)
+                SpelledType(
+                    role: "parameter '\(parameter.internalName)'",
+                    reference: $0,
+                    mayTakeTypeFromField: member.kind == .initializer && initializes(parameter, of: type)
+                )
             }
         }
+    }
+
+    /// Whether the owning type declares a member this parameter could be initializing directly.
+    private func initializes(_ parameter: Parameter, of type: TypeDeclaration?) -> Bool {
+        guard let type else { return false }
+        return type.members.contains { $0.name == parameter.internalName && $0.type == parameter.type }
     }
 }
