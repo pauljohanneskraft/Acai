@@ -29,7 +29,7 @@ struct NodeKindCoverageTests {
             """
             \(plugin.stem) produces node kinds no inventory entry covers: \
             \(unclassified.sorted().joined(separator: ", ")).
-            Classify each in \(plugin.stem.capitalized)NodeKinds as extracted, ignored with a reason, \
+            Classify each in \(plugin.stem)'s inventory as extracted, ignored with a reason, \
             or not a declaration.
             """
         )
@@ -55,21 +55,23 @@ struct NodeKindCoverageTests {
         }
     }
 
-    /// Every kind an inventory calls extracted has to occur in the corpus: a kind spelled wrong, or
-    /// one no fixture reaches, makes the assertion above pass without checking anything.
+    /// Every kind an inventory calls extracted has to yield an occurrence somewhere in the corpus: a
+    /// kind spelled wrong, one whose `NamePath` reads nothing, or one no fixture reaches makes the
+    /// assertion above pass without checking anything.
     @Test("every extracted kind occurs in the corpus", arguments: NodeKindCorpus().plugins)
     func everyExtractedKindOccurs(plugin: NodeKindCorpus.Plugin) throws {
         let corpus = NodeKindCorpus()
-        var seen: Set<String> = []
+        var named: Set<String> = []
         for source in corpus.sources(for: plugin) {
-            seen.formUnion(try corpus.facts(of: source, plugin: plugin).kinds)
+            named.formUnion(try corpus.facts(of: source, plugin: plugin).occurrences.map(\.kind))
         }
-        let absent = Set(plugin.inventory.extracted.keys).subtracting(seen)
+        let absent = Set(plugin.inventory.extracted.keys).subtracting(named)
         #expect(
             absent.isEmpty,
             """
-            \(plugin.stem)'s inventory claims these extracted kinds, which no corpus source produces: \
-            \(absent.sorted().joined(separator: ", ")). Add a fixture reaching each, or drop it.
+            \(plugin.stem)'s inventory claims these extracted kinds, which no corpus source declares a \
+            name for: \(absent.sorted().joined(separator: ", ")). Add a fixture reaching each, fix its \
+            `NamePath`, or drop it.
             """
         )
     }
@@ -91,7 +93,7 @@ struct NodeKindCoverageTests {
         case .declared:
             #expect(found, Comment(rawValue: detail))
         case .knownGap(let issue):
-            withKnownIssue("\(occurrence.kind) is dropped — \(issue)") {
+            withKnownIssue("\(occurrence.kind) is not extracted on its own line — \(issue)") {
                 #expect(found, Comment(rawValue: detail))
             }
         }

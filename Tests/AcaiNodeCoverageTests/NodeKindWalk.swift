@@ -15,6 +15,7 @@ struct NodeKindWalk {
                 facts.hasParseError = true
             }
             guard let extracted = inventory.extracted[kind] else { return }
+            if let required = extracted.requiredChild, !node.hasNamedChild(ofKind: required) { return }
             let names = extracted.name.names(of: node, in: context)
             guard !names.isEmpty else {
                 facts.unreadableNames.insert(kind)
@@ -49,5 +50,12 @@ struct NodeKindWalk {
             ancestor = candidate.parent
         }
         return nil
+    }
+}
+
+extension Node {
+
+    func hasNamedChild(ofKind kind: String) -> Bool {
+        children().contains { $0.nodeType == kind }
     }
 }

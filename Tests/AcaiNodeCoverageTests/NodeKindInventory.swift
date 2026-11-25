@@ -18,6 +18,9 @@ struct NodeKindInventory: Sendable {
 /// A kind whose every occurrence must produce a declaration carrying the declared name.
 struct ExtractedKind: Sendable {
     let name: NamePath
+    /// Set when only occurrences carrying a direct child of this kind declare anything — a Kotlin
+    /// `class_parameter` is promoted to a property only when it is written `val`/`var`.
+    let requiredChild: String?
     /// Set when extraction is broken wherever the kind occurs; recorded with `withKnownIssue`, so
     /// the day it starts working the suite says so rather than staying quietly green.
     let knownIssue: String?
@@ -28,11 +31,13 @@ struct ExtractedKind: Sendable {
 
     init(
         name: NamePath,
+        requiredChild: String? = nil,
         knownIssue: String? = nil,
         ignoredInside: [String: String] = [:],
         knownIssueInside: [String: String] = [:]
     ) {
         self.name = name
+        self.requiredChild = requiredChild
         self.knownIssue = knownIssue
         self.ignoredInside = ignoredInside
         self.knownIssueInside = knownIssueInside

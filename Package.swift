@@ -457,6 +457,12 @@ let package = Package(
                 "AcaiCore",
                 "AcaiTreeSitter",
                 .product(name: "TreeSitterJava", package: "tree-sitter-java"),
+                .product(name: "TreeSitterKotlin", package: "tree-sitter-kotlin"),
+                .product(name: "TreeSitterTypeScript", package: "tree-sitter-typescript"),
+                .product(name: "TreeSitterDart", package: "tree-sitter-dart"),
+                .product(name: "TreeSitterPython", package: "tree-sitter-python"),
+                .product(name: "TreeSitterC", package: "tree-sitter-c"),
+                .product(name: "TreeSitterCPP", package: "tree-sitter-cpp"),
             ],
             exclude: ["Fixtures"]
         ),
