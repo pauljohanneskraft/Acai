@@ -4,13 +4,11 @@ import AcaiCore
 struct SpelledType: Sendable {
     let role: String
     let reference: TypeReference
-    /// Whether this is a constructor parameter that could be taking its type from a field of the
-    /// same name, rather than writing one.
+    /// Whether this constructor parameter could be taking its type from a field of the same name.
     var mayTakeTypeFromField = false
 }
 
-/// One declaration the checks hold to its own source: the name that has to appear inside its span,
-/// the location it claims, and every type it spells.
+/// One declaration held to its own source span.
 struct LocatedDeclaration: Sendable {
     let label: String
     let name: String
@@ -18,8 +16,7 @@ struct LocatedDeclaration: Sendable {
     var spelledTypes: [SpelledType] = []
 }
 
-/// Flattens an artifact into the declarations the checks run on, nested types and extension bodies
-/// included, so a declaration cannot escape a check by sitting one level down.
+/// Flattens an artifact into every declaration the checks run on, nested types included.
 struct ArtifactDeclarations {
     let artifact: CodeArtifact
 
@@ -29,7 +26,6 @@ struct ArtifactDeclarations {
             + artifact.globalVariables.map { declaration(of: $0, in: nil) }
     }
 
-    /// Every declared type including nested ones, in declaration order.
     var allTypes: [TypeDeclaration] {
         artifact.types.flatMap { flatten($0) }
     }

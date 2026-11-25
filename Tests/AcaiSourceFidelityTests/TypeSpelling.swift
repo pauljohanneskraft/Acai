@@ -1,7 +1,6 @@
 import AcaiCore
 
-/// How a `TypeReference` could have been written in source, richest spelling first, so a check can
-/// take the fullest one the file actually contains and judge what follows it.
+/// How a `TypeReference` could have been written, richest spelling first.
 struct TypeSpelling {
     let reference: TypeReference
     let sugarsGenericCollections: Bool

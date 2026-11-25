@@ -447,9 +447,7 @@ let package = Package(
             exclude: ["Features"]
         ),
 
-        // MARK: Checks each parsed artifact against its own source text, over both the golden
-        // fixtures and the contract snippets. Owns no corpus of its own: it reads the two other
-        // test targets' directories by path, so neither corpus has to be duplicated to be checked.
+        // MARK: Checks each parsed artifact against its own source, reading both other test targets' corpora.
         .testTarget(name: "AcaiSourceFidelityTests", dependencies: ["AcaiLibrary", "AcaiCore"]),
 
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.

@@ -1,9 +1,7 @@
 import Testing
 import AcaiCore
 
-/// A check that cannot fail proves nothing, so each one is shown failing on an artifact broken in
-/// exactly the way it exists to catch. The language is one no difference is declared for, which is
-/// also what holds these cases to the strict reading.
+/// Each check shown failing on an artifact broken the way it exists to catch, under no declared difference.
 @Suite("Each fidelity check fails on a broken artifact")
 struct SourceFidelityCheckTests {
 

@@ -1,8 +1,6 @@
 import AcaiCore
 
-/// Holds one parsed artifact to the source text it came from: every location addresses real
-/// characters, every type is identified once, and every type reference is spelled in the source it
-/// was read from and not cut short there.
+/// Holds one parsed artifact to the source it came from: locations, type identity and type spelling.
 struct SourceFidelityCheck {
     let text: SourceText
     let artifact: CodeArtifact
@@ -19,7 +17,8 @@ struct SourceFidelityCheck {
     func locationViolations(of declaration: LocatedDeclaration) -> [FidelityViolation] {
         guard let location = declaration.location else { return [] }
         guard location.line >= 1, location.line <= text.lineCount else {
-            return [violation(.location, declaration, "line \(location.line) is outside the \(text.lineCount)-line file")]
+            let detail = "line \(location.line) is outside the \(text.lineCount)-line file"
+            return [violation(.location, declaration, detail)]
         }
         if let endLine = location.endLine, endLine < location.line {
             return [violation(.location, declaration, "endLine \(endLine) is before line \(location.line)")]
@@ -59,8 +58,7 @@ struct SourceFidelityCheck {
         return []
     }
 
-    /// Whether the name stands in for one the source never writes, accepted only where the language
-    /// declares the substitution and the keyword it rests on is in this very span.
+    /// Accepted only where the language declares the substitution and its keyword is in this span.
     private func isSubstituted(_ declaration: LocatedDeclaration, in span: String) -> Bool {
         difference.substitutedNames.contains { rule in
             guard declaration.name.hasSuffix(rule.suffix) else { return false }
@@ -123,14 +121,12 @@ struct SourceFidelityCheck {
         )
     }
 
-    /// Whether an unwritten type is one the language lets a constructor parameter take from the
-    /// field it initializes.
+    /// Whether the language lets a constructor parameter take an unwritten type from its field.
     private func takesTypeFromField(_ spelled: SpelledType) -> Bool {
         difference.forwardsFieldTypesToConstructorParameters && spelled.mayTakeTypeFromField
     }
 
-    /// Drops a match that is only the tail of a longer word, so a type named `Item` is not found
-    /// inside `LineItem`.
+    /// Drops a match that is only a longer word's tail, so `Item` is not found inside `LineItem`.
     private func matches(
         of candidate: String, in search: WhitespaceInsensitiveSearch
     ) -> [WhitespaceInsensitiveSearch.Match] {

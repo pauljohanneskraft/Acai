@@ -1,7 +1,6 @@
 import Foundation
 
-/// A source file addressed the way `SourceLocation` addresses it: 1-based lines, and 1-based
-/// columns counted in `Character`s.
+/// Addressed the way `SourceLocation` is: 1-based lines and 1-based columns counted in `Character`s.
 struct SourceText {
     let lines: [String]
 
@@ -32,9 +31,7 @@ struct SourceText {
     }
 }
 
-/// Finds a needle in a haystack while ignoring the haystack's whitespace, so a type written
-/// `Map<String, int>` is found by the spelling `Map<String,int>` without the search having to guess
-/// where a language puts its spaces.
+/// Searches while ignoring the haystack's whitespace, so `Map<String, int>` is found by `Map<String,int>`.
 struct WhitespaceInsensitiveSearch {
     let characters: [Character]
 
@@ -49,8 +46,7 @@ struct WhitespaceInsensitiveSearch {
         let end: Int
         /// The first non-whitespace character after the match, `nil` at the end of the haystack.
         let following: Character?
-        /// Whether the character before the match can continue an identifier, which would make this
-        /// a match on the tail of a longer word.
+        /// Whether the character before the match continues an identifier, making this a word's tail.
         let isPrecededByWord: Bool
     }
 

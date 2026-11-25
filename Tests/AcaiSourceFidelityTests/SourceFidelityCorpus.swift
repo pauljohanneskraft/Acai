@@ -2,9 +2,7 @@ import Foundation
 import AcaiCore
 import AcaiLibrary
 
-/// Every parser input the fidelity checks run on: the golden fixtures and the contract matrix's
-/// per-language snippets, both located by `#filePath` and left where they are, so neither corpus
-/// has to be copied to be held to the source.
+/// Every parser input the checks run on: the golden fixtures and the contract snippets, by `#filePath`.
 struct SourceFidelityCorpus {
 
     /// One source file and the parser the engine routes its extension to.
@@ -13,8 +11,7 @@ struct SourceFidelityCorpus {
         let url: URL
         let parser: any CodeParser
 
-        /// The `fileName` handed to the parser, so every `SourceLocation.filePath` is this relative
-        /// name rather than an absolute path that differs per machine.
+        /// Handed to the parser, so a `SourceLocation.filePath` is relative rather than machine-specific.
         var fileName: String { url.lastPathComponent }
 
         var description: String { label }
@@ -36,9 +33,7 @@ struct SourceFidelityCorpus {
         self.parsers = parsers
     }
 
-    /// The parser whose `fileExtensions` claim this extension, in `standardParsers` order — the same
-    /// routing the engine applies, so a `.jsx` subject is parsed as JavaScript and a `.tsx` one as
-    /// TypeScript without this suite restating either mapping.
+    /// The first parser claiming this extension, which is the routing the engine itself applies.
     func parser(forPathExtension pathExtension: String) -> (any CodeParser)? {
         let lowered = pathExtension.lowercased()
         return parsers.first { parser in

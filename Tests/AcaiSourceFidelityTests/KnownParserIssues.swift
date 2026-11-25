@@ -1,14 +1,11 @@
-/// The violations an open issue already explains. The suite stays green while an entry matches and
-/// fails the moment it stops matching, so fixing the parser forces the entry out rather than
-/// leaving a waiver behind.
+/// Violations an open issue explains; an entry that stops matching fails the suite until it goes.
 struct KnownParserIssues {
 
     struct Entry: Sendable {
         let subject: String
         let declaration: String
         let rule: FidelityViolation.Rule
-        /// Enough of the detail to name the exact reference, so a different defect on the same
-        /// declaration is not swallowed with it.
+        /// Enough detail to name the exact reference, so a sibling defect is not swallowed with it.
         let detail: String
         let issue: String
 

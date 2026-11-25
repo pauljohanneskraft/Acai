@@ -1,15 +1,12 @@
 import AcaiCore
 import AcaiLibrary
 
-/// What each language is allowed to differ from its source on, and why. Every entry is a difference
-/// the language itself forces; a parser that loses information belongs in `KnownParserIssues`
-/// naming its issue, never here.
+/// What each language may differ on, and why; a parser that loses information belongs in `KnownParserIssues`.
 struct SourceFidelityDifferences {
     private let byLanguage: [CodeArtifact.SourceLanguage: DeclaredLanguageDifference]
 
     init() {
-        // `CFamilyTypeReferenceResolver.parseDeclarator` unwraps the pointer and reference
-        // declarators the grammar nests around a name, so `char *` reaches the model as `char`.
+        // `CFamilyTypeReferenceResolver.parseDeclarator` unwraps these, so `char *` reaches the model as `char`.
         let cFamily = DeclaredLanguageDifference(unmodelledTypeSuffixes: [
             "*": "pointer declarators are stripped, so a pointer carries the pointee's type",
             "&": "reference declarators are stripped, so a reference carries the referent's type"
@@ -43,8 +40,7 @@ struct SourceFidelityDifferences {
         ]
     }
 
-    /// A language with nothing declared is held to the strict reading, which is where every language
-    /// should be.
+    /// A language with nothing declared is held to the strict reading, which is where it should be.
     func difference(for language: CodeArtifact.SourceLanguage) -> DeclaredLanguageDifference {
         byLanguage[language] ?? DeclaredLanguageDifference()
     }

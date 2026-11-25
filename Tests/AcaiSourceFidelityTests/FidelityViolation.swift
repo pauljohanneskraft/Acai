@@ -1,7 +1,7 @@
 import AcaiCore
 
 /// One way an artifact failed to agree with the source it was parsed from.
-struct FidelityViolation: Sendable, CustomStringConvertible, Equatable {
+struct FidelityViolation: Sendable, CustomStringConvertible {
     enum Rule: String, Sendable {
         case location
         case identity
@@ -15,13 +15,12 @@ struct FidelityViolation: Sendable, CustomStringConvertible, Equatable {
     var description: String { "[\(rule.rawValue)] \(declaration) — \(detail)" }
 }
 
-/// A disagreement between artifact and source that a language genuinely forces, declared with the
-/// reason it exists so every other language stays held to the strict reading.
+/// A disagreement a language genuinely forces, declared with the reason it exists.
 struct DeclaredLanguageDifference: Sendable {
 
     /// A name the parser reports where the source never writes it.
     struct SubstitutedName: Sendable {
-        /// The reported name, or its tail when the parser prefixes what the declaration attaches to.
+        /// The reported name, or its tail where the parser prefixes what the declaration attaches to.
         let suffix: String
         /// The keyword that has to appear in the declaration's own span for the name to stand in.
         let keyword: String
@@ -33,7 +32,6 @@ struct DeclaredLanguageDifference: Sendable {
     var unmodelledTypeSuffixes: [Character: String] = [:]
     /// Whether the language sugars a generic collection, so `Array<T>` is also written `[T]`.
     var sugarsGenericCollections = false
-    /// Whether a constructor parameter may take its type from the field it initializes, as Dart's
-    /// `this.x` formals do, which leaves that type unwritten in the constructor's own span.
+    /// Whether a constructor parameter may take its type from the field it initializes, as `this.x` does.
     var forwardsFieldTypesToConstructorParameters = false
 }
