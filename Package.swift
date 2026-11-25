@@ -447,6 +447,24 @@ let package = Package(
             exclude: ["Features"]
         ),
 
+        // MARK: Extractor node-kind coverage, read by path (via `#filePath`) like the parser goldens.
+        .testTarget(
+            name: "AcaiNodeCoverageTests",
+            dependencies: [
+                "AcaiLibrary",
+                "AcaiCore",
+                "AcaiTreeSitter",
+                .product(name: "TreeSitterJava", package: "tree-sitter-java"),
+                .product(name: "TreeSitterKotlin", package: "tree-sitter-kotlin"),
+                .product(name: "TreeSitterTypeScript", package: "tree-sitter-typescript"),
+                .product(name: "TreeSitterDart", package: "tree-sitter-dart"),
+                .product(name: "TreeSitterPython", package: "tree-sitter-python"),
+                .product(name: "TreeSitterC", package: "tree-sitter-c"),
+                .product(name: "TreeSitterCPP", package: "tree-sitter-cpp"),
+            ],
+            exclude: ["Fixtures"]
+        ),
+
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no AcaiRender dependency); the PNG checks live in AcaiRenderTests.
         .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"])
