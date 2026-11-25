@@ -117,6 +117,15 @@ if [ "$(git worktree list | wc -l)" -ne 1 ]; then
     FAILURES=$((FAILURES + 1))
 fi
 
+# Out of time is its own outcome: no hunk may be read as caught because the clock ran out.
+BUDGET=$(MUTATION_CHECK_TIME_LIMIT=1 "$CHECK" "$BASE")
+if ! grep -qE '^3 hunk\(s\) against .*: 0 caught, 0 surviving, 0 not applicable, 3 not reached\.$' \
+    <<< "$BUDGET"; then
+    echo "✗ A one-second budget did not report all three hunks as not reached:" >&2
+    echo "$BUDGET" >&2
+    FAILURES=$((FAILURES + 1))
+fi
+
 if [ "$FAILURES" -gt 0 ]; then
     echo "✗ $FAILURES check(s) failed." >&2
     exit 1

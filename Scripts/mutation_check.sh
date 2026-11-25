@@ -43,6 +43,8 @@ WORK=$(mktemp -d)
 TREE="$WORK/tree"
 SCRATCH="$WORK/build"
 trap 'git worktree remove --force "$TREE" >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # Its own worktree and its own scratch path: this never touches the checkout it runs from.
 git worktree add --detach --quiet "$TREE" HEAD
@@ -54,8 +56,16 @@ git diff --unified=0 --no-color --no-ext-diff --no-renames "$BASE...HEAD" -- "${
         !inhunk && /^(old|new|deleted file|new file|copy|rename|similarity|dissimilarity|index) / {
             header = header $0 "\n"; next
         }
-        !inhunk && /^--- / { header = header $0 "\n"; next }
-        !inhunk && /^\+\+\+ / { header = header $0 "\n"; path = substr($0, 7); next }
+        !inhunk && /^--- / {
+            header = header $0 "\n"
+            removed = ($0 == "--- /dev/null") ? "" : substr($0, 7)
+            next
+        }
+        !inhunk && /^\+\+\+ / {
+            header = header $0 "\n"
+            path = ($0 == "+++ /dev/null") ? removed : substr($0, 7)
+            next
+        }
         /^@@/ {
             inhunk = 1
             out = sprintf("%s/%04d.patch", dir, ++n)
@@ -67,7 +77,9 @@ git diff --unified=0 --no-color --no-ext-diff --no-renames "$BASE...HEAD" -- "${
             start = range
             count = 1
             if (split(range, parts, ",") == 2) { start = parts[1]; count = parts[2] }
-            location = (count == 0) ? start " (deletion)" : start "-" (start + count - 1)
+            location = start
+            if (count == 0) location = start " (deletion)"
+            else if (count > 1) location = start "-" (start + count - 1)
             printf "%s\t%s\t%s\n", out, path, location >> catalog
             next
         }
@@ -125,17 +137,30 @@ while IFS=$'\t' read -r PATCH FILE LOCATION; do
     for SUITE in $SUITES; do
         FILTERS+=(--filter "$SUITE")
     done
-    if ! timeout "$REMAINING" swift build --package-path "$TREE" --scratch-path "$SCRATCH" \
-        --build-tests > "$WORK/build.log" 2>&1; then
+    STATUS=0
+    timeout "$REMAINING" swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests \
+        > "$WORK/build.log" 2>&1 || STATUS=$?
+    REMAINING=$((TIME_LIMIT - ($(date +%s) - STARTED)))
+    if [ "$STATUS" -eq 124 ] || [ "$REMAINING" -le 0 ]; then
+        UNREACHED+=("$FILE:$LOCATION")
+        echo "  — out of time"
+    elif [ "$STATUS" -ne 0 ]; then
         SKIPPED+=("$FILE:$LOCATION — does not compile on its own")
         echo "  — not applicable"
-    elif timeout "$((TIME_LIMIT - ($(date +%s) - STARTED)))" swift test --package-path "$TREE" \
-        --scratch-path "$SCRATCH" --parallel --skip-build "${FILTERS[@]}" > "$WORK/test.log" 2>&1; then
-        SURVIVING+=("$FILE:$LOCATION")
-        echo "  ✗ surviving — every suite still passed"
     else
-        CAUGHT=$((CAUGHT + 1))
-        echo "  ✓ caught"
+        STATUS=0
+        timeout "$REMAINING" swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
+            --skip-build "${FILTERS[@]}" > "$WORK/test.log" 2>&1 || STATUS=$?
+        if [ "$STATUS" -eq 124 ]; then
+            UNREACHED+=("$FILE:$LOCATION")
+            echo "  — out of time"
+        elif [ "$STATUS" -eq 0 ]; then
+            SURVIVING+=("$FILE:$LOCATION")
+            echo "  ✗ surviving — every suite still passed"
+        else
+            CAUGHT=$((CAUGHT + 1))
+            echo "  ✓ caught"
+        fi
     fi
     git -C "$TREE" reset --hard --quiet HEAD
     git -C "$TREE" clean -qfd
