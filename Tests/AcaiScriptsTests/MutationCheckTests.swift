@@ -17,9 +17,9 @@ struct MutationCheckTests {
         process.standardError = output
 
         try process.run()
-        let log = output.fileHandleForReading.readDataToEndOfFile()
+        let log = String(bytes: output.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
         process.waitUntilExit()
 
-        #expect(process.terminationStatus == 0, "\(String(decoding: log, as: UTF8.self))")
+        #expect(process.terminationStatus == 0, "\(log)")
     }
 }
