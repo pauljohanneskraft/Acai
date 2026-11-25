@@ -22,6 +22,15 @@ struct ContractFeatureCorpus {
         let stem: String
         let fileExtension: String
         let parser: any CodeParser
+        /// How the language starts a comment that runs to the end of the line.
+        let lineComment: String
+
+        init(stem: String, fileExtension: String, parser: any CodeParser, lineComment: String = "//") {
+            self.stem = stem
+            self.fileExtension = fileExtension
+            self.parser = parser
+            self.lineComment = lineComment
+        }
 
         var description: String { stem }
 
@@ -72,7 +81,7 @@ struct ContractFeatureCorpus {
         Language(stem: "typescript", fileExtension: "ts", parser: JSCodeParser(isTypeScript: true)),
         Language(stem: "javascript", fileExtension: "js", parser: JSCodeParser(isTypeScript: false)),
         Language(stem: "dart", fileExtension: "dart", parser: DartCodeParser()),
-        Language(stem: "python", fileExtension: "py", parser: PythonCodeParser()),
+        Language(stem: "python", fileExtension: "py", parser: PythonCodeParser(), lineComment: "#"),
         Language(stem: "c", fileExtension: "c", parser: CCodeParser()),
         Language(stem: "cpp", fileExtension: "cpp", parser: CppCodeParser())
     ]
@@ -152,10 +161,21 @@ struct ContractFeatureCorpus {
     /// The shape `language` produces for `feature`, through the same parse → enrich path the engine
     /// runs, then the normaliser.
     func shape(feature: String, language: Language) throws -> ContractShape {
-        let snippet = try self.snippet(feature: feature, language: language)
-        let parsed = language.parser.parse(source: snippet.source, fileName: snippet.fileName)
-        let enriched = parsed.enriched(configuration: language.configuration)
+        let enriched = try artifact(feature: feature, language: language)
         return ContractNormalizer(configuration: language.configuration).shape(of: enriched)
+    }
+
+    /// The artifact `language` produces for `feature`, through the same parse → enrich path the engine
+    /// runs. Unlike ``shape(feature:language:)`` nothing is normalised away.
+    func artifact(feature: String, language: Language) throws -> CodeArtifact {
+        let snippet = try self.snippet(feature: feature, language: language)
+        return artifact(source: snippet.source, fileName: snippet.fileName, language: language)
+    }
+
+    func artifact(source: String, fileName: String, language: Language) -> CodeArtifact {
+        language.parser
+            .parse(source: source, fileName: fileName)
+            .enriched(configuration: language.configuration)
     }
 
     private func relativePath(of url: URL) -> String {
