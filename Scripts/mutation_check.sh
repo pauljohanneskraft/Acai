@@ -103,18 +103,18 @@ if [ ! -s "$WORK/hunks.tsv" ]; then
     exit 0
 fi
 
-# Which suites cover a module: every test target that reaches it through the package graph, so a
-# newly registered language needs no entry here.
-DESCRIPTION="$WORK/package.txt"
-swift package --package-path "$TREE" --scratch-path "$SCRATCH" describe --type text > "$DESCRIPTION"
-if ! grep -q '^    Type: test$' "$DESCRIPTION"; then
-    echo "✗ No test target in what \`swift package describe\` reported, so no hunk can be judged." >&2
-    exit 1
-fi
-
-echo "▸ Building HEAD to compare against"
+# Every hunk is judged against this: HEAD's own tests, whole and green. Filtering them to the suites
+# that cover the hunk is not worth it — `--filter` matching differs between toolchains, and a filter
+# that matches nothing still exits 0, which would report a caught hunk as surviving.
+echo "▸ Building HEAD and running its tests to compare against"
 if ! swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests > "$WORK/baseline.log" 2>&1; then
     echo "✗ HEAD does not build, so a reverted hunk proves nothing:" >&2
+    tail -30 "$WORK/baseline.log" >&2
+    exit 1
+fi
+if ! swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel --skip-build \
+    > "$WORK/baseline.log" 2>&1; then
+    echo "✗ HEAD's own tests do not pass, so every reverted hunk would look caught:" >&2
     tail -30 "$WORK/baseline.log" >&2
     exit 1
 fi
@@ -132,47 +132,12 @@ while IFS=$'\t' read -r PATCH FILE LOCATION <&3; do
         continue
     fi
 
-    MODULE=$(cut -d/ -f2 <<< "$FILE")
-    SUITES=$(awk -v module="$MODULE" '
-        /^    Name: / { target = $2; if (!(target in kind)) order[++targets] = target; mode = ""; next }
-        /^    Type: / { kind[target] = $2; mode = ""; next }
-        /^    Target dependencies:$/ { mode = "deps"; next }
-        /^    [A-Za-z].*:/ { mode = ""; next }
-        mode == "deps" && /^        [A-Za-z_]/ { deps[target] = deps[target] " " $1 }
-        END {
-            for (i = 1; i <= targets; i++) {
-                if (kind[order[i]] != "test") continue
-                split("", seen)
-                split("", queue)
-                queue[1] = order[i]
-                head = 1
-                tail = 1
-                while (head <= tail) {
-                    name = queue[head++]
-                    if (name == module) { print order[i]; break }
-                    if (name in seen) continue
-                    seen[name] = 1
-                    found = split(deps[name], parts, " ")
-                    for (j = 1; j <= found; j++) queue[++tail] = parts[j]
-                }
-            }
-        }
-    ' "$DESCRIPTION")
-    if [ -z "$SUITES" ]; then
-        SKIPPED+=("$FILE:$LOCATION — no test target reaches $MODULE")
-        continue
-    fi
-
-    echo "▸ $FILE:$LOCATION reverted — $(tr '\n' ' ' <<< "$SUITES")"
+    echo "▸ $FILE:$LOCATION reverted"
     if ! git -C "$TREE" apply --reverse --unidiff-zero "$PATCH" 2>/dev/null; then
         SKIPPED+=("$FILE:$LOCATION — does not reverse-apply on its own")
         continue
     fi
 
-    FILTERS=()
-    for SUITE in $SUITES; do
-        FILTERS+=(--filter "$SUITE")
-    done
     STATUS=0
     bounded "$REMAINING" swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests \
         > "$WORK/build.log" 2>&1 || STATUS=$?
@@ -189,7 +154,7 @@ while IFS=$'\t' read -r PATCH FILE LOCATION <&3; do
     else
         STATUS=0
         bounded "$REMAINING" swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
-            --skip-build "${FILTERS[@]}" > "$WORK/test.log" 2>&1 || STATUS=$?
+            --skip-build > "$WORK/test.log" 2>&1 || STATUS=$?
         if [ "$STATUS" -eq 124 ]; then
             UNREACHED+=("$FILE:$LOCATION")
             echo "  — out of time"
@@ -200,7 +165,7 @@ while IFS=$'\t' read -r PATCH FILE LOCATION <&3; do
             echo "  — inconclusive"
         elif [ "$STATUS" -eq 0 ]; then
             SURVIVING+=("$FILE:$LOCATION")
-            echo "  ✗ surviving — every suite still passed"
+            echo "  ✗ surviving — the tests still passed"
         else
             CAUGHT=$((CAUGHT + 1))
             echo "  ✓ caught"
