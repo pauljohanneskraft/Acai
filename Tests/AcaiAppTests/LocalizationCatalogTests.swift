@@ -26,16 +26,6 @@ struct LocalizationCatalogTests {
         var argumentCount: Int { arguments.count }
     }
 
-    /// A localizable position that must never take a bare literal. The empty literal is the one
-    /// exception — `Picker("", …)`/`Button("") { }` label an unlabelled control, not text.
-    private static let localizablePrefixes = [
-        "Text(", "Label(", "Button(", "Toggle(", "Picker(", "TextField(", "SecureField(",
-        "Section(", "Menu(", "Link(", "NavigationLink(", "LabeledContent(", "DisclosureGroup(",
-        "Stepper(", "ProgressView(", "ContentUnavailableView(", "TableColumn(", "GroupBox(",
-        ".help(", ".navigationTitle(", ".accessibilityLabel(", ".accessibilityHint(",
-        ".accessibilityValue(", ".alert(", ".confirmationDialog("
-    ]
-
     /// The spellings that state what a `Text` holds. Anything else is an unmarked string.
     private static let textIntents = ["verbatim:", "localized:", ".app(", "image:"]
 
@@ -229,32 +219,6 @@ struct LocalizationCatalogTests {
         )
     }
 
-    @Test("No string reaches the interface as a bare literal")
-    func noBareLiterals() throws {
-        for file in swiftFiles() {
-            guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
-            for prefix in Self.localizablePrefixes {
-                var searched = source.startIndex
-                while let start = source.range(of: prefix, range: searched..<source.endIndex) {
-                    searched = start.upperBound
-                    // `Label(` must be the whole word, not the tail of `chartXAxisLabel(`.
-                    let isWholeWord = prefix.hasPrefix(".") || start.lowerBound == source.startIndex
-                        || !(source[source.index(before: start.lowerBound)].isLetter
-                             || source[source.index(before: start.lowerBound)] == ".")
-                    guard isWholeWord else { continue }
-                    // The literal may sit on the next line — a call broken after its paren is the
-                    // same violation.
-                    var argument = source[start.upperBound...].drop { $0.isWhitespace }
-                    guard argument.first == "\"" else { continue }
-                    argument = argument.dropFirst()
-                    #expect(
-                        argument.first == "\"",
-                        "\(file.lastPathComponent): \(prefix)\"…\") takes a bare literal — use .app(\"…\")"
-                    )
-                }
-            }
-        }
-    }
 }
 
 // MARK: - Catalog and Source Reading
@@ -376,4 +340,102 @@ extension LocalizationCatalogTests {
         return source[start..<end]
     }
 
+}
+
+// MARK: - Bare Literals
+
+extension LocalizationCatalogTests {
+
+    /// The bare literals the app still carries, keyed by file; every entry must still be found.
+    private static let bareLiteralBaseline: [String: Set<String>] = [
+        "ActivityIndicatorView.swift": ["No operations in progress", " in progress"],
+        "FindingRow.swift": ["Show", "Suppress"],
+        "FreeformDiagramCatalog.swift": ["Self-Transition", "Transition"],
+        "FreeformDiagramView.swift": ["Freeform Diagram"],
+        "SequenceConfigSheet.swift": ["Function", "Method", "New Sequence Diagram", "Resolve Interfaces"],
+        "SequenceDiagramSidebar.swift": ["Function", "Method"],
+        "TypeMemberEditorSheets.swift": ["Add Method", "Add Property", "Edit Method", "Edit Property"]
+    ]
+
+    /// `Text(verbatim:)` literals that are content, each with why it stays as written.
+    private static let verbatimContentExceptions: [String: [String: String]] = [
+        "ClassDiagramInspector.swift": [" x ": "the separator between a width and a height"],
+        "CodebaseGlobalsSection.swift": ["k": "the sigil marking a constant, beside = for a variable"],
+        "CompareGitOverlay.swift": ["HEAD": "the git ref, spelled the same in every language"],
+        "NewCodebaseSheet+Remote.swift": [
+            "https://example.com/team/project.git": "a sample address in a field prompt"
+        ]
+    ]
+
+    @Test("No string reaches the interface as a bare literal")
+    func noBareLiterals() throws {
+        var found: [String: Set<String>] = [:]
+        for file in swiftFiles() {
+            guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
+            let name = file.lastPathComponent
+            let exceptions = Self.verbatimContentExceptions[name] ?? [:]
+            let scan = BareLiteralScan(source: source)
+            let texts = scan.chromeViolations.map(\.text)
+                + scan.verbatimViolations.map(\.text).filter { exceptions[$0] == nil }
+            guard !texts.isEmpty else { continue }
+            found[name, default: []].formUnion(texts)
+        }
+        let unexpected = found.flatMap { file, texts in
+            texts.subtracting(Self.bareLiteralBaseline[file] ?? []).map { "\(file): \"\($0)\"" }
+        }
+        #expect(
+            unexpected.isEmpty,
+            """
+            \(unexpected.sorted().joined(separator: ", ")) reach the interface as bare literals — \
+            pass .app("…") for chrome, or interpolate the content into Text(verbatim:)
+            """
+        )
+        let settled = Self.bareLiteralBaseline.flatMap { file, texts in
+            texts.subtracting(found[file] ?? []).map { "\(file): \"\($0)\"" }
+        }
+        #expect(
+            settled.isEmpty,
+            """
+            \(settled.sorted().joined(separator: ", ")) no longer occur — drop them from \
+            `bareLiteralBaseline`
+            """
+        )
+    }
+
+    @Test("A literal in a ternary in a localizable position is a bare literal")
+    func aTernaryLiteralIsABareLiteral() {
+        let scan = BareLiteralScan(source: #"Text(isOn ? "On" : "Off")"#)
+        #expect(scan.chromeViolations.map(\.text) == ["On", "Off"])
+    }
+
+    @Test("A literal in a ternary inside Text(verbatim:) is a bare literal")
+    func aTernaryVerbatimLiteralIsABareLiteral() {
+        let scan = BareLiteralScan(source: #"Text(verbatim: one ? "Self-Transition" : "Transition")"#)
+        #expect(scan.verbatimViolations.map(\.text) == ["Self-Transition", "Transition"])
+    }
+
+    @Test("A letter outside interpolation in Text(verbatim:) is a bare literal")
+    func aVerbatimLetterIsABareLiteral() {
+        let scan = BareLiteralScan(source: #"Text(verbatim: "Size \(width) kB")"#)
+        #expect(scan.verbatimViolations.map(\.text) == ["Size  kB"])
+    }
+
+    @Test("A literal behind a coalesce in a localizable position is a bare literal")
+    func aCoalescedLiteralIsABareLiteral() {
+        let scan = BareLiteralScan(source: #".navigationTitle(diagram?.name ?? "Freeform Diagram")"#)
+        #expect(scan.chromeViolations.map(\.text) == ["Freeform Diagram"])
+    }
+
+    @Test("Interpolated content, a catalog identifier and an unlabelled control are not bare")
+    func contentAndIdentifiersAreNotBareLiterals() {
+        let scan = BareLiteralScan(
+            source: #"""
+            Text(verbatim: "\(count) → \(total)")
+            Text(.app("View.Sample.Title"))
+            Picker("", selection: $choice) { }
+            """#
+        )
+        #expect(scan.chromeViolations.isEmpty)
+        #expect(scan.verbatimViolations.isEmpty)
+    }
 }

@@ -1,14 +1,12 @@
 import Foundation
 
-/// Swift source text, walked outside its string literals and comments so a `?` or `:` inside one is
-/// never mistaken for a ternary.
+/// Swift source text, walked outside its string literals and comments, where a `?` is never a ternary.
 struct TopLevelScan {
 
     struct Position {
         let index: Substring.Index
         let character: Character
-        /// Bracket depth after this character: a `(` opening the first nesting level reads 1, its
-        /// `)` reads 0, and the `)` that closes a bracket opened before `text` reads -1.
+        /// Bracket depth after this character; -1 closes a bracket opened before `text`.
         let depth: Int
     }
 
@@ -110,7 +108,6 @@ struct TopLevelScan {
     }
 }
 
-/// A Swift string literal as it is written in the source.
 struct StringLiteral {
 
     let text: Substring
@@ -153,9 +150,7 @@ struct StringLiteral {
     }
 }
 
-/// A Swift expression and the string literals it can evaluate to: itself when it is a literal,
-/// otherwise the branches of its outermost `?:` or `??`, so a literal hidden behind either is still
-/// found.
+/// A Swift expression and the literals it can evaluate to: itself, or the branches of its `?:`/`??`.
 struct LiteralExpression {
 
     let text: Substring
@@ -226,13 +221,12 @@ struct LiteralExpression {
     }
 }
 
-/// One Swift file of `AcaiApp`, read as text, and the localizable positions in it that take a
-/// literal where they should take a catalog identifier or interpolated content.
+/// One Swift file of `AcaiApp`, and the localizable positions in it that take a literal.
 struct BareLiteralScan {
 
     struct Violation {
         let position: String
-        /// The literal's text with every interpolation removed, which is what must be translated.
+        /// The literal with every interpolation removed, which is what would have to be translated.
         let text: String
     }
 
@@ -249,8 +243,7 @@ struct BareLiteralScan {
 
     let source: String
 
-    /// Every index of `source` that is code, so a position named inside a comment or a string
-    /// literal is not read as a call.
+    /// Every index of `source` that is code, so a position named in a comment is not read as a call.
     private let codeIndices: Set<String.Index>
 
     init(source: String) {
@@ -258,8 +251,7 @@ struct BareLiteralScan {
         self.codeIndices = Set(TopLevelScan(text: Substring(source)).positions.map(\.index))
     }
 
-    /// Every literal a chrome position takes. A labelled first argument is not one: `verbatim:`,
-    /// `localized:` and `image:` say what the `Text` holds.
+    /// Every literal a chrome position takes; a labelled first argument says the `Text` is not chrome.
     var chromeViolations: [Violation] {
         Self.chromePositions.flatMap { position in
             arguments(after: position)
@@ -270,8 +262,7 @@ struct BareLiteralScan {
         }
     }
 
-    /// Every `Text(verbatim:)` literal carrying a letter outside its interpolations. Content is
-    /// interpolated; a letter that is not means a word was written into the source.
+    /// Every `Text(verbatim:)` literal carrying a letter outside its interpolations.
     var verbatimViolations: [Violation] {
         arguments(after: Self.verbatimPosition)
             .map { unlabelled($0) }
