@@ -120,7 +120,8 @@ SKIPPED=()
 UNREACHED=()
 CAUGHT=0
 
-while IFS=$'\t' read -r PATCH FILE LOCATION; do
+# On its own descriptor: a build or test run that read stdin would otherwise eat the hunks.
+while IFS=$'\t' read -r PATCH FILE LOCATION <&3; do
     REMAINING=$((TIME_LIMIT - ($(date +%s) - STARTED)))
     if [ "$REMAINING" -le 0 ]; then
         UNREACHED+=("$FILE:$LOCATION")
@@ -184,7 +185,7 @@ while IFS=$'\t' read -r PATCH FILE LOCATION; do
     fi
     git -C "$TREE" reset --hard --quiet HEAD
     git -C "$TREE" clean -qfd
-done < "$WORK/hunks.tsv"
+done 3< "$WORK/hunks.tsv"
 
 {
     echo
