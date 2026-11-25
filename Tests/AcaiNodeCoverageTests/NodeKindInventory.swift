@@ -10,12 +10,6 @@ struct NodeKindInventory: Sendable {
     /// Kinds that declare nothing: expressions, statements, type references, keyword-shaped tokens.
     let notDeclarations: Set<String>
 
-    init(extracted: [String: ExtractedKind], ignored: [String: String], notDeclarations: Set<String>) {
-        self.extracted = extracted
-        self.ignored = ignored
-        self.notDeclarations = notDeclarations
-    }
-
     func classifies(_ kind: String) -> Bool {
         extracted[kind] != nil || ignored[kind] != nil || notDeclarations.contains(kind)
     }

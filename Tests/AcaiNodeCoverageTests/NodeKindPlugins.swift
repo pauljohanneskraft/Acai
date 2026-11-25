@@ -20,13 +20,6 @@ struct NodeKindPlugins {
         )
     }
 
-
-
-
-
-
-
-
     private func grammar(
         _ language: OpaquePointer!, as sourceLanguage: CodeArtifact.SourceLanguage
     ) -> TreeSitterGrammar {
