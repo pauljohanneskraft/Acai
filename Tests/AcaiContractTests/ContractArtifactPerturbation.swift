@@ -47,7 +47,6 @@ struct ContractRenamedFirstDeclaration: ContractArtifactPerturbation {
     }
 }
 
-/// What a location counted from the wrong line looks like.
 struct ContractShiftedLines: ContractArtifactPerturbation {
     let name = "every location one line further down"
 

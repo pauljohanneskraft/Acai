@@ -1,7 +1,6 @@
 import Foundation
 import AcaiCore
 
-/// One contract snippet as the equivalence suite reads it.
 struct ContractSnippet {
     let feature: String
     let language: ContractFeatureCorpus.Language
@@ -11,7 +10,6 @@ struct ContractSnippet {
     var stem: String { fileName.components(separatedBy: ".").first ?? language.stem }
 }
 
-/// A snippet rewritten by one variation, plus the artifacts the rewrite adds to the original's.
 struct ContractVariedSource {
     var source: String
     var fileName: String
@@ -181,8 +179,6 @@ struct ContractJoinedSnippet: ContractSourceVariation {
     }
 }
 
-/// Finds the snippet to join a snippet with: another feature's, in the same language, declaring no
-/// name the original declares or mentions, and parsing cleanly on its own.
 struct ContractDisjointPartner {
     let feature: String
     let language: ContractFeatureCorpus.Language
