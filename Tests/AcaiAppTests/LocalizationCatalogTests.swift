@@ -375,8 +375,7 @@ extension LocalizationCatalogTests {
             let name = file.lastPathComponent
             let exceptions = Self.verbatimContentExceptions[name] ?? [:]
             let scan = BareLiteralScan(source: source)
-            let texts = scan.chromeViolations.map(\.text)
-                + scan.verbatimViolations.map(\.text).filter { exceptions[$0] == nil }
+            let texts = scan.chromeLiterals + scan.verbatimLiterals.filter { exceptions[$0] == nil }
             guard !texts.isEmpty else { continue }
             found[name, default: []].formUnion(texts)
         }
@@ -405,25 +404,25 @@ extension LocalizationCatalogTests {
     @Test("A literal in a ternary in a localizable position is a bare literal")
     func aTernaryLiteralIsABareLiteral() {
         let scan = BareLiteralScan(source: #"Text(isOn ? "On" : "Off")"#)
-        #expect(scan.chromeViolations.map(\.text) == ["On", "Off"])
+        #expect(scan.chromeLiterals == ["On", "Off"])
     }
 
     @Test("A literal in a ternary inside Text(verbatim:) is a bare literal")
     func aTernaryVerbatimLiteralIsABareLiteral() {
         let scan = BareLiteralScan(source: #"Text(verbatim: one ? "Self-Transition" : "Transition")"#)
-        #expect(scan.verbatimViolations.map(\.text) == ["Self-Transition", "Transition"])
+        #expect(scan.verbatimLiterals == ["Self-Transition", "Transition"])
     }
 
     @Test("A letter outside interpolation in Text(verbatim:) is a bare literal")
     func aVerbatimLetterIsABareLiteral() {
         let scan = BareLiteralScan(source: #"Text(verbatim: "Size \(width) kB")"#)
-        #expect(scan.verbatimViolations.map(\.text) == ["Size  kB"])
+        #expect(scan.verbatimLiterals == ["Size  kB"])
     }
 
     @Test("A literal behind a coalesce in a localizable position is a bare literal")
     func aCoalescedLiteralIsABareLiteral() {
         let scan = BareLiteralScan(source: #".navigationTitle(diagram?.name ?? "Freeform Diagram")"#)
-        #expect(scan.chromeViolations.map(\.text) == ["Freeform Diagram"])
+        #expect(scan.chromeLiterals == ["Freeform Diagram"])
     }
 
     @Test("Interpolated content, a catalog identifier and an unlabelled control are not bare")
@@ -435,7 +434,7 @@ extension LocalizationCatalogTests {
             Picker("", selection: $choice) { }
             """#
         )
-        #expect(scan.chromeViolations.isEmpty)
-        #expect(scan.verbatimViolations.isEmpty)
+        #expect(scan.chromeLiterals.isEmpty)
+        #expect(scan.verbatimLiterals.isEmpty)
     }
 }

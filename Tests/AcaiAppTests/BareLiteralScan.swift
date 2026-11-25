@@ -224,14 +224,8 @@ struct LiteralExpression {
 /// One Swift file of `AcaiApp`, and the localizable positions in it that take a literal.
 struct BareLiteralScan {
 
-    struct Violation {
-        let position: String
-        /// The literal with every interpolation removed, which is what would have to be translated.
-        let text: String
-    }
-
     /// A localizable position: whatever it is handed reaches the interface as chrome.
-    static let chromePositions = [
+    private static let chromePositions = [
         "Text(", "Label(", "Button(", "Toggle(", "Picker(", "TextField(", "SecureField(",
         "Section(", "Menu(", "Link(", "NavigationLink(", "LabeledContent(", "DisclosureGroup(",
         "Stepper(", "ProgressView(", "ContentUnavailableView(", "TableColumn(", "GroupBox(",
@@ -239,7 +233,7 @@ struct BareLiteralScan {
         ".accessibilityValue(", ".alert(", ".confirmationDialog("
     ]
 
-    static let verbatimPosition = "Text(verbatim:"
+    private static let verbatimPosition = "Text(verbatim:"
 
     let source: String
 
@@ -252,24 +246,23 @@ struct BareLiteralScan {
     }
 
     /// Every literal a chrome position takes; a labelled first argument says the `Text` is not chrome.
-    var chromeViolations: [Violation] {
+    var chromeLiterals: [String] {
         Self.chromePositions.flatMap { position in
             arguments(after: position)
                 .filter { label(of: $0) == nil }
                 .flatMap { LiteralExpression(text: $0).literals }
                 .filter { !$0.isEmpty }
-                .map { Violation(position: position, text: $0.constantText) }
+                .map { $0.constantText }
         }
     }
 
     /// Every `Text(verbatim:)` literal carrying a letter outside its interpolations.
-    var verbatimViolations: [Violation] {
+    var verbatimLiterals: [String] {
         arguments(after: Self.verbatimPosition)
             .map { unlabelled($0) }
             .flatMap { LiteralExpression(text: $0).literals }
             .map { $0.constantText }
             .filter { $0.contains(where: \.isLetter) }
-            .map { Violation(position: Self.verbatimPosition, text: $0) }
     }
 
     /// The first argument of every call to `position` in the file.
