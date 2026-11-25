@@ -15,7 +15,8 @@ struct NodeKindWalk {
                 facts.hasParseError = true
             }
             guard let extracted = inventory.extracted[kind] else { return }
-            if let required = extracted.requiredChild, !node.hasNamedChild(ofKind: required) { return }
+            guard extracted.requiredChildren.allSatisfy(node.hasNamedChild(ofKind:)),
+                  extracted.requiredFields.allSatisfy({ !node.children(boundTo: $0).isEmpty }) else { return }
             let names = extracted.name.names(of: node, in: context)
             guard !names.isEmpty else {
                 facts.unreadableNames.insert(kind)

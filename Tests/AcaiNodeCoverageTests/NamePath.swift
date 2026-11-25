@@ -40,7 +40,7 @@ struct NamePath: Sendable {
             case .kind(let kind):
                 return sites.flatMap { $0.children().filter { $0.nodeType == kind } }
             case .chain(let field):
-                return sites.map { $0.followingChain(of: field) }
+                return sites.compactMap { $0.followingChain(of: field) }
             }
         }
     }
@@ -56,8 +56,8 @@ extension Node {
         }
     }
 
-    fileprivate func followingChain(of field: String) -> Node {
-        var node = self
+    fileprivate func followingChain(of field: String) -> Node? {
+        guard var node = children(boundTo: field).first else { return nil }
         while let next = node.children(boundTo: field).first {
             node = next
         }

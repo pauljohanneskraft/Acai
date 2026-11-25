@@ -32,7 +32,7 @@ struct TypeScriptNodeKinds {
             ),
             "required_parameter": .init(
                 name: NamePath(.field("pattern")),
-                requiredChild: "accessibility_modifier",
+                requiredChildren: ["accessibility_modifier"],
                 knownIssue: "a constructor parameter property becomes a member with no `location`, so "
                     + "nothing ties the declaration back to its line"
             ),

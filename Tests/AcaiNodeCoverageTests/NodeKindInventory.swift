@@ -33,9 +33,13 @@ struct NodeKindInventory: Sendable {
 /// A kind whose every occurrence must produce a declaration carrying the declared name.
 struct ExtractedKind: Sendable {
     let name: NamePath
-    /// Set when only occurrences carrying a direct child of this kind declare anything — a Kotlin
-    /// `class_parameter` is promoted to a property only when it is written `val`/`var`.
-    let requiredChild: String?
+    /// When set, only occurrences carrying a direct child of every one of these kinds declare
+    /// anything — a C `struct_specifier` declares a type only when it has both a name and a body,
+    /// and a Kotlin `class_parameter` is promoted only when written `val`/`var`.
+    let requiredChildren: [String]
+    /// The same gate by Tree-sitter field: a C++ `field_declaration` holding a nested `class_specifier`
+    /// has no `declarator` and declares nothing itself.
+    let requiredFields: [String]
     /// Set when extraction is broken wherever the kind occurs; recorded with `withKnownIssue`, so
     /// the day it starts working the suite says so rather than staying quietly green.
     let knownIssue: String?
@@ -46,13 +50,15 @@ struct ExtractedKind: Sendable {
 
     init(
         name: NamePath,
-        requiredChild: String? = nil,
+        requiredChildren: [String] = [],
+        requiredFields: [String] = [],
         knownIssue: String? = nil,
         ignoredInside: [String: String] = [:],
         knownIssueInside: [String: String] = [:]
     ) {
         self.name = name
-        self.requiredChild = requiredChild
+        self.requiredChildren = requiredChildren
+        self.requiredFields = requiredFields
         self.knownIssue = knownIssue
         self.ignoredInside = ignoredInside
         self.knownIssueInside = knownIssueInside

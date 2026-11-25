@@ -26,7 +26,7 @@ struct KotlinNodeKinds {
             // the grammar marks with a `binding_pattern_kind` child.
             "class_parameter": .init(
                 name: NamePath(.kind("simple_identifier")),
-                requiredChild: "binding_pattern_kind",
+                requiredChildren: ["binding_pattern_kind"],
                 knownIssue: "KotlinExtractor promotes it to a property but builds the member with no "
                     + "`location`, so nothing ties the declaration back to its line"
             )
