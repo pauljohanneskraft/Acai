@@ -9,6 +9,21 @@ struct NodeKindInventory: Sendable {
     let ignored: [String: String]
     /// Kinds that declare nothing: expressions, statements, type references, keyword-shaped tokens.
     let notDeclarations: Set<String>
+    /// Kinds that count as an enclosing node for an `ignoredInside` or `knownIssueInside` key even
+    /// though they declare nothing — a Python module-level `if` is one.
+    let scopeKinds: Set<String>
+
+    init(
+        extracted: [String: ExtractedKind],
+        ignored: [String: String],
+        notDeclarations: Set<String>,
+        scopeKinds: Set<String> = []
+    ) {
+        self.extracted = extracted
+        self.ignored = ignored
+        self.notDeclarations = notDeclarations
+        self.scopeKinds = scopeKinds
+    }
 
     func classifies(_ kind: String) -> Bool {
         extracted[kind] != nil || ignored[kind] != nil || notDeclarations.contains(kind)
@@ -24,9 +39,9 @@ struct ExtractedKind: Sendable {
     /// Set when extraction is broken wherever the kind occurs; recorded with `withKnownIssue`, so
     /// the day it starts working the suite says so rather than staying quietly green.
     let knownIssue: String?
-    /// Enclosing extracted kinds inside which this kind is deliberately not extracted.
+    /// Enclosing kinds inside which this kind is deliberately not extracted.
     let ignoredInside: [String: String]
-    /// Enclosing extracted kinds inside which extraction is broken, keyed to the issue.
+    /// Enclosing kinds inside which extraction is broken, keyed to the issue.
     let knownIssueInside: [String: String]
 
     init(

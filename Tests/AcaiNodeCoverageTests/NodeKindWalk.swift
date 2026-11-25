@@ -44,7 +44,8 @@ struct NodeKindWalk {
     private func enclosingExtractedKind(of node: Node) -> String? {
         var ancestor = node.parent
         while let candidate = ancestor {
-            if let kind = candidate.nodeType, inventory.extracted[kind] != nil {
+            if let kind = candidate.nodeType,
+               inventory.extracted[kind] != nil || inventory.scopeKinds.contains(kind) {
                 return kind
             }
             ancestor = candidate.parent
