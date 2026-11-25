@@ -447,6 +447,20 @@ let package = Package(
             exclude: ["Features"]
         ),
 
+        // MARK: Holds every Tree-sitter plugin to a checked-in classification of the node kinds its
+        // corpus produces, so syntax an extractor drops shows up as an unclassified kind.
+        // The corpus is read by path (via `#filePath`), like the parser goldens.
+        .testTarget(
+            name: "AcaiNodeCoverageTests",
+            dependencies: [
+                "AcaiLibrary",
+                "AcaiCore",
+                "AcaiTreeSitter",
+                .product(name: "TreeSitterJava", package: "tree-sitter-java"),
+            ],
+            exclude: ["Fixtures"]
+        ),
+
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no AcaiRender dependency); the PNG checks live in AcaiRenderTests.
         .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"])
