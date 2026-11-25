@@ -112,7 +112,7 @@ if ! swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests 
     tail -30 "$WORK/baseline.log" >&2
     exit 1
 fi
-if ! swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel --skip-build \
+if ! swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
     > "$WORK/baseline.log" 2>&1; then
     echo "✗ HEAD's own tests do not pass, so every reverted hunk would look caught:" >&2
     tail -30 "$WORK/baseline.log" >&2
@@ -154,7 +154,7 @@ while IFS=$'\t' read -r PATCH FILE LOCATION <&3; do
     else
         STATUS=0
         bounded "$REMAINING" swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
-            --skip-build > "$WORK/test.log" 2>&1 || STATUS=$?
+            > "$WORK/test.log" 2>&1 || STATUS=$?
         if [ "$STATUS" -eq 124 ]; then
             UNREACHED+=("$FILE:$LOCATION")
             echo "  — out of time"

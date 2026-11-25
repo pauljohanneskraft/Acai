@@ -14,7 +14,8 @@ if ! "$CHECK" --paths | grep -qx "Sources/AcaiCore"; then
 fi
 
 FIXTURE=$(mktemp -d)
-trap 'rm -rf "$FIXTURE"' EXIT
+PROBE=$(mktemp -d)
+trap 'rm -rf "$FIXTURE" "$PROBE"' EXIT
 
 mkdir -p "$FIXTURE/Sources/AcaiCore" "$FIXTURE/Tests/AcaiCoreTests"
 cd "$FIXTURE"
@@ -114,6 +115,18 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 if [ "$(git worktree list | wc -l)" -ne 1 ]; then
     echo "✗ The script left a worktree behind." >&2
+    FAILURES=$((FAILURES + 1))
+fi
+
+# The check rests on the toolchain's own test run noticing a reverted source change. Prove that
+# directly: a run that passes where it should fail reads as a surviving hunk, which is the one answer
+# this script must never invent.
+cp -a "$FIXTURE/." "$PROBE"
+sed -i 's/values.reduce(0, +)/values.first ?? 0/' "$PROBE/Sources/AcaiCore/Total.swift"
+if swift test --package-path "$PROBE" --scratch-path "$PROBE/.probe" --parallel \
+    > "$PROBE/probe.log" 2>&1; then
+    echo "✗ The tests passed with the fix reverted, so no hunk can be judged on this toolchain:" >&2
+    tail -40 "$PROBE/probe.log" >&2
     FAILURES=$((FAILURES + 1))
 fi
 
