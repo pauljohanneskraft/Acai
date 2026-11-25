@@ -23,25 +23,25 @@ struct ContractVariedSource {
 /// A rewrite of a snippet that must not change the model, beyond what its ``tolerance`` excuses.
 protocol ContractSourceVariation: Sendable, CustomStringConvertible {
     var name: String { get }
+    /// The variation this is one case of, so a guardrail can take one case per kind.
+    var kind: String { get }
     var tolerance: ContractEquivalenceTolerance { get }
-
-    /// Why this language cannot be held to the variation, or `nil` when it must satisfy it.
-    func exemption(for language: ContractFeatureCorpus.Language) -> String?
 
     func varied(_ snippet: ContractSnippet) -> ContractVariedSource
 }
 
 extension ContractSourceVariation {
     var description: String { name }
+    var kind: String { name }
     var tolerance: ContractEquivalenceTolerance { .init() }
-
-    func exemption(for language: ContractFeatureCorpus.Language) -> String? { nil }
 }
 
 /// The same bytes under a shouted extension. A parser that compares `fileName` case-sensitively routes
 /// the file to the wrong grammar, or to none (#609).
 struct ContractUppercaseExtension: ContractSourceVariation {
     let fileExtension: String
+
+    let kind = "uppercase extension"
 
     var name: String { "uppercase .\(fileExtension.uppercased())" }
 
@@ -63,8 +63,8 @@ struct ContractCarriageReturnLineEndings: ContractSourceVariation {
 }
 
 /// One comment line above everything, holding a non-ASCII letter and an emoji. Every declaration moves
-/// down exactly one line and none of them moves sideways, so a location measured in UTF-16 or UTF-8
-/// units rather than characters fails.
+/// down exactly one line and none of them moves sideways, so a line counted from a byte offset rather
+/// than from a newline drifts here, and a column rebased on the new first line fails outright.
 struct ContractLeadingComment: ContractSourceVariation {
     let name = "a leading comment holding é and 🧪"
     var tolerance: ContractEquivalenceTolerance { .init(lineOffset: 1) }
@@ -75,32 +75,62 @@ struct ContractLeadingComment: ContractSourceVariation {
     }
 }
 
-/// Trailing whitespace on every line and a blank line after it. Literals are left alone — inside a
-/// docstring or a raw string the added bytes would be content, not formatting — so the snippet still
-/// declares exactly what it declared.
+/// Trailing whitespace on every line, and a blank line after every line that can take one.
+///
+/// Neither is content, so the snippet still declares exactly what it declared. A blank line is not
+/// added after a comment: a doc comment belongs to the declaration directly below it, so a blank line
+/// between them detaches it, which is a change of meaning rather than of formatting. Lines inside a
+/// literal or a block comment are left exactly as they are, where the added bytes would be text.
 struct ContractBlankLinesAndTrailingWhitespace: ContractSourceVariation {
     let name = "extra blank lines and trailing whitespace"
     var tolerance: ContractEquivalenceTolerance { .init(ignoresLocations: true) }
 
     func varied(_ snippet: ContractSnippet) -> ContractVariedSource {
-        var inLiteral = false
+        var state = ContractSourceLineState()
         var lines: [String] = []
         for line in snippet.source.components(separatedBy: "\n") {
-            let opensOrCloses = !ContractMultilineLiteral(line: line).delimiterCount.isMultiple(of: 2)
-            let wasInLiteral = inLiteral
-            if opensOrCloses { inLiteral.toggle() }
-            guard !wasInLiteral, !inLiteral, !line.isEmpty else {
+            let classified = state.advanced(over: line, lineComment: snippet.language.lineComment)
+            guard classified.isPlainCode else {
                 lines.append(line)
                 continue
             }
-            lines.append(contentsOf: ["\(line)  ", ""])
+            lines.append("\(line)  ")
+            if classified.takesABlankLineAfter { lines.append("") }
         }
         return ContractVariedSource(source: lines.joined(separator: "\n"), fileName: snippet.fileName)
     }
 }
 
-/// How many multi-line string delimiters a line carries, so a line that opens or closes one can be
-/// left untouched.
+/// Walks a snippet line by line, saying for each what reformatting it can take.
+struct ContractSourceLineState {
+    private var inLiteral = false
+    private var inBlockComment = false
+
+    struct Line {
+        /// Outside every multi-line literal and block comment, so trailing whitespace is formatting.
+        let isPlainCode: Bool
+        /// Also not a comment, so a blank line after it detaches nothing.
+        let takesABlankLineAfter: Bool
+    }
+
+    mutating func advanced(over line: String, lineComment: String) -> Line {
+        let wasInLiteral = inLiteral
+        let wasInBlockComment = inBlockComment
+        let literal = ContractMultilineLiteral(line: line)
+        if !literal.delimiterCount.isMultiple(of: 2) { inLiteral.toggle() }
+        if !wasInLiteral, !inLiteral {
+            inBlockComment = literal.leavesABlockCommentOpen(whenAlreadyOpen: wasInBlockComment)
+        }
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        let isPlainCode =
+            !wasInLiteral && !inLiteral && !wasInBlockComment && !inBlockComment && !trimmed.isEmpty
+        let startsAComment = ["/*", "*", "//", lineComment].contains { trimmed.hasPrefix($0) }
+        return Line(isPlainCode: isPlainCode, takesABlankLineAfter: isPlainCode && !startsAComment)
+    }
+}
+
+/// What a line carries of the constructs that run past its end, so a line that opens or closes one can
+/// be left untouched.
 struct ContractMultilineLiteral {
     let line: String
     let delimiters = ["\"\"\"", "'''", "R\"(", ")\""]
@@ -109,6 +139,12 @@ struct ContractMultilineLiteral {
         delimiters.reduce(0) { count, delimiter in
             count + line.components(separatedBy: delimiter).count - 1
         }
+    }
+
+    func leavesABlockCommentOpen(whenAlreadyOpen open: Bool) -> Bool {
+        let opened = line.components(separatedBy: "/*").count - 1
+        let closed = line.components(separatedBy: "*/").count - 1
+        return open ? closed == 0 || opened > closed : opened > closed
     }
 }
 
@@ -125,6 +161,8 @@ struct ContractJoinPartner: Sendable {
 struct ContractJoinedSnippet: ContractSourceVariation {
     let partner: ContractJoinPartner
     let partnerComesFirst: Bool
+
+    let kind = "joined snippet"
 
     var name: String {
         "joined \(partnerComesFirst ? "after" : "before") \(partner.feature)"

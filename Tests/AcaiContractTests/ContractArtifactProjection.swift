@@ -9,17 +9,30 @@ struct ContractEquivalenceTolerance: Equatable {
     var ignoresLocations = false
     /// Set when the variation changes the order declarations appear in, but not the set of them.
     var ignoresDeclarationOrder = false
+
+    /// The same tolerance as the varied artifact is held to. ``lineOffset`` says how far the variation
+    /// moved the original's declarations, so it is added to the original's side alone — adding it to
+    /// both would cancel out and compare nothing.
+    var variedSide: ContractEquivalenceTolerance {
+        var tolerance = self
+        tolerance.lineOffset = 0
+        return tolerance
+    }
 }
 
 /// Rewrites an encoded artifact into the form one tolerance compares.
 ///
-/// `filePath` is erased wherever it appears, because a variation has to rename the file to change its
+/// Every field naming the file is erased, because a variation has to rename the file to change its
 /// extension and because the corpus parses from `#filePath`, which differs per checkout. A
 /// `SourceLocation` — the one object carrying `filePath`, `line` and `column` together — is then
 /// shifted or dropped as the tolerance says.
 struct ContractJSONRewriter {
     let tolerance: ContractEquivalenceTolerance
     let erasedPath = "<path>"
+
+    /// The fields holding a file rather than a model fact. `Relationship.origin` is the file that
+    /// declared the edge, which the model itself leaves out of its `==`.
+    let pathKeys: Set<String> = ["filePath", "origin"]
 
     /// The arrays a second snippet appends to. Nothing else is sorted: a type's members and a
     /// declaration's modifiers keep their source order, which is part of what is being checked.
@@ -33,7 +46,7 @@ struct ContractJSONRewriter {
             return .object(rewritten(fields: fields))
         case .array(let elements):
             return .array(rewritten(elements: elements, key: key))
-        case .string where key == "filePath":
+        case .string where pathKeys.contains(key ?? ""):
             return .string(erasedPath)
         default:
             return node
@@ -59,7 +72,7 @@ struct ContractJSONRewriter {
             return result
         }
         for key in ["line", "endLine"] {
-            guard case .number(let value) = result[key] else { continue }
+            guard case .number(let value)? = result[key] else { continue }
             result[key] = .number(value + Double(tolerance.lineOffset))
         }
         return result
@@ -75,7 +88,7 @@ struct ContractArtifactProjection: Equatable, CustomStringConvertible {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(artifact)
-        let tree = ContractJSON(jsonObject: try JSONSerialization.jsonObject(with: data))
+        let tree = try JSONDecoder().decode(ContractJSON.self, from: data)
         json = ContractJSONRewriter(tolerance: tolerance).rewritten(tree)
     }
 

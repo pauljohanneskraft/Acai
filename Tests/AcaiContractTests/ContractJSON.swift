@@ -6,7 +6,7 @@ import Foundation
 /// has never heard of — a modifier, a call site, an end line — still has to survive a variation. A
 /// tree walk is exhaustive by construction, which a hand-written traversal of the model would stop
 /// being the next time a field is added.
-indirect enum ContractJSON: Equatable {
+indirect enum ContractJSON: Equatable, Decodable {
     case null
     case bool(Bool)
     case number(Double)
@@ -14,20 +14,20 @@ indirect enum ContractJSON: Equatable {
     case array([ContractJSON])
     case object([String: ContractJSON])
 
-    init(jsonObject: Any) {
-        switch jsonObject {
-        case let dictionary as [String: Any]:
-            self = .object(dictionary.mapValues { ContractJSON(jsonObject: $0) })
-        case let array as [Any]:
-            self = .array(array.map { ContractJSON(jsonObject: $0) })
-        case let string as String:
-            self = .string(string)
-        case let number as NSNumber:
-            self = CFGetTypeID(number) == CFBooleanGetTypeID() ? .bool(number.boolValue) : .number(number.doubleValue)
-        case let bool as Bool:
-            self = .bool(bool)
-        default:
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
             self = .null
+        } else if let bool = try? container.decode(Bool.self) {
+            self = .bool(bool)
+        } else if let number = try? container.decode(Double.self) {
+            self = .number(number)
+        } else if let string = try? container.decode(String.self) {
+            self = .string(string)
+        } else if let array = try? container.decode([ContractJSON].self) {
+            self = .array(array)
+        } else {
+            self = .object(try container.decode([String: ContractJSON].self))
         }
     }
 

@@ -70,10 +70,6 @@ struct ContractEquivalenceTests {
     func variationPreservesTheArtifact(testCase: ContractEquivalencePlan.Case) throws {
         let corpus = Self.corpus
         let language = testCase.language
-        if let reason = testCase.variation.exemption(for: language) {
-            #expect(!reason.isEmpty, "\(testCase) is exempt without a reason")
-            return
-        }
         let snippet = try corpus.snippet(feature: testCase.feature, language: language)
         let original = corpus.artifact(
             source: snippet.source, fileName: snippet.fileName, language: language)
@@ -84,7 +80,7 @@ struct ContractEquivalenceTests {
         let tolerance = testCase.variation.tolerance
         let actual = try ContractArtifactProjection(
             artifact: corpus.artifact(source: varied.source, fileName: varied.fileName, language: language),
-            tolerance: tolerance)
+            tolerance: tolerance.variedSide)
         let expected = try ContractArtifactProjection(
             union: [original] + varied.appended, tolerance: tolerance)
         #expect(
@@ -135,22 +131,16 @@ struct ContractEquivalenceTests {
         }
     }
 
-    /// The reason a snippet has no joinable neighbour is a fact about the corpus, not a defect — but it
-    /// is one the suite states rather than hides.
-    @Test("the snippets the join variation cannot reach are the ones with no disjoint neighbour")
-    func unjoinableSnippetsAreAccountedFor() throws {
-        let corpus = Self.corpus
-        for entry in Self.plan.unjoinable {
-            let parts = entry.components(separatedBy: "/")
-            guard parts.count == 2, let language = corpus.languages.first(where: { $0.stem == parts[1] })
-            else {
-                Issue.record("'\(entry)' is not a feature/language pair")
-                continue
-            }
-            let partner = ContractDisjointPartner(feature: parts[0], language: language, corpus: corpus)
-            #expect(throws: ContractEquivalenceFailure.self, "\(entry) does have a partner after all") {
-                try partner.resolved()
-            }
-        }
+    /// A snippet whose every neighbour shares a name with it is silently skipped by the join
+    /// variation, so the corpus has to keep at least one disjoint neighbour for each.
+    @Test("every snippet has a neighbour the join variation can append")
+    func everySnippetIsJoinable() {
+        #expect(
+            Self.plan.unjoinable.isEmpty,
+            """
+            no other snippet in the same language declares names disjoint from these, so the join \
+            variation never runs for them: \(Self.plan.unjoinable.sorted().joined(separator: ", ")). \
+            Rename a declaration in one of them, or give the language another feature to pair with.
+            """)
     }
 }
