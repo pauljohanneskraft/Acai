@@ -1,6 +1,4 @@
-/// What `JSExtractor` does with each node kind the JavaScript corpus produces, with
-/// `isTypeScript` false — interfaces, type aliases and enums are skipped, so the TSX grammar's
-/// TypeScript-only kinds never reach this corpus.
+/// What `JSExtractor` does, with `isTypeScript` false, with each kind the JavaScript corpus produces.
 struct JavaScriptNodeKinds {
 
     var inventory: NodeKindInventory {

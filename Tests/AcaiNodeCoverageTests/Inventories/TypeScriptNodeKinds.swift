@@ -1,5 +1,4 @@
-/// What `JSExtractor` does with each node kind the TypeScript corpus produces, with
-/// `isTypeScript` true — type annotations, interfaces, type aliases and enums all parsed.
+/// What `JSExtractor` does, with `isTypeScript` true, with each kind the TypeScript corpus produces.
 struct TypeScriptNodeKinds {
 
     var inventory: NodeKindInventory {

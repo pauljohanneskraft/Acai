@@ -1,8 +1,6 @@
 import AcaiTreeSitter
 
-/// Where a node of one kind carries the name it declares: a chain of steps narrowing to children
-/// either by Tree-sitter field or by node kind, taking every match — one `field_declaration` with
-/// three declarators yields three names.
+/// Where a node of one kind carries the name it declares, as steps narrowing to matching children.
 struct NamePath: Sendable {
 
     enum Step: Sendable {
@@ -10,21 +8,16 @@ struct NamePath: Sendable {
         case field(String)
         /// Every direct child of this kind, for a grammar that names no fields.
         case kind(String)
-        /// Follows the field while a child is still bound to it, which is how a C declarator chain
-        /// (`pointer_declarator` → `function_declarator` → `identifier`) nests.
+        /// Follows the field while a child is still bound to it, as a C declarator chain nests.
         case chain(String)
-        /// The first direct child of any of these kinds, for a grammar that flattens a declaration
-        /// and its initializer into one node — a Dart `initialized_identifier` is named by its first
-        /// `identifier`, the ones after it belonging to the initializer expression.
+        /// The first direct child of any of these kinds, where a grammar flattens the initializer in.
         case first([String])
-        /// The last direct child of any of these kinds, which is how a Dart named constructor
-        /// (`Counter.unlimited`) carries its own name after the type's.
+        /// The last direct child of any of these kinds, as `Counter.unlimited` names itself last.
         case last([String])
     }
 
     let steps: [Step]
-    /// The name the extractor synthesizes when the grammar leaves the declaration unnamed — a
-    /// Kotlin `secondary_constructor` becomes an `init` member.
+    /// The name the extractor synthesizes when the grammar leaves the declaration unnamed.
     let synthesizedName: String?
 
     init(_ steps: Step..., synthesizedName: String? = nil) {
@@ -59,8 +52,7 @@ struct NamePath: Sendable {
 
 extension Node {
 
-    /// Every child bound to `field`, unlike `child(byFieldName:)`, which stops at the first — a
-    /// grammar may bind several declarators to one field.
+    /// Every child bound to `field`, unlike `child(byFieldName:)`, which stops at the first.
     func children(boundTo field: String) -> [Node] {
         (0..<childCount).compactMap { index in
             fieldNameForChild(at: index) == field ? child(at: index) : nil

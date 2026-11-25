@@ -1,11 +1,6 @@
 import Testing
 
-/// Holds every Tree-sitter plugin to a checked-in classification of the node kinds its corpus
-/// produces, so syntax an extractor silently drops surfaces as an unclassified kind rather than as
-/// a declaration nobody notices is missing.
-///
-/// The inventories live here, in the test target, never in an agnostic one: they are a statement
-/// about what each *extractor* handles, not data the engine reads.
+/// Holds each plugin to a checked-in classification of the node kinds its corpus produces.
 @Suite("Extractor node-kind coverage")
 struct NodeKindCoverageTests {
 
@@ -55,9 +50,7 @@ struct NodeKindCoverageTests {
         }
     }
 
-    /// Every kind an inventory calls extracted has to yield an occurrence somewhere in the corpus: a
-    /// kind spelled wrong, one whose `NamePath` reads nothing, or one no fixture reaches makes the
-    /// assertion above pass without checking anything.
+    /// Without an occurrence apiece, the assertion above passes without checking anything.
     @Test("every extracted kind occurs in the corpus", arguments: NodeKindCorpus().plugins)
     func everyExtractedKindOccurs(plugin: NodeKindCorpus.Plugin) throws {
         let corpus = NodeKindCorpus()

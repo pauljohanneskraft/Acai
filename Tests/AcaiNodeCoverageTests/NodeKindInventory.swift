@@ -1,7 +1,4 @@
-/// One plugin's hand-maintained classification of every Tree-sitter node kind its corpus produces.
-///
-/// A kind absent from all three buckets fails `NodeKindCoverageTests`, so widening a fixture forces
-/// a decision about the syntax it introduced instead of letting the extractor drop it in silence.
+/// One plugin's classification of every Tree-sitter node kind its corpus produces.
 struct NodeKindInventory: Sendable {
     /// Kinds the extractor must turn into a declaration.
     let extracted: [String: ExtractedKind]
@@ -9,8 +6,7 @@ struct NodeKindInventory: Sendable {
     let ignored: [String: String]
     /// Kinds that declare nothing: expressions, statements, type references, keyword-shaped tokens.
     let notDeclarations: Set<String>
-    /// Kinds that count as an enclosing node for an `ignoredInside` or `knownIssueInside` key even
-    /// though they declare nothing — a Python module-level `if` is one.
+    /// Kinds that count as an enclosing node although they declare nothing, like a Python `if`.
     let scopeKinds: Set<String>
 
     init(
@@ -33,15 +29,11 @@ struct NodeKindInventory: Sendable {
 /// A kind whose every occurrence must produce a declaration carrying the declared name.
 struct ExtractedKind: Sendable {
     let name: NamePath
-    /// When set, only occurrences carrying a direct child of every one of these kinds declare
-    /// anything — a C `struct_specifier` declares a type only when it has both a name and a body,
-    /// and a Kotlin `class_parameter` is promoted only when written `val`/`var`.
+    /// When set, only occurrences carrying a direct child of each of these kinds declare anything.
     let requiredChildren: [String]
-    /// The same gate by Tree-sitter field: a C++ `field_declaration` holding a nested `class_specifier`
-    /// has no `declarator` and declares nothing itself.
+    /// The same gate by Tree-sitter field: a C++ nested-type `field_declaration` has no `declarator`.
     let requiredFields: [String]
-    /// Set when extraction is broken wherever the kind occurs; recorded with `withKnownIssue`, so
-    /// the day it starts working the suite says so rather than staying quietly green.
+    /// Set when extraction is broken wherever the kind occurs; recorded with `withKnownIssue`.
     let knownIssue: String?
     /// Enclosing kinds inside which this kind is deliberately not extracted.
     let ignoredInside: [String: String]

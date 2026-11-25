@@ -10,8 +10,7 @@ import TreeSitterPython
 import TreeSitterTSX
 import TreeSitterTypeScript
 
-/// The Tree-sitter plugins the corpus covers, each paired with its inventory. Swift is absent: its
-/// parser is SwiftSyntax, so it has no Tree-sitter node kinds.
+/// The Tree-sitter plugins the corpus covers. Swift is absent: its parser is SwiftSyntax.
 struct NodeKindPlugins {
 
     var all: [NodeKindCorpus.Plugin] {
@@ -36,8 +35,7 @@ struct NodeKindPlugins {
         )
     }
 
-    /// `.ts` parses under the TypeScript grammar and `.tsx` under TSX, exactly as `JSCodeParser`
-    /// routes them — only the extension says whether `<T>x` is a cast or JSX.
+    /// `.ts` parses under the TypeScript grammar and `.tsx` under TSX, as `JSCodeParser` routes them.
     private var typeScript: NodeKindCorpus.Plugin {
         .init(
             stem: "typescript",

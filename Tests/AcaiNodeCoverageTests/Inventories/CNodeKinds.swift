@@ -7,8 +7,7 @@ struct CNodeKinds {
 
     private var extracted: [String: ExtractedKind] {
         [
-            // A specifier with a name but no body is a type reference (`struct Logger audit;`), and one
-            // with a body but no name is the anonymous half of a typedef, named by its `type_definition`.
+            // Named without a body is a type reference; a body without a name is a typedef's half.
             "struct_specifier": .init(
                 name: NamePath(.field("name")),
                 requiredChildren: ["type_identifier", "field_declaration_list"]

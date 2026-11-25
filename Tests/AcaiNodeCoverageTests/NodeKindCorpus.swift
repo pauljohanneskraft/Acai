@@ -3,17 +3,10 @@ import AcaiCore
 import AcaiLibrary
 import AcaiTreeSitter
 
-/// The source corpus the node-kind inventories are held against: the parser goldens' fixtures, the
-/// contract matrix's per-language snippets, and this target's own fixtures for syntax neither of
-/// those exercises.
-///
-/// Located by `#filePath` rather than `Bundle.module`, like `ParserGoldenCorpus`, so it reads the
-/// same files on macOS and Linux. Swift is absent by design: its parser is SwiftSyntax, so it has no
-/// Tree-sitter node kinds to classify.
+/// The parser goldens' fixtures, the contract matrix's snippets and this target's own, by `#filePath`.
 struct NodeKindCorpus {
 
-    /// One Tree-sitter plugin: the stem its contract snippets use, the grammar each extension parses
-    /// under, the parser the engine really runs, and the inventory its kinds are checked against.
+    /// One plugin: its contract-snippet stem, a grammar per extension, its parser and its inventory.
     struct Plugin: Sendable, CustomStringConvertible {
         let stem: String
         let grammars: [String: TreeSitterGrammar]
@@ -28,23 +21,19 @@ struct NodeKindCorpus {
         /// The name handed to the parser, which is what routes an extension to its grammar.
         let fileName: String
 
-        /// Enough of the path to tell `optional-type/java.java` from `Fixtures/Shop.java`, since
-        /// every feature's snippet for one language shares a basename.
+        /// Enough of the path to tell `optional-type/java.java` from `Fixtures/Shop.java`.
         var description: String {
             "\(url.deletingLastPathComponent().lastPathComponent)/\(fileName)"
         }
     }
 
-    /// One occurrence of an extracted kind, reduced to what the assertion needs: the name it
-    /// declares and the lines a declaration of that name may sit on.
+    /// One occurrence of an extracted kind: the name it declares and the lines it may sit on.
     struct Occurrence: Sendable {
         let kind: String
-        /// The nearest enclosing node of an extracted kind, which is what an `ignoredInside` or
-        /// `knownIssueInside` entry is keyed on. `nil` at file scope.
+        /// The nearest enclosing kind an `ignoredInside` key is matched on; `nil` at file scope.
         let enclosing: String?
         let name: String
-        /// The node's start line through its name's line: an extractor stamps a declaration with
-        /// either, since a grammar puts annotations and modifiers inside the declaration node.
+        /// The node's start line through its name's line, since an extractor stamps either.
         let headerLines: ClosedRange<Int>
     }
 

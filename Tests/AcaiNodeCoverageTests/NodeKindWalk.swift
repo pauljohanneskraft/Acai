@@ -1,7 +1,6 @@
 import AcaiTreeSitter
 
-/// Collects a tree's named node kinds and, for each kind the inventory calls extracted, one
-/// occurrence per name that node declares.
+/// Collects a tree's named kinds and, per extracted kind, one occurrence per name it declares.
 struct NodeKindWalk {
     let inventory: NodeKindInventory
     let context: SourceFileContext

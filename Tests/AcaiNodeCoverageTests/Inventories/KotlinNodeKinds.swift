@@ -22,8 +22,7 @@ struct KotlinNodeKinds {
                     "property_declaration": "A binding inside an accessor body is a local."
                 ]
             ),
-            // A primary-constructor parameter becomes a property only when written `val`/`var`, which
-            // the grammar marks with a `binding_pattern_kind` child.
+            // Promoted to a property only when written `val`/`var`, which marks a `binding_pattern_kind`.
             "class_parameter": .init(
                 name: NamePath(.kind("simple_identifier")),
                 requiredChildren: ["binding_pattern_kind"],

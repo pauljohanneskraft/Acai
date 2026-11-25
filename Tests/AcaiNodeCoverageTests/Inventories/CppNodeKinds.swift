@@ -7,8 +7,7 @@ struct CppNodeKinds {
 
     private var extracted: [String: ExtractedKind] {
         [
-            // A specifier with a name but no body is a type reference; one with a body but no name is
-            // an anonymous aggregate, which carries no name to look up.
+            // Named without a body is a type reference; a body without a name has no name to find.
             "class_specifier": .init(
                 name: NamePath(.field("name")),
                 requiredChildren: ["type_identifier", "field_declaration_list"]

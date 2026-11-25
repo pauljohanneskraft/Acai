@@ -1,7 +1,6 @@
 import AcaiCore
 
-/// Every declaration an artifact carries, keyed by simple name to the lines it was declared on — a
-/// node of an extracted kind has to find its own name here, on its own line.
+/// Every declaration an artifact carries, keyed by simple name to the lines it was declared on.
 struct DeclarationIndex: Sendable {
     private var linesByName: [String: Set<Int>] = [:]
 
@@ -41,8 +40,7 @@ struct DeclarationIndex: Sendable {
 
 extension String {
 
-    /// The last component of a namespace-qualified name, so a C++ `Shop::total` definition matches
-    /// the `total` member the extractor records.
+    /// The last component, so a C++ `Shop::total` matches the `total` member the extractor records.
     var simpleNameComponent: String {
         let separators: [String] = ["::", "."]
         return separators.reduce(self) { name, separator in
