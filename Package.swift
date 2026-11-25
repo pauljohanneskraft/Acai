@@ -447,6 +447,9 @@ let package = Package(
             exclude: ["Features"]
         ),
 
+        // MARK: Checks each parsed artifact against its own source, reading both other test targets' corpora.
+        .testTarget(name: "AcaiSourceFidelityTests", dependencies: ["AcaiLibrary", "AcaiCore"]),
+
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no AcaiRender dependency); the PNG checks live in AcaiRenderTests.
         .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"])
