@@ -34,38 +34,57 @@ let package = Package(
 EOF
 
 # No test reads `text`, so reverting it survives.
-cat > Sources/AcaiCore/Label.swift <<'EOF'
+write_label() {
+    cat > "$1/Sources/AcaiCore/Label.swift" <<EOF
 public struct Label {
-    public var text: String { "counter" }
+    public var text: String { "$2" }
 }
 EOF
+}
 
 # A test asserts the sum, so reverting it is caught.
-cat > Sources/AcaiCore/Total.swift <<'EOF'
+write_total() {
+    cat > "$1/Sources/AcaiCore/Total.swift" <<EOF
 public struct Total {
     public let values: [Int]
 
     public init(values: [Int]) { self.values = values }
 
-    public var sum: Int { values.first ?? 0 }
+    public var sum: Int { $2 }
 }
 EOF
+}
 
 # The test suite names `Reading`, so reverting its rename stops the tests compiling.
-cat > Sources/AcaiCore/Dimension.swift <<'EOF'
-public struct Metric {
+write_dimension() {
+    cat > "$1/Sources/AcaiCore/Dimension.swift" <<EOF
+public struct $2 {
     public init() {}
 
     public var millimetres: Int { 12 }
 }
 EOF
+}
 
-cat > Tests/AcaiCoreTests/TotalTests.swift <<'EOF'
+# Both harnesses assert the sum: a toolchain that discovers only one of them still catches the hunk.
+write_tests() {
+    cat > "$1/Tests/AcaiCoreTests/TotalTests.swift" <<'EOF'
 import Testing
+import XCTest
 import AcaiCore
 
 @Test func totalOfOne() { #expect(Total(values: [4]).sum == 4) }
+
+final class TotalXCTests: XCTestCase {
+    func testTotalOfOne() { XCTAssertEqual(Total(values: [4]).sum, 4) }
+}
 EOF
+}
+
+write_label "$FIXTURE" counter
+write_total "$FIXTURE" "values.first ?? 0"
+write_dimension "$FIXTURE" Metric
+write_tests "$FIXTURE"
 
 git init --quiet .
 git config user.email fixture@example.com
@@ -74,14 +93,18 @@ git add .
 git commit --quiet -m "Base"
 BASE=$(git rev-parse HEAD)
 
-sed -i 's/"counter"/"tally"/' Sources/AcaiCore/Label.swift
-sed -i 's/values.first ?? 0/values.reduce(0, +)/' Sources/AcaiCore/Total.swift
-sed -i 's/struct Metric/struct Reading/' Sources/AcaiCore/Dimension.swift
+write_label "$FIXTURE" tally
+write_total "$FIXTURE" "values.reduce(0, +)"
+write_dimension "$FIXTURE" Reading
 cat >> Tests/AcaiCoreTests/TotalTests.swift <<'EOF'
 
 @Test func totalOfThree() { #expect(Total(values: [1, 2, 3]).sum == 6) }
 
 @Test func readingInMillimetres() { #expect(Reading().millimetres == 12) }
+
+extension TotalXCTests {
+    func testTotalOfThree() { XCTAssertEqual(Total(values: [1, 2, 3]).sum, 6) }
+}
 EOF
 git add .
 git commit --quiet -m "Change three things"
@@ -118,24 +141,29 @@ if [ "$(git worktree list | wc -l)" -ne 1 ]; then
     FAILURES=$((FAILURES + 1))
 fi
 
-# The check rests on the toolchain's own test run noticing a reverted source change. Prove that
-# directly: a run that passes where it should fail reads as a surviving hunk, which is the one answer
-# this script must never invent.
-cp -a "$FIXTURE/." "$PROBE"
-sed -i 's/values.reduce(0, +)/values.first ?? 0/' "$PROBE/Sources/AcaiCore/Total.swift"
-if swift test --package-path "$PROBE" --scratch-path "$PROBE/.probe" --parallel \
-    > "$PROBE/probe.log" 2>&1; then
-    echo "✗ The tests passed with the fix reverted, so no hunk can be judged on this toolchain:" >&2
-    tail -40 "$PROBE/probe.log" >&2
-    FAILURES=$((FAILURES + 1))
-fi
-
 # Out of time is its own outcome: no hunk may be read as caught because the clock ran out.
 BUDGET=$(MUTATION_CHECK_TIME_LIMIT=1 "$CHECK" "$BASE")
 if ! grep -qE '^3 hunk\(s\) against .*: 0 caught, 0 surviving, 0 not applicable, 3 not reached\.$' \
     <<< "$BUDGET"; then
     echo "✗ A one-second budget did not report all three hunks as not reached:" >&2
     echo "$BUDGET" >&2
+    FAILURES=$((FAILURES + 1))
+fi
+
+# A suite that discovers no test also exits 0, which must never read as a passing suite.
+cp -a "$FIXTURE/." "$PROBE"
+git -C "$PROBE" worktree prune
+cat > "$PROBE/Tests/AcaiCoreTests/TotalTests.swift" <<'EOF'
+import AcaiCore
+
+func unusedHelper() -> Total { Total(values: []) }
+EOF
+git -C "$PROBE" commit --quiet -a -m "Leave the test target without a test"
+EMPTY=0
+EMPTY_REPORT=$(cd "$PROBE" && "$CHECK" "$BASE" 2>&1) || EMPTY=$?
+if [ "$EMPTY" -eq 0 ] || ! grep -q "ran no tests" <<< "$EMPTY_REPORT"; then
+    echo "✗ A suite that runs no tests was not refused (exit $EMPTY):" >&2
+    echo "$EMPTY_REPORT" >&2
     FAILURES=$((FAILURES + 1))
 fi
 

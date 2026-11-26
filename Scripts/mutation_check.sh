@@ -19,8 +19,7 @@ MODULES="$MODULES AcaiDart AcaiPython AcaiCFamily CPythonScanner"
 TIME_LIMIT="${MUTATION_CHECK_TIME_LIMIT:-1200}"
 STARTED=$(date +%s)
 
-# coreutils' `timeout`, which macOS does not ship. Without it the budget is only checked between
-# hunks, so a single build or test run can overrun it.
+# coreutils' `timeout`, which macOS does not ship; without it the budget is checked between hunks.
 TIMEOUT=$(command -v timeout || command -v gtimeout || true)
 
 bounded() {
@@ -29,6 +28,11 @@ bounded() {
     else
         "${@:2}"
     fi
+}
+
+# A test run that discovers nothing also exits 0, so a passing run only counts with a test in it.
+ran_tests() {
+    grep -qE 'Test run with [1-9][0-9]* test|Executed [1-9][0-9]* test' "$1"
 }
 
 if [ "${1:-}" = "--paths" ]; then
@@ -103,18 +107,20 @@ if [ ! -s "$WORK/hunks.tsv" ]; then
     exit 0
 fi
 
-# Every hunk is judged against this: HEAD's own tests, whole and green. Filtering them to the suites
-# that cover the hunk is not worth it — `--filter` matching differs between toolchains, and a filter
-# that matches nothing still exits 0, which would report a caught hunk as surviving.
+# Judged against HEAD's own tests, whole and green: `--filter` and `--parallel` both run fewer.
 echo "▸ Building HEAD and running its tests to compare against"
 if ! swift build --package-path "$TREE" --scratch-path "$SCRATCH" --build-tests > "$WORK/baseline.log" 2>&1; then
     echo "✗ HEAD does not build, so a reverted hunk proves nothing:" >&2
     tail -30 "$WORK/baseline.log" >&2
     exit 1
 fi
-if ! swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
-    > "$WORK/baseline.log" 2>&1; then
+if ! swift test --package-path "$TREE" --scratch-path "$SCRATCH" > "$WORK/baseline.log" 2>&1; then
     echo "✗ HEAD's own tests do not pass, so every reverted hunk would look caught:" >&2
+    tail -30 "$WORK/baseline.log" >&2
+    exit 1
+fi
+if ! ran_tests "$WORK/baseline.log"; then
+    echo "✗ HEAD's own suite ran no tests, so every reverted hunk would look surviving:" >&2
     tail -30 "$WORK/baseline.log" >&2
     exit 1
 fi
@@ -153,22 +159,24 @@ while IFS=$'\t' read -r PATCH FILE LOCATION <&3; do
         echo "  — not applicable"
     else
         STATUS=0
-        bounded "$REMAINING" swift test --package-path "$TREE" --scratch-path "$SCRATCH" --parallel \
+        bounded "$REMAINING" swift test --package-path "$TREE" --scratch-path "$SCRATCH" \
             > "$WORK/test.log" 2>&1 || STATUS=$?
         if [ "$STATUS" -eq 124 ]; then
             UNREACHED+=("$FILE:$LOCATION")
             echo "  — out of time"
         elif [ "$STATUS" -ge 128 ]; then
-            # A run the kernel killed says nothing either way, and reading it as caught would hide a
-            # survivor.
+            # A run the kernel killed says nothing either way.
             SKIPPED+=("$FILE:$LOCATION — the test run was killed by signal $((STATUS - 128))")
             echo "  — inconclusive"
-        elif [ "$STATUS" -eq 0 ]; then
+        elif [ "$STATUS" -ne 0 ]; then
+            CAUGHT=$((CAUGHT + 1))
+            echo "  ✓ caught"
+        elif ran_tests "$WORK/test.log"; then
             SURVIVING+=("$FILE:$LOCATION")
             echo "  ✗ surviving — the tests still passed"
         else
-            CAUGHT=$((CAUGHT + 1))
-            echo "  ✓ caught"
+            SKIPPED+=("$FILE:$LOCATION — the test run ran no tests")
+            echo "  — inconclusive"
         fi
     fi
     git -C "$TREE" reset --hard --quiet HEAD
