@@ -449,6 +449,10 @@ let package = Package(
 
         // MARK: Golden-file regression tests for the checked-in Examples/ exports.
         // Cross-platform (no AcaiRender dependency); the PNG checks live in AcaiRenderTests.
-        .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"])
+        .testTarget(name: "AcaiExamplesTests", dependencies: ["AcaiLibrary", "AcaiDiagram", "AcaiDiff", "AcaiCore"]),
+
+        // MARK: The repository's own shell scripts, driven as subprocesses: no module under test, so
+        // no dependencies, and no place in `App/project.yml`'s iOS test scheme.
+        .testTarget(name: "AcaiScriptsTests")
     ] + optionalTargets
 )
