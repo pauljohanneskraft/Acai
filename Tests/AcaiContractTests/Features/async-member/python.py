@@ -1,3 +1,3 @@
-class Loader:
-    async def fetch(self) -> int:
-        return 0
+class Playlist:
+    async def shuffled(self) -> "Playlist":
+        return self

@@ -1,11 +1,11 @@
 {
   "types": [
     {
-      "name": "Loader",
+      "name": "Playlist",
       "kind": "class",
       "access": "+",
       "members": [
-        { "name": "fetch", "role": "method", "access": "+", "modifiers": ["async"], "type": "#primitive" }
+        { "name": "shuffled", "role": "method", "access": "+", "modifiers": ["async"], "type": "Playlist" }
       ]
     }
   ],
